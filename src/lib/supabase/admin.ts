@@ -1,7 +1,4 @@
 // src/lib/supabase/admin.ts
-// SERVER-ONLY Service Role Client (Strictly guarded against client bundle import)
-// Rule Negative #8: SUPABASE_SERVICE_ROLE_KEY must never be exposed to browser code.
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../../types/database.types';
 
@@ -44,22 +41,16 @@ export type PersistenceRuntimeMode =
   | 'local_json_dev_fallback'
   | 'blocked_production_json';
 
-/**
- * The current business repositories still use JSON. Supabase credentials do not
- * change their source of truth. Never describe this runtime as PostgreSQL-backed.
- */
 export function getPersistenceRuntimeMode(options?: {
   nodeEnv?: string;
   strictProduction?: boolean;
   supabaseConfigured?: boolean;
 }): PersistenceRuntimeMode {
-  // Explicit unit tests passing options keep strict production guard behavior
   if (options?.nodeEnv !== undefined || options?.strictProduction !== undefined) {
     const targetEnv = options?.nodeEnv ?? process.env.NODE_ENV ?? 'development';
     return targetEnv === 'production' ? 'blocked_production_json' : 'local_json_dev_fallback';
   }
 
-  // Allow Vercel builds & serverless runtime or explicit demo flag to run without crashing
   if (
     process.env.VERCEL === '1' ||
     Boolean(process.env.VERCEL_ENV) ||
