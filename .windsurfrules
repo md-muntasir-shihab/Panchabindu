@@ -1,0 +1,19 @@
+# PANCHAGARH AI RULES (.windsurfrules)
+# Multi-Vendor Consignment F-Commerce Platform (Bangladesh)
+
+## MANDATORY MASTER SPECIFICATIONS:
+Every task and code generation must conform to:
+- `docs/00_CUSTOM_INSTRUCTION.md`
+- `docs/01_FRONTEND_MASTER_PROMPT.md`
+- `docs/02_BACKEND_MASTER_PROMPT.md`
+- `docs/schema.md`
+
+## STRICT CONSTRAINTS:
+1. **Money Math:** All amounts in integer Poisha (1 BDT = 100 poisha). No floating-point math.
+2. **Pricing Formula:** `Supplier Cost + Supplier Profit = Supplier Payable`; `Supplier Payable + Platform Margin = Final Sale Price`.
+3. **No Payment Gateways:** COD and Manual bKash only.
+4. **No Marketing Trackers:** No Facebook Pixel, TikTok Pixel, or GTM.
+5. **Ledger Immutability:** Append-only ledger. Reversals only; no edits or deletes.
+6. **Data Isolation:** Vendor cost and platform margin strictly hidden from storefront and unauthorized roles.
+7. **Design Lock:** 4-solid color system from `src/styles/tokens.css`. No gradients, no emojis in UI.
+8. **Controlled Autonomy:** Output `VERIFY_REQUIRED` on missing specs. Never assume unverified external APIs.

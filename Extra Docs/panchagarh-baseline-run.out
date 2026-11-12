@@ -1,0 +1,67 @@
+{
+  "output": "\\\\?\\f:\\CODE\\.panchagarh-audit\\baseline-AcAxlB",
+  "workspace": "\\\\?\\f:\\CODE\\.panchagarh-audit\\baseline-AcAxlB\\workspace",
+  "logs": "\\\\?\\f:\\CODE\\.panchagarh-audit\\baseline-AcAxlB\\logs",
+  "status": "FINISHED",
+  "results": {
+    "unit": {
+      "command": "bun.exe",
+      "args": [
+        "test"
+      ],
+      "startedAt": "2026-11-10T19:17:56.807Z",
+      "finishedAt": "2026-11-10T19:17:56.870Z",
+      "exitCode": 1,
+      "signal": null,
+      "timedOut": false,
+      "error": null
+    },
+    "typecheck": {
+      "command": "node.exe",
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "startedAt": "2026-11-10T19:17:56.793Z",
+      "finishedAt": "2026-11-10T19:18:15.074Z",
+      "exitCode": 2,
+      "signal": null,
+      "timedOut": false,
+      "error": null
+    },
+    "lint": {
+      "command": "node.exe",
+      "args": [
+        "node_modules/eslint/bin/eslint.js",
+        "."
+      ],
+      "startedAt": "2026-11-10T19:17:56.801Z",
+      "finishedAt": "2026-11-10T19:18:41.130Z",
+      "exitCode": 0,
+      "signal": null,
+      "timedOut": false,
+      "error": null
+    },
+    "build": {
+      "command": "node.exe",
+      "args": [
+        "node_modules/next/dist/bin/next",
+        "build"
+      ],
+      "startedAt": "2026-11-10T19:18:41.131Z",
+      "finishedAt": "2026-11-10T19:18:53.902Z",
+      "exitCode": 1,
+      "signal": null,
+      "timedOut": false,
+      "error": null
+    }
+  },
+  "applicationAndConfigUnchanged": true,
+  "originalDataDirectoryExists": false,
+  "notes": [
+    "Synthetic JSON fixtures only. No database/RLS/browser or production readiness certification.",
+    "No inherited project/service credentials; network is not an OS-level sandbox."
+  ]
+}

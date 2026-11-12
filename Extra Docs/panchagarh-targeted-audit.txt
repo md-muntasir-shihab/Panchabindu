@@ -1,0 +1,46 @@
+﻿
+  src\lib\admin\phase4a-service.ts:662:  }
+  src\lib\admin\phase4a-service.ts:663:  if (order.status === 'packed') {
+> src\lib\admin\phase4a-service.ts:664:    return order.trackingCode ? 'HANDOVER_TO_COURIER' : 'READY_TO_BOOK_COURIER';
+  src\lib\admin\phase4a-service.ts:665:  }
+  src\lib\admin\phase4a-service.ts:666:  if (order.status === 'shipped' || order.status === 'out_for_delivery') {
+  src\lib\admin\phase4a-service.ts:667:    return 'AWAITING_COD_REMITTANCE';
+  src\lib\admin\phase4a-service.ts:668:  }
+  src\lib\admin\phase4a-service.ts:1233:    ).length,
+  src\lib\admin\phase4a-service.ts:1234:    readyToBookCourierCount: sanitizedOrders.filter(
+> src\lib\admin\phase4a-service.ts:1235:      (o) => o.nextBestAction === 'READY_TO_BOOK_COURIER'
+  src\lib\admin\phase4a-service.ts:1236:    ).length,
+  src\lib\admin\phase4a-service.ts:1237:    awaitingCodRemittanceCount: sanitizedOrders.filter(
+  src\lib\admin\phase4a-service.ts:1238:      (o) => o.nextBestAction === 'AWAITING_COD_REMITTANCE'
+  src\lib\admin\phase4a-service.ts:1239:    ).length,
+  src\lib\admin\phase4a-service.ts:1410:      | 'fix_address'
+  src\lib\admin\phase4a-service.ts:1411:      | 'verify_bkash'
+> src\lib\admin\phase4a-service.ts:1412:      | 'book_courier'
+  src\lib\admin\phase4a-service.ts:1413:      | 'log_call_attempt'
+  src\lib\admin\phase4a-service.ts:1414:      | 'log_call_status'
+  src\lib\admin\phase4a-service.ts:1415:      | 'add_staff_note';
+  src\lib\admin\phase4a-service.ts:1416:    newStatus?: OrderStatus;
+  src\lib\admin\phase4a-service.ts:1570:        messageBn: 'বিকাশ পেমেন্ট ভেরিফাইড মার্ক করা হয়েছে।',
+  src\lib\admin\phase4a-service.ts:1571:      });
+> src\lib\admin\phase4a-service.ts:1572:    } else if (payload.actionType === 'book_courier') {
+  src\lib\admin\phase4a-service.ts:1573:      // Address Quality Guard: block courier booking if score < 70 without override reason
+  src\lib\admin\phase4a-service.ts:1574:      if (
+  src\lib\admin\phase4a-service.ts:1575:        ord.addressQualityScore < 70 &&
+  src\lib\admin\phase4a-service.ts:1576:        (!payload.addressOverrideReason ||
+  src\lib\admin\phase7-service.ts:1088:  const maturedOrderVendorKeys = new Set(
+  src\lib\admin\phase7-service.ts:1089:    p4b.vendorLedger
+> src\lib\admin\phase7-service.ts:1090:      .filter((e) => e.entryType === 'EARNING_MATURED')
+  src\lib\admin\phase7-service.ts:1091:      .map((e) => `${e.vendorId}:${e.orderNo ?? e.id}`)
+  src\lib\admin\phase7-service.ts:1092:  );
+  src\lib\admin\phase7-service.ts:1093:
+  src\lib\admin\phase7-service.ts:1094:  const eligibleLocked = p4b.vendorLedger.filter((e) => {
+  supabase\migrations\0008_phase2_schema_rls_and_gl_completion.sql:717:  );
+  supabase\migrations\0008_phase2_schema_rls_and_gl_completion.sql:718:
+> supabase\migrations\0008_phase2_schema_rls_and_gl_completion.sql:719:CREATE POLICY pol_product_images_public_read ON product_images
+  supabase\migrations\0008_phase2_schema_rls_and_gl_completion.sql:720:  FOR SELECT USING (TRUE);
+  supabase\migrations\0008_phase2_schema_rls_and_gl_completion.sql:721:CREATE POLICY pol_product_images_admin_write ON product_images
+  supabase\migrations\0008_phase2_schema_rls_and_gl_completion.sql:722:  FOR ALL USING (fn_current_role_slug() = 'super_admin')
+  supabase\migrations\0008_phase2_schema_rls_and_gl_completion.sql:723:  WITH CHECK (fn_current_role_slug() = 'super_admin');
+
+
+

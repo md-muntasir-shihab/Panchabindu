@@ -1,0 +1,71 @@
+﻿{
+    "supabase":  {
+                     "license":  "MIT",
+                     "engines":  null,
+                     "version":  "3.1.0",
+                     "repository":  {
+                                        "url":  "https://github.com/supabase/cli.git",
+                                        "type":  "git",
+                                        "directory":  "apps/cli"
+                                    },
+                     "scripts":  {
+                                     "dev":  "bun src/main.ts",
+                                     "test":  "pnpm run test:unit --coverage.enabled \u0026\u0026 pnpm run test:integration --coverage.enabled \u0026\u0026 pnpm run test:e2e",
+                                     "build":  "pnpm build:binary \u0026\u0026 pnpm build:shim",
+                                     "test:e2e":  "pnpm exec turbo run supabase#build \u0026\u0026 pnpm exec turbo run supabase#test:e2e:run --only --",
+                                     "docs:spec":  "bun scripts/generate-docs-spec.ts",
+                                     "test:live":  "bun --bun vitest run --project live",
+                                     "test:unit":  "pnpm exec turbo run supabase#test:unit:run --",
+                                     "build:shim":  "bun build src/shared/cli/bin.ts --outfile dist/supabase.js --target node",
+                                     "test:smoke":  "bun run tests/smoke-test.ts",
+                                     "types:check":  "tsc --noEmit -p tsconfig.types.json",
+                                     "build:binary":  "bun scripts/build-binary.ts",
+                                     "test:e2e:run":  "bun --bun vitest run --project e2e --project e2e-exclusive",
+                                     "test:unit:run":  "bun --bun vitest run --project unit --coverage.reportsDirectory=coverage/unit",
+                                     "test:integration":  "pnpm exec turbo run supabase#test:integration:run --",
+                                     "gen:feedback-types":  "pnpm dev -- gen types typescript --project-id xguihxuzqibwxjnimxev --schema public \u003e src/shared/feedback/database.types.ts",
+                                     "test:integration:run":  "bun --bun vitest run --project integration --coverage.reportsDirectory=coverage/integration"
+                                 }
+                 },
+    "@playwright/test":  {
+                             "license":  "Apache-2.0",
+                             "engines":  {
+                                             "node":  "\u003e=20"
+                                         },
+                             "version":  "1.65.0",
+                             "repository":  {
+                                                "url":  "git+https://github.com/microsoft/playwright.git",
+                                                "type":  "git"
+                                            },
+                             "scripts":  {
+
+                                         }
+                         },
+    "skills":  {
+                   "license":  "MIT",
+                   "engines":  {
+                                   "node":  "\u003e=22.20.0"
+                               },
+                   "version":  "1.8.0",
+                   "repository":  {
+                                      "url":  "git+https://github.com/vercel-labs/skills.git",
+                                      "type":  "git"
+                                  },
+                   "scripts":  {
+                                   "dev":  "node src/cli.ts",
+                                   "test":  "vitest",
+                                   "build":  "node scripts/generate-licenses.ts \u0026\u0026 obuild",
+                                   "format":  "prettier --write \"src/**/*.ts\" \"scripts/**/*.ts\"",
+                                   "prepare":  "husky",
+                                   "test:e2e":  "vitest run --config e2e/vitest.config.ts",
+                                   "exec:test":  "node scripts/execute-tests.ts",
+                                   "api:update":  "UPDATE_SNAPSHOT=1 pnpm build",
+                                   "type-check":  "tsc --noEmit \u0026\u0026 tsc --noEmit -p e2e",
+                                   "format:check":  "prettier --check \"src/**/*.ts\" \"scripts/**/*.ts\"",
+                                   "prepublishOnly":  "npm run build",
+                                   "publish:snapshot":  "npm version prerelease --preid=snapshot --no-git-tag-version \u0026\u0026 npm publish --tag snapshot",
+                                   "generate-licenses":  "node scripts/generate-licenses.ts",
+                                   "api:update:breaking":  "UPDATE_SNAPSHOT=1 TSNAPI_ALLOW_BREAKING=1 pnpm build"
+                               }
+               }
+}

@@ -1,0 +1,8 @@
+{
+  "date": "2026-11-11T09:13:03.278Z",
+  "node": "v26.13.0",
+  "git": false,
+  "data": false,
+  "dependencies": true,
+  "bun": true
+}

@@ -1,0 +1,16 @@
+﻿{
+    "checkedAt":  "2026-11-11T09:53:33.0366446+06:00",
+    "os":  {
+               "Caption":  "Microsoft Windows 10 Pro",
+               "Version":  "10.0.19045",
+               "BuildNumber":  "19045"
+           },
+    "tools":  [
+                  {
+                      "Name":  "node.exe",
+                      "Source":  "C:\\Program Files\\nodejs\\node.exe"
+                  }
+              ],
+    "gitMetadata":  false,
+    "dataDirectory":  false
+}

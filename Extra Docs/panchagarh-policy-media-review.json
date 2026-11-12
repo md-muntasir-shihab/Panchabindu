@@ -1,0 +1,416 @@
+﻿[
+    {
+        "pattern":  "vendorLedger\\s*=|vendorLedger\\.(splice|pop|shift)|\\.escrowBucket\\s*=(?!=)|\\.entryType\\s*=(?!=)",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7-service.ts",
+        "line":  1081,
+        "text":  "p4b.vendorLedger = p4b.vendorLedger.filter("
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  459,
+        "text":  "ord.paymentMethod === \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  461,
+        "text":  ": ord.paymentMethod === \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  1964,
+        "text":  "ord.paymentMethod === \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  1966,
+        "text":  ": ord.paymentMethod === \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  5865,
+        "text":  "\u003coption value=\"nagad_manual\"\u003eনগদ ম্যানুয়াল (Nagad)\u003c/option\u003e"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  5866,
+        "text":  "\u003coption value=\"rocket_manual\"\u003eরকেট ম্যানুয়াল (Rocket)\u003c/option\u003e"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  6502,
+        "text":  "{mfsModalOrder.paymentMethod === \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  6504,
+        "text":  ": mfsModalOrder.paymentMethod === \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase7-portal-panel.tsx",
+        "line":  140,
+        "text":  "const flashCampaigns: FlashSaleCampaignRecord[] ="
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase7-portal-panel.tsx",
+        "line":  141,
+        "text":  "overview?.flashCampaigns ?? [];"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase7-portal-panel.tsx",
+        "line":  564,
+        "text":  "{flashCampaigns.length} {isBn ? \u0027টি ডিল\u0027 : \u0027Deals\u0027}"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase7-portal-panel.tsx",
+        "line":  1104,
+        "text":  "মার্জিন-সেফ প্রোমো অডিট রেকর্ড ({flashCampaigns.length})"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase7-portal-panel.tsx",
+        "line":  1106,
+        "text":  "{flashCampaigns.map((fc) =\u003e ("
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  90,
+        "text":  "\u0027cod\u0027 | \u0027bkash_manual\u0027 | \u0027nagad_manual\u0027 | \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  284,
+        "text":  "effectivePaymentMethod === \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  286,
+        "text":  ": effectivePaymentMethod === \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  783,
+        "text":  "onClick={() =\u003e setPaymentMethod(\u0027nagad_manual\u0027)}"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  785,
+        "text":  "effectivePaymentMethod === \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  808,
+        "text":  "onClick={() =\u003e setPaymentMethod(\u0027rocket_manual\u0027)}"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  810,
+        "text":  "effectivePaymentMethod === \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  837,
+        "text":  "{effectivePaymentMethod === \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  839,
+        "text":  ": effectivePaymentMethod === \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  849,
+        "text":  "{effectivePaymentMethod === \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  851,
+        "text":  ": effectivePaymentMethod === \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  861,
+        "text":  "effectivePaymentMethod === \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  863,
+        "text":  ": effectivePaymentMethod === \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  894,
+        "text":  "? effectivePaymentMethod === \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  897,
+        "text":  ": effectivePaymentMethod === \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  936,
+        "text":  "effectivePaymentMethod === \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  940,
+        "text":  ": effectivePaymentMethod === \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  1160,
+        "text":  "? `অগ্রিম প্রদেয় (${effectivePaymentMethod === \u0027nagad_manual\u0027 ? \u0027নগদ\u0027 : effectivePaymentMethod === \u0027rocket_manual\u0027 ? \u0027রকেট\u0027 : \u0027বিকাশ\u0027}):`"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  1161,
+        "text":  ": `Advance Payable (${effectivePaymentMethod === \u0027nagad_manual\u0027 ? \u0027Nagad\u0027 : effectivePaymentMethod === \u0027rocket_manual\u0027 ? \u0027Rocket\u0027 : \u0027bKash\u0027}):`}"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  1232,
+        "text":  "? `${effectivePaymentMethod === \u0027nagad_manual\u0027 ? \u0027নগদ\u0027 : effectivePaymentMethod === \u0027rocket_manual\u0027 ? \u0027রকেট\u0027 : \u0027বিকাশ\u0027} TrxID ভেরিফিকেশন পেন্ডিং`"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\advance-courier-mfs.test.ts",
+        "line":  9,
+        "text":  "it(\u0027accepts valid cod, bkash_manual, nagad_manual, and rocket_manual payment methods\u0027, () =\u003e {"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\advance-courier-mfs.test.ts",
+        "line":  47,
+        "text":  "paymentMethod: \u0027nagad_manual\u0027,"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\advance-courier-mfs.test.ts",
+        "line":  56,
+        "text":  "paymentMethod: \u0027rocket_manual\u0027,"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7-service.ts",
+        "line":  253,
+        "text":  "flashCampaigns: FlashSaleCampaignRecord[];"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7-service.ts",
+        "line":  264,
+        "text":  "flashCampaigns: FlashSaleCampaignRecord[];"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7-service.ts",
+        "line":  354,
+        "text":  "flashCampaigns: ["
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7-service.ts",
+        "line":  524,
+        "text":  "flashCampaigns: parsed.flashCampaigns ?? seed.flashCampaigns,"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7-service.ts",
+        "line":  962,
+        "text":  "export function createMarginSafeFlashCampaign("
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7-service.ts",
+        "line":  1034,
+        "text":  "store.flashCampaigns.unshift(campaign);"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7-service.ts",
+        "line":  1041,
+        "text":  "actionCode: \u0027MARGIN_SAFE_FLASH_CAMPAIGN_CREATED\u0027,"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7-service.ts",
+        "line":  2018,
+        "text":  "flashCampaigns: isVendor ? [] : store.flashCampaigns,"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7.test.ts",
+        "line":  20,
+        "text":  "createMarginSafeFlashCampaign,"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7.test.ts",
+        "line":  134,
+        "text":  "const blockedFlash = createMarginSafeFlashCampaign(adminCtx, {"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7.test.ts",
+        "line":  144,
+        "text":  "const validFlash = createMarginSafeFlashCampaign(adminCtx, {"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7.test.ts",
+        "line":  185,
+        "text":  "assert.equal(vendorOverview.flashCampaigns.length, 0);"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\db\\repository.ts",
+        "line":  1768,
+        "text":  "input.paymentMethod === \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\db\\repository.ts",
+        "line":  1770,
+        "text":  ": input.paymentMethod === \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\db\\repository.ts",
+        "line":  2523,
+        "text":  "? \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\db\\repository.ts",
+        "line":  2525,
+        "text":  "? \u0027rocket_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\validators\\index.ts",
+        "line":  231,
+        "text":  ".enum([\u0027cod\u0027, \u0027bkash_manual\u0027, \u0027nagad_manual\u0027, \u0027rocket_manual\u0027])"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\types\\database.types.ts",
+        "line":  62,
+        "text":  "| \u0027nagad_manual\u0027"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\src\\types\\database.types.ts",
+        "line":  63,
+        "text":  "| \u0027rocket_manual\u0027;"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\workspace\\route.ts",
+        "line":  77,
+        "text":  "createMarginSafeFlashCampaign,"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\workspace\\route.ts",
+        "line":  735,
+        "text":  "operation: z.literal(\u0027create_flash_campaign\u0027),"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\workspace\\route.ts",
+        "line":  1343,
+        "text":  "if (payload.operation === \u0027create_flash_campaign\u0027) {"
+    },
+    {
+        "pattern":  "flash_campaign|flashCampaign|nagad_manual|rocket_manual",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\workspace\\route.ts",
+        "line":  1344,
+        "text":  "const res = createMarginSafeFlashCampaign(ctx, payload);"
+    },
+    {
+        "pattern":  "supabase/(client|server|admin)|createAdminClient|createServerClient",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\db\\phase2-migration.test.ts",
+        "line":  25,
+        "text":  "} from \u0027../supabase/admin\u0027;"
+    },
+    {
+        "pattern":  "supabase/(client|server|admin)|createAdminClient|createServerClient",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\db\\repository.ts",
+        "line":  46,
+        "text":  "import { assertProductionPersistenceAllowed } from \u0027../supabase/admin\u0027;"
+    },
+    {
+        "pattern":  "supabase/(client|server|admin)|createAdminClient|createServerClient",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\inventory\\phase3-inventory-order-engine.ts",
+        "line":  50,
+        "text":  "import { assertProductionPersistenceAllowed } from \u0027../supabase/admin\u0027;"
+    },
+    {
+        "pattern":  "supabase/(client|server|admin)|createAdminClient|createServerClient",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\supabase\\admin.ts",
+        "line":  1,
+        "text":  "// src/lib/supabase/admin.ts"
+    },
+    {
+        "pattern":  "supabase/(client|server|admin)|createAdminClient|createServerClient",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\supabase\\admin.ts",
+        "line":  10,
+        "text":  "\u0027SECURITY_VIOLATION: src/lib/supabase/admin.ts is a server-only module and must never be imported in browser code.\u0027"
+    },
+    {
+        "pattern":  "supabase/(client|server|admin)|createAdminClient|createServerClient",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\supabase\\client.ts",
+        "line":  1,
+        "text":  "// src/lib/supabase/client.ts"
+    },
+    {
+        "pattern":  "supabase/(client|server|admin)|createAdminClient|createServerClient",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\supabase\\server.ts",
+        "line":  1,
+        "text":  "// src/lib/supabase/server.ts"
+    },
+    {
+        "pattern":  "supabase/(client|server|admin)|createAdminClient|createServerClient",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\supabase\\server.ts",
+        "line":  4,
+        "text":  "import { createServerClient } from \u0027@supabase/ssr\u0027;"
+    },
+    {
+        "pattern":  "supabase/(client|server|admin)|createAdminClient|createServerClient",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\supabase\\server.ts",
+        "line":  13,
+        "text":  "return createServerClient\u003cDatabase\u003e(url, anonKey, {"
+    }
+]

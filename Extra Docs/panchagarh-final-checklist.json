@@ -1,0 +1,78 @@
+﻿{
+    "checkedAt":  "2026-11-11T10:16:37.3077623+06:00",
+    "editedFiles":  18,
+    "invalidFiles":  [
+
+                     ],
+    "testedToolingMatches":  [
+                                 {
+                                     "name":  "isolated-baseline.mjs",
+                                     "matches":  true
+                                 },
+                                 {
+                                     "name":  "isolated-baseline.test.mjs",
+                                     "matches":  true
+                                 }
+                             ],
+    "processes":  [
+
+                  ],
+    "sourceDataExists":  false,
+    "results":  {
+                    "nodeTooling":  {
+                                        "command":  "node.exe",
+                                        "args":  [
+                                                     "--test",
+                                                     "scripts/tooling/isolated-baseline.test.mjs"
+                                                 ],
+                                        "startedAt":  "2026-11-11T04:12:33.524Z",
+                                        "finishedAt":  "2026-11-11T04:12:33.945Z",
+                                        "exitCode":  0,
+                                        "signal":  null,
+                                        "timedOut":  false,
+                                        "error":  null
+                                    },
+                    "bunTooling":  {
+                                       "command":  "bun.exe",
+                                       "args":  [
+                                                    "test",
+                                                    "scripts/tooling/isolated-baseline.test.mjs"
+                                                ],
+                                       "startedAt":  "2026-11-11T04:12:33.946Z",
+                                       "finishedAt":  "2026-11-11T04:12:34.273Z",
+                                       "exitCode":  0,
+                                       "signal":  null,
+                                       "timedOut":  false,
+                                       "error":  null
+                                   },
+                    "bunFull":  {
+                                    "command":  "bun.exe",
+                                    "args":  [
+                                                 "test"
+                                             ],
+                                    "startedAt":  "2026-11-11T04:12:34.274Z",
+                                    "finishedAt":  "2026-11-11T04:13:10.519Z",
+                                    "exitCode":  0,
+                                    "signal":  null,
+                                    "timedOut":  false,
+                                    "error":  null
+                                },
+                    "lint":  {
+                                 "command":  "node.exe",
+                                 "args":  [
+                                              "node_modules/eslint/bin/eslint.js",
+                                              "."
+                                          ],
+                                 "startedAt":  "2026-11-11T04:13:10.520Z",
+                                 "finishedAt":  "2026-11-11T04:13:53.077Z",
+                                 "exitCode":  0,
+                                 "signal":  null,
+                                 "timedOut":  false,
+                                 "error":  null
+                             }
+                },
+    "changedOriginalFiles":  [
+
+                             ],
+    "originalFilesCompared":  146
+}

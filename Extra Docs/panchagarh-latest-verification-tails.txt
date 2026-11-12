@@ -1,0 +1,60 @@
+﻿DIRECTORY F:\CODE\.panchagarh-audit\baseline-hMwJtQ\verification-LDNIdl
+--- node-tooling.out ---
+âœ” normalizes Windows namespaced paths without changing ordinary paths (1.1803ms)
+âœ” creates ordinary output paths whether the parent exists or is new (4.2987ms)
+âœ” rejects workspace targets equal to, inside, or above the source (4.5979ms)
+âœ” does not pass inherited secrets or Node injection settings to checks (2.6584ms)
+âœ” fingerprints source while excluding existing data and env files (10.8352ms)
+âœ” copies source and scripts without nested data, environment or cached state (23.564ms)
+âœ” rejects source symlinks and workspace aliases into the source (9.9812ms)
+âœ” captures real child exit codes and stdout without relying on terminal integration (61.0633ms)
+âœ” records a missing executable once without unhandled descriptor errors (5.6286ms)
+âœ” records direct-child timeout rather than reporting a passing check (120.4622ms)
+â„¹ tests 10
+â„¹ suites 0
+â„¹ pass 10
+â„¹ fail 0
+â„¹ cancelled 0
+â„¹ skipped 0
+â„¹ todo 0
+â„¹ duration_ms 349.3188
+--- bun-tooling.err ---
+
+scripts\tooling\isolated-baseline.test.mjs:
+(pass) normalizes Windows namespaced paths without changing ordinary paths [2.52ms]
+(pass) creates ordinary output paths whether the parent exists or is new [2.60ms]
+(pass) rejects workspace targets equal to, inside, or above the source [4.23ms]
+(pass) does not pass inherited secrets or Node injection settings to checks [0.47ms]
+(pass) fingerprints source while excluding existing data and env files [6.73ms]
+(pass) copies source and scripts without nested data, environment or cached state [21.00ms]
+(pass) rejects source symlinks and workspace aliases into the source [7.60ms]
+(pass) captures real child exit codes and stdout without relying on terminal integration [39.56ms]
+(pass) records a missing executable once without unhandled descriptor errors [11.97ms]
+(pass) records direct-child timeout rather than reporting a passing check [112.72ms]
+
+ 10 pass
+ 0 fail
+Ran 10 tests across 1 file. [305.00ms]
+--- bun-full.err ---
+(pass) Phase 1 Security 4.3 & 4.7: Manual bKash Financial Safety, Over-Balance Guard & Maker-Checker Separation [587.57ms]
+(pass) Phase 1 Security 4.6: Courier Webhook Fail-Closed HMAC Verification & Replay Deduplication [406.74ms]
+
+src\lib\storefront\phase6-storefront.test.ts:
+(pass) Phase 6 â€” Customer Storefront Completion, Facets, Checkout Revalidation, Returns & SEO (Section 9) > 9.2 & 9.3: extracts real catalog facets, reports DATA_MODEL_GAP_NO_BRAND_COLUMN instead of faking Brand filter, and executes multi-facet filtering & pagination [2.38ms]
+(pass) Phase 6 â€” Customer Storefront Completion, Facets, Checkout Revalidation, Returns & SEO (Section 9) > 9.4 & 9.5: revalidates Checkout cart prices & stock on server, detects client price tampering, and builds a zero-leak Multi-Vendor Fulfillment Summary [2.00ms]
+(pass) Phase 6 â€” Customer Storefront Completion, Facets, Checkout Revalidation, Returns & SEO (Section 9) > 9.3 & 9.5: enforces Policy-Aware Customer Return Request ownership and Delivered-only status guard [38.32ms]
+(pass) Phase 6 â€” Customer Storefront Completion, Facets, Checkout Revalidation, Returns & SEO (Section 9) > 9.6: builds verified Schema.org Product JSON-LD without cost leakage and generates Storefront Sitemap entries [1.67ms]
+
+src\lib\validators\validators.test.ts:
+(pass) Validator Case 1: Bangladesh Phone Normalization (Bangla digits, +880, & invalid rejection) [0.33ms]
+(pass) Validator Case 2: Address Quality Check & District-Upazila Cascade Validation [0.15ms]
+(pass) Validator Case 3: Order Risk Score & Mandatory Advance Rule [0.09ms]
+(pass) Validator Case 4: Checkout Zod Schema Enforces Manual bKash Trx ID & Valid Geo [0.78ms]
+(pass) Validator Case 5: Server-Side Field Hiding & Cross-Vendor 404 Isolation [0.29ms]
+
+ 110 pass
+ 0 fail
+ 14 expect() calls
+Ran 110 tests across 24 files. [36.22s]
+--- lint.out ---
+--- lint.err ---

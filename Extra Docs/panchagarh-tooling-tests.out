@@ -1,0 +1,12 @@
+✔ rejects workspace targets equal to, inside, or above the source (2.1519ms)
+✔ does not pass inherited secrets or Node injection settings to checks (2.9295ms)
+✔ fingerprints source but never reads or copies existing data or env files (12.3281ms)
+✔ captures real child exit codes and stdout without relying on terminal integration (63.7947ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 193.0181

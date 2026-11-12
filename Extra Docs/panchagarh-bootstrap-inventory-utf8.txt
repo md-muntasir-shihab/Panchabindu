@@ -1,0 +1,73 @@
+﻿--- DATE ---
+2026-11-11T01:09:19.0725896+06:00
+--- ROOT ---
+
+Mode   Name                                                   
+----   ----                                                   
+d----- .agents                                                
+d----- .aistudio                                              
+d----- .cursor                                                
+d----- .github                                                
+d----- .vscode                                                
+d----- app                                                    
+d----- docs                                                   
+d----- hooks                                                  
+d----- lib                                                    
+d----- node_modules                                           
+d----- public                                                 
+d----- scripts                                                
+d----- src                                                    
+d----- supabase                                               
+------ .clinerules                                            
+------ .cursorrules                                           
+------ .env.example                                           
+------ .eslintrc.json                                         
+------ .gitignore                                             
+------ .windsurfrules                                         
+-a---- AGENTS.md                                              
+-a---- bongoconsign-—-multi-vendor-consignment-store-&-erp.zip
+------ bun.lock                                               
+------ CLAUDE.md                                              
+------ eslint.config.mjs                                      
+------ metadata.json                                          
+------ next-env.d.ts                                          
+------ next.config.ts                                         
+------ package.json                                           
+------ postcss.config.mjs                                     
+------ README.md                                              
+------ tsconfig.json                                          
+------ tsconfig.tsbuildinfo                                   
+--- MASTER SPEC CANDIDATES ---
+F:\CODE\Panchagarh\AGENTS.md
+F:\CODE\Panchagarh\.agents\skills\panchagarh-bd-commerce-operations\SKILL.md
+F:\CODE\Panchagarh\.agents\skills\panchagarh-mobile-print-qa\SKILL.md
+F:\CODE\Panchagarh\.agents\skills\panchagarh-product-media\SKILL.md
+F:\CODE\Panchagarh\.agents\skills\panchagarh-project-governance\SKILL.md
+F:\CODE\Panchagarh\.agents\skills\panchagarh-supabase-security\SKILL.md
+F:\CODE\Panchagarh\.agents\skills\panchagarh-vendor-portal\SKILL.md
+--- TOOLS ---
+       node.exe                                               
+       npm.cmd                                                
+       pnpm.cmd                                               
+       docker.exe                                             
+--- CACHED TOOLS ---
+                                                              
+                                                              
+                                                              
+                                                              
+                                                              
+--- SKILL FILES ---
+F:\CODE\Panchagarh\.agents\skills\panchagarh-bd-commerce-operations\SKILL.md
+F:\CODE\Panchagarh\.agents\skills\panchagarh-mobile-print-qa\SKILL.md
+F:\CODE\Panchagarh\.agents\skills\panchagarh-product-media\SKILL.md
+F:\CODE\Panchagarh\.agents\skills\panchagarh-project-governance\SKILL.md
+F:\CODE\Panchagarh\.agents\skills\panchagarh-supabase-security\SKILL.md
+F:\CODE\Panchagarh\.agents\skills\panchagarh-vendor-portal\SKILL.md
+F:\CODE\Panchagarh\.vscode\extensions.json
+F:\CODE\Panchagarh\.cursor\rules\panchagarh-governance.mdc
+F:\CODE\Panchagarh\.github\copilot-instructions.md
+--- DATA/GIT PRESENT ---
+.data : False
+.git : False
+
+

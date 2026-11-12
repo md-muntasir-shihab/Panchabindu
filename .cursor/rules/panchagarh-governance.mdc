@@ -1,0 +1,26 @@
+---
+description: Panchagarh Multi-Vendor Consignment F-Commerce Governance and Negative Constraints
+globs: *
+alwaysApply: true
+---
+
+# PANCHAGARH AI GOVERNANCE & ARCHITECTURE RULES
+
+You are working on **পঞ্চগড় (Panchagarh)**, a Bangladesh-centric Multi-Vendor Consignment F-Commerce Platform.
+
+## MANDATORY SPECIFICATIONS (ALWAYS CONSULT):
+1. `docs/00_CUSTOM_INSTRUCTION.md` (Pre-Setup, Governance, Execution Order & Negative Constraints)
+2. `docs/01_FRONTEND_MASTER_PROMPT.md` (Customer Storefront, Design Tokens & Order UX)
+3. `docs/02_BACKEND_MASTER_PROMPT.md` (Admin Dashboard, Financial Control, Ledger & Security)
+4. `docs/schema.md` (Database Schema Single Source of Truth)
+
+## CORE NON-NEGOTIABLE CONSTRAINTS:
+1. **Financial Precision:** All money must be handled as integer Poisha (`1 BDT = 100 poisha`). No floating-point math for money.
+2. **Consignment Pricing:** `supplier_cost_poisha + supplier_profit_poisha = supplier_payable_poisha`. `supplier_payable_poisha + platform_margin_poisha = sale_price_poisha`.
+3. **Double-Entry Ledger:** `Total Debit = Total Credit`. Ledger entries (`vendor_ledger`, `courier_remittance_ledger`, `audit_logs`) are append-only. No UPDATE/DELETE.
+4. **Field Isolation:** Never expose supplier buying cost, profit, platform margin, or internal vendor SKUs to customers or vendors of other stores.
+5. **Payment Limitation:** Only Cash on Delivery (COD) and Manual bKash. No payment gateways (SSLCommerz, bKash automated PGW, cards).
+6. **No Marketing Trackers:** Absolutely no Facebook Pixel, TikTok Pixel, Google Tag Manager, or tracking pixels.
+7. **Free/Open-Source-First:** No paid-by-default SaaS dependencies.
+8. **Design System:** Strictly adhere to 4-solid color system from `src/styles/tokens.css`. No gradients, no glassmorphism, no emojis in UI.
+9. **Controlled Autonomy:** Do not run destructive database migrations or make unapproved changes. When requirements are missing or ambiguous, output `VERIFY_REQUIRED`.

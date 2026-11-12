@@ -1,0 +1,26 @@
+# Phase 2 database and storage foundation — in progress / blocked
+
+## Current evidence and blockers
+
+- Source code and migrations `0001`–`0008` exist. Runtime business services still use local JSON; Supabase credentials or schema files do not establish a connected database. The current persistence-mode helper can label configured credentials `supabase_production` even while callers write JSON. Audit all stores before changing the guard or claiming a source-of-truth cutover.
+- `src/lib/db/json-to-supabase-migrator.ts` previously reported `executedLive: true` without executing any migration, and local reconciliation was treated as production readiness. The code now reports NOT_INTEGRATED and never claims production readiness. Its dry-run reads stores that may initialize or rewrite `.data`; run it only against an isolated synthetic copy until rewritten as a strictly read-only inspector. Its advertised backup directory is not evidence of an actual backup; its rollback reference is not a validated restoration procedure.
+- `0008:488-499` uses JWT user metadata as a phone fallback. Customer, order, address and payment policies depend on that helper. Customer principal identity needs a server-controlled `auth.uid()` mapping, not user-editable metadata or phone-number-only ownership.
+- `0007:181-213` defines `v_vendor_masked_orders` without an explicit vendor predicate, and `0008:560` grants authenticated access. Real owner/grant and RLS behavior is NOT TESTED. Separate fields, explicit principal restrictions and negative tests are required; `security_invoker` may also change underlying table permissions and must be tested rather than blindly applied.
+- `0008:719-720` exposes `product_images` rows through a `USING (TRUE)` SELECT policy. Approval/published filtering is absent from that policy. Existing buckets do not establish a secure upload flow; no `storage.objects` policy was found in migrations. Existing public object URLs cannot be made private merely by restricting table rows.
+- `0008:237-280` enforces header equality and immutable updates/deletes but does not establish line-sum equality or prevent adding lines to an existing journal. Reconciliation and concurrency tests are required before financial use. No posted ledger should be updated/deleted in a repair.
+- `0008:19-25` introduces a COD/bKash constraint that could fail on historic non-approved values. Inventory historical values and design preservation/quarantine before applying; no silent data loss.
+- Docker CLI is available but `docker version --format '{{.Server.Version}}'` reported that the Docker Desktop Linux engine pipe was unavailable. Bun and project dependencies are absent; local PostgreSQL, Supabase CLI, pgTAP, RLS and storage integration tests NOT RUN. Terminal completion detection is unreliable.
+
+## Safe implementation sequence
+
+1. Restore a reliable shell, Bun and Docker; create a disposable isolated synthetic workspace and local Supabase project with no existing `.data`, secrets or remote connection. Verify versions, integrity and commands before execution.
+2. Finish Phase 1 security blockers: mandatory customer authentication, per-role actions, CSRF, shared print-service tenant isolation and end-to-end denial tests. Phase 2 must not make those guarantees by implication.
+3. Capture schema, grants, views, function owners, storage policy and data inventory from an explicitly authorized scope. Create a backup and test restore before any target migration. Use a forward-only, reviewed migration; never modify historical ledger rows. No migration has been authored or applied in this task.
+4. Design customer ID mapping and historical guest-order verification/claims with owner approval; deny by default while ownership cannot be established. Test forged metadata, other-customer orders, sessions and payment records.
+5. Define private product staging and approved public promotion with server-verified vendor identity, media signature/size checks, metadata stripping and tenant-specific `storage.objects` policies. Test public upload denial, cross-vendor access and private evidence. Preserve legacy URLs until a controlled migration plan exists; no arbitrary external fetch.
+6. Implement an atomic journal posting contract with database-enforced balanced line sums, controlled insertion, idempotency, maker/checker and reversal-only correction. Validate zero-lines, unbalanced, concurrent inserts, later inserts, update/delete and overflow in local PostgreSQL before any financial use.
+7. Implement real transactional import only after explicit approval, audited backups, deterministic mapping, conflict handling, reconciliation and a tested restore strategy. Read-only inspection must not initialize or rewrite source stores. Treat the existing simulated RLS evaluator as a unit model, not proof of PostgreSQL RLS.
+
+## Required evidence before production consideration
+
+Local pgTAP and application-level tests for anon, customer A/B, vendor A/B, staff and admin, grants/views/RLS/storage, ledger invariants, concurrency and rollback. Confirm remote target, data classification, backup/restore, dry-run, review and separate explicit production approval. No remote credentials or customer data in reports.

@@ -1,0 +1,53 @@
+{
+  "checkedAt": "2026-11-11T04:10:15.618Z",
+  "workspace": "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ\\workspace",
+  "logs": "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ\\verification-FKvyCR",
+  "results": {
+    "nodeTooling": {
+      "command": "node.exe",
+      "args": [
+        "--test",
+        "scripts/tooling/isolated-baseline.test.mjs"
+      ],
+      "startedAt": "2026-11-11T04:09:39.007Z",
+      "finishedAt": "2026-11-11T04:09:39.430Z",
+      "exitCode": 0,
+      "signal": null,
+      "timedOut": false,
+      "error": null
+    },
+    "bunTooling": {
+      "command": "bun.exe",
+      "args": [
+        "test",
+        "scripts/tooling/isolated-baseline.test.mjs"
+      ],
+      "startedAt": "2026-11-11T04:09:39.432Z",
+      "finishedAt": "2026-11-11T04:09:39.788Z",
+      "exitCode": 1,
+      "signal": null,
+      "timedOut": false,
+      "error": null
+    },
+    "bunFull": {
+      "command": "bun.exe",
+      "args": [
+        "test"
+      ],
+      "startedAt": "2026-11-11T04:09:39.789Z",
+      "finishedAt": "2026-11-11T04:10:15.554Z",
+      "exitCode": 1,
+      "signal": null,
+      "timedOut": false,
+      "error": null
+    }
+  },
+  "sourceUnchangedDuringVerification": true,
+  "originalApplicationConfigFilesCompared": 146,
+  "changedOriginalFiles": [],
+  "originalDataDirectoryExists": false,
+  "notes": [
+    "Only the tooling assertion was updated in the disposable copy; prior synthetic data was moved, not deleted.",
+    "The completed full-baseline summary is retained unchanged; this is supplemental test evidence."
+  ]
+}

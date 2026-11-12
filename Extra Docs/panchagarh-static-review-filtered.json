@@ -1,0 +1,764 @@
+﻿[
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  480,
+        "text":  "\u003cspan className=\"font-mono text-ink truncate select-all\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  2732,
+        "text":  "\u003cp className=\"font-bold text-sm tracking-tight text-ink truncate leading-tight\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  2774,
+        "text":  "\u003cp className=\"text-xs font-bold text-ink truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  2777,
+        "text":  "\u003cp className=\"text-[10px] font-mono text-muted truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  2819,
+        "text":  "\u003cspan className=\"truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  2896,
+        "text":  "\u003ch1 className=\"text-sm sm:text-base font-bold text-ink truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  3393,
+        "text":  "\u003cp className=\"font-bold text-ink truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  3552,
+        "text":  "{syncFeedback \u0026\u0026 \u003cspan className=\"text-primary truncate\"\u003e· {syncFeedback}\u003c/span\u003e}"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  3715,
+        "text":  "\u003cdiv className=\"text-[9px] text-muted font-mono truncate\" title={ord.manualPaymentTrxId}\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  3761,
+        "text":  "\u003cspan className=\"truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  4077,
+        "text":  "\u003cdiv className=\"text-[10px] text-muted font-mono truncate select-all\" title={ord.manualPaymentTrxId}\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\admin-erp-client.tsx",
+        "line":  5969,
+        "text":  "\u003cp className=\"font-mono text-xs text-ink truncate max-w-md\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\courier-and-escrow-panel.tsx",
+        "line":  3835,
+        "text":  "\u003ch4 className=\"font-bold text-ink truncate text-xs\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase4c-panels.tsx",
+        "line":  1743,
+        "text":  "const handleSaveOrRevokeCredential = async (action: \u0027save\u0027 | \u0027revoke\u0027) =\u003e {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase4c-panels.tsx",
+        "line":  1751,
+        "text":  "operation: \u0027save_or_revoke_credential\u0027,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase4c-panels.tsx",
+        "line":  1768,
+        "text":  ": `${selectedCredKey} প্রত্যাহার (Revoke) করা হয়েছে।`,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase4c-panels.tsx",
+        "line":  1831,
+        "text":  "URL.revokeObjectURL(url);"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase4c-panels.tsx",
+        "line":  2013,
+        "text":  "onClick={() =\u003e void handleSaveOrRevokeCredential(\u0027save\u0027)}"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase4c-panels.tsx",
+        "line":  2022,
+        "text":  "onClick={() =\u003e void handleSaveOrRevokeCredential(\u0027revoke\u0027)}"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase4c-panels.tsx",
+        "line":  2024,
+        "text":  "Revoke"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase5-readiness-panel.tsx",
+        "line":  413,
+        "text":  "\u003cdiv className=\"text-ink truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\phase6-ops-panel.tsx",
+        "line":  312,
+        "text":  "URL.revokeObjectURL(url);"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\print-engine-panel.tsx",
+        "line":  565,
+        "text":  "\u003cp className=\"font-bold text-ink truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\print-engine-panel.tsx",
+        "line":  568,
+        "text":  "\u003cp className=\"text-muted text-[11px] truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\category-detail-client.tsx",
+        "line":  189,
+        "text":  "\u003cspan className=\"truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\checkout-client.tsx",
+        "line":  995,
+        "text":  "\u003cp className=\"text-xs sm:text-sm font-semibold text-ink truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\product-detail-client.tsx",
+        "line":  220,
+        "text":  "\u003cspan className=\"text-[#162119] font-medium truncate max-w-xs\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\product-detail-client.tsx",
+        "line":  910,
+        "text":  "\u003cp className=\"text-xs font-semibold text-[#162119] truncate\"\u003e{displayName}\u003c/p\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\shop-catalog-client.tsx",
+        "line":  206,
+        "text":  "\u003cspan className=\"truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\storefront-shell.tsx",
+        "line":  386,
+        "text":  "\u003cspan className=\"group-hover:text-[#1B4332] group-hover:font-semibold truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\storefront-shell.tsx",
+        "line":  536,
+        "text":  "\u003cp className=\"text-xs font-semibold text-[#162119] truncate group-hover:text-[#1B4332]\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\storefront-shell.tsx",
+        "line":  539,
+        "text":  "\u003cp className=\"text-[11px] text-[#5A655D] truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\storefront-shell.tsx",
+        "line":  642,
+        "text":  "\u003cspan className=\"truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\storefront-shell.tsx",
+        "line":  789,
+        "text":  "\u003cp className=\"text-xs font-semibold text-[#162119] truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\storefront-shell.tsx",
+        "line":  1062,
+        "text":  "\u003cspan className=\"text-[#162119] truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\storefront-shell.tsx",
+        "line":  1106,
+        "text":  "\u003cp className=\"text-sm font-semibold text-[#162119] truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\storefront\\storefront-shell.tsx",
+        "line":  1321,
+        "text":  "\u003cspan className=\"truncate\"\u003e"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4a-service.ts",
+        "line":  50,
+        "text":  "revokeAllUserSessions,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4a-service.ts",
+        "line":  931,
+        "text":  "// Revoke any old sessions on password rotation / 2FA enrollment"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4a-service.ts",
+        "line":  932,
+        "text":  "revokeAllUserSessions(user.userId);"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4a-service.ts",
+        "line":  2235,
+        "text":  "// Always revoke all active sessions of the target user when security state changes"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4a-service.ts",
+        "line":  2236,
+        "text":  "revokeAllUserSessions(target.userId);"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4c-service.ts",
+        "line":  1539,
+        "text":  "export function saveOrRevokeEncryptedCredential("
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4c-service.ts",
+        "line":  1544,
+        "text":  "revoke?: boolean;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4c-service.ts",
+        "line":  1562,
+        "text":  "if (input.revoke) {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4c-service.ts",
+        "line":  1586,
+        "text":  "actionCode: input.revoke"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4c-service.ts",
+        "line":  1587,
+        "text":  "? \u0027CREDENTIAL_REVOKED\u0027"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4c-service.ts",
+        "line":  1591,
+        "text":  "summaryBn: input.revoke"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4c-service.ts",
+        "line":  1592,
+        "text":  "? `ইন্টিগ্রেশন কী ${input.keyName} প্রত্যাহার (Revoke) করা হয়েছে।`"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4c.test.ts",
+        "line":  20,
+        "text":  "saveOrRevokeEncryptedCredential,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4c.test.ts",
+        "line":  155,
+        "text":  "const credRes = saveOrRevokeEncryptedCredential(superCtx, {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase5-service.ts",
+        "line":  299,
+        "text":  "\u0027v_vendor_masked_orders\u0027,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\db\\json-to-supabase-migrator.ts",
+        "line":  704,
+        "text":  "? \u0027GRANT SELECT ON public-safe view TO anon, authenticated\u0027"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\media\\product-image-precheck.test.ts",
+        "line":  19,
+        "text":  "test(\u0027rejects unsupported extensions, spoofed content and truncated signatures\u0027, () =\u003e {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  348,
+        "text":  "revokedAt: string | null;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  403,
+        "text":  ".filter((s) =\u003e s.expiresAt \u003e nowIso \u0026\u0026 !s.revokedAt)"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  406,
+        "text":  ".filter((s) =\u003e s.expiresAt \u003e nowIso \u0026\u0026 !s.revokedAt)"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  453,
+        "text":  "* Rotates/revokes any previous session token if provided."
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  473,
+        "text":  "s.revokedAt = new Date().toISOString();"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  490,
+        "text":  "revokedAt: null,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  519,
+        "text":  "if (found.revokedAt) return null;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  525,
+        "text":  "export function revokeAdminSession(tokenOrSessionId: string | undefined | null): void {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  533,
+        "text":  "if (s.sessionId === sessionId \u0026\u0026 !s.revokedAt) {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  534,
+        "text":  "s.revokedAt = nowIso;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  543,
+        "text":  "export function revokeAllUserSessions(userId: string): void {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  549,
+        "text":  "if (s.userId === userId \u0026\u0026 !s.revokedAt) {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  550,
+        "text":  "s.revokedAt = nowIso;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  584,
+        "text":  "revokedAt: string | null;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  771,
+        "text":  "revokedAt: null,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  793,
+        "text":  "if (!found || found.revokedAt || found.expiresAt \u003c= nowIso) {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  799,
+        "text":  "export function revokeCustomerSession(token: string | undefined | null): void {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  805,
+        "text":  "if (s.sessionId === sessionId \u0026\u0026 !s.revokedAt) {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\crypto-session.ts",
+        "line":  806,
+        "text":  "s.revokedAt = nowIso;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\phase1-security.test.ts",
+        "line":  25,
+        "text":  "revokeAdminSession,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\phase1-security.test.ts",
+        "line":  69,
+        "text":  "revokeAdminSession(session.token);"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\phase1-security.test.ts",
+        "line":  142,
+        "text":  "// 4. Revoked session is immediately rejected"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\security\\phase1-security.test.ts",
+        "line":  143,
+        "text":  "revokeAdminSession(session.token);"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\src\\types\\database.types.ts",
+        "line":  562,
+        "text":  "v_vendor_masked_orders: {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\account\\orders\\route.ts",
+        "line":  19,
+        "text":  "revokeCustomerSession,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\account\\orders\\route.ts",
+        "line":  134,
+        "text":  "revokeCustomerSession(token);"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\auth\\route.ts",
+        "line":  22,
+        "text":  "revokeAdminSession,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\auth\\route.ts",
+        "line":  91,
+        "text":  "revokeAdminSession(existingToken);"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\auth\\route.ts",
+        "line":  136,
+        "text":  "revokeAdminSession(existingToken);"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\auth\\route.ts",
+        "line":  190,
+        "text":  "revokeAdminSession(existingToken);"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\workspace\\route.ts",
+        "line":  51,
+        "text":  "saveOrRevokeEncryptedCredential,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\workspace\\route.ts",
+        "line":  608,
+        "text":  "operation: z.literal(\u0027save_or_revoke_credential\u0027),"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\workspace\\route.ts",
+        "line":  618,
+        "text":  "action: z.enum([\u0027save\u0027, \u0027revoke\u0027]),"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\workspace\\route.ts",
+        "line":  1224,
+        "text":  "if (payload.operation === \u0027save_or_revoke_credential\u0027) {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\workspace\\route.ts",
+        "line":  1225,
+        "text":  "const res = saveOrRevokeEncryptedCredential(ctx, {"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\app\\api\\admin\\workspace\\route.ts",
+        "line":  1228,
+        "text":  "revoke: payload.action === \u0027revoke\u0027,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0007_rls_policies.sql",
+        "line":  181,
+        "text":  "CREATE OR REPLACE VIEW v_vendor_masked_orders AS"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  413,
+        "text":  "revoked_at TIMESTAMPTZ,"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  414,
+        "text":  "revoked_reason TEXT"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  417,
+        "text":  "CREATE INDEX IF NOT EXISTS idx_admin_sessions_user_id ON admin_sessions(user_id, revoked_at);"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  443,
+        "text":  "-- 7. HARDEN ALL SECURITY DEFINER FUNCTIONS (Fixed Safe search_path + Grants)"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  501,
+        "text":  "REVOKE ALL ON FUNCTION fn_prevent_ledger_mutation() FROM PUBLIC;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  502,
+        "text":  "REVOKE ALL ON FUNCTION fn_current_role_slug() FROM PUBLIC;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  503,
+        "text":  "REVOKE ALL ON FUNCTION fn_current_vendor_id() FROM PUBLIC;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  504,
+        "text":  "REVOKE ALL ON FUNCTION fn_current_customer_phone() FROM PUBLIC;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  506,
+        "text":  "GRANT EXECUTE ON FUNCTION fn_current_role_slug() TO authenticated, service_role;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  507,
+        "text":  "GRANT EXECUTE ON FUNCTION fn_current_vendor_id() TO authenticated, service_role;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  508,
+        "text":  "GRANT EXECUTE ON FUNCTION fn_current_customer_phone() TO authenticated, service_role;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  558,
+        "text":  "GRANT SELECT ON v_public_site_settings TO anon, authenticated, service_role;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  559,
+        "text":  "GRANT SELECT ON v_storefront_products TO anon, authenticated, service_role;"
+    },
+    {
+        "pattern":  "v_vendor_masked_orders|GRANT|REVOKE|TRUNCATE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  560,
+        "text":  "GRANT SELECT ON v_vendor_masked_orders TO authenticated, service_role;"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\courier-and-escrow-panel.tsx",
+        "line":  1852,
+        "text":  "list = list.filter((e) =\u003e e.escrowBucket === \u0027pending\u0027);"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\courier-and-escrow-panel.tsx",
+        "line":  1854,
+        "text":  "list = list.filter((e) =\u003e e.escrowBucket === \u0027locked\u0027);"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\courier-and-escrow-panel.tsx",
+        "line":  1856,
+        "text":  "list = list.filter((e) =\u003e e.escrowBucket === \u0027available\u0027);"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\courier-and-escrow-panel.tsx",
+        "line":  2766,
+        "text":  ": entry.escrowBucket === \u0027available\u0027"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\courier-and-escrow-panel.tsx",
+        "line":  2768,
+        "text":  ": entry.escrowBucket === \u0027locked\u0027"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  360,
+        "text":  "if (entry.escrowBucket === \u0027pending\u0027) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  362,
+        "text":  "} else if (entry.escrowBucket === \u0027locked\u0027) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  370,
+        "text":  "} else if (entry.escrowBucket === \u0027available\u0027) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  372,
+        "text":  "if (entry.entryType === \u0027PAYOUT_HOLD\u0027) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  374,
+        "text":  "} else if (entry.entryType === \u0027PAYOUT_HOLD_RELEASE\u0027 || entry.entryType === \u0027PAYOUT_DISBURSED\u0027) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  376,
+        "text":  "} else if (entry.entryType === \u0027POST_PAYOUT_CLAWBACK\u0027 \u0026\u0026 amt \u003c 0) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  447,
+        "text":  "const entryType ="
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  472,
+        "text":  "const entryType ="
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4b-service.ts",
+        "line":  1439,
+        "text":  "e.escrowBucket === \u0027pending\u0027 \u0026\u0026"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4b-service.ts",
+        "line":  1691,
+        "text":  "e.escrowBucket === \u0027locked\u0027"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4b-service.ts",
+        "line":  1700,
+        "text":  "e.escrowBucket === \u0027pending\u0027 \u0026\u0026"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7-service.ts",
+        "line":  1090,
+        "text":  ".filter((e) =\u003e e.entryType === \u0027EARNING_MATURED\u0027)"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\db\\product-sync.ts",
+        "line":  499,
+        "text":  "const escrowBucket: EscrowBucket = isDelivered ? \u0027locked\u0027 : \u0027pending\u0027;"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\db\\product-sync.ts",
+        "line":  500,
+        "text":  "const entryType: VendorLedgerEntryType = isDelivered ? \u0027EARNING_LOCKED\u0027 : \u0027EARNING_PENDING\u0027;"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\types\\database.types.ts",
+        "line":  72,
+        "text":  "export type EscrowBucket = \u0027pending\u0027 | \u0027locked\u0027 | \u0027available\u0027;"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\types\\database.types.ts",
+        "line":  74,
+        "text":  "export type VendorLedgerEntryType ="
+    },
+    {
+        "pattern":  "pol_product_images_public_read|storage\\.objects",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  719,
+        "text":  "CREATE POLICY pol_product_images_public_read ON product_images"
+    }
+]
