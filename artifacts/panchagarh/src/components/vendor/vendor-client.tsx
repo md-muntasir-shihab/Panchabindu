@@ -23,7 +23,7 @@ export function VendorClient() {
   const [password, setPassword] = useState('');
   const [totp, setTotp] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [enrollment, setEnrollment] = useState<{ userId: string; uri: string; csrf: string } | null>(null);
+  const [enrollment, setEnrollment] = useState<{ userId: string; uri: string; csrf: string; require2fa: boolean } | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -52,14 +52,14 @@ export function VendorClient() {
           ? { action: 'complete_first_login', userId: enrollment.userId, currentPassword: password, newPassword, totpCode: totp }
           : { action: 'login', username, password, totpCode: totp }),
       });
-      const data = await response.json() as { success?: boolean; errorBn?: string; requiresFirstLoginGate?: boolean; user?: { userId: string; roleSlug: string }; totpSetupUri?: string; csrfToken?: string };
+      const data = await response.json() as { success?: boolean; errorBn?: string; requiresFirstLoginGate?: boolean; user?: { userId: string; roleSlug: string; require2fa?: boolean }; totpSetupUri?: string; csrfToken?: string };
       if (!response.ok || !data.success || data.user?.roleSlug !== 'vendor') {
         if (data.success && data.user?.roleSlug !== 'vendor') {
           await fetch('/api/admin/auth', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(data.csrfToken ? { 'x-csrf-token': data.csrfToken } : {}) }, body: JSON.stringify({ action: 'logout' }) });
         }
         setError(data.errorBn || 'Vendor login failed.');
       } else if (data.requiresFirstLoginGate && data.user && data.csrfToken) {
-        setEnrollment({ userId: data.user.userId, uri: data.totpSetupUri || '', csrf: data.csrfToken });
+        setEnrollment({ userId: data.user.userId, uri: data.totpSetupUri || '', csrf: data.csrfToken, require2fa: data.user.require2fa !== false });
         setTotp('');
       } else {
         if (data.csrfToken) window.sessionStorage.setItem('bg_vendor_csrf_token', data.csrfToken);
@@ -93,13 +93,14 @@ export function VendorClient() {
         <button type="button" onClick={toggleLocale} className="rounded border border-border px-4 py-2" aria-label={bn ? 'ইংরেজিতে দেখুন' : 'Switch to Bangla'}>{bn ? 'English' : 'বাংলা'}</button>
       </div>
       {!overview ? <form onSubmit={submit} className="max-w-md space-y-4 rounded-xl border border-border bg-surface p-6">
-        <h2 className="font-semibold">{enrollment ? (bn ? 'প্রথম লগইন: পাসওয়ার্ড ও 2FA সেট করুন' : 'Set your password and authenticator') : (bn ? 'ভেন্ডর লগইন' : 'Vendor login')}</h2>
+        <h2 className="font-semibold">{enrollment ? (bn ? 'প্রথম লগইন: পাসওয়ার্ড পরিবর্তন করুন' : 'Change your password at first login') : (bn ? 'ভেন্ডর লগইন' : 'Vendor login')}</h2>
         {!enrollment && <label className="block">{bn ? 'ইউজারনেম' : 'Username'}<input autoComplete="username" className="mt-1 w-full rounded border border-border bg-bg p-3" value={username} onChange={event => setUsername(event.target.value)} required /></label>}
         <label className="block">{enrollment ? (bn ? 'বর্তমান পাসওয়ার্ড' : 'Current password') : (bn ? 'পাসওয়ার্ড' : 'Password')}<input type="password" autoComplete="current-password" className="mt-1 w-full rounded border border-border bg-bg p-3" value={password} onChange={event => setPassword(event.target.value)} required /></label>
-        {enrollment && <><p className="text-sm">{bn ? 'অথেনটিকেটর অ্যাপে এই URI যোগ করুন। এটি গোপন রাখুন।' : 'Add this URI to your authenticator app and keep it private.'}</p>
+        {enrollment && enrollment.require2fa && <><p className="text-sm">{bn ? 'অথেনটিকেটর অ্যাপে এই URI যোগ করুন। এটি গোপন রাখুন।' : 'Add this URI to your authenticator app and keep it private.'}</p>
           <code className="block break-all rounded bg-bg p-2 text-xs">{enrollment.uri}</code>
-          <label className="block">{bn ? 'নতুন পাসওয়ার্ড' : 'New password'}<input type="password" autoComplete="new-password" minLength={8} className="mt-1 w-full rounded border border-border bg-bg p-3" value={newPassword} onChange={event => setNewPassword(event.target.value)} required /></label></>}
-        <label className="block">{bn ? 'অথেনটিকেটর কোড (প্রথমবার পাসওয়ার্ড দিয়ে শুরু করুন)' : 'Authenticator code (start with your password on first login)'}<input inputMode="numeric" autoComplete="one-time-code" className="mt-1 w-full rounded border border-border bg-bg p-3" value={totp} onChange={event => setTotp(event.target.value)} required={Boolean(enrollment)} /></label>
+          </>}
+        {enrollment && <label className="block">{bn ? 'নতুন পাসওয়ার্ড' : 'New password'}<input type="password" autoComplete="new-password" minLength={8} className="mt-1 w-full rounded border border-border bg-bg p-3" value={newPassword} onChange={event => setNewPassword(event.target.value)} required /></label>}
+        {(!enrollment || enrollment.require2fa) && <label className="block">{bn ? 'অথেনটিকেটর কোড (2FA চালু থাকলে)' : 'Authenticator code (only if 2FA is enabled)'}<input inputMode="numeric" autoComplete="one-time-code" className="mt-1 w-full rounded border border-border bg-bg p-3" value={totp} onChange={event => setTotp(event.target.value)} required={Boolean(enrollment?.require2fa)} /></label>}
         {error && <p role="alert" className="text-danger">{uiText(error, locale)}</p>}
         <button disabled={busy} className="rounded bg-ink px-5 py-3 text-bg disabled:opacity-50">{busy ? (bn ? 'অপেক্ষা করুন…' : 'Please wait…') : (bn ? 'লগইন' : 'Log in')}</button>
       </form> : <>

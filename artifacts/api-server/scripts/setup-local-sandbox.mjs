@@ -27,6 +27,7 @@ try {
 
   const env = [
     'PANCHAGARH_ENABLE_SANDBOX_AUTH=1',
+    'PANCHAGARH_SANDBOX_DISABLE_2FA=1',
     `PANCHAGARH_SANDBOX_ADMIN_PASSWORD=${adminPassword}`,
     `PANCHAGARH_SANDBOX_VENDOR_PASSWORD=${vendorPassword}`,
     `CREDENTIALS_ENCRYPTION_KEY=${encryptionKey}`,
@@ -43,13 +44,13 @@ try {
     'URL: /admin',
     'Username: admin',
     `One-time initial password: ${adminPassword}`,
-    'On the first login, choose a new password and enroll an authenticator app. The one-time setup password is then invalid.',
+    'On first login, choose a new password. Two-factor authentication is disabled in this local sandbox.',
     '',
     'Vendor',
     'URL: /vendor',
     'Username: rupganj_vendor',
     `One-time initial password: ${vendorPassword}`,
-    'On the first login, choose a new password and enroll an authenticator app. The one-time setup password is then invalid.',
+    'On first login, choose a new password. Two-factor authentication is disabled in this local sandbox.',
     '',
     'Customer',
     'URL: /account',

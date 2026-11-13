@@ -2034,11 +2034,16 @@ ${itemsList}
               {gateUser.roleSlug})
             </p>
             <p className="text-muted">
-              <LocalizedText source={"নিরাপত্তা নীতিমালা অনুযায়ী টেম্পোরারি পাসওয়ার্ড পরিবর্তন এবং Google Authenticator 2FA সক্রিয় না করা পর্যন্ত কোনো পেজ বা API অ্যাক্সেস করা যাবে না।"} area="admin" />{" "}</p>
-            <p className="font-mono text-ink pt-1 break-all">
-              <LocalizedText source={"RFC 6238 Authenticator Setup URI:"} area="admin" />{' '}
-              <strong>{gateTotpUri ?? 'otpauth://totp/Panchagarh-ERP'}</strong>
+              {gateUser.require2fa
+                ? <LocalizedText source={"নিরাপত্তা নীতিমালা অনুযায়ী টেম্পোরারি পাসওয়ার্ড পরিবর্তন এবং Google Authenticator 2FA সক্রিয় না করা পর্যন্ত কোনো পেজ বা API অ্যাক্সেস করা যাবে না।"} area="admin" />
+                : (locale === 'bn' ? 'প্রথম লগইনে টেম্পোরারি পাসওয়ার্ড পরিবর্তন করুন। 2FA আপাতত বন্ধ আছে।' : 'Change your temporary password at first login. 2FA is currently off.')}
             </p>
+            {gateUser.require2fa && gateTotpUri && (
+              <p className="font-mono text-ink pt-1 break-all">
+                <LocalizedText source={"RFC 6238 Authenticator Setup URI:"} area="admin" />{' '}
+                <strong>{gateTotpUri}</strong>
+              </p>
+            )}
           </div>
 
           <form onSubmit={handleCompleteFirstLoginGate} className="space-y-4">
@@ -2065,17 +2070,19 @@ ${itemsList}
               placeholder="NewSecure#2026"
               required
             />
-            <Input
-              label={
-                locale === 'bn'
-                  ? '৬ সংখ্যার Google Authenticator TOTP কোড *'
-                  : '6-Digit TOTP Verification Code *'
-              }
-              value={gateTotp}
-              onChange={(e) => setGateTotp(e.target.value)}
-              placeholder="123456"
-              required
-            />
+            {gateUser.require2fa && (
+              <Input
+                label={
+                  locale === 'bn'
+                    ? '৬ সংখ্যার Google Authenticator TOTP কোড *'
+                    : '6-Digit TOTP Verification Code *'
+                }
+                value={gateTotp}
+                onChange={(e) => setGateTotp(e.target.value)}
+                placeholder="123456"
+                required
+              />
+            )}
 
             {gateError && (
               <p className="text-xs font-medium text-danger">{gateError}</p>
@@ -2156,8 +2163,8 @@ ${itemsList}
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-ink">
                     {locale === 'bn'
-                      ? 'RFC 6238 TOTP 2FA কোড (৬ ডিজিট) *'
-                      : 'RFC 6238 TOTP 2FA Code (6 Digits) *'}
+                    ? 'RFC 6238 TOTP কোড (শুধু 2FA চালু থাকলে)'
+                    : 'Authenticator code (only when 2FA is enabled)'}
                   </span>
                 </div>
                 <Input
@@ -2226,7 +2233,7 @@ ${itemsList}
             </div>
 
             <div className="space-y-2.5">
-              <p className="text-xs text-muted">{locale === 'bn' ? 'প্রথম লগইনে পাসওয়ার্ড পরিবর্তন ও 2FA এনরোলমেন্ট প্রয়োজন। Production identity সংযুক্ত না থাকলে প্রবেশ বন্ধ থাকবে।' : 'First login requires password rotation and 2FA enrollment. Production access stays disabled until an identity adapter is integrated.'}</p>
+              <p className="text-xs text-muted">{locale === 'bn' ? 'প্রথম লগইনে পাসওয়ার্ড পরিবর্তন প্রয়োজন হতে পারে। Production identity সংযুক্ত না থাকলে প্রবেশ বন্ধ থাকবে।' : 'First login may require a password change. Production access stays disabled until an identity adapter is integrated.'}</p>
             </div>
           </Card>
         </div>
@@ -4802,11 +4809,13 @@ ${itemsList}
                         </td>
                         <td className="p-3 font-mono">{u.roleSlug}</td>
                         <td className="p-3">
-                          {u.mustChangePassword || !u.totpEnrolled ? (
+                          {u.mustChangePassword ? (
                             <Badge status="warning">
                               <LocalizedText source={"First-Login Gate Pending"} area="admin" />{" "}</Badge>
-                          ) : (
+                          ) : u.require2fa && u.totpEnrolled ? (
                             <Badge status="success"><LocalizedText source={"2FA Enrolled & Active"} area="admin" /></Badge>
+                          ) : (
+                            <Badge status="neutral">{locale === 'bn' ? '2FA বন্ধ' : '2FA Off'}</Badge>
                           )}
                         </td>
                         <td className="p-3 font-mono tabular-nums">
@@ -4814,7 +4823,7 @@ ${itemsList}
                         </td>
                         {isSuperAdmin && (
                           <td className="p-3 text-right space-x-2">
-                            <Button
+                            {u.require2fa && u.totpEnrolled && <Button
                               variant="outline"
                               size="sm"
                               onClick={async () => {
@@ -4842,6 +4851,7 @@ ${itemsList}
                               }}
                             >
                               <LocalizedText source={"2FA রিসেট"} area="admin" />{" "}</Button>
+                            }
                           </td>
                         )}
                       </tr>

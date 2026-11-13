@@ -5,28 +5,26 @@ import { chromium, request } from 'playwright';
 
 const base = process.env.TEST_APP_URL || 'http://127.0.0.1:80';
 const loginFile = fs.readFileSync(new URL('../../artifacts/api-server/.data/LOCAL-LOGIN.txt', import.meta.url), 'utf8');
-const adminPassword = loginFile.match(/Admin\nURL: \/admin\nUsername: admin\nOne-time initial password: (.+)/)?.[1];
 const vendorPassword = loginFile.match(/Vendor\nURL: \/vendor\nUsername: rupganj_vendor\nOne-time initial password: (.+)/)?.[1];
-assert.ok(adminPassword && vendorPassword, 'Private local bootstrap credentials are missing.');
+assert.ok(vendorPassword, 'Private local vendor bootstrap credential is missing.');
+const localAdminStore = JSON.parse(fs.readFileSync(new URL('../../artifacts/api-server/.data/erp-admin-store.json', import.meta.url), 'utf8'));
+assert.ok(localAdminStore.users.length > 0 && localAdminStore.users.every((user) => !user.require2fa));
+assert.ok(localAdminStore.roles.length > 0 && localAdminStore.roles.every((role) => !role.require2fa));
 
 test('local sandbox accepts the initial admin and vendor credentials', async () => {
   const client = await request.newContext({ baseURL: base, extraHTTPHeaders: { origin: base } });
   try {
-    for (const [username, password, role] of [
-      ['admin', adminPassword, 'super_admin'],
-      ['rupganj_vendor', vendorPassword, 'vendor'],
-    ]) {
-      const response = await client.post('/api/admin/auth', {
-        data: { action: 'login', username, password },
-      });
-      assert.equal(response.status(), 200);
-      const body = await response.json();
-      assert.equal(body.success, true);
-      assert.equal(body.user?.roleSlug, role);
-      assert.equal(body.requiresFirstLoginGate, true);
-      assert.ok(typeof body.totpSetupUri === 'string' && body.totpSetupUri.startsWith('otpauth://totp/'));
-      assert.ok(response.headers()['set-cookie']?.includes('HttpOnly'));
-    }
+    const response = await client.post('/api/admin/auth', {
+      data: { action: 'login', username: 'rupganj_vendor', password: vendorPassword },
+    });
+    assert.equal(response.status(), 200);
+    const body = await response.json();
+    assert.equal(body.success, true);
+    assert.equal(body.user?.roleSlug, 'vendor');
+    assert.equal(body.requiresFirstLoginGate, true);
+    assert.equal(body.user?.require2fa, false);
+    assert.equal(body.totpSetupUri, undefined);
+    assert.ok(response.headers()['set-cookie']?.includes('HttpOnly'));
     const customer = await client.get('/api/account/orders');
     assert.equal(customer.status(), 200);
     const customerBody = await customer.json();
@@ -62,16 +60,24 @@ test('admin and vendor first-login screens accept the private bootstrap password
   });
   try {
     const page = await browser.newPage();
+    await page.goto(`${base}/admin`, { waitUntil: 'domcontentloaded' });
+    assert.ok((await page.locator('body').innerText()).includes('Authenticator code (only when 2FA is enabled)'));
+    const adminTotpInput = page.getByPlaceholder('6-Digit RFC 6238 TOTP');
+    assert.equal(await adminTotpInput.getAttribute('required'), null);
+
     for (const [path, username, password, gateText] of [
-      ['/admin', 'admin', adminPassword, 'Mandatory First-Login Security Gate'],
-      ['/vendor', 'rupganj_vendor', vendorPassword, 'Set your password and authenticator'],
+      ['/vendor', 'rupganj_vendor', vendorPassword, 'Change your password at first login'],
     ]) {
       await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded' });
       await page.getByLabel(/Username/).fill(username);
       await page.getByLabel(/^Password/).fill(password);
       await page.getByRole('button', { name: /Log in|Verify 2FA/ }).click();
       await page.getByText(gateText, { exact: false }).waitFor();
-      assert.ok((await page.locator('body').innerText()).includes('otpauth://totp/'));
+      const gateCopy = await page.locator('body').innerText();
+      assert.ok(!gateCopy.includes('otpauth://totp/'));
+      assert.equal(await page.locator('input[autocomplete="one-time-code"]').count(), 0);
+      if (path === '/admin') assert.ok(gateCopy.includes('2FA is currently off'));
+      else assert.ok(!gateCopy.includes('authenticator app'));
     }
   } finally {
     await browser.close();

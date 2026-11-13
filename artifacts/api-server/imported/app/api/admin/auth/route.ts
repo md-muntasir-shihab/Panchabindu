@@ -38,7 +38,7 @@ const authActionSchema = z.discriminatedUnion('action', [
     userId: z.string().min(1).max(64),
     currentPassword: z.string().min(4).max(128),
     newPassword: z.string().min(8).max(128),
-    totpCode: z.string().trim().min(6).max(16),
+    totpCode: z.string().trim().max(16),
   }),
   z.object({
     action: z.literal('logout'),

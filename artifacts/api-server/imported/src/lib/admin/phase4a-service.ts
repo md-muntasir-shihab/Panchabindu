@@ -165,6 +165,12 @@ interface AdminPersistentStore {
 const ADMIN_DATA_DIR = path.join(process.cwd(), '.data');
 const ADMIN_DATA_FILE = path.join(ADMIN_DATA_DIR, 'erp-admin-store.json');
 
+function isLocalSandboxTwoFactorDisabled(): boolean {
+  return process.env.NODE_ENV !== 'production' &&
+    process.env.PANCHAGARH_ENABLE_SANDBOX_AUTH === '1' &&
+    process.env.PANCHAGARH_SANDBOX_DISABLE_2FA === '1';
+}
+
 const ALL_MODULES: PermissionModuleKey[] = [
   'today_screen',
   'orders',
@@ -290,6 +296,7 @@ function buildDefaultRolePermissions(
 }
 
 function getInitialAdminStore(): AdminPersistentStore {
+  const require2faByDefault = !isLocalSandboxTwoFactorDisabled();
   const sandboxBootstrap = (role: 'ADMIN' | 'VENDOR', userId: string, testPassword: string) => {
     if (process.env.NODE_ENV === 'production') throw new Error('Sandbox identity cannot be seeded in production.');
     const password = process.env[`PANCHAGARH_SANDBOX_${role}_PASSWORD`];
@@ -308,7 +315,7 @@ function getInitialAdminStore(): AdminPersistentStore {
       nameBn: 'সুপার অ্যাডমিন (Super Admin)',
       nameEn: 'Super Admin',
       isSystem: true,
-      require2fa: true,
+      require2fa: require2faByDefault,
       maxDiscountBp: 5000, // 50%
       maskCustomerPiiForVendor: false,
       permissions: buildDefaultRolePermissions('super_admin'),
@@ -318,7 +325,7 @@ function getInitialAdminStore(): AdminPersistentStore {
       nameBn: 'সাপ্লায়ার / ভেন্ডর (Vendor)',
       nameEn: 'Vendor / Supplier',
       isSystem: true,
-      require2fa: true,
+      require2fa: require2faByDefault,
       maxDiscountBp: 0,
       maskCustomerPiiForVendor: true,
       permissions: buildDefaultRolePermissions('vendor'),
@@ -328,7 +335,7 @@ function getInitialAdminStore(): AdminPersistentStore {
       nameBn: 'মার্কেটিং ম্যানেজার (Marketing)',
       nameEn: 'Marketing Manager',
       isSystem: true,
-      require2fa: true,
+      require2fa: require2faByDefault,
       maxDiscountBp: 1500, // Max 15% discount without approval
       maskCustomerPiiForVendor: false,
       permissions: buildDefaultRolePermissions('marketing_manager'),
@@ -338,7 +345,7 @@ function getInitialAdminStore(): AdminPersistentStore {
       nameBn: 'সাপ্লাই ও প্যাকেজিং ম্যানেজার (Packaging)',
       nameEn: 'Supply & Packaging Manager',
       isSystem: true,
-      require2fa: true,
+      require2fa: require2faByDefault,
       maxDiscountBp: 0,
       maskCustomerPiiForVendor: false,
       permissions: buildDefaultRolePermissions('packaging_manager'),
@@ -357,7 +364,7 @@ function getInitialAdminStore(): AdminPersistentStore {
       passwordHash: adminBootstrap.passwordHash,
       mustChangePassword: adminBootstrap.firstLogin,
       totpEnrolled: !adminBootstrap.firstLogin,
-      require2fa: true,
+      require2fa: require2faByDefault,
       totpSecretEncrypted: adminBootstrap.totpSecretEncrypted,
       lastUsedTotpStep: null,
       backupCodeHashes: generateRecoveryBackupCodes(4).codeHashes,
@@ -380,7 +387,7 @@ function getInitialAdminStore(): AdminPersistentStore {
       passwordHash: vendorBootstrap.passwordHash,
       mustChangePassword: vendorBootstrap.firstLogin,
       totpEnrolled: !vendorBootstrap.firstLogin,
-      require2fa: true,
+      require2fa: require2faByDefault,
       totpSecretEncrypted: vendorBootstrap.totpSecretEncrypted,
       lastUsedTotpStep: null,
       backupCodeHashes: generateRecoveryBackupCodes(4).codeHashes,
@@ -403,7 +410,7 @@ function getInitialAdminStore(): AdminPersistentStore {
       passwordHash: hashPassword('Market#2026'),
       mustChangePassword: false,
       totpEnrolled: true,
-      require2fa: true,
+      require2fa: require2faByDefault,
       totpSecretEncrypted: encryptSecretAtRest(
         deriveSeededUserTotpSecret('usr-marketing-01')
       ),
@@ -428,7 +435,7 @@ function getInitialAdminStore(): AdminPersistentStore {
       passwordHash: hashPassword('Pack#2026'),
       mustChangePassword: false,
       totpEnrolled: true,
-      require2fa: true,
+      require2fa: require2faByDefault,
       totpSecretEncrypted: encryptSecretAtRest(
         deriveSeededUserTotpSecret('usr-packaging-01')
       ),
@@ -453,7 +460,7 @@ function getInitialAdminStore(): AdminPersistentStore {
       passwordHash: hashPassword('Temp#2026'),
       mustChangePassword: true,
       totpEnrolled: false,
-      require2fa: true,
+      require2fa: require2faByDefault,
       totpSecretEncrypted: encryptSecretAtRest(
         deriveSeededUserTotpSecret('usr-first-login-demo')
       ),
@@ -529,6 +536,7 @@ export function readAdminStore(): AdminPersistentStore {
       }
       const rawUsers = parsed.users;
       let migratedSecrets = false;
+      const localTwoFactorDisabled = isLocalSandboxTwoFactorDisabled();
 
       const sanitizedUsers: AdminUserAccount[] = rawUsers.map((u) => {
         const legacy = u as unknown as Record<string, unknown>;
@@ -562,6 +570,9 @@ export function readAdminStore(): AdminPersistentStore {
           migratedSecrets = true;
         }
 
+        const require2fa = localTwoFactorDisabled ? false : (u.require2fa ?? true);
+        if (require2fa !== u.require2fa) migratedSecrets = true;
+
         return {
           userId: u.userId,
           username: u.username,
@@ -574,7 +585,7 @@ export function readAdminStore(): AdminPersistentStore {
           temporaryPasswordExpiresAt: u.temporaryPasswordExpiresAt ?? null,
           mustChangePassword: Boolean(u.mustChangePassword),
           totpEnrolled: Boolean(u.totpEnrolled),
-          require2fa: u.require2fa ?? true,
+          require2fa,
           totpSecretEncrypted,
           lastUsedTotpStep: u.lastUsedTotpStep ?? null,
           backupCodeHashes: Array.isArray(u.backupCodeHashes)
@@ -590,9 +601,17 @@ export function readAdminStore(): AdminPersistentStore {
         };
       });
 
+      const roles = localTwoFactorDisabled
+        ? parsed.roles.map((role) => {
+            if (!role.require2fa) return role;
+            migratedSecrets = true;
+            return { ...role, require2fa: false };
+          })
+        : parsed.roles;
+
       const store: AdminPersistentStore = {
         users: sanitizedUsers,
-        roles: parsed.roles,
+        roles,
         auditLogs: parsed.auditLogs,
         orderMeta: parsed.orderMeta,
         blacklistedPhones: parsed.blacklistedPhones,
@@ -728,6 +747,7 @@ export function verifyAdminActorTotp(
   if (!user) {
     return { valid: false, reasonBn: 'ইউজার খুঁজে পাওয়া যায়নি।' };
   }
+  if (isLocalSandboxTwoFactorDisabled()) return { valid: true };
   const base32 = decryptSecretAtRest(user.totpSecretEncrypted);
   const enforceReplay = options?.enforceReplayGuard ?? false;
   const check = verifyTotpWithReplayGuard({
@@ -824,7 +844,9 @@ export function authenticateAdminUser(input: {
 
   const base32Secret = decryptSecretAtRest(user.totpSecretEncrypted);
 
-  // Check First-Login Gate (Password change + 2FA enrollment)
+  const require2fa = user.require2fa && !isLocalSandboxTwoFactorDisabled();
+
+  // Change temporary passwords at first login; enroll TOTP only when required.
   if (user.mustChangePassword || (user.require2fa && !user.totpEnrolled)) {
     user.failedLoginAttempts = 0;
     writeAdminStore(store);
@@ -832,12 +854,14 @@ export function authenticateAdminUser(input: {
       success: true,
       requiresFirstLoginGate: true,
       user: sanitizeUserAccount(user),
-      totpSetupUri: user.totpEnrolled ? undefined : buildTotpSetupUri(user.username, base32Secret),
+      totpSetupUri: !require2fa || user.totpEnrolled
+        ? undefined
+        : buildTotpSetupUri(user.username, base32Secret),
     };
   }
 
   // Verify RFC 6238 TOTP 2FA if enrolled & required
-  if (user.require2fa && user.totpEnrolled) {
+  if (require2fa && user.totpEnrolled) {
     const totpCheck = verifyTotpWithReplayGuard({
       base32Secret,
       token: input.totpCode ?? '',
@@ -905,7 +929,9 @@ export function completeFirstLoginGate(input: {
 } {
   const store = readAdminStore();
   const user = store.users.find((u) => u.userId === input.userId);
-  if (!user || !user.isActive || (!user.mustChangePassword && user.totpEnrolled) ||
+  const require2fa = Boolean(user?.require2fa && !isLocalSandboxTwoFactorDisabled());
+  if (!user || !user.isActive ||
+      (!user.mustChangePassword && (!require2fa || user.totpEnrolled)) ||
       (user.lockedUntilIso && Date.parse(user.lockedUntilIso) > Date.now()) ||
       (user.temporaryPasswordExpiresAt && Date.parse(user.temporaryPasswordExpiresAt) <= Date.now())) {
     return { success: false, errorBn: 'ইউজার খুঁজে পাওয়া যায়নি।' };
@@ -929,16 +955,18 @@ export function completeFirstLoginGate(input: {
     };
   }
 
-  const base32Secret = decryptSecretAtRest(user.totpSecretEncrypted);
-  const totpCheck = verifyTotpWithReplayGuard({
-    base32Secret,
-    token: input.totpCode,
-    lastUsedStep: user.lastUsedTotpStep,
-    backupCodeHashes: user.backupCodeHashes,
-    timestampMs: input.timestampMs,
-  });
+  const base32Secret = require2fa ? decryptSecretAtRest(user.totpSecretEncrypted) : null;
+  const totpCheck = require2fa
+    ? verifyTotpWithReplayGuard({
+        base32Secret: base32Secret!,
+        token: input.totpCode,
+        lastUsedStep: user.lastUsedTotpStep,
+        backupCodeHashes: user.backupCodeHashes,
+        timestampMs: input.timestampMs,
+      })
+    : null;
 
-  if (!totpCheck.valid) {
+  if (totpCheck && !totpCheck.valid) {
     user.failedLoginAttempts += 1;
     if (user.failedLoginAttempts >= 5) user.lockedUntilIso = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     writeAdminStore(store);
@@ -950,13 +978,15 @@ export function completeFirstLoginGate(input: {
     };
   }
 
-  const backupGen = generateRecoveryBackupCodes(6);
+  const backupGen = require2fa ? generateRecoveryBackupCodes(6) : null;
   user.passwordHash = hashPassword(input.newPassword);
   user.temporaryPasswordExpiresAt = null;
   user.mustChangePassword = false;
-  user.totpEnrolled = true;
-  user.lastUsedTotpStep = totpCheck.matchedStep ?? null;
-  user.backupCodeHashes = backupGen.codeHashes;
+  if (require2fa && totpCheck && backupGen) {
+    user.totpEnrolled = true;
+    user.lastUsedTotpStep = totpCheck.matchedStep ?? null;
+    user.backupCodeHashes = backupGen.codeHashes;
+  }
   user.lastLoginAt = new Date().toISOString();
 
   // Revoke any old sessions on password rotation / 2FA enrollment
@@ -969,15 +999,17 @@ export function completeFirstLoginGate(input: {
     actionCode: 'FIRST_LOGIN_GATE_COMPLETED',
     targetType: 'user',
     targetId: user.userId,
-    summaryBn: `${user.username} প্রথম লগইনে পাসওয়ার্ড পরিবর্তন ও TOTP 2FA এনরোলমেন্ট সম্পন্ন করেছেন।`,
-    metadata: { totpEnrolled: true },
+    summaryBn: require2fa
+      ? `${user.username} প্রথম লগইনে পাসওয়ার্ড পরিবর্তন ও TOTP 2FA এনরোলমেন্ট সম্পন্ন করেছেন।`
+      : `${user.username} প্রথম লগইনে পাসওয়ার্ড পরিবর্তন করেছেন; 2FA বন্ধ রয়েছে।`,
+    metadata: { totpEnrolled: Boolean(require2fa) },
   });
 
   writeAdminStore(store);
   return {
     success: true,
     user: sanitizeUserAccount(user),
-    recoveryBackupCodes: backupGen.plainCodes,
+    recoveryBackupCodes: backupGen?.plainCodes,
   };
 }
 
@@ -2161,7 +2193,7 @@ export function createAdminUserBySuperAdmin(
     temporaryPasswordExpiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     mustChangePassword: true,
     totpEnrolled: false,
-    require2fa: true,
+    require2fa: !isLocalSandboxTwoFactorDisabled(),
     totpSecretEncrypted: encryptSecretAtRest(uniqueTotpSecret),
     lastUsedTotpStep: null,
     backupCodeHashes: generateRecoveryBackupCodes(6).codeHashes,
@@ -2183,7 +2215,7 @@ export function createAdminUserBySuperAdmin(
     targetType: 'user',
     targetId: newUser.userId,
     summaryBn: `সুপার অ্যাডমিন নতুন ইউজার @${newUser.username} (${newUser.roleSlug}) তৈরি করেছেন।`,
-    metadata: { roleSlug: newUser.roleSlug, require2fa: true },
+    metadata: { roleSlug: newUser.roleSlug, require2fa: newUser.require2fa },
   });
 
   writeAdminStore(store);
