@@ -11,6 +11,7 @@
     }
   },
   "rewrites": [
+    { "source": "/api/vendor/overview", "destination": "/api/vendor-overview.mjs" },
     { "source": "/manifest.webmanifest", "destination": "/api/__metadata/manifest.webmanifest" },
     { "source": "/sitemap.xml", "destination": "/api/__metadata/sitemap.xml" },
     { "source": "/robots.txt", "destination": "/api/__metadata/robots.txt" },
