@@ -2206,8 +2206,8 @@ ${itemsList}
                     ? 'লগইন যাচাই হচ্ছে...'
                     : 'Authenticating...'
                   : locale === 'bn'
-                  ? '২এফএ ভেরিফাই করে ইআরপি-তে প্রবেশ করুন'
-                  : 'Verify 2FA & Enter Admin ERP'}
+                  ? 'লগইন করে ইআরপি-তে প্রবেশ করুন'
+                  : 'Log in to Admin ERP'}
               </Button>
             </form>
 
@@ -2228,7 +2228,7 @@ ${itemsList}
                   : 'Secure Account Access'}
               </h2>
               <p className="text-xs text-muted mt-0.5">
-                {locale === 'bn' ? 'আপনার অনুমোদিত ইউজারনেম, পাসওয়ার্ড ও অথেনটিকেটর কোড ব্যবহার করুন। এখানে কোনো ডেমো পাসওয়ার্ড বা 2FA প্রিভিউ দেওয়া হয় না।' : 'Use your authorized username, password and authenticator code. Demo passwords and 2FA previews are not published here.'}
+                {locale === 'bn' ? 'আপনার অনুমোদিত ইউজারনেম ও পাসওয়ার্ড ব্যবহার করুন; 2FA চালু থাকলেই শুধু অথেনটিকেটর কোড দিন। এখানে কোনো ডেমো পাসওয়ার্ড বা 2FA প্রিভিউ দেওয়া হয় না।' : 'Use your authorized username and password; enter an authenticator code only when 2FA is enabled for the account. Demo passwords and 2FA previews are not published here.'}
               </p>
             </div>
 
