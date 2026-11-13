@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../../types/database.types';
 
-if (typeof (globalThis as { window?: unknown }).window !== 'undefined') {
+if ('window' in globalThis) {
   throw new Error(
     'SECURITY_VIOLATION: src/lib/supabase/admin.ts is a server-only module and must never be imported in browser code.'
   );

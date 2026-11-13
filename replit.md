@@ -12,6 +12,18 @@ Use the artifact-owned workflows:
 
 The workflows supply `PORT` and `BASE_PATH`; do not run a root-level `pnpm dev`.
 
+## Vercel install
+
+This repository is a pnpm workspace and must be deployed with the repository root as the Vercel project root. `vercel.json` selects pnpm for installation, and `pnpm-lock.yaml` pins the dependency graph. If an Install Command override is set in the Vercel dashboard, remove it or set it to `npx --yes pnpm@10.34.9 install --frozen-lockfile`; a dashboard override takes precedence over the repository configuration.
+
+The Vercel configuration builds the storefront and bundles the Express application for the serverless handler at `api/[...route].mjs`. Static client routes fall back to `index.html`; `/api/*` requests go to the handler. To verify the workspace build locally, run `PORT=3000 BASE_PATH=/ pnpm run build`, then `node --test scripts/src/vercel-handler.test.mjs`. The handler has not been verified on Vercel itself.
+
+This configuration alone does not make the app production-ready. The API needs the initialized production persistence and secrets described below; without them, page data fails closed. The current customer login is phone OTP, and its live SMS adapter is not implemented; customer password registration is not implemented. Do not enable sandbox authentication or publish default passwords for production.
+
+### One-time production administrator
+
+After applying the migrations and initializing a reviewed runtime database (including its system roles), run `pnpm --filter @workspace/api-server run production:setup-admin` once in a private terminal with `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and the same `CREDENTIALS_ENCRYPTION_KEY` used by the production deployment in the environment. The script refuses to replace an existing admin or credential file. It creates username `admin` with a unique temporary password in the ignored private file `artifacts/api-server/.data/PRODUCTION-ADMIN-LOGIN.txt`; open `/admin`, change the password and enroll an authenticator on first login. Store the credential securely and delete the file after setup. If the database update reports an error, do not retry blindly: the file is retained because the update may have succeeded despite a lost response. Inspect the database state first. Never put the file, service key, or encryption key in Git or share them in chat.
+
 ## Verification
 
 - `pnpm --filter @workspace/scripts run test:migration` — running-app route, public-data, not-found, auth guard and manifest checks.
@@ -50,7 +62,7 @@ Use the secure workspace configuration flow for credentials. Never put them in s
 
 ## Private local account testing
 
-For private Replit development testing, run `pnpm --filter @workspace/api-server run sandbox:setup` once. It creates random first-login passwords for `admin` at `/admin` and `rupganj_vendor` at `/vendor`; the private one-time credential file is `artifacts/api-server/.data/LOCAL-LOGIN.txt`. The API development workflow loads the matching private env file from that ignored `.data/` directory. Admin and vendor must change their temporary password at first login; TOTP 2FA is disabled across roles in this local sandbox for now. Production authentication is unchanged. The customer at `/account` signs in using the local sandbox OTP shown in the page; customers have no password.
+For private Replit development testing, run `pnpm --filter @workspace/api-server run sandbox:setup` once. It creates random first-login passwords for `panchagarh_owner` at `/admin` and `rupganj_vendor` at `/vendor`; the private one-time credential file is `artifacts/api-server/.data/LOCAL-LOGIN.txt`. The API development workflow loads the matching private env file from that ignored `.data/` directory. Admin and vendor must change their temporary password at first login; TOTP 2FA is disabled across roles in this local sandbox for now. Production authentication is unchanged. The customer at `/account` signs in using the local sandbox OTP shown in the page; customers have no password.
 
 The bootstrap refuses to overwrite an existing credential file or admin registry. It does not reset or rotate an account. Do not share the credential file or preview link; delete the one-time credential file after both accounts have been set up. These local accounts and JSON fixtures do not grant production access. Production stays fail-closed until the original Supabase runtime and production identity are separately configured.
 

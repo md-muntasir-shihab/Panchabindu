@@ -5,7 +5,7 @@ import { ApiRequest as NextRequest } from '@/src/lib/http';
 function localizedResponse(response: Response, request: unknown): Promise<Response> {
   if (!response.headers.get('content-type')?.includes('application/json')) return Promise.resolve(response);
   const locale = request instanceof Request && request.headers.get('accept-language')?.toLowerCase().startsWith('en') ? 'en' : 'bn';
-  return response.clone().json().then((body: any) => {
+  return response.clone().json().then(body => {
     const decorate = (value: unknown): void => {
       if (Array.isArray(value)) { value.forEach(decorate); return; }
       if (!value || typeof value !== 'object') return;
@@ -26,7 +26,10 @@ function localizedResponse(response: Response, request: unknown): Promise<Respon
       Object.values(record).forEach(decorate);
     };
     decorate(body);
-    if (response.status >= 400 && !body.code) body.code = ({ 400: 'INVALID_REQUEST', 401: 'AUTH_REQUIRED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT', 422: 'VALIDATION_FAILED', 429: 'RATE_LIMITED' } as Record<number, string>)[response.status] ?? 'SERVICE_UNAVAILABLE';
+    if (response.status >= 400 && body && typeof body === 'object' && !Array.isArray(body)) {
+      const record = body as Record<string, unknown>;
+      if (!record.code) record.code = ({ 400: 'INVALID_REQUEST', 401: 'AUTH_REQUIRED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT', 422: 'VALIDATION_FAILED', 429: 'RATE_LIMITED' } as Record<number, string>)[response.status] ?? 'SERVICE_UNAVAILABLE';
+    }
     const headers = new Headers(response.headers);
     headers.delete('content-length');
     return Response.json(body, { status: response.status, headers });

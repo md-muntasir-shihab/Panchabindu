@@ -84,7 +84,7 @@ export function AccountClient({
 
   const [activeTab, setActiveTab] = React.useState<
     'tracking' | 'orders' | 'addresses' | 'wishlist'
-  >('tracking');
+  >('orders');
 
   const [orderLookupNo, setOrderLookupNo] = React.useState('');
   const [recentOrders, setRecentOrders] = React.useState<string[]>([]);
@@ -632,8 +632,8 @@ export function AccountClient({
                 <Smartphone className="w-5 h-5" aria-hidden="true" />
                 <span>
                   {locale === 'bn'
-                    ? 'মোবাইল ওটিপি দিয়ে অর্ডার হিস্ট্রি'
-                    : 'Phone OTP Verified Order History'}
+                    ? 'মোবাইল ওটিপি দিয়ে লগইন'
+                    : 'Sign in with phone OTP'}
                 </span>
               </h2>
               <Badge
@@ -697,8 +697,8 @@ export function AccountClient({
                     ? 'যাচাই হচ্ছে...'
                     : 'Verifying...'
                   : locale === 'bn'
-                  ? '২. অর্ডার হিস্ট্রি দেখুন'
-                  : '2. Verify & View Orders'}
+                  ? '২. যাচাই করে লগইন করুন'
+                  : '2. Verify & Sign In'}
               </Button>
             </form>
 

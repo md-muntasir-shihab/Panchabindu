@@ -578,12 +578,12 @@ export function StorefrontShell({
                 title={dict.common.account}
               >
                 <User className="w-3.5 h-3.5 text-[var(--store-accent)]" aria-hidden="true" />
-                <span>{locale === 'bn' ? 'প্রোফাইল' : 'Profile'}</span>
+                <span>{locale === 'bn' ? 'অ্যাকাউন্ট / লগইন' : 'Account / Sign in'}</span>
               </Link>
 
               {/* Wishlist Shortcut Button */}
               <Link
-                href="/account"
+                href="/account?tab=wishlist"
                 aria-label={dict.common.wishlist}
                 className="relative w-9 h-9 hidden sm:inline-flex items-center justify-center rounded-full border border-[#E4E2DC] bg-[#F2EFE9] text-[#162119] hover:border-[var(--store-accent)] hover:bg-white transition-colors"
                 title={dict.common.wishlist}

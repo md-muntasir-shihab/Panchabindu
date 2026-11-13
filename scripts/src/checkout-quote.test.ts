@@ -85,7 +85,7 @@ test('public page-data validates quote input and returns only safe checkout fiel
   })]) {
     const response = await pageData(new ApiRequest(`http://localhost/api/page-data?${new URLSearchParams({ path: '/checkout', q })}`));
     assert.equal(response.status, 400);
-    assert.equal((await response.json()).success, false);
+    assert.equal((await response.json() as { success: boolean }).success, false);
     assert.match(response.headers.get('cache-control')!, /no-store/);
   }
   const product = readErpState().products.find(p => p.status === 'active')!;
@@ -94,7 +94,7 @@ test('public page-data validates quote input and returns only safe checkout fiel
   }] });
   const response = await pageData(new ApiRequest(`http://localhost/api/page-data?${new URLSearchParams({ path: '/checkout', q })}`));
   assert.equal(response.status, 200);
-  const body = await response.json();
+  const body = await response.json() as { data: { page: string; props: { checkout: { paymentMethods: unknown[]; quote: { deliveryQuotes: unknown[] } } } } };
   assert.equal(body.data.page, 'checkout');
   assert.equal(body.data.props.checkout.paymentMethods.length, 2);
   assert.equal(body.data.props.checkout.quote.deliveryQuotes.length, 2);

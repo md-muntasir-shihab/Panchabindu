@@ -2,8 +2,9 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "types": ["node"]
+    "rootDir": "..",
+    "types": ["node"],
+    "paths": { "@/*": ["../artifacts/api-server/imported/*"] }
   },
   "include": ["src"]
 }
