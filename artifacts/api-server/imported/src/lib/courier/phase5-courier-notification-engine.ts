@@ -747,7 +747,7 @@ export class BangladeshPostManualAdapter implements CourierProviderAdapter {
 
     const receiptNo = input.manualPostOfficeReceiptNo.trim().toUpperCase();
     const branchBn =
-      input.manualPostOfficeBranchBn?.trim() || 'পঞ্চগড় প্রধান ডাকঘর (৫০০০)';
+      input.manualPostOfficeBranchBn?.trim() || 'পঞ্চবিন্দু প্রধান ডাকঘর (৫০০০)';
     const estimatedCharge = this.estimateDeliveryChargePoisha({
       districtId: input.districtId,
       totalWeightGrams: input.totalWeightGrams,
@@ -1256,7 +1256,7 @@ export function dispatchSecurityOtpNotification(params: {
   logRecord: NotificationDeliveryLogRecord;
 } {
   const store = readPhase5Store();
-  const rawMessage = `পঞ্চগড় (Panchagarh) নিরাপত্তা ওটিপি কোড: ${params.otpPlaintextCode}। কোডটি কারো সাথে শেয়ার করবেন না।`;
+  const rawMessage = `পঞ্চবিন্দু (Panchabindu) নিরাপত্তা ওটিপি কোড: ${params.otpPlaintextCode}। কোডটি কারো সাথে শেয়ার করবেন না।`;
   const sanitizedMessagePreview = redactOtpAndSecretsFromPreview(rawMessage);
 
   const logRecord: NotificationDeliveryLogRecord = {

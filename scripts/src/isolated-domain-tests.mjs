@@ -38,7 +38,7 @@ if (!Object.hasOwn(suites, suite)) throw new Error('Choose security, payments, q
 // cached state, sessions and JSON writes cannot reach another suite or real .data.
 let failures = 0;
 for (const file of suites[suite]) {
-  const fixture = mkdtempSync(path.join(tmpdir(), 'panchagarh-unit-'));
+  const fixture = mkdtempSync(path.join(tmpdir(), 'panchabindu-unit-'));
   try {
     mkdirSync(path.join(fixture, '.data'));
     // A legacy coverage assertion reads source relative to cwd. Never link .data.
@@ -56,9 +56,9 @@ for (const file of suites[suite]) {
         PATH: process.env.PATH,
         NODE_ENV: 'test',
         CREDENTIALS_ENCRYPTION_KEY: 'isolated-unit-fixture-key-not-for-real-accounts-2026',
-        PANCHAGARH_PERSISTENCE: 'json',
+        PANCHABINDU_PERSISTENCE: 'json',
         TSX_TSCONFIG_PATH: path.join(root, 'artifacts/api-server/tsconfig.json'),
-        PANCHAGARH_UNIT_FIXTURE: fixture,
+        PANCHABINDU_UNIT_FIXTURE: fixture,
         UPDATE_RBAC_SNAPSHOT: process.argv.includes('--update-rbac') ? '1' : '0',
       },
       stdio: 'inherit',

@@ -167,12 +167,12 @@ const ADMIN_DATA_FILE = path.join(ADMIN_DATA_DIR, 'erp-admin-store.json');
 
 function isLocalSandboxTwoFactorDisabled(): boolean {
   return process.env.NODE_ENV !== 'production' &&
-    process.env.PANCHAGARH_ENABLE_SANDBOX_AUTH === '1' &&
-    process.env.PANCHAGARH_SANDBOX_DISABLE_2FA === '1';
+    process.env.PANCHABINDU_ENABLE_SANDBOX_AUTH === '1' &&
+    process.env.PANCHABINDU_SANDBOX_DISABLE_2FA === '1';
 }
 
 function requireTwoFactorByDefault(): boolean {
-  return process.env.PANCHAGARH_REQUIRE_2FA_BY_DEFAULT === '1' &&
+  return process.env.PANCHABINDU_REQUIRE_2FA_BY_DEFAULT === '1' &&
     !isLocalSandboxTwoFactorDisabled();
 }
 
@@ -303,11 +303,11 @@ function buildDefaultRolePermissions(
 function getInitialAdminStore(): AdminPersistentStore {
   const require2faByDefault = requireTwoFactorByDefault();
   const adminUsername = isLocalSandboxTwoFactorDisabled()
-    ? process.env.PANCHAGARH_SANDBOX_ADMIN_USERNAME?.trim().toLowerCase() || 'admin'
+    ? process.env.PANCHABINDU_SANDBOX_ADMIN_USERNAME?.trim().toLowerCase() || 'admin'
     : 'admin';
   const sandboxBootstrap = (role: 'ADMIN' | 'VENDOR', userId: string, testPassword: string) => {
     if (process.env.NODE_ENV === 'production') throw new Error('Sandbox identity cannot be seeded in production.');
-    const password = process.env[`PANCHAGARH_SANDBOX_${role}_PASSWORD`];
+    const password = process.env[`PANCHABINDU_SANDBOX_${role}_PASSWORD`];
     if (process.env.NODE_ENV === 'test') {
       // Legacy test fixtures are ONLY available in the isolated NODE_ENV=test runner.
       return { passwordHash: hashPassword(testPassword), totpSecretEncrypted: encryptSecretAtRest(deriveSeededUserTotpSecret(userId)), firstLogin: false };
@@ -411,8 +411,8 @@ function getInitialAdminStore(): AdminPersistentStore {
       userId: 'usr-marketing-01',
       username: 'marketing_lead',
       internalEmailAlias: 'marketing_lead@internal.bongoconsign.local',
-      displayNameBn: 'ফারহানা রহমান (মার্কেটিং)',
-      displayNameEn: 'Farhana Rahman (Marketing)',
+      displayNameBn: 'মুনতাসির শিহাব (মার্কেটিং)',
+      displayNameEn: 'Muntasir Shihab (Marketing)',
       roleSlug: 'marketing_manager',
       vendorId: null,
       passwordHash: hashPassword('Market#2026'),
@@ -436,8 +436,8 @@ function getInitialAdminStore(): AdminPersistentStore {
       userId: 'usr-packaging-01',
       username: 'packing_lead',
       internalEmailAlias: 'packing_lead@internal.bongoconsign.local',
-      displayNameBn: 'কামরুল ইসলাম (প্যাকেজিং ও কিউসি)',
-      displayNameEn: 'Kamrul Islam (Packaging & QC)',
+      displayNameBn: 'মুনতাসির শিহাব (প্যাকেজিং ও কিউসি)',
+      displayNameEn: 'Muntasir Shihab (Packaging & QC)',
       roleSlug: 'packaging_manager',
       vendorId: null,
       passwordHash: hashPassword('Pack#2026'),
@@ -461,8 +461,8 @@ function getInitialAdminStore(): AdminPersistentStore {
       userId: 'usr-first-login-demo',
       username: 'new_staff',
       internalEmailAlias: 'new_staff@internal.bongoconsign.local',
-      displayNameBn: 'সাব্বির হোসেন (নতুন স্টাফ — First Login Gate)',
-      displayNameEn: 'Sabbir Hossain (First-Login Gate Demo)',
+      displayNameBn: 'মুনতাসির শিহাব (নতুন স্টাফ — First Login Gate)',
+      displayNameEn: 'Muntasir Shihab (First-Login Gate Demo)',
       roleSlug: 'marketing_manager',
       vendorId: null,
       passwordHash: hashPassword('Temp#2026'),
@@ -530,7 +530,7 @@ function getInitialAdminStore(): AdminPersistentStore {
 }
 
 export function readAdminStore(): AdminPersistentStore {
-  if (!hasDurableRuntimeContext() && (process.env.NODE_ENV === 'production' || (process.env.NODE_ENV !== 'test' && process.env.PANCHAGARH_ENABLE_SANDBOX_AUTH !== '1'))) throw new Error('ADMIN_IDENTITY_NOT_INTEGRATED: local sandbox identity is disabled.');
+  if (!hasDurableRuntimeContext() && (process.env.NODE_ENV === 'production' || (process.env.NODE_ENV !== 'test' && process.env.PANCHABINDU_ENABLE_SANDBOX_AUTH !== '1'))) throw new Error('ADMIN_IDENTITY_NOT_INTEGRATED: local sandbox identity is disabled.');
   try {
     const parsed = readLocalJsonStore<AdminPersistentStore>(ADMIN_DATA_FILE, {
       arrays: ['users', 'roles', 'auditLogs'], objects: ['orderMeta', 'blacklistedPhones'],

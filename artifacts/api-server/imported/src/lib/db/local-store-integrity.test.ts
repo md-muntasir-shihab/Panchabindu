@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { readLocalJsonStore, writeLocalJsonStore } from './local-json-store';
 
 function fixture(run: (directory: string) => void): void {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'panchagarh-integrity-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'panchabindu-integrity-'));
   try { run(directory); }
   finally { fs.rmSync(directory, { recursive: true, force: true }); }
 }

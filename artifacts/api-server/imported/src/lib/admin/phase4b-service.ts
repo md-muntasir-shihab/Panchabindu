@@ -462,7 +462,7 @@ function getInitialPhase4BStore(): Phase4BPersistentStore {
       vendorCode: 'VND-001',
       businessNameBn: 'রূপগঞ্জ উইভার্স',
       businessNameEn: 'Rupganj Weavers',
-      ownerNameBn: 'হাজী আব্দুল করিম',
+      ownerNameBn: 'মুনতাসির শিহাব',
       contactPhone: '01711901901',
       defaultCommissionBp: 1500, // 15%
       escrowHoldDaysOverride: 7,
@@ -479,7 +479,7 @@ function getInitialPhase4BStore(): Phase4BPersistentStore {
       vendorCode: 'VND-002',
       businessNameBn: 'হাজারীবাগ লেদার ক্রাফট',
       businessNameEn: 'Hazaribagh Leather Craft',
-      ownerNameBn: 'রাশেদুল আলম',
+      ownerNameBn: 'মুনতাসির শিহাব',
       contactPhone: '01811902902',
       defaultCommissionBp: 1800, // 18%
       escrowHoldDaysOverride: 5,
@@ -496,7 +496,7 @@ function getInitialPhase4BStore(): Phase4BPersistentStore {
       vendorCode: 'VND-003',
       businessNameBn: 'সুন্দরবন অর্গানিকস',
       businessNameEn: 'Sundarban Organics',
-      ownerNameBn: 'মনিরুল ইসলাম',
+      ownerNameBn: 'মুনতাসির শিহাব',
       contactPhone: '01911903903',
       defaultCommissionBp: 1200, // 12%
       escrowHoldDaysOverride: 7,

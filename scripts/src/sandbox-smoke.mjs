@@ -19,7 +19,7 @@ let fixture, child, base;
 // Never use TEST_APP_URL or the development launcher: that launcher loads private
 // account configuration. All state and the app process belong to this test run.
 before(async () => {
-  fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'panchagarh-sandbox-'));
+  fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'panchabindu-sandbox-'));
   fs.mkdirSync(path.join(fixture, '.data'));
   child = fork(fileURLToPath(new URL('./sandbox-fixture-app.mjs', import.meta.url)), [], {
     cwd: fixture,
@@ -31,13 +31,13 @@ before(async () => {
       PORT: '1', // Vite config requires a value; the HTTP server binds port 0.
       BASE_PATH: '/',
       TSX_TSCONFIG_PATH: path.join(root, 'artifacts/api-server/tsconfig.json'),
-      PANCHAGARH_SANDBOX_FIXTURE: fixture,
-      PANCHAGARH_PERSISTENCE: 'json',
-      PANCHAGARH_ENABLE_SANDBOX_AUTH: '1',
-      PANCHAGARH_SANDBOX_DISABLE_2FA: '1',
-      PANCHAGARH_SANDBOX_ADMIN_USERNAME: username,
-      PANCHAGARH_SANDBOX_ADMIN_PASSWORD: password,
-      PANCHAGARH_SANDBOX_VENDOR_PASSWORD: password,
+      PANCHABINDU_SANDBOX_FIXTURE: fixture,
+      PANCHABINDU_PERSISTENCE: 'json',
+      PANCHABINDU_ENABLE_SANDBOX_AUTH: '1',
+      PANCHABINDU_SANDBOX_DISABLE_2FA: '1',
+      PANCHABINDU_SANDBOX_ADMIN_USERNAME: username,
+      PANCHABINDU_SANDBOX_ADMIN_PASSWORD: password,
+      PANCHABINDU_SANDBOX_VENDOR_PASSWORD: password,
       CREDENTIALS_ENCRYPTION_KEY: randomBytes(32).toString('hex'),
       SESSION_SECRET: randomBytes(32).toString('hex'),
     },

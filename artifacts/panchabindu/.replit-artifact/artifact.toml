@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Panchabindu"
+description = "The imported Panchabindu storefront with product browsing, checkout, customer accounts, order tracking, and business administration."
+version = "1.0.0"
+id = "artifacts/panchabindu"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20695
+
+[services.development]
+run = "pnpm --filter @workspace/panchabindu run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/panchabindu", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/panchabindu/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20695"
+BASE_PATH = "/"

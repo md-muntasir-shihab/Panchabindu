@@ -7,7 +7,7 @@ import net from 'node:net';
 import tls from 'node:tls';
 import { syncBuiltinESMExports } from 'node:module';
 
-const fixture = process.env.PANCHAGARH_UNIT_FIXTURE;
+const fixture = process.env.PANCHABINDU_UNIT_FIXTURE;
 assert.ok(fixture, 'Tests must run through the isolated fixture runner');
 assert.equal(process.cwd(), fixture);
 assert.equal(fs.lstatSync(path.join(fixture, '.data')).isSymbolicLink(), false);

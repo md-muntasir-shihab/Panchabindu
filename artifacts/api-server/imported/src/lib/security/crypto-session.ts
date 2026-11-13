@@ -169,7 +169,7 @@ export function deriveSeededUserTotpSecret(userId: string): string {
 export function buildTotpSetupUri(
   username: string,
   base32Secret: string,
-  issuer = 'PanchagarhERP'
+  issuer = 'PanchabinduERP'
 ): string {
   const totp = new OTPAuth.TOTP({
     issuer,
@@ -190,7 +190,7 @@ export function generateTotpCode(
   timestampMs: number = Date.now()
 ): string {
   const totp = new OTPAuth.TOTP({
-    issuer: 'PanchagarhERP',
+    issuer: 'PanchabinduERP',
     algorithm: 'SHA1',
     digits: TOTP_DIGITS,
     period: TOTP_PERIOD_SECONDS,
@@ -282,7 +282,7 @@ export function verifyTotpWithReplayGuard(params: {
   const nowMs = params.timestampMs ?? Date.now();
   try {
     const totp = new OTPAuth.TOTP({
-      issuer: 'PanchagarhERP',
+      issuer: 'PanchabinduERP',
       algorithm: 'SHA1',
       digits: TOTP_DIGITS,
       period: TOTP_PERIOD_SECONDS,
@@ -662,7 +662,7 @@ export function requestCustomerPhoneOtp(
   const providerConfigured = isSmsOtpProviderConfigured();
   const allowSandbox =
     process.env.NODE_ENV !== 'production' &&
-    (process.env.NODE_ENV === 'test' || process.env.PANCHAGARH_ENABLE_SANDBOX_AUTH === '1') &&
+    (process.env.NODE_ENV === 'test' || process.env.PANCHABINDU_ENABLE_SANDBOX_AUTH === '1') &&
     (options?.allowSandboxInNonProd ?? true);
 
   if (!providerConfigured && !allowSandbox) {
@@ -910,7 +910,7 @@ export function resetRateLimitsForTest(): void {
 }
 
 export function getClientIpFromRequest(req: Request): string {
-  if (process.env.PANCHAGARH_TRUST_PROXY_HEADERS !== '1') return 'untrusted-proxy';
+  if (process.env.PANCHABINDU_TRUST_PROXY_HEADERS !== '1') return 'untrusted-proxy';
   const forwarded = req.headers.get('x-forwarded-for');
   if (forwarded) {
     return forwarded.split(',')[0]?.trim() || '127.0.0.1';

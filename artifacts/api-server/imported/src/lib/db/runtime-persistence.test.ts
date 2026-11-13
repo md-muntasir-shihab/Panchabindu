@@ -9,7 +9,7 @@ import { getPersistenceRuntimeMode } from '../supabase/admin';
 
 test('request transactions commit complete documents and roll back failures', async () => {
   const original = process.cwd();
-  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'panchagarh-transactions-'));
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'panchabindu-transactions-'));
   process.chdir(fixture);
   try {
     const file = path.join(fixture, '.data/erp-store.json');
@@ -32,7 +32,7 @@ test('request transactions commit complete documents and roll back failures', as
 
 test('simultaneous local requests cannot lose stock updates', async () => {
   const original = process.cwd();
-  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'panchagarh-concurrency-'));
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'panchabindu-concurrency-'));
   process.chdir(fixture);
   try {
     const file = path.join(fixture, '.data/erp-store.json');

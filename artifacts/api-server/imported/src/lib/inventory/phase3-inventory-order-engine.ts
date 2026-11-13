@@ -283,10 +283,10 @@ function createInitialPhase3Store(): Phase3PersistedStore {
       {
         warehouseId: 'wh-pnc-north',
         code: 'WH-PNC-NORTH',
-        nameBn: 'পঞ্চগড় নর্থ সোর্সিং ও কিউসি হাব',
-        nameEn: 'Panchagarh North Sourcing & QC Hub',
+        nameBn: 'পঞ্চবিন্দু নর্থ সোর্সিং ও কিউসি হাব',
+        nameEn: 'Panchabindu North Sourcing & QC Hub',
         districtId: 53,
-        addressBn: 'তেঁতুলিয়া রোড, পঞ্চগড় সদর',
+        addressBn: 'তেঁতুলিয়া রোড, পঞ্চবিন্দু সদর',
         isDefault: false,
         isActive: true,
       },

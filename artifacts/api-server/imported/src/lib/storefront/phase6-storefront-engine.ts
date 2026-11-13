@@ -226,7 +226,7 @@ export function revalidateCheckoutCartAndSummarizeFulfillment(
     groupIndex: idx + 1,
     consignmentPartnerLabelBn: `কনসাইনমেন্ট ফুলফিলমেন্ট লট #${idx + 1} (${grp.originRegionBn})`,
     originRegionBn: grp.originRegionBn,
-    qcDispatchHubBn: 'পঞ্চগড় সেন্ট্রাল কিউসি ও ডিসপ্যাচ হাব, ঢাকা',
+    qcDispatchHubBn: 'পঞ্চবিন্দু সেন্ট্রাল কিউসি ও ডিসপ্যাচ হাব, ঢাকা',
     estimatedDispatchSlaBn: 'কিউসি যাচাই শেষে ২৪–৪৮ ঘণ্টায় ডিসপ্যাচ',
     itemCount: grp.items.length,
     totalUnits: grp.totalUnits,
@@ -361,7 +361,7 @@ export function buildVerifiedProductJsonLd(params: {
     product,
     categoryNameEn,
     brandNameEn,
-    baseUrl = 'https://panchagarh.com',
+    baseUrl = 'https://panchabindu.com',
   } = params;
   const pricesBdt = product.variants.map((v) =>
     (v.salePricePoisha / 100).toFixed(2)

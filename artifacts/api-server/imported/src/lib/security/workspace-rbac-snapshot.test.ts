@@ -39,14 +39,14 @@ test('every workspace operation matches the committed seven-principal RBAC snaps
     '`pnpm --filter @workspace/scripts run test:security --update-rbac`',
     '',
   ].join('\n');
-  const snapshot = new URL('../../../../../../docs/planning/panchagarh/workspace-rbac-snapshot.md', import.meta.url);
+  const snapshot = new URL('../../../../../../docs/planning/panchabindu/workspace-rbac-snapshot.md', import.meta.url);
   if (process.env.UPDATE_RBAC_SNAPSHOT === '1') fs.writeFileSync(snapshot, markdown);
   assert.equal(fs.readFileSync(snapshot, 'utf8'), markdown, 'RBAC policy changed; review the allow/deny diff');
   for (const [, actor] of actors) assert.equal(canExecuteWorkspaceAction(actor, 'unknown_future_operation'), false);
 });
 
 test('every admin UI workspace mutation maps to a server operation', () => {
-  const adminDir = new URL('../../../../../panchagarh/src/components/admin/', import.meta.url);
+  const adminDir = new URL('../../../../../panchabindu/src/components/admin/', import.meta.url);
   const sources = fs.readdirSync(adminDir)
     .filter(file => file.endsWith('.tsx'))
     .map(file => fs.readFileSync(new URL(file, adminDir), 'utf8'));

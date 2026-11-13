@@ -175,7 +175,7 @@ describe('Phase 5 — Courier Adapter Architecture, Webhook DLQ & Non-Blocking N
       totalWeightGrams: 1200,
       itemDescriptionBn: 'হাতে বোনা নকশিকাঁথা',
       manualPostOfficeReceiptNo: 'VPP-PNC-778899',
-      manualPostOfficeBranchBn: 'পঞ্চগড় প্রধান ডাকঘর (৫০০০)',
+      manualPostOfficeBranchBn: 'পঞ্চবিন্দু প্রধান ডাকঘর (৫০০০)',
     });
     assert.equal(bdPostOk.success, true);
     assert.equal(bdPostOk.mode, 'MANUAL_BOOKING');
