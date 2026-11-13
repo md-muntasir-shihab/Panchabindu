@@ -229,7 +229,10 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
       'log_call_attempt',
       'log_call_status',
       'add_staff_note',
+      'attach_tracking',
     ]),
+    trackingCode: z.string().trim().min(1).optional(),
+    consignmentId: z.string().trim().optional(),
     newStatus: z
       .enum([
         'pending_confirmation',
@@ -260,6 +263,9 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     landmark: z.string().optional(),
     addressOverrideReason: z.string().optional(),
     staffNote: z.string().optional(),
+    // Verifying a TrxID you entered yourself trips maker-checker; a super admin
+    // may override only with an explicit reason, which is audited.
+    selfApprovalOverrideReasonBn: z.string().optional(),
   }),
   z.object({
     operation: z.literal('update_full_order'),
@@ -911,6 +917,12 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     amountTaka: z.number().positive(),
     autoVerify: z.boolean().optional(),
     reviewNoteBn: z.string().optional(),
+    // The grid's MFS sheet has always sent `noteBn`; accept it instead of
+    // silently dropping the operator's note.
+    noteBn: z.string().optional(),
+    // Auto-verifying your own entry trips maker-checker. A super admin may
+    // proceed only by recording why.
+    selfApprovalOverrideReasonBn: z.string().optional(),
   }),
   z.object({
     operation: z.literal('resolve_customer_refund'),
@@ -1590,15 +1602,28 @@ async function handlePOST(req: NextRequest) {
       }
 
       // If autoVerify is requested, immediately approve the submission
+      const overrideReason = payload.selfApprovalOverrideReasonBn?.trim();
+      const selfApprovalOverride =
+        Boolean(overrideReason && overrideReason.length >= 5) &&
+        ctx.roleSlug === 'super_admin';
+
       if (payload.autoVerify) {
-        const verifyRes = reviewManualBkashSubmission(ctx, {
-          orderNo: payload.orderNo,
-          trxId: payload.trxId.trim(),
-          decision: 'approved',
-          reviewNoteBn:
-            payload.reviewNoteBn ||
-            `এডমিন (${ctx.username}) দ্বারা সরাসরি ইনপুট ও অনুমোদন সম্পন্ন।`,
-        });
+        const verifyRes = reviewManualBkashSubmission(
+          ctx,
+          {
+            orderNo: payload.orderNo,
+            trxId: payload.trxId.trim(),
+            decision: 'approved',
+            reviewNoteBn:
+              payload.reviewNoteBn ||
+              payload.noteBn ||
+              `এডমিন (${ctx.username}) দ্বারা সরাসরি ইনপুট ও অনুমোদন সম্পন্ন।`,
+            selfApprovalOverride,
+            selfApprovalOverrideReasonBn: selfApprovalOverride
+              ? overrideReason
+              : undefined,
+          }
+        );
 
         if (!verifyRes.success) {
           return NextResponse.json(
@@ -1607,6 +1632,8 @@ async function handlePOST(req: NextRequest) {
               errorBn:
                 verifyRes.errorBn ?? 'পেমেন্ট জমা হয়েছে তবে অনুমোদন করা যায়নি।',
               submission: subRes.submission,
+              // Tell the UI it can offer the override instead of a dead end.
+              makerCheckerBlocked: /মেকার-চেকার/.test(verifyRes.errorBn ?? ''),
             },
             { status: 400 }
           );
@@ -1636,7 +1663,9 @@ async function handlePOST(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        submission: subRes.submission,
+        submission: payload.autoVerify
+          ? { ...subRes.submission, verificationStatus: 'approved' }
+          : subRes.submission,
         order: updatedOrder,
         messageBn: `${payload.provider.toUpperCase()} TrxID (${payload.trxId}) সফলভাবে ${payload.autoVerify ? 'রেকর্ড ও ভেরিফাই' : 'রেকর্ড'} করা হয়েছে।`,
       });

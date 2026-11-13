@@ -1452,7 +1452,8 @@ export function executeOrderGridAction(
       | 'book_courier'
       | 'log_call_attempt'
       | 'log_call_status'
-      | 'add_staff_note';
+      | 'add_staff_note'
+      | 'attach_tracking';
     newStatus?: OrderStatus;
     courierProvider?: CourierProvider;
     callStatus?: ConfirmationCallStatus;
@@ -1461,6 +1462,11 @@ export function executeOrderGridAction(
     landmark?: string;
     addressOverrideReason?: string;
     staffNote?: string;
+    /** Courier handover identity captured by the `attach_tracking` action. */
+    trackingCode?: string;
+    consignmentId?: string;
+    /** Super-admin override reason when verifying a self-entered TrxID. */
+    selfApprovalOverrideReasonBn?: string;
   }
 ): {
   success: boolean;
@@ -1480,7 +1486,7 @@ export function executeOrderGridAction(
   }
 
   const erpState = readErpState();
-  const adminStore = readAdminStore();
+  let adminStore = readAdminStore();
   const results: Array<{ orderNo: string; ok: boolean; messageBn: string }> = [];
 
   for (const orderNo of payload.orderNos) {
@@ -1515,7 +1521,9 @@ export function executeOrderGridAction(
         reasonBn: payload.staffNote?.trim() || payload.callStatusNote?.trim() || 'অনুমোদিত অর্ডার কার্যক্রম',
       });
       Object.assign(erpState, readErpState());
-      Object.assign(adminStore, readAdminStore());
+      // Rebind (not mutate) so results already collected for earlier orders in
+      // this batch are not overwritten by a stale snapshot.
+      adminStore = readAdminStore();
       ord = erpState.orders.find(order => order.orderNo === selectedOrderNo)!;
       return result;
     };
@@ -1541,6 +1549,69 @@ export function executeOrderGridAction(
         orderNo: ord.orderNo,
         ok: true,
         messageBn: `স্ট্যাটাস ${payload.newStatus}-এ আপডেট হয়েছে।`,
+      });
+    } else if (payload.actionType === 'attach_tracking') {
+      // packed -> shipped is precondition-gated on a tracking code, and neither
+      // the grid nor the full editor could previously record one. This is the
+      // missing link between packing and dispatch.
+      const nextTracking = payload.trackingCode?.trim();
+      if (!nextTracking) {
+        results.push({
+          orderNo: ord.orderNo,
+          ok: false,
+          messageBn: 'কুরিয়ার ট্র্যাকিং কোড আবশ্যক।',
+        });
+        continue;
+      }
+      if (!['confirmed', 'packed'].includes(ord.status)) {
+        results.push({
+          orderNo: ord.orderNo,
+          ok: false,
+          messageBn:
+            'শুধু কনফার্মড বা প্যাকড অর্ডারে কুরিয়ার ট্র্যাকিং যোগ করা যাবে।',
+        });
+        continue;
+      }
+      if (
+        ord.trackingCode &&
+        ord.trackingCode.toUpperCase() === nextTracking.toUpperCase()
+      ) {
+        results.push({
+          orderNo: ord.orderNo,
+          ok: true,
+          messageBn: 'এই ট্র্যাকিং কোড আগেই সংরক্ষিত আছে।',
+        });
+        continue;
+      }
+      const prevTracking = ord.trackingCode;
+      ord.trackingCode = nextTracking;
+      if (payload.consignmentId?.trim()) {
+        ord.consignmentId = payload.consignmentId.trim();
+      }
+      if (payload.courierProvider) {
+        ord.courierProvider = payload.courierProvider;
+      }
+      ord.nextBestAction = deriveNextBestAction(ord);
+
+      appendImmutableAuditLog(adminStore, {
+        actorUserId: ctx.userId,
+        actorUsername: ctx.username,
+        actorRole: ctx.roleSlug,
+        actionCode: 'ORDER_COURIER_TRACKING_ATTACHED',
+        targetType: 'order',
+        targetId: ord.orderNo,
+        summaryBn: `${ord.orderNo} অর্ডারে কুরিয়ার (${ord.courierProvider}) ট্র্যাকিং কোড ${nextTracking} সংযুক্ত করা হয়েছে।`,
+        metadata: {
+          prevTracking,
+          trackingCode: nextTracking,
+          consignmentId: ord.consignmentId,
+          courierProvider: ord.courierProvider,
+        },
+      });
+      results.push({
+        orderNo: ord.orderNo,
+        ok: true,
+        messageBn: `ট্র্যাকিং কোড ${nextTracking} সংযুক্ত হয়েছে। এখন শিপড করা যাবে।`,
       });
     } else if (payload.actionType === 'fix_address') {
       if (payload.streetAddress) {
@@ -1577,13 +1648,24 @@ export function executeOrderGridAction(
         messageBn: `ঠিকানা আপডেট সম্পন্ন (কোয়ালিটি স্কোর: ${quality.score}%)।`,
       });
     } else if (payload.actionType === 'verify_bkash') {
-      if (!payload.staffNote?.trim()) { results.push({ orderNo: ord.orderNo, ok: false, messageBn: 'পেমেন্ট যাচাইয়ের প্রমাণ ও নোট লিখুন।' }); continue; }
+      // An explicit note always wins. When the grid's one-click verify button is
+      // used we still record an auditable trail: the maker-checker guard below
+      // refuses to let the admin who entered the TrxID approve it alone.
+      const verificationNote =
+        payload.staffNote?.trim() ||
+        `গ্রিড থেকে TrxID ${ord.manualPaymentTrxId ?? 'N/A'} যাচাই ও অনুমোদন।`;
       writeErpState(erpState);
       writeAdminStore(adminStore);
+      const overrideReason = payload.selfApprovalOverrideReasonBn?.trim();
+      const selfApprovalOverride =
+        Boolean(overrideReason && overrideReason.length >= 5) &&
+        ctx.roleSlug === 'super_admin';
       const reviewRes = reviewManualBkashSubmission(ctx, {
         orderNo: ord.orderNo,
         decision: 'approved',
-        reviewNoteBn: payload.staffNote.trim(),
+        reviewNoteBn: verificationNote,
+        selfApprovalOverride,
+        selfApprovalOverrideReasonBn: selfApprovalOverride ? overrideReason : undefined,
       });
       if (!reviewRes.success) {
         results.push({
@@ -1598,7 +1680,7 @@ export function executeOrderGridAction(
       // Sync updated order state after reviewManualBkashSubmission
       const refreshedErp = readErpState();
       Object.assign(erpState, refreshedErp);
-      Object.assign(adminStore, readAdminStore());
+      adminStore = readAdminStore();
       ord = erpState.orders.find(order => order.orderNo === selectedOrderNo)!;
       const refreshedOrd = refreshedErp.orders.find(
         (o) => o.orderNo === selectedOrderNo

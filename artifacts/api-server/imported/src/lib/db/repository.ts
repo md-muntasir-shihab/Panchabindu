@@ -2715,6 +2715,13 @@ export function reviewManualBkashSubmission(
     trxId?: string;
     decision: 'under_review' | 'approved' | 'rejected' | 'reversed';
     reviewNoteBn?: string;
+    /**
+     * Maker-checker blocks self-approval. A super admin reviewing a submission
+     * they entered themselves may still approve it, but only with an explicit
+     * reason that is written to the immutable audit log.
+     */
+    selfApprovalOverride?: boolean;
+    selfApprovalOverrideReasonBn?: string;
   }
 ): {
   success: boolean;
@@ -2760,6 +2767,9 @@ export function reviewManualBkashSubmission(
     const mc = checkMakerCheckerSeparation({
       makerUsername: sub.submittedByUsername,
       checkerCtx,
+      allowSuperAdminEmergencyOverride: true,
+      emergencyOverride: input.selfApprovalOverride,
+      emergencyReasonBn: input.selfApprovalOverrideReasonBn,
     });
     if (!mc.allowed) {
       return {
@@ -2832,6 +2842,8 @@ export function reviewManualBkashSubmission(
     const posting = postVerifiedManualBkashPaymentJournal({ submissionId: sub.submissionId, orderNo: targetOrder.orderNo,
       trxId: sub.trxId, verifiedAmountPoisha: sub.submittedAmountPoisha,
       makerUsername: sub.submittedByUsername, checkerUsername: checkerCtx.username,
+      selfApprovalOverride: input.selfApprovalOverride,
+      selfApprovalOverrideReasonBn: input.selfApprovalOverrideReasonBn,
     });
     if (!posting.success) return { success: false, errorBn: posting.errorBn ?? 'পেমেন্টের জার্নাল পোস্ট করা যায়নি।' };
   }

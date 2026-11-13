@@ -383,11 +383,46 @@ function getCourierProviderBadgeStyle(provider?: CourierProvider | null): {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Order state-machine guard (mirrors ORDER_STATE_MACHINE_RULES on the server)
+// ---------------------------------------------------------------------------
+// The server rejects an illegal transition with a 400 and the whole row update
+// silently fails. Mirroring the legal edges here lets the grid offer only the
+// statuses that can actually be reached, so a click is never a dead end.
+const ORDER_TRANSITION_EDGES: Record<string, readonly string[]> = {
+  pending_confirmation: ['confirmed', 'cancelled'],
+  confirmed: ['packed', 'cancelled'],
+  packed: ['shipped', 'cancelled'],
+  shipped: ['out_for_delivery', 'delivered', 'return_initiated'],
+  out_for_delivery: ['delivered', 'return_initiated'],
+  delivered: ['returned', 'return_initiated'],
+  return_initiated: ['returned'],
+  returned: [],
+  cancelled: [],
+};
+
+const ORDER_STATUS_LABEL_BN: Record<string, string> = {
+  pending_confirmation: 'কল বাকি (Pending)',
+  confirmed: 'কনফার্মড',
+  packed: 'প্যাকড',
+  shipped: 'শিপড',
+  out_for_delivery: 'ডেলিভারি চলছে',
+  delivered: 'ডেলিভার্ড',
+  return_initiated: 'রিটার্ন শুরু',
+  returned: 'রিটার্নড',
+  cancelled: 'বাতিল',
+};
+
+function allowedTransitionsFrom(status: string | undefined): readonly string[] {
+  return ORDER_TRANSITION_EDGES[status ?? ''] ?? [];
+}
+
 function OrderStatusSolidButton({
   ord,
   onAction,
   locale,
   onOpenMfsModal,
+  onRequestTracking,
 }: {
   ord: Partial<OrderGridRowDTO> & {
     callAttempts?: number;
@@ -403,20 +438,30 @@ function OrderStatusSolidButton({
       | 'book_courier'
       | 'log_call_attempt'
       | 'log_call_status'
-      | 'add_staff_note';
+      | 'add_staff_note'
+      | 'attach_tracking';
     newStatus?: OrderStatus;
     courierProvider?: CourierProvider;
     callStatus?: 'pending' | 'confirmed_yes' | 'not_answered_busy' | 'cancelled_no' | 'call_back_requested';
     callStatusNote?: string;
+    staffNote?: string;
+    trackingCode?: string;
+    consignmentId?: string;
+    selfApprovalOverrideReasonBn?: string;
   }) => Promise<void>;
   locale: 'bn' | 'en';
   onOpenMfsModal?: (ord: any) => void;
+  /** Opens the order edit sheet focused on the courier/tracking fields. */
+  onRequestTracking?: (ord: any) => void;
 }) {
   const status = ord.status ?? 'pending_confirmation';
   const attempts = ord.callAttempts ?? 0;
   const [showVerifyPopover, setShowVerifyPopover] = React.useState(false);
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [copiedTrx, setCopiedTrx] = React.useState(false);
+  /** Written to the audit log when a super admin verifies their own entry. */
+  const [verifyNote, setVerifyNote] = React.useState('');
+  const [trackingDraft, setTrackingDraft] = React.useState('');
 
   const isTrxPending =
     Boolean(ord.manualPaymentTrxId) &&
@@ -602,16 +647,35 @@ function OrderStatusSolidButton({
             </div>
 
             <div className="space-y-1.5 pt-0.5">
+              <input
+                type="text"
+                value={verifyNote}
+                onChange={(e) => setVerifyNote(e.target.value)}
+                placeholder={uiText(
+                  "যাচাইয়ের প্রমাণ / কারণ (অডিটে যাবে) — কমপক্ষে ৫ অক্ষর",
+                  locale
+                )}
+                className="w-full min-h-[32px] px-2 py-1 text-[11px] bg-bg text-ink border border-border rounded-[var(--radius-sm)]"
+              />
+              <p className="text-[10px] text-muted leading-snug">
+                <LocalizedText
+                  source={"মেকার-চেকার: নিজে এন্ট্রি করা TrxID নিজে অনুমোদন করতে উপরের কারণটি আবশ্যক। অন্য অ্যাডমিন অনুমোদন করলে কারণ ছাড়াই হবে।"}
+                  area="admin"
+                />
+              </p>
               <button
                 type="button"
                 disabled={isVerifying}
                 onClick={async () => {
                   setIsVerifying(true);
                   try {
-                    // 1. Verify TrxID
+                    // 1. Verify TrxID. The reason doubles as the audit note, so
+                    // a solo super admin is not blocked by maker-checker.
                     await onAction({
                       orderNos: [ord.orderNo!],
                       actionType: 'verify_bkash',
+                      staffNote: verifyNote.trim() || undefined,
+                      selfApprovalOverrideReasonBn: verifyNote.trim() || undefined,
                     });
                     // 2. Mark confirmed
                     await onAction({
@@ -699,33 +763,58 @@ function OrderStatusSolidButton({
   }
 
   if (status === 'packed') {
+    const hasTracking = Boolean(ord.trackingCode?.trim() || ord.consignmentId?.trim());
+    if (!hasTracking) {
+      // `book_courier` has no verified adapter (the server answers 503), so the
+      // operator records the courier's tracking code here — precisely the
+      // precondition that packed -> shipped requires.
+      return (
+        <div className="space-y-1">
+          <input
+            type="text"
+            value={trackingDraft}
+            onChange={(e) => setTrackingDraft(e.target.value.toUpperCase())}
+            placeholder={uiText("কুরিয়ার ট্র্যাকিং কোড (যেমন SF-1234-567)", locale)}
+            className="w-full min-h-[28px] px-2 py-1 text-[11px] bg-bg text-ink border border-border rounded-[var(--radius-sm)]"
+            aria-label="Courier tracking code"
+          />
+          <button
+            type="button"
+            disabled={trackingDraft.trim().length < 3}
+            onClick={() =>
+              void onAction({
+                orderNos: [ord.orderNo!],
+                actionType: 'attach_tracking',
+                trackingCode: trackingDraft.trim(),
+                courierProvider: ord.courierProvider ?? 'steadfast',
+              })
+            }
+            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer select-none disabled:opacity-50"
+            title={uiText("শিপড করার আগে কুরিয়ার ট্র্যাকিং কোড আবশ্যক", locale)}
+          >
+            <Truck className="w-3.5 h-3.5" />
+            <span>
+              {locale === 'bn' ? 'ট্র্যাকিং সংরক্ষণ ও শিপ করুন' : 'Save tracking & ship'}
+            </span>
+          </button>
+        </div>
+      );
+    }
     return (
       <button
         type="button"
         onClick={() => {
-          if (!ord.trackingCode) {
-            void onAction({
-              orderNos: [ord.orderNo!],
-              actionType: 'book_courier',
-              courierProvider: ord.courierProvider ?? 'steadfast',
-            });
-          } else {
-            void onAction({
-              orderNos: [ord.orderNo!],
-              actionType: 'update_status',
-              newStatus: 'shipped',
-            });
-          }
+          void onAction({
+            orderNos: [ord.orderNo!],
+            actionType: 'update_status',
+            newStatus: 'shipped',
+          });
         }}
         className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer select-none"
-        title={ord.trackingCode ? 'কুরিয়ারে হস্তান্তর ও শিপড করুন' : 'কুরিয়ারে বুকিং করুন'}
+        title={uiText("কুরিয়ারে হস্তান্তর ও শিপড করুন", locale)}
       >
         <Truck className="w-3.5 h-3.5" />
-        <span>
-          {ord.trackingCode
-            ? (locale === 'bn' ? 'কুরিয়ারে পাঠান (Ship Now)' : 'Handover to Courier')
-            : (locale === 'bn' ? 'কুরিয়ার বুক করুন' : 'Book Courier')}
-        </span>
+        <span>{locale === 'bn' ? 'কুরিয়ারে পাঠান (Ship Now)' : 'Handover to Courier'}</span>
       </button>
     );
   }
@@ -1175,6 +1264,9 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
 
   // Live Courier Tracking Sync State
   const [isSyncingTracking, setIsSyncingTracking] = React.useState(false);
+  // Tracks whether sync_courier_tracking is actually allowed, so the grid can
+  // hide/disable the control instead of failing on every click.
+  const [trackingSyncAvailable, setTrackingSyncAvailable] = React.useState(true);
   const [lastTrackingSyncAt, setLastTrackingSyncAt] = React.useState<string | null>(null);
   const [syncFeedback, setSyncFeedback] = React.useState<string | null>(null);
 
@@ -1186,6 +1278,9 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
   const [mfsAmountTaka, setMfsAmountTaka] = React.useState('');
   const [mfsAutoVerify, setMfsAutoVerify] = React.useState(true);
   const [mfsNoteBn, setMfsNoteBn] = React.useState('');
+  // maker-checker: approving your own entry needs an explicit, audited reason.
+  const [mfsSelfApprovalBlocked, setMfsSelfApprovalBlocked] = React.useState(false);
+  const [mfsOverrideReason, setMfsOverrideReason] = React.useState('');
   const [isSubmittingMfs, setIsSubmittingMfs] = React.useState(false);
 
   // Smart Order Entry State
@@ -1432,6 +1527,46 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
     setGateUser(null);
   };
 
+  // Shared "record courier handover" dialog — replaces the dead book_courier flow.
+  const [trackingDialogOrder, setTrackingDialogOrder] = React.useState<
+    (typeof orders)[number] | null
+  >(null);
+  const [trackingDialogCode, setTrackingDialogCode] = React.useState('');
+  const [trackingDialogConsignment, setTrackingDialogConsignment] = React.useState('');
+  const [isSavingTracking, setIsSavingTracking] = React.useState(false);
+
+  const openTrackingDialog = (ord: (typeof orders)[number]) => {
+    setTrackingDialogOrder(ord);
+    setTrackingDialogCode(ord.trackingCode ?? '');
+    setTrackingDialogConsignment(ord.consignmentId ?? '');
+  };
+
+  const handleSaveTrackingDialog = async () => {
+    if (!trackingDialogOrder?.orderNo) return;
+    const code = trackingDialogCode.trim().toUpperCase();
+    if (code.length < 3) {
+      setActionFeedback({
+        type: 'error',
+        text: 'কুরিয়ার ট্র্যাকিং কোড কমপক্ষে ৩ অক্ষরের হতে হবে।',
+      });
+      return;
+    }
+    setIsSavingTracking(true);
+    try {
+      await executeGridAction({
+        orderNos: [trackingDialogOrder.orderNo],
+        actionType: 'attach_tracking',
+        trackingCode: code,
+        consignmentId: trackingDialogConsignment.trim() || undefined,
+        courierProvider: trackingDialogOrder.courierProvider ?? 'steadfast',
+      });
+      setTrackingDialogOrder(null);
+      setTrackingDialogCode('');
+      setTrackingDialogConsignment('');
+    } finally {
+      setIsSavingTracking(false);
+    }
+  };
   const executeGridAction = async (payload: {
     orderNos: string[];
     actionType:
@@ -1441,7 +1576,8 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       | 'book_courier'
       | 'log_call_attempt'
       | 'log_call_status'
-      | 'add_staff_note';
+      | 'add_staff_note'
+      | 'attach_tracking';
     newStatus?: OrderStatus;
     courierProvider?: CourierProvider;
     callStatus?:
@@ -1455,6 +1591,9 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
     landmark?: string;
     addressOverrideReason?: string;
     staffNote?: string;
+    trackingCode?: string;
+    consignmentId?: string;
+    selfApprovalOverrideReasonBn?: string;
   }) => {
     setActionFeedback(null);
     try {
@@ -1514,11 +1653,19 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
           type: 'success',
           text: data.messageBn || 'কুরিয়ার ট্র্যাকিং সফলভাবে সিঙ্ক হয়েছে।',
         });
+        setTrackingSyncAvailable(true);
         await fetchWorkspace();
       } else {
+        // The workspace policy refuses this operation outright. Stop offering a
+        // button that can only fail, and stop the silent interval from retrying
+        // it forever.
+        setTrackingSyncAvailable(false);
+        setSyncFeedback(null);
         setActionFeedback({
           type: 'error',
-          text: data.errorBn || 'কুরিয়ার ট্র্যাকিং সিঙ্ক ব্যর্থ হয়েছে।',
+          text:
+            data.errorBn ||
+            'কুরিয়ার ট্র্যাকিং সিঙ্ক এই মুহূর্তে চালু নেই। স্ট্যাটাস ম্যানুয়ালি বা কুরিয়ার ওয়েবহুক দিয়ে আপডেট হবে।',
         });
       }
     } catch {
@@ -1655,7 +1802,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
         callStatus: editCallStatus,
         callStatusNote: editCallStatusNote,
         internalStaffNote: editStaffNote,
-        addressOverrideReason: bookingOverrideReason,
+        addressOverrideReason: bookingOverrideReason.trim() || undefined,
       };
 
       const res = await fetch('/api/admin/workspace', {
@@ -1910,6 +2057,8 @@ ${itemsList}
     setMfsAmountTaka(String(advTaka));
     setMfsAutoVerify(true);
     setMfsNoteBn('');
+    setMfsSelfApprovalBlocked(false);
+    setMfsOverrideReason('');
   };
 
   const handleSaveMfsSubmission = async () => {
@@ -1933,6 +2082,7 @@ ${itemsList}
 
     setIsSubmittingMfs(true);
     try {
+      const overrideReason = mfsOverrideReason.trim();
       const res = await fetch('/api/admin/workspace', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1944,14 +2094,31 @@ ${itemsList}
           trxId: cleanTrx,
           amountTaka: amt,
           autoVerify: mfsAutoVerify,
-          noteBn: mfsNoteBn.trim() || undefined,
+          // The schema reads `reviewNoteBn`; `noteBn` was silently dropped.
+          reviewNoteBn: mfsNoteBn.trim() || undefined,
+          selfApprovalOverrideReasonBn:
+            overrideReason.length >= 5 ? overrideReason : undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
+        if (data?.makerCheckerBlocked) {
+          // Keep the modal open and offer the audited override instead of a
+          // dead end — the submission itself was already recorded.
+          setMfsSelfApprovalBlocked(true);
+          setActionFeedback({
+            type: 'error',
+            text:
+              'পেমেন্ট জমা হয়েছে কিন্তু মেকার-চেকার নীতির কারণে নিজে অনুমোদন করা যাবে না। নিচে কারণ লিখে ওভাররাইড করুন, অথবা অন্য অ্যাডমিনকে অনুমোদন করতে দিন।',
+          });
+          await fetchWorkspace();
+          return;
+        }
         setActionFeedback({
           type: 'error',
-          text: data.errorBn || 'MFS পেমেন্ট সংরক্ষণ ব্যর্থ হয়েছে।',
+          text: data.submission
+            ? `${data.errorBn || 'অনুমোদন ব্যর্থ হয়েছে।'} পেমেন্ট জমা হয়েছে; পুনরায় জমা না দিয়ে অর্ডার থেকে যাচাই করুন।`
+            : data.errorBn || 'MFS পেমেন্ট সংরক্ষণ ব্যর্থ হয়েছে।',
         });
         return;
       }
@@ -1975,6 +2142,9 @@ ${itemsList}
   };
 
   React.useEffect(() => {
+    // Only poll while the operation is actually permitted; otherwise this
+    // interval would hit a denied endpoint every five minutes forever.
+    if (!trackingSyncAvailable) return;
     const timer = setInterval(() => {
       fetch('/api/admin/workspace', {
         method: 'POST',
@@ -1986,13 +2156,15 @@ ${itemsList}
           if (data?.success && data?.updatedCount > 0) {
             setLastTrackingSyncAt(new Date().toLocaleTimeString(locale === 'bn' ? 'bn-BD' : 'en-US'));
             fetchWorkspace();
+          } else if (data && data.success === false) {
+            setTrackingSyncAvailable(false);
           }
         })
         .catch(() => {});
     }, 5 * 60 * 1000);
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale]);
+  }, [locale, trackingSyncAvailable]);
 
   const handlePhoneLookupInSmartEntry = async (phoneVal: string) => {
     setSmartPhone(phoneVal);
@@ -2333,6 +2505,22 @@ ${itemsList}
       (ord.trackingCode ?? '').toLowerCase().includes(q)
     );
   });
+
+  // Bulk ship can only touch packed orders that already carry a tracking code —
+  // exactly what the state machine demands for packed -> shipped.
+  const bulkShipEligible = React.useMemo(
+    () =>
+      orders
+        .filter(
+          (ord) =>
+            selectedOrderNos.includes(ord.orderNo ?? '') &&
+            ord.status === 'packed' &&
+            Boolean(ord.trackingCode?.trim() || ord.consignmentId?.trim())
+        )
+        .map((ord) => ord.orderNo!)
+        .filter(Boolean),
+    [orders, selectedOrderNos]
+  );
 
   // Smart Order Entry Live Profit & Delivery Calculation
   const allVariantsFlat = products.flatMap((p) =>
@@ -3295,15 +3483,9 @@ ${itemsList}
                             <Button
                               variant="primary"
                               size="sm"
-                              onClick={() =>
-                                void executeGridAction({
-                                  orderNos: [ord.orderNo!],
-                                  actionType: 'book_courier',
-                                  courierProvider: ord.courierProvider,
-                                })
-                              }
+                              onClick={() => openTrackingDialog(ord)}
                             >
-                              {locale === 'bn' ? 'কুরিয়ার বুক করুন' : 'Book Courier'}
+                              {locale === 'bn' ? 'ট্র্যাকিং কোড দিন' : 'Add Tracking'}
                             </Button>
                           )}
                       </div>
@@ -3383,28 +3565,60 @@ ${itemsList}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  disabled={isSyncingTracking}
-                  onClick={() => void handleSyncCourierTracking()}
-                  className="min-h-[36px] px-3.5 py-1.5 border border-primary/50 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-[var(--radius-md)] inline-flex items-center gap-1.5 text-xs transition-colors cursor-pointer shadow-xs disabled:opacity-60"
-                  title={locale === 'bn' ? 'সার্ভারে সব কুরিয়ার ট্র্যাকিং লিঙ্ক চেক ও স্ট্যাটাস সিঙ্ক করুন' : 'Check tracking links and sync status with couriers'}
-                >
-                  <RefreshCw
-                    className={`w-3.5 h-3.5 ${
-                      isSyncingTracking ? 'animate-spin' : ''
-                    }`}
-                  />
-                  <span>
-                    {isSyncingTracking
-                      ? locale === 'bn'
-                        ? 'সিঙ্ক হচ্ছে...'
-                        : 'Syncing...'
-                      : locale === 'bn'
-                      ? 'Sync Tracking Now (লাইভ কুরিয়ার সিঙ্ক)'
-                      : 'Sync Tracking Now'}
-                  </span>
-                </button>
+                {trackingSyncAvailable ? (
+                  <button
+                    type="button"
+                    disabled={isSyncingTracking}
+                    onClick={() => void handleSyncCourierTracking()}
+                    className="min-h-[36px] px-3.5 py-1.5 border border-primary/50 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-[var(--radius-md)] inline-flex items-center gap-1.5 text-xs transition-colors cursor-pointer shadow-xs disabled:opacity-60"
+                    title={
+                      locale === 'bn'
+                        ? 'সার্ভারে সব কুরিয়ার ট্র্যাকিং লিঙ্ক চেক ও স্ট্যাটাস সিঙ্ক করুন'
+                        : 'Check tracking links and sync status with couriers'
+                    }
+                  >
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${
+                        isSyncingTracking ? 'animate-spin' : ''
+                      }`}
+                    />
+                    <span>
+                      {isSyncingTracking
+                        ? locale === 'bn'
+                          ? 'সিঙ্ক হচ্ছে...'
+                          : 'Syncing...'
+                        : locale === 'bn'
+                        ? 'Sync Tracking Now (লাইভ কুরিয়ার সিঙ্ক)'
+                        : 'Sync Tracking Now'}
+                    </span>
+                  </button>
+                ) : (
+                  // Auto-sync is disabled at policy level; offer the manual path
+                  // that actually works rather than a dead button.
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionFeedback({
+                        type: 'success',
+                        text:
+                          locale === 'bn'
+                            ? 'স্বয়ংক্রিয় কুরিয়ার সিঙ্ক বন্ধ আছে। অর্ডার রো-তে ট্র্যাকিং কোড থাকলে স্ট্যাটাস কুরিয়ার ওয়েবহুক বা ম্যানুয়াল স্ট্যাটাস পরিবর্তন দিয়ে আপডেট করুন।'
+                            : 'Automatic courier sync is disabled. Update status from the courier webhook or change it manually from the order row.',
+                      });
+                    }}
+                    className="min-h-[36px] px-3.5 py-1.5 border border-border bg-bg hover:bg-surface text-muted font-semibold rounded-[var(--radius-md)] inline-flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
+                    title={
+                      locale === 'bn'
+                        ? 'স্বয়ংক্রিয় সিঙ্ক নিষ্ক্রিয় — কীভাবে স্ট্যাটাস আপডেট করবেন দেখুন'
+                        : 'Automatic sync disabled — see how to update status'
+                    }
+                  >
+                    <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>
+                      {locale === 'bn' ? 'অটো-সিঙ্ক বন্ধ' : 'Auto-sync off'}
+                    </span>
+                  </button>
+                )}
                 {!isVendor && (
                   <Button
                     variant="primary"
@@ -3427,10 +3641,14 @@ ${itemsList}
                   ['ALL', locale === 'bn' ? 'সব অর্ডার' : 'All Orders'],
                   ['CALL_TO_CONFIRM', locale === 'bn' ? 'কল বাকি' : 'Pending Call'],
                   ['FIX_ADDRESS', locale === 'bn' ? 'ঠিকানা ত্রুটি' : 'Fix Address'],
+                  ['COLLECT_MANDATORY_ADVANCE', locale === 'bn' ? 'অগ্রিম বাকি' : 'Collect Advance'],
                   ['VERIFY_BKASH_TRX', locale === 'bn' ? 'বিকাশ যাচাই' : 'Verify bKash'],
                   ['READY_TO_PACK', locale === 'bn' ? 'প্যাকিং বাকি' : 'Ready to Pack'],
                   ['READY_TO_BOOK_COURIER', locale === 'bn' ? 'কুরিয়ার বুকিং বাকি' : 'Book Courier'],
+                  ['HANDOVER_TO_COURIER', locale === 'bn' ? 'কুরিয়ারে হস্তান্তর' : 'Handover'],
                   ['AWAITING_COD_REMITTANCE', locale === 'bn' ? 'সিওডি বাকি' : 'COD Remittance'],
+                  ['PROCESS_PENDING_RETURN', locale === 'bn' ? 'রিটার্ন বাকি' : 'Return Pending'],
+                  ['COMPLETED', locale === 'bn' ? 'সম্পন্ন' : 'Completed'],
                 ] as const
               ).map(([code, label]) => (
                 <button
@@ -3543,17 +3761,25 @@ ${itemsList}
                     {locale === 'bn' ? 'বাল্ক প্যাকড' : 'Bulk Packed'}
                   </Button>
                   <Button
-                    variant="primary"
+                    variant="outline"
                     size="sm"
+                    disabled={bulkShipEligible.length === 0}
+                    title={
+                      locale === 'bn'
+                        ? 'শুধু প্যাকড ও ট্র্যাকিং কোডযুক্ত অর্ডার শিপড করা যাবে'
+                        : 'Only packed orders that already have a tracking code can be shipped'
+                    }
                     onClick={() =>
                       void executeGridAction({
-                        orderNos: selectedOrderNos,
-                        actionType: 'book_courier',
-                        courierProvider: 'steadfast',
+                        orderNos: bulkShipEligible,
+                        actionType: 'update_status',
+                        newStatus: 'shipped',
                       })
                     }
                   >
-                    {locale === 'bn' ? 'বাল্ক কুরিয়ার বুকিং (Steadfast)' : 'Bulk Book Courier (Steadfast)'}
+                    {locale === 'bn'
+                      ? `বাল্ক শিপড (${formatLocaleNumber(bulkShipEligible.length, locale)})`
+                      : `Bulk Ship (${bulkShipEligible.length})`}
                   </Button>
                   <Button
                     variant="ghost"
@@ -3723,14 +3949,7 @@ ${itemsList}
                           <CourierInfoCard
                             ord={ord}
                             locale={locale}
-                            onBookCourier={() =>
-                              void executeGridAction({
-                                orderNos: [ord.orderNo!],
-                                actionType: 'book_courier',
-                                courierProvider:
-                                  ord.courierProvider ?? 'steadfast',
-                              })
-                            }
+                            onBookCourier={() => openTrackingDialog(ord)}
                           />
                         </div>
 
@@ -3741,6 +3960,7 @@ ${itemsList}
                             locale={locale}
                             onAction={executeGridAction}
                             onOpenMfsModal={handleOpenMfsModal}
+                            onRequestTracking={handleOpenEditOrder}
                           />
                         </div>
 
@@ -3951,14 +4171,7 @@ ${itemsList}
                               <CourierInfoCard
                                 ord={ord}
                                 locale={locale}
-                                onBookCourier={() =>
-                                  void executeGridAction({
-                                    orderNos: [ord.orderNo!],
-                                    actionType: 'book_courier',
-                                    courierProvider:
-                                      ord.courierProvider ?? 'steadfast',
-                                  })
-                                }
+                                onBookCourier={() => openTrackingDialog(ord)}
                               />
                             </td>
 
@@ -3969,35 +4182,47 @@ ${itemsList}
                                 locale={locale}
                                 onAction={executeGridAction}
                                 onOpenMfsModal={handleOpenMfsModal}
+                                onRequestTracking={handleOpenEditOrder}
                               />
 
-                              {!isVendor && (
-                                <select
-                                  aria-label={`Change status for ${ord.orderNo}`}
-                                  value={ord.status}
-                                  onChange={(e) =>
-                                    void executeGridAction({
-                                      orderNos: [ord.orderNo!],
-                                      actionType: 'update_status',
-                                      newStatus: e.target.value as OrderStatus,
-                                    })
-                                  }
-                                  className="w-full px-2 py-1 text-[11px] border border-border rounded-[var(--radius-sm)] bg-bg text-ink font-medium"
-                                >
-                                  <option value="pending_confirmation">
-                                    <LocalizedText source={"pending_confirmation"} area="admin" />{" "}</option>
-                                  <option value="confirmed"><LocalizedText source={"confirmed"} area="admin" /></option>
-                                  <option value="packed"><LocalizedText source={"packed"} area="admin" /></option>
-                                  <option value="shipped"><LocalizedText source={"shipped"} area="admin" /></option>
-                                  <option value="out_for_delivery">
-                                    <LocalizedText source={"out_for_delivery"} area="admin" />{" "}</option>
-                                  <option value="delivered"><LocalizedText source={"delivered"} area="admin" /></option>
-                                  <option value="return_initiated">
-                                    <LocalizedText source={"return_initiated"} area="admin" />{" "}</option>
-                                  <option value="returned"><LocalizedText source={"returned"} area="admin" /></option>
-                                  <option value="cancelled"><LocalizedText source={"cancelled"} area="admin" /></option>
-                                </select>
-                              )}
+                              {!isVendor && (() => {
+                                // Only expose edges the state machine accepts.
+                                // Listing every status meant most selections
+                                // returned a 400 and the row silently reverted.
+                                const nextStates = allowedTransitionsFrom(ord.status);
+                                if (nextStates.length === 0) {
+                                  return (
+                                    <p className="text-[11px] text-muted px-1">
+                                      <LocalizedText source={"এই অর্ডার চূড়ান্ত অবস্থায় আছে — আর কোনো স্ট্যাটাস পরিবর্তন সম্ভব নয়।"} area="admin" />
+                                    </p>
+                                  );
+                                }
+                                return (
+                                  <select
+                                    aria-label={`Change status for ${ord.orderNo}`}
+                                    value={ord.status}
+                                    onChange={(e) => {
+                                      const next = e.target.value;
+                                      if (!next || next === ord.status) return;
+                                      void executeGridAction({
+                                        orderNos: [ord.orderNo!],
+                                        actionType: 'update_status',
+                                        newStatus: next as OrderStatus,
+                                      });
+                                    }}
+                                    className="w-full px-2 py-1 text-[11px] border border-border rounded-[var(--radius-sm)] bg-bg text-ink font-medium"
+                                  >
+                                    <option value={ord.status}>
+                                      বর্তমান: {ORDER_STATUS_LABEL_BN[ord.status ?? ''] ?? ord.status}
+                                    </option>
+                                    {nextStates.map((st) => (
+                                      <option key={st} value={st}>
+                                        → {ORDER_STATUS_LABEL_BN[st] ?? st}
+                                      </option>
+                                    ))}
+                                  </select>
+                                );
+                              })()}
                             </td>
 
                             <td className="p-3 align-top text-right font-mono tabular-nums space-y-0.5">
@@ -4105,15 +4330,8 @@ ${itemsList}
                                     {!ord.trackingCode && (
                                       <button
                                         type="button"
-                                        title={uiText("১-ক্লিক কুরিয়ার বুকিং", locale)}
-                                        onClick={() =>
-                                          void executeGridAction({
-                                            orderNos: [ord.orderNo!],
-                                            actionType: 'book_courier',
-                                            courierProvider:
-                                              ord.courierProvider,
-                                          })
-                                        }
+                                        title={uiText("কুরিয়ার ট্র্যাকিং কোড যোগ করুন", locale)}
+                                        onClick={() => openTrackingDialog(ord)}
                                         className="p-2 border border-border rounded-[var(--radius-sm)] bg-bg hover:bg-surface text-ink cursor-pointer"
                                       >
                                         <Truck
@@ -6332,6 +6550,94 @@ ${itemsList}
           3. MANUAL MFS PAYMENT CONFIRMATION SHEET (BKASH / NAGAD / ROCKET)
          ===================================================================== */}
       <ResponsiveSheet
+        open={Boolean(trackingDialogOrder)}
+        onOpenChange={(open) => {
+          if (!open) setTrackingDialogOrder(null);
+        }}
+        title={uiText(
+          "কুরিয়ার হ্যান্ডওভার — ট্র্যাকিং ও কনসাইনমেন্ট রেকর্ড",
+          locale
+        )}
+      >
+        {trackingDialogOrder && (
+          <div className="space-y-4 text-xs">
+            <div className="p-3 border border-border rounded-[var(--radius-md)] bg-surface space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-bold text-ink text-sm">
+                  {trackingDialogOrder.orderNo}
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-ink/10 text-ink">
+                  {ORDER_STATUS_LABEL_BN[trackingDialogOrder.status ?? ''] ??
+                    trackingDialogOrder.status}
+                </span>
+              </div>
+              <p className="text-muted">
+                {trackingDialogOrder.customerName} ·{' '}
+                <span className="font-mono">{trackingDialogOrder.customerPhone}</span>
+              </p>
+              <p className="text-[11px] text-muted">
+                <LocalizedText
+                  source={
+                    "স্বয়ংক্রিয় কুরিয়ার API সংযুক্ত না থাকায় বুকিং স্বয়ংক্রিয়ভাবে হবে না। কুরিয়ার অফিস/পোর্টাল থেকে প্রাপ্ত ট্র্যাকিং কোড এখানে লিখুন — এটিই 'শিপড' করার পূর্বশর্ত।"
+                  }
+                  area="admin"
+                />
+              </p>
+            </div>
+
+            <Input
+              label="কুরিয়ার *"
+              value={
+                trackingDialogOrder.courierProvider
+                  ? String(trackingDialogOrder.courierProvider)
+                  : 'steadfast'
+              }
+              onChange={() => {}}
+              disabled
+            />
+
+            <Input
+              label="ট্র্যাকিং কোড *"
+              value={trackingDialogCode}
+              onChange={(e) => setTrackingDialogCode(e.target.value.toUpperCase())}
+              placeholder={uiText("যেমন: SF-1234-5678", locale)}
+              required
+            />
+
+            <Input
+              label="কনসাইনমেন্ট আইডি (ঐচ্ছিক)"
+              value={trackingDialogConsignment}
+              onChange={(e) => setTrackingDialogConsignment(e.target.value)}
+              placeholder={uiText("কুরিয়ার প্রদত্ত কনসাইনমেন্ট নম্বর", locale)}
+            />
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              <button
+                type="button"
+                onClick={() => setTrackingDialogOrder(null)}
+                className="px-3 py-1.5 rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:bg-bg font-semibold text-xs cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="button"
+                disabled={isSavingTracking || trackingDialogCode.trim().length < 3}
+                onClick={() => void handleSaveTrackingDialog()}
+                className="px-4 py-1.5 rounded-[var(--radius-sm)] bg-ink text-surface hover:opacity-90 font-bold text-xs disabled:opacity-50 cursor-pointer inline-flex items-center gap-1.5"
+              >
+                {isSavingTracking ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Check className="w-3.5 h-3.5" />
+                )}
+                <span>ট্র্যাকিং সংরক্ষণ করুন</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </ResponsiveSheet>
+
+      <ResponsiveSheet
         open={Boolean(mfsModalOrder)}
         onOpenChange={(open) => {
           if (!open) setMfsModalOrder(null);
@@ -6595,6 +6901,30 @@ ${itemsList}
                     <LocalizedText source={"টিক চিহ্ন থাকলে TrxID-টি 'paid_verified' স্ট্যাটাস পাবে এবং জেনারেল লেজারে পোস্টিং হবে। টিক না দিলে শুধু পেন্ডিং হিসেবে সংরক্ষিত থাকবে।"} area="admin" />{" "}</p>
                 </div>
               </label>
+
+              {mfsSelfApprovalBlocked && (
+                <div className="p-2.5 rounded-[var(--radius-sm)] border border-amber-500/50 bg-amber-500/10 space-y-1.5">
+                  <p className="text-[11px] font-bold text-amber-800 dark:text-amber-300">
+                    মেকার-চেকার ওভাররাইড (সুপার অ্যাডমিন)
+                  </p>
+                  <Input
+                    label="ওভাররাইডের কারণ * (কমপক্ষে ৫ অক্ষর, অডিট লগে যাবে)"
+                    value={mfsOverrideReason}
+                    onChange={(e) => setMfsOverrideReason(e.target.value)}
+                    placeholder={uiText("যেমন: একক অ্যাডমিন শিফটে নিজেই যাচাই করছি, ব্যাংক স্টেটমেন্ট মিলেছে", locale)}
+                  />
+                  <button
+                    type="button"
+                    disabled={
+                      isSubmittingMfs || mfsOverrideReason.trim().length < 5
+                    }
+                    onClick={handleSaveMfsSubmission}
+                    className="w-full px-3 py-1.5 rounded-[var(--radius-sm)] bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs disabled:opacity-50 cursor-pointer"
+                  >
+                    কারণ লিখে অনুমোদন করুন
+                  </button>
+                </div>
+              )}
 
               {/* Modal Action Buttons */}
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">

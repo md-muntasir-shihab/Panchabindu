@@ -2294,9 +2294,7 @@ export function resolveVendorPayoutRequest(
     }
     payout.status = 'paid';
     payout.paymentTrxId = input.paymentTrxId.trim();
-    payout.proofUrl =
-      input.proofUrl?.trim() ||
-      'https://picsum.photos/seed/payoutproof/400/300';
+    payout.proofUrl = input.proofUrl?.trim() || null;
     payout.resolvedAt = nowIso;
 
     // Append PAYOUT_DISBURSED audit entry (0 net impact on available since PAYOUT_HOLD already deducted it)
