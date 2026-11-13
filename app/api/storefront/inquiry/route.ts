@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/storefront/inquiry/route.ts
 // Customer Contact Inquiry Form Submission API
 
@@ -9,7 +10,7 @@ import { assertJsonBodySize, checkRateLimit, getClientIpFromRequest, verifyOrigi
 
 const inquirySchema = z.object({ name: z.string().trim().min(2).max(100), phone: bdPhoneSchema, subject: z.string().trim().max(200).default(''), message: z.string().trim().min(5).max(2000) });
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     if (!verifyOriginAndCsrf(req).ok) return NextResponse.json({ success: false }, { status: 403 });
     if (!checkRateLimit(`inquiry:${getClientIpFromRequest(req)}`, 5, 60_000).allowed) return NextResponse.json({ success: false }, { status: 429 });
@@ -66,3 +67,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = backendRoute(handlePOST);

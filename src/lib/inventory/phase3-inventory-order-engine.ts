@@ -11,6 +11,7 @@
 //         (Restock / Damaged / Rejected), 4-Way Fault Vendor Liability, & Payment Reversal
 
 import path from 'node:path';
+import crypto from 'node:crypto';
 import type {
   CourierProvider,
   DeliveryMethod,
@@ -729,6 +730,11 @@ export function registerOrderStockReservation(params: {
   nowMs?: number;
 }): StockReservationRecord {
   const p3 = readPhase3Store();
+  const existing = p3.stockReservations.find(reservation => reservation.orderNo === params.orderNo && reservation.variantId === params.variantId);
+  if (existing) {
+    if (existing.status !== 'active' || existing.reservedQty !== params.reservedQty) throw new Error('RESERVATION_CONFLICT');
+    return existing;
+  }
   const nowMs = params.nowMs ?? Date.now();
   const ttlHours = params.ttlHours ?? 24;
   const record: StockReservationRecord = {
@@ -746,6 +752,56 @@ export function registerOrderStockReservation(params: {
   p3.stockReservations.unshift(record);
   writePhase3Store(p3);
   return record;
+}
+
+export function reconcileOrderReservationRecords(orderNo: string, actorUsername: string,
+  before?: Array<{ variantId: string; quantity: number }>): void {
+  const erp = readErpState();
+  const order = erp.orders.find(order => order.orderNo === orderNo);
+  if (!order) throw new Error('ORDER_NOT_FOUND');
+  const store = readPhase3Store();
+  const previousGroups = store.fulfillmentGroupsByOrder[orderNo] ?? [];
+  if (before && previousGroups.some(group => group.fulfillmentStatus !== 'allocated')) throw new Error('FULFILLMENT_AMENDMENT_LOCKED');
+  const lines = erp.orderLines.filter(line => line.orderId === order.id);
+  const variants = new Set([...lines, ...(before ?? [])].map(line => line.variantId));
+  for (const variantId of variants) {
+    const product = erp.products.find(product => product.variants.some(variant => variant.variantId === variantId));
+    const variant = product?.variants.find(variant => variant.variantId === variantId);
+    if (!variant || !product) throw new Error('VARIANT_NOT_FOUND');
+    const quantity = lines.filter(line => line.variantId === variantId).reduce((sum, line) => sum + line.quantity, 0);
+    const reservation = store.stockReservations.find(reservation => reservation.orderNo === orderNo && reservation.variantId === variantId);
+    const previousQuantity = before ? before.filter(line => line.variantId === variantId).reduce((sum, line) => sum + line.quantity, 0) : reservation?.reservedQty ?? 0;
+    const delta = quantity - previousQuantity;
+    const now = new Date().toISOString();
+    if (reservation) {
+      if (reservation.status !== 'active' && quantity > 0) throw new Error('RESERVATION_CONFLICT');
+      reservation.reservedQty = quantity;
+      if (!quantity) { reservation.status = 'released_cancelled'; reservation.releasedAt = now; }
+    } else if (quantity) store.stockReservations.push({ reservationId: `resv-${orderNo}-${variantId}`, orderNo, variantId,
+      publicSku: variant.publicSku, vendorId: product.vendorId, reservedQty: quantity, status: 'active',
+      createdAt: now, expiresAt: new Date(Date.now() + 24 * 3600_000).toISOString(), releasedAt: null,
+    });
+    if (delta) store.stockMovements.push({ movementId: crypto.randomUUID(), variantId, publicSku: variant.publicSku,
+      productId: product.productId, vendorId: product.vendorId, warehouseCode: store.warehouses.find(warehouse => warehouse.isDefault)?.code ?? '', binLocationCode: '',
+      eventType: delta > 0 ? 'ORDER_RESERVED' : 'ORDER_RESERVATION_RELEASED', onHandDelta: 0, reservedDelta: delta,
+      inTransitDelta: 0, damagedDelta: 0, balanceOnHandAfter: variant.stockOnHand, balanceReservedAfter: variant.stockReserved,
+      balanceInTransitAfter: variant.stockInTransit, balanceDamagedAfter: variant.stockDamaged, balanceAvailableAfter: variant.stockAvailable,
+      referenceOrderNo: orderNo, referenceLotOrReturnCode: null, reasonBn: before ? 'অনুমোদিত অর্ডার সংশোধন' : 'চেকআউট স্টক সংরক্ষণ',
+      actorUsername, createdAt: now,
+    });
+  }
+  if (before) delete store.fulfillmentGroupsByOrder[orderNo];
+  writePhase3Store(store);
+  const groups = buildAndPersistOrderFulfillmentGroups(orderNo);
+  if (before) {
+    for (const group of groups) {
+      const previous = previousGroups.find(previous => previous.vendorId === group.vendorId);
+      if (previous) { group.groupId = previous.groupId; group.groupCode = previous.groupCode; }
+    }
+    const updated = readPhase3Store();
+    updated.fulfillmentGroupsByOrder[orderNo] = groups;
+    writePhase3Store(updated);
+  }
 }
 
 export function releaseExpiredStockReservations(nowMs: number = Date.now()): {

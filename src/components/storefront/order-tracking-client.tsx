@@ -1,4 +1,9 @@
 'use client';
+import { localizedField } from '@/src/lib/i18n/ui-text';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/storefront/order-tracking-client.tsx
 // Live Order Confirmation & 5-Step Tracking Stepper
@@ -153,7 +158,7 @@ export function OrderTrackingClient({
               value={lookupInput}
               onChange={(e) => setLookupInput(e.target.value)}
               placeholder="trk_..."
-              aria-label="Tracking Token"
+              aria-label={uiText("Tracking Token", locale)}
               className="min-h-[40px] px-3 py-1.5 text-xs font-mono bg-surface text-ink border border-border rounded-[var(--radius-md)]"
             />
             <Button
@@ -307,7 +312,7 @@ export function OrderTrackingClient({
                     {order.customerPhoneMasked}
                   </p>
                   <p className="text-muted font-medium">
-                    {order.upazilaNameBn}, {order.districtNameBn}
+                    {localizedField(order, "upazilaNameBn", locale)}, {localizedField(order, "districtNameBn", locale)}
                   </p>
                   <p className="text-[11px] text-muted pt-1">
                     {locale === 'bn'
@@ -384,10 +389,10 @@ export function OrderTrackingClient({
                   >
                     <div>
                       <p className="font-semibold text-ink">
-                        {item.productNameBn}
+                        {localizedField(item, "productNameBn", locale)}
                       </p>
                       <p className="text-xs text-muted">
-                        {item.variantTitleBn} · SKU: {item.publicSku} ·{' '}
+                        {localizedField(item, "variantTitleBn", locale)} {" "}<LocalizedText source={"· SKU:"} area="storefront" />{" "}{item.publicSku} ·{' '}
                         {locale === 'bn' ? 'পরিমাণ:' : 'Qty:'}{' '}
                         {formatLocaleNumber(item.quantity, locale)}
                       </p>

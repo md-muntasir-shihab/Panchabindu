@@ -1,4 +1,10 @@
 'use client';
+import { localizedField } from '@/src/lib/i18n/ui-text';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+import { CatalogImportPanel } from './catalog-import-panel';
+
 
 import React, { useState, useMemo } from 'react';
 import { adminFetch as fetch } from '@/src/lib/admin/admin-fetch';
@@ -37,12 +43,11 @@ import type {
 import type { VendorProfileRecord } from '@/src/lib/admin/phase4b-service';
 import type { OrderGridRowDTO } from '@/src/types/domain';
 import type { DistrictRateOverrideRecord } from '@/src/lib/admin/phase4b-service';
-import { formatPoishaToBdt } from '@/src/lib/money';
+import { formatPoishaToBdt, parseTakaStringToPoisha } from '@/src/lib/money';
 import { formatLocaleNumber } from '@/src/lib/i18n/dictionaries';
 import { useLocaleStore } from '@/src/store/use-locale-store';
 
 const poishaToTaka = (p: number) => Math.round((p || 0) / 100);
-const takaToPoisha = (t: number) => Math.round((t || 0) * 100);
 
 interface EnrichedOrderRow extends Partial<OrderGridRowDTO> {
   items?: Array<{
@@ -112,12 +117,12 @@ const DEFAULT_VARIANT: VariantFormData = {
   titleBn: 'স্ট্যান্ডার্ড ভ্যারিয়েন্ট',
   titleEn: 'Standard Variant',
   weightGrams: 500,
-  stockOnHand: 25,
-  supplierCostBdt: 1200,
-  supplierProfitBdt: 300,
-  platformMarginBdt: 350,
-  mrpPriceBdt: 2200,
-  imageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80',
+  stockOnHand: 0,
+  supplierCostBdt: 0,
+  supplierProfitBdt: 0,
+  platformMarginBdt: 0,
+  mrpPriceBdt: 0,
+  imageUrl: '',
   size: 'Regular',
   color: 'Default',
 };
@@ -146,6 +151,45 @@ export function ProductManagementStudioPanel({
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [stagedImages, setStagedImages] = useState<Array<{ assetId: string; productId: string; previewUrl: string }>>([]);
+  const uploadController = React.useRef<AbortController | null>(null);
+  React.useEffect(() => () => uploadController.current?.abort(), []);
+
+  const uploadImage = async (file: File) => {
+    if (!editingProduct?.productId) return;
+    setIsUploading(true);
+    setFeedbackMsg(null);
+    const controller = new AbortController();
+    uploadController.current = controller;
+    try {
+      const body = new FormData();
+      body.set('productId', editingProduct.productId);
+      body.set('file', file);
+      const response = await fetch('/api/media', { method: 'POST', body, signal: controller.signal });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(isBn ? 'ছবি আপলোড হয়নি। ফাইল ও স্টোরেজ সংযোগ যাচাই করে আবার চেষ্টা করুন।' : 'Upload failed. Check the file and storage connection, then retry.');
+      const previewResponse = await fetch(`/api/media/${data.assetId}`);
+      const preview = await previewResponse.json();
+      if (!previewResponse.ok || !preview.previewUrl) throw new Error(isBn ? 'ছবির প্রিভিউ পাওয়া যায়নি।' : 'The image preview is unavailable.');
+      setStagedImages(images => [...images.filter(image => image.assetId !== data.assetId), { assetId: data.assetId, productId: editingProduct.productId!, previewUrl: preview.previewUrl }]);
+    } catch (error) {
+      if (!(error instanceof Error && error.name === 'AbortError')) setFeedbackMsg({ type: 'error', text: error instanceof Error ? error.message : 'Upload failed.' });
+    } finally { setIsUploading(false); }
+  };
+
+  const approveImage = async (assetId: string) => {
+    setIsUploading(true);
+    try {
+      const response = await fetch(`/api/media/${assetId}`, { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok || !data.success || !data.url) throw new Error(isBn ? 'ছবির অনুমোদন ব্যর্থ হয়েছে।' : 'Unable to approve this image.');
+      setEditingProduct(product => product ? { ...product, images: [...new Set([...product.images, data.url])] } : product);
+      setStagedImages(images => images.filter(image => image.assetId !== assetId));
+      await onRefresh();
+    } catch (error) { setFeedbackMsg({ type: 'error', text: error instanceof Error ? error.message : 'Approval failed.' }); }
+    finally { setIsUploading(false); }
+  };
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // 8-Way Connectivity Drawer State
@@ -186,8 +230,8 @@ export function ProductManagementStudioPanel({
 
   // Handle open editor for new product
   const handleAddNewProduct = () => {
-    const defaultVendor = vendors[0]?.vendorId ?? 'vnd-jamdani-crafts';
-    const defaultCat = categories[0]?.id ?? 'cat-clothing';
+    const defaultVendor = vendors[0]?.vendorId ?? '';
+    const defaultCat = categories[0]?.id ?? '';
     setEditingProduct({
       vendorId: defaultVendor,
       categoryId: defaultCat,
@@ -201,14 +245,9 @@ export function ProductManagementStudioPanel({
       customAdvanceDepositPoisha: 0,
       lowStockThreshold: 5,
       leadTimeDays: 2,
-      status: 'active',
-      images: [
-        'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
-      ],
-      specs: [
-        { labelBn: 'ম্যাটেরিয়াল', labelEn: 'Material', valueBn: '১০০% পিওর হ্যান্ডলুম কটন', valueEn: '100% Pure Handloom Cotton' },
-        { labelBn: 'কারিগর অঞ্চল', labelEn: 'Origin', valueBn: 'সোনারগাঁও, নারায়ণগঞ্জ', valueEn: 'Sonargaon, Narayanganj' },
-      ],
+      status: 'draft',
+      images: [],
+      specs: [],
       variants: [{ ...DEFAULT_VARIANT, publicSku: `BG-${Date.now().toString().slice(-4)}` }],
     });
     setIsEditorOpen(true);
@@ -264,12 +303,12 @@ export function ProductManagementStudioPanel({
 
     try {
       const payloadVariants = editingProduct.variants.map((v) => {
-        const costPoisha = takaToPoisha(Math.max(0, Math.round(v.supplierCostBdt || 0)));
-        const profitPoisha = takaToPoisha(Math.max(0, Math.round(v.supplierProfitBdt || 0)));
+        const costPoisha = parseTakaStringToPoisha(String(v.supplierCostBdt));
+        const profitPoisha = parseTakaStringToPoisha(String(v.supplierProfitBdt));
         const payablePoisha = costPoisha + profitPoisha;
-        const marginPoisha = takaToPoisha(Math.max(0, Math.round(v.platformMarginBdt || 0)));
+        const marginPoisha = parseTakaStringToPoisha(String(v.platformMarginBdt));
         const salePricePoisha = payablePoisha + marginPoisha;
-        const mrpPoisha = takaToPoisha(Math.max(0, Math.round(v.mrpPriceBdt || 0)));
+        const mrpPoisha = parseTakaStringToPoisha(String(v.mrpPriceBdt));
 
         return {
           variantId: v.variantId,
@@ -394,6 +433,7 @@ export function ProductManagementStudioPanel({
 
   return (
     <div className="space-y-6">
+      {userRole === 'super_admin' && <CatalogImportPanel locale={locale} onComplete={onRefresh} />}
       {/* Top Banner & Tab Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-surface border border-border">
         <div>
@@ -645,7 +685,7 @@ export function ProductManagementStudioPanel({
                           <p className="text-[11px] text-muted">
                             {vendor ? (isBn ? vendor.businessNameBn : vendor.businessNameEn) : p.vendorBusinessName}
                           </p>
-                          <p className="text-[10px] font-mono text-muted">ID: {p.vendorCode}</p>
+                          <p className="text-[10px] font-mono text-muted"><LocalizedText source={"ID:"} area="admin" />{" "}{p.vendorCode}</p>
                         </td>
 
                         {/* Variants & SKUs */}
@@ -1007,8 +1047,7 @@ export function ProductManagementStudioPanel({
                   {editingProduct.productId ? 'পণ্য তথ্য এডিট করুন' : 'নতুন পণ্য যুক্ত করুন'}
                 </h2>
                 <p className="text-xs text-muted">
-                  ৩-স্তরীয় পয়সা প্রাইসিং ক্যালকুলেটর, মাল্টি-ভ্যারিয়েন্ট SKU এবং ওয়্যারহাউস স্টক
-                </p>
+                  <LocalizedText source={"৩-স্তরীয় পয়সা প্রাইসিং ক্যালকুলেটর, মাল্টি-ভ্যারিয়েন্ট SKU এবং ওয়্যারহাউস স্টক"} area="admin" />{" "}</p>
               </div>
               <button
                 type="button"
@@ -1023,16 +1062,15 @@ export function ProductManagementStudioPanel({
               {/* Basic Details */}
               <div className="space-y-4">
                 <h3 className="font-bold text-ink uppercase text-[11px] tracking-wider text-muted">
-                  ১. সাধারণ তথ্য ও আইডেন্টিফিকেশন
-                </h3>
+                  <LocalizedText source={"১. সাধারণ তথ্য ও আইডেন্টিফিকেশন"} area="admin" />{" "}</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="font-semibold text-ink">পণ্যের নাম (বাংলা) *</label>
+                    <label className="font-semibold text-ink"><LocalizedText source={"পণ্যের নাম (বাংলা) *"} area="admin" /></label>
                     <input
                       type="text"
                       required
-                      placeholder="যেমন: প্রিমিয়াম জামদানি শাড়ি"
+                      placeholder={uiText("যেমন: প্রিমিয়াম জামদানি শাড়ি", locale)}
                       value={editingProduct.nameBn}
                       onChange={(e) =>
                         setEditingProduct({ ...editingProduct, nameBn: e.target.value })
@@ -1042,7 +1080,7 @@ export function ProductManagementStudioPanel({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="font-semibold text-ink">Product Name (English) *</label>
+                    <label className="font-semibold text-ink"><LocalizedText source={"Product Name (English) *"} area="admin" /></label>
                     <input
                       type="text"
                       required
@@ -1058,7 +1096,7 @@ export function ProductManagementStudioPanel({
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1">
-                    <label className="font-semibold text-ink">ক্যাটাগরি নির্বাচন করুন *</label>
+                    <label className="font-semibold text-ink"><LocalizedText source={"ক্যাটাগরি নির্বাচন করুন *"} area="admin" /></label>
                     <select
                       required
                       value={editingProduct.categoryId}
@@ -1069,14 +1107,14 @@ export function ProductManagementStudioPanel({
                     >
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.nameBn} ({c.nameEn})
+                          {localizedField(c, "nameBn", locale)} ({c.nameEn})
                         </option>
                       ))}
                     </select>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="font-semibold text-ink">ভেন্ডর / প্রস্তুতকারক *</label>
+                    <label className="font-semibold text-ink"><LocalizedText source={"ভেন্ডর / প্রস্তুতকারক *"} area="admin" /></label>
                     <select
                       required
                       value={editingProduct.vendorId}
@@ -1087,14 +1125,14 @@ export function ProductManagementStudioPanel({
                     >
                       {vendors.map((v) => (
                         <option key={v.vendorId} value={v.vendorId}>
-                          {v.businessNameBn} ({v.businessNameEn})
+                          {localizedField(v, "businessNameBn", locale)} ({v.businessNameEn})
                         </option>
                       ))}
                     </select>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="font-semibold text-ink">ক্যাটালগ স্ট্যাটাস *</label>
+                    <label className="font-semibold text-ink"><LocalizedText source={"ক্যাটালগ স্ট্যাটাস *"} area="admin" /></label>
                     <select
                       value={editingProduct.status}
                       onChange={(e) =>
@@ -1105,19 +1143,19 @@ export function ProductManagementStudioPanel({
                       }
                       className="w-full px-3 py-2 bg-bg border border-border text-ink focus:outline-none focus:border-ink"
                     >
-                      <option value="active">সক্রিয় (Active)</option>
-                      <option value="draft">ড্রাফট (Draft)</option>
-                      <option value="archived">আর্কাইভড (Archived)</option>
+                      <option value="active"><LocalizedText source={"সক্রিয় (Active)"} area="admin" /></option>
+                      <option value="draft"><LocalizedText source={"ড্রাফট (Draft)"} area="admin" /></option>
+                      <option value="archived"><LocalizedText source={"আর্কাইভড (Archived)"} area="admin" /></option>
                     </select>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-ink">পণ্যের পূর্ণ বিবরণ (বাংলা) *</label>
+                  <label className="font-semibold text-ink"><LocalizedText source={"পণ্যের পূর্ণ বিবরণ (বাংলা) *"} area="admin" /></label>
                   <textarea
                     rows={3}
                     required
-                    placeholder="পণ্যের গুণগত মান, সুতা, তৈরির বিবরণ ইত্যাদি..."
+                    placeholder={uiText("পণ্যের গুণগত মান, সুতা, তৈরির বিবরণ ইত্যাদি...", locale)}
                     value={editingProduct.descriptionBn}
                     onChange={(e) =>
                       setEditingProduct({ ...editingProduct, descriptionBn: e.target.value })
@@ -1136,7 +1174,7 @@ export function ProductManagementStudioPanel({
                       }
                       className="w-4 h-4 rounded-none border border-border"
                     />
-                    <span className="font-semibold text-ink">হোমপেজে ফিচার্ড পণ্য হিসেবে দেখান</span>
+                    <span className="font-semibold text-ink"><LocalizedText source={"হোমপেজে ফিচার্ড পণ্য হিসেবে দেখান"} area="admin" /></span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1148,7 +1186,7 @@ export function ProductManagementStudioPanel({
                       }
                       className="w-4 h-4 rounded-none border border-border"
                     />
-                    <span className="font-semibold text-ink">ফ্রি ডেলিভারি প্রযোজ্য</span>
+                    <span className="font-semibold text-ink"><LocalizedText source={"ফ্রি ডেলিভারি প্রযোজ্য"} area="admin" /></span>
                   </label>
 
                   <div className="pt-2 border-t border-border/50 space-y-2">
@@ -1165,10 +1203,9 @@ export function ProductManagementStudioPanel({
                         className="w-4 h-4 rounded-none border border-border text-amber-600 focus:ring-amber-500"
                       />
                       <span className="font-semibold text-amber-900 flex items-center gap-1.5">
-                        অগ্রিম কুরিয়ার চার্জ বাধ্যতামূলক
-                        <span
+                        <LocalizedText source={"অগ্রিম কুরিয়ার চার্জ বাধ্যতামূলক"} area="admin" />{" "}<span
                           className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold cursor-help"
-                          title="এই পণ্যটি কার্টে থাকলে গ্রাহককে সম্পূর্ণ ডেলিভারি চার্জ (ঢাকা ৭০ / ঢাকার বাইরে ১২০) এবং নির্ধারিত ডিপোজিট বিকাশ/নগদ/রকেটে অগ্রিম প্রদান করতে হবে।"
+                          title={uiText("এই পণ্যটি কার্টে থাকলে গ্রাহককে সম্পূর্ণ ডেলিভারি চার্জ (ঢাকা ৭০ / ঢাকার বাইরে ১২০) এবং নির্ধারিত ডিপোজিট বিকাশ/নগদ/রকেটে অগ্রিম প্রদান করতে হবে।", locale)}
                         >
                           ⓘ
                         </span>
@@ -1178,10 +1215,9 @@ export function ProductManagementStudioPanel({
                     {editingProduct.requiresAdvanceCourierCharge && (
                       <div className="pl-6 p-2.5 rounded border border-amber-200 bg-amber-50/50 space-y-1.5">
                         <label className="block text-[11px] font-bold text-amber-900">
-                          অতিরিক্ত অগ্রিম ডিপোজিট (ঐচ্ছিক ৳ BDT):
-                        </label>
+                          <LocalizedText source={"অতিরিক্ত অগ্রিম ডিপোজিট (ঐচ্ছিক ৳ BDT):"} area="admin" />{" "}</label>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-ink">৳</span>
+                          <span className="text-xs font-bold text-ink"><LocalizedText source={"৳"} area="admin" /></span>
                           <input
                             type="number"
                             min="0"
@@ -1201,8 +1237,7 @@ export function ProductManagementStudioPanel({
                             placeholder="0"
                           />
                           <span className="text-[11px] text-muted">
-                            (ডেলিভারি চার্জের অতিরিক্ত অ্যাডভান্স হিসেবে জমা হবে)
-                          </span>
+                            <LocalizedText source={"(ডেলিভারি চার্জের অতিরিক্ত অ্যাডভান্স হিসেবে জমা হবে)"} area="admin" />{" "}</span>
                         </div>
                       </div>
                     )}
@@ -1215,11 +1250,9 @@ export function ProductManagementStudioPanel({
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-ink uppercase text-[11px] tracking-wider text-muted">
-                      ২. ভ্যারিয়েন্ট, SKU ও ৩-স্তরীয় প্রাইসিং ম্যাট্রিক্স
-                    </h3>
+                      <LocalizedText source={"২. ভ্যারিয়েন্ট, SKU ও ৩-স্তরীয় প্রাইসিং ম্যাট্রিক্স"} area="admin" />{" "}</h3>
                     <p className="text-[11px] text-muted">
-                      মূল্য হিসাব: (সাপ্লায়ার খরচ + লাভ = প্রদেয়) + প্ল্যাটফর্ম মার্জিন = চূড়ান্ত বিক্রয় মূল্য
-                    </p>
+                      <LocalizedText source={"মূল্য হিসাব: (সাপ্লায়ার খরচ + লাভ = প্রদেয়) + প্ল্যাটফর্ম মার্জিন = চূড়ান্ত বিক্রয় মূল্য"} area="admin" />{" "}</p>
                   </div>
                   <button
                     type="button"
@@ -1241,8 +1274,7 @@ export function ProductManagementStudioPanel({
                     className="flex items-center gap-1 px-3 py-1.5 bg-surface border border-border text-ink hover:bg-bg transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    + নতুন ভ্যারিয়েন্ট
-                  </button>
+                    <LocalizedText source={"+ নতুন ভ্যারিয়েন্ট"} area="admin" />{" "}</button>
                 </div>
 
                 <div className="space-y-4">
@@ -1259,7 +1291,7 @@ export function ProductManagementStudioPanel({
                       >
                         <div className="flex items-center justify-between pb-2 border-b border-border">
                           <span className="font-bold text-ink text-xs">
-                            ভ্যারিয়েন্ট #{vIdx + 1}: {variant.titleBn || 'নামহীন'}
+                            <LocalizedText source={"ভ্যারিয়েন্ট #"} area="admin" />{vIdx + 1}: {variant.titleBn || 'নামহীন'}
                           </span>
                           {editingProduct.variants.length > 1 && (
                             <button
@@ -1272,15 +1304,14 @@ export function ProductManagementStudioPanel({
                               }}
                               className="text-danger hover:underline text-[11px] flex items-center gap-1"
                             >
-                              <Trash2 className="w-3 h-3" /> রিমুভ
-                            </button>
+                              <Trash2 className="w-3 h-3" /> {" "}<LocalizedText source={"রিমুভ"} area="admin" />{" "}</button>
                           )}
                         </div>
 
                         {/* Title, SKUs & Attributes */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                           <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-ink">ভ্যারিয়েন্ট নাম (বাংলা)</label>
+                            <label className="text-[11px] font-semibold text-ink"><LocalizedText source={"ভ্যারিয়েন্ট নাম (বাংলা)"} area="admin" /></label>
                             <input
                               type="text"
                               required
@@ -1295,7 +1326,7 @@ export function ProductManagementStudioPanel({
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-ink">পাবলিক SKU *</label>
+                            <label className="text-[11px] font-semibold text-ink"><LocalizedText source={"পাবলিক SKU *"} area="admin" /></label>
                             <input
                               type="text"
                               required
@@ -1311,7 +1342,7 @@ export function ProductManagementStudioPanel({
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-ink">ইন্টারনাল ভেন্ডর SKU</label>
+                            <label className="text-[11px] font-semibold text-ink"><LocalizedText source={"ইন্টারনাল ভেন্ডর SKU"} area="admin" /></label>
                             <input
                               type="text"
                               placeholder="e.g. VND-JAM-CRIMSON"
@@ -1326,7 +1357,7 @@ export function ProductManagementStudioPanel({
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-ink">ওজন (গ্রাম) *</label>
+                            <label className="text-[11px] font-semibold text-ink"><LocalizedText source={"ওজন (গ্রাম) *"} area="admin" /></label>
                             <input
                               type="number"
                               required
@@ -1345,7 +1376,7 @@ export function ProductManagementStudioPanel({
                         {/* 3-Tier Poisha Calculator Fields */}
                         <div className="grid grid-cols-2 md:grid-cols-6 gap-2.5 p-3 bg-surface border border-border text-xs">
                           <div className="space-y-1">
-                            <label className="text-[10px] text-muted font-semibold">১. ভেন্ডর খরচ (৳)</label>
+                            <label className="text-[10px] text-muted font-semibold"><LocalizedText source={"১. ভেন্ডর খরচ (৳)"} area="admin" /></label>
                             <input
                               type="number"
                               required
@@ -1361,7 +1392,7 @@ export function ProductManagementStudioPanel({
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] text-muted font-semibold">২. ভেন্ডর লাভ (৳)</label>
+                            <label className="text-[10px] text-muted font-semibold"><LocalizedText source={"২. ভেন্ডর লাভ (৳)"} area="admin" /></label>
                             <input
                               type="number"
                               required
@@ -1377,14 +1408,14 @@ export function ProductManagementStudioPanel({
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] text-ink font-bold">ভেন্ডর প্রদেয় (স্বয়ংক্রিয়)</label>
+                            <label className="text-[10px] text-ink font-bold"><LocalizedText source={"ভেন্ডর প্রদেয় (স্বয়ংক্রিয়)"} area="admin" /></label>
                             <div className="px-2 py-1 bg-bg border border-border text-ink font-mono font-bold">
-                              ৳{payableBdt}
+                              <LocalizedText source={"৳"} area="admin" />{payableBdt}
                             </div>
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] text-success font-semibold">৩. প্ল্যাটফর্ম লাভ (৳)</label>
+                            <label className="text-[10px] text-success font-semibold"><LocalizedText source={"৩. প্ল্যাটফর্ম লাভ (৳)"} area="admin" /></label>
                             <input
                               type="number"
                               required
@@ -1400,14 +1431,14 @@ export function ProductManagementStudioPanel({
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] text-accent font-bold">চূড়ান্ত বিক্রয় মূল্য</label>
+                            <label className="text-[10px] text-accent font-bold"><LocalizedText source={"চূড়ান্ত বিক্রয় মূল্য"} area="admin" /></label>
                             <div className="px-2 py-1 bg-accent/10 border border-accent/30 text-accent font-mono font-bold">
-                              ৳{finalSalePriceBdt}
+                              <LocalizedText source={"৳"} area="admin" />{finalSalePriceBdt}
                             </div>
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] text-muted font-semibold">অন-হ্যান্ড স্টক (পিস)</label>
+                            <label className="text-[10px] text-muted font-semibold"><LocalizedText source={"অন-হ্যান্ড স্টক (পিস)"} area="admin" /></label>
                             <input
                               type="number"
                               required
@@ -1426,7 +1457,7 @@ export function ProductManagementStudioPanel({
                         {/* Image URL & Attributes */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-ink">ভ্যারিয়েন্ট ছবি URL</label>
+                            <label className="text-[11px] font-semibold text-ink"><LocalizedText source={"ভ্যারিয়েন্ট ছবি URL"} area="admin" /></label>
                             <input
                               type="url"
                               placeholder="https://..."
@@ -1440,7 +1471,7 @@ export function ProductManagementStudioPanel({
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-ink">সাইজ / পরিমাপ</label>
+                            <label className="text-[11px] font-semibold text-ink"><LocalizedText source={"সাইজ / পরিমাপ"} area="admin" /></label>
                             <input
                               type="text"
                               value={variant.size}
@@ -1453,7 +1484,7 @@ export function ProductManagementStudioPanel({
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-ink">রং / শেড</label>
+                            <label className="text-[11px] font-semibold text-ink"><LocalizedText source={"রং / শেড"} area="admin" /></label>
                             <input
                               type="text"
                               value={variant.color}
@@ -1475,11 +1506,23 @@ export function ProductManagementStudioPanel({
               {/* Product Specs & Gallery */}
               <div className="space-y-4 pt-4 border-t border-border">
                 <h3 className="font-bold text-ink uppercase text-[11px] tracking-wider text-muted">
-                  ৩. ইমেজ গ্যালারি ও স্পেসিফিকেশন টেবিল
-                </h3>
+                  <LocalizedText source={"৩. ইমেজ গ্যালারি ও স্পেসিফিকেশন টেবিল"} area="admin" />{" "}</h3>
 
                 <div className="space-y-2">
-                  <label className="font-semibold text-ink">ইমেজ গ্যালারি URL (কমা দিয়ে আলাদা করুন)</label>
+                  <label className="block font-semibold text-ink">
+                    {isBn ? 'মোবাইল বা কম্পিউটার থেকে ছবি যোগ করুন' : 'Upload from your phone or computer'}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" disabled={isUploading || !editingProduct.productId}
+                      className="mt-2 block w-full text-xs" onChange={event => { const file = event.currentTarget.files?.[0]; if (file) void uploadImage(file); event.currentTarget.value = ''; }} />
+                  </label>
+                  <p className="text-xs text-muted">{!editingProduct.productId
+                    ? (isBn ? 'ছবি আপলোডের আগে পণ্যটি ড্রাফট হিসেবে সংরক্ষণ করুন।' : 'Save the product as a draft before uploading images.')
+                    : (isBn ? 'JPEG, PNG বা WebP; সর্বোচ্চ ৫ MB। আপলোডের পরে আলাদা অনুমোদন প্রয়োজন।' : 'JPEG, PNG or WebP; maximum 5 MB. Uploaded images require approval.')}</p>
+                  {isUploading && <button type="button" onClick={() => uploadController.current?.abort()} className="text-xs underline">{isBn ? 'আপলোড হচ্ছে… বাতিল করুন' : 'Uploading… Cancel'}</button>}
+                  <div className="flex flex-wrap gap-3">{stagedImages.filter(image => image.productId === editingProduct.productId).map(image => <div key={image.assetId} className="space-y-1 rounded border border-border p-2">
+                    <img src={image.previewUrl} alt={isBn ? 'অনুমোদনের অপেক্ষায় ছবি' : 'Image awaiting approval'} className="h-24 w-24 object-contain" />
+                    {userRole === 'super_admin' && <button type="button" disabled={isUploading} onClick={() => void approveImage(image.assetId)} className="text-xs underline">{isBn ? 'পর্যালোচনা শেষে অনুমোদন করুন' : 'Review and approve'}</button>}
+                  </div>)}</div>
+                  <label className="font-semibold text-ink"><LocalizedText source={"ইমেজ গ্যালারি URL (কমা দিয়ে আলাদা করুন)"} area="admin" /></label>
                   <textarea
                     rows={2}
                     value={editingProduct.images.join(', ')}
@@ -1505,7 +1548,7 @@ export function ProductManagementStudioPanel({
 
                 <div className="space-y-2 pt-2">
                   <div className="flex items-center justify-between">
-                    <label className="font-semibold text-ink">পণ্য স্পেক্স (Specifications)</label>
+                    <label className="font-semibold text-ink"><LocalizedText source={"পণ্য স্পেক্স (Specifications)"} area="admin" /></label>
                     <button
                       type="button"
                       onClick={() =>
@@ -1519,15 +1562,14 @@ export function ProductManagementStudioPanel({
                       }
                       className="text-xs text-accent hover:underline"
                     >
-                      + নতুন স্পেক্স ফিল্ড
-                    </button>
+                      <LocalizedText source={"+ নতুন স্পেক্স ফিল্ড"} area="admin" />{" "}</button>
                   </div>
 
                   {editingProduct.specs.map((spec, sIdx) => (
                     <div key={sIdx} className="grid grid-cols-4 gap-2">
                       <input
                         type="text"
-                        placeholder="লেবেল (যেমন: ফেব্রিক)"
+                        placeholder={uiText("লেবেল (যেমন: ফেব্রিক)", locale)}
                         value={spec.labelBn}
                         onChange={(e) => {
                           const copy = [...editingProduct.specs];
@@ -1538,7 +1580,7 @@ export function ProductManagementStudioPanel({
                       />
                       <input
                         type="text"
-                        placeholder="মান (যেমন: হ্যান্ডলুম)"
+                        placeholder={uiText("মান (যেমন: হ্যান্ডলুম)", locale)}
                         value={spec.valueBn}
                         onChange={(e) => {
                           const copy = [...editingProduct.specs];
@@ -1581,8 +1623,7 @@ export function ProductManagementStudioPanel({
                   onClick={() => setIsEditorOpen(false)}
                   className="px-4 py-2 bg-surface text-ink border border-border hover:bg-bg transition-colors"
                 >
-                  বাতিল করুন
-                </button>
+                  <LocalizedText source={"বাতিল করুন"} area="admin" />{" "}</button>
                 <button
                   type="submit"
                   disabled={isSaving}
@@ -1603,9 +1644,8 @@ export function ProductManagementStudioPanel({
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
-                  ৮-মুখী ৩৬০° ইকোসিস্টেম ম্যাপিং
-                </span>
-                <h2 className="text-base font-bold text-ink">{inspectProduct.nameBn}</h2>
+                  <LocalizedText source={"৮-মুখী ৩৬০° ইকোসিস্টেম ম্যাপিং"} area="admin" />{" "}</span>
+                <h2 className="text-base font-bold text-ink">{localizedField(inspectProduct, "nameBn", locale)}</h2>
                 <p className="text-xs text-muted font-mono">{inspectProduct.nameEn}</p>
               </div>
               <button
@@ -1622,29 +1662,28 @@ export function ProductManagementStudioPanel({
               <div className="p-3 bg-bg border border-border space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-ink">
                   <Building className="w-4 h-4 text-accent" />
-                  <span>১. ভেন্ডর ও কনসাইনমেন্ট স্প্লিট</span>
+                  <span><LocalizedText source={"১. ভেন্ডর ও কনসাইনমেন্ট স্প্লিট"} area="admin" /></span>
                 </div>
-                <p className="text-muted">ভেন্ডর: <span className="text-ink font-semibold">{inspectProduct.vendorBusinessName}</span></p>
-                <p className="text-muted">ভেন্ডর আইডি: <span className="font-mono text-ink">{inspectProduct.vendorId}</span></p>
+                <p className="text-muted"><LocalizedText source={"ভেন্ডর:"} area="admin" />{" "}<span className="text-ink font-semibold">{inspectProduct.vendorBusinessName}</span></p>
+                <p className="text-muted"><LocalizedText source={"ভেন্ডর আইডি:"} area="admin" />{" "}<span className="font-mono text-ink">{inspectProduct.vendorId}</span></p>
                 <p className="text-muted">
-                  সাপ্লায়ার প্রদেয়: <span className="font-bold text-accent">{formatPoishaToBdt(inspectProduct.variants[0]?.supplierPayablePoisha ?? 0)}</span> (ডেলিভারির পর এসক্রোতে জমা)
-                </p>
+                  <LocalizedText source={"সাপ্লায়ার প্রদেয়:"} area="admin" />{" "}<span className="font-bold text-accent">{formatPoishaToBdt(inspectProduct.variants[0]?.supplierPayablePoisha ?? 0)}</span> {" "}<LocalizedText source={"(ডেলিভারির পর এসক্রোতে জমা)"} area="admin" />{" "}</p>
               </div>
 
               {/* 2. Warehouse Stock */}
               <div className="p-3 bg-bg border border-border space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-ink">
                   <Package className="w-4 h-4 text-info" />
-                  <span>২. ওয়্যারহাউস স্টক সিনক্রোনাইজেশন</span>
+                  <span><LocalizedText source={"২. ওয়্যারহাউস স্টক সিনক্রোনাইজেশন"} area="admin" /></span>
                 </div>
                 <p className="text-muted">
-                  মোট অন-হ্যান্ড স্টক: <span className="text-ink font-bold">{inspectProduct.variants.reduce((s, v) => s + (v.stockOnHand || 0), 0)} পিস</span>
+                  <LocalizedText source={"মোট অন-হ্যান্ড স্টক:"} area="admin" />{" "}<span className="text-ink font-bold">{inspectProduct.variants.reduce((s, v) => s + (v.stockOnHand || 0), 0)} {" "}<LocalizedText source={"পিস"} area="admin" /></span>
                 </p>
                 <p className="text-muted">
-                  রিজার্ভড স্টক (অর্ডারে বুকড): <span className="text-warning font-bold">{inspectProduct.variants.reduce((s, v) => s + (v.stockReserved || 0), 0)} পিস</span>
+                  <LocalizedText source={"রিজার্ভড স্টক (অর্ডারে বুকড):"} area="admin" />{" "}<span className="text-warning font-bold">{inspectProduct.variants.reduce((s, v) => s + (v.stockReserved || 0), 0)} {" "}<LocalizedText source={"পিস"} area="admin" /></span>
                 </p>
                 <p className="text-muted">
-                  থ্রেশহোল্ড অ্যালার্ট: <span className="font-mono text-ink">{inspectProduct.lowStockThreshold} পিস</span>
+                  <LocalizedText source={"থ্রেশহোল্ড অ্যালার্ট:"} area="admin" />{" "}<span className="font-mono text-ink">{inspectProduct.lowStockThreshold} {" "}<LocalizedText source={"পিস"} area="admin" /></span>
                 </p>
               </div>
 
@@ -1652,16 +1691,16 @@ export function ProductManagementStudioPanel({
               <div className="p-3 bg-bg border border-border space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-ink">
                   <TrendingUp className="w-4 h-4 text-success" />
-                  <span>৩. লাইভ অর্ডার ও সেলস ভেলোসিটি</span>
+                  <span><LocalizedText source={"৩. লাইভ অর্ডার ও সেলস ভেলোসিটি"} area="admin" /></span>
                 </div>
                 <p className="text-muted">
-                  মোট সফল বিক্রয়: <span className="text-ink font-bold">{inspectProduct.totalSoldCount} টি</span>
+                  <LocalizedText source={"মোট সফল বিক্রয়:"} area="admin" />{" "}<span className="text-ink font-bold">{inspectProduct.totalSoldCount} {" "}<LocalizedText source={"টি"} area="admin" /></span>
                 </p>
                 <p className="text-muted">
-                  ফেরত এসেছে: <span className="text-danger font-semibold">{inspectProduct.totalReturnedCount} টি</span>
+                  <LocalizedText source={"ফেরত এসেছে:"} area="admin" />{" "}<span className="text-danger font-semibold">{inspectProduct.totalReturnedCount} {" "}<LocalizedText source={"টি"} area="admin" /></span>
                 </p>
                 <p className="text-muted">
-                  বর্তমান সক্রিয় অর্ডারে লাইভ ইউনিট: <span className="text-success font-bold">৩ টি</span>
+                  <LocalizedText source={"বর্তমান সক্রিয় অর্ডারে লাইভ ইউনিট:"} area="admin" />{" "}<span className="text-success font-bold"><LocalizedText source={"৩ টি"} area="admin" /></span>
                 </p>
               </div>
 
@@ -1669,51 +1708,48 @@ export function ProductManagementStudioPanel({
               <div className="p-3 bg-bg border border-border space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-ink">
                   <Truck className="w-4 h-4 text-warning" />
-                  <span>৪. কুরিয়ার ওজন ও ডেলিভারি স্ল্যাব</span>
+                  <span><LocalizedText source={"৪. কুরিয়ার ওজন ও ডেলিভারি স্ল্যাব"} area="admin" /></span>
                 </div>
                 <p className="text-muted">
-                  পার্সেল ওজন: <span className="font-mono text-ink font-bold">{inspectProduct.variants[0]?.weightGrams ?? 500} গ্রাম</span>
+                  <LocalizedText source={"পার্সেল ওজন:"} area="admin" />{" "}<span className="font-mono text-ink font-bold">{inspectProduct.variants[0]?.weightGrams ?? 500} {" "}<LocalizedText source={"গ্রাম"} area="admin" /></span>
                 </p>
                 <p className="text-muted">
-                  ঢাকা সিটি ডেলিভারি ফি: <span className="text-ink font-semibold">৳৭০</span>
+                  <LocalizedText source={"ঢাকা সিটি ডেলিভারি ফি:"} area="admin" />{" "}<span className="text-ink font-semibold"><LocalizedText source={"৳৭০"} area="admin" /></span>
                 </p>
                 <p className="text-muted">
-                  সারা দেশ (৬৪ জেলা): <span className="text-ink font-semibold">৳১৩০</span> (১ কেজির নিচে)
-                </p>
+                  <LocalizedText source={"সারা দেশ (৬৪ জেলা):"} area="admin" />{" "}<span className="text-ink font-semibold"><LocalizedText source={"৳১৩০"} area="admin" /></span> {" "}<LocalizedText source={"(১ কেজির নিচে)"} area="admin" />{" "}</p>
               </div>
 
               {/* 5. Flash Campaign Safety */}
               <div className="p-3 bg-bg border border-border space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-ink">
                   <Tag className="w-4 h-4 text-danger" />
-                  <span>৫. ফ্ল্যাশ ডিল মার্জিন সেফগার্ড</span>
+                  <span><LocalizedText source={"৫. ফ্ল্যাশ ডিল মার্জিন সেফগার্ড"} area="admin" /></span>
                 </div>
                 <p className="text-muted">
-                  প্ল্যাটফর্ম সুরক্ষিত মার্জিন: <span className="text-success font-bold">+{formatPoishaToBdt(inspectProduct.variants[0]?.platformMarginPoisha ?? 0)}</span>
+                  <LocalizedText source={"প্ল্যাটফর্ম সুরক্ষিত মার্জিন:"} area="admin" />{" "}<span className="text-success font-bold">+{formatPoishaToBdt(inspectProduct.variants[0]?.platformMarginPoisha ?? 0)}</span>
                 </p>
                 <p className="text-muted">
-                  সর্বোচ্চ অনুমোদিত ক্যাম্পেইন ছাড়: <span className="text-danger font-bold">{formatPoishaToBdt(inspectProduct.variants[0]?.platformMarginPoisha ?? 0)}</span>
+                  <LocalizedText source={"সর্বোচ্চ অনুমোদিত ক্যাম্পেইন ছাড়:"} area="admin" />{" "}<span className="text-danger font-bold">{formatPoishaToBdt(inspectProduct.variants[0]?.platformMarginPoisha ?? 0)}</span>
                 </p>
                 <p className="text-[10px] text-muted">
-                  মার্জিন গার্ড নিয়মে কোনো ক্যাম্পেইন কখনো প্ল্যাটফর্মকে লোকসানে ফেলতে পারবে না।
-                </p>
+                  <LocalizedText source={"মার্জিন গার্ড নিয়মে কোনো ক্যাম্পেইন কখনো প্ল্যাটফর্মকে লোকসানে ফেলতে পারবে না।"} area="admin" />{" "}</p>
               </div>
 
               {/* 6. Dual SKU & Label Printing */}
               <div className="p-3 bg-bg border border-border space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-ink">
                   <Printer className="w-4 h-4 text-ink" />
-                  <span>৬. ডুয়াল SKU প্রিন্ট ইঞ্জিন ম্যাপিং</span>
+                  <span><LocalizedText source={"৬. ডুয়াল SKU প্রিন্ট ইঞ্জিন ম্যাপিং"} area="admin" /></span>
                 </div>
                 <p className="text-muted">
-                  পাবলিক SKU (ইনভয়েস ও কাস্টমার স্লিপ): <span className="font-mono text-ink font-bold">{inspectProduct.variants[0]?.publicSku}</span>
+                  <LocalizedText source={"পাবলিক SKU (ইনভয়েস ও কাস্টমার স্লিপ):"} area="admin" />{" "}<span className="font-mono text-ink font-bold">{inspectProduct.variants[0]?.publicSku}</span>
                 </p>
                 <p className="text-muted">
-                  ইন্টারনাল SKU (ওয়্যারহাউস পার্ট ৩ স্লিপ): <span className="font-mono text-muted">{inspectProduct.variants[0]?.internalVendorSku}</span>
+                  <LocalizedText source={"ইন্টারনাল SKU (ওয়্যারহাউস পার্ট ৩ স্লিপ):"} area="admin" />{" "}<span className="font-mono text-muted">{inspectProduct.variants[0]?.internalVendorSku}</span>
                 </p>
                 <p className="text-[10px] text-muted">
-                  বারকোড কোড ১২৮ ফরম্যাটে প্রিন্ট স্লিপে রেন্ডার হয়।
-                </p>
+                  <LocalizedText source={"বারকোড কোড ১২৮ ফরম্যাটে প্রিন্ট স্লিপে রেন্ডার হয়।"} area="admin" />{" "}</p>
               </div>
             </div>
 
@@ -1723,8 +1759,7 @@ export function ProductManagementStudioPanel({
                 onClick={() => setInspectProduct(null)}
                 className="px-4 py-2 bg-ink text-bg font-bold text-xs"
               >
-                বন্ধ করুন
-              </button>
+                <LocalizedText source={"বন্ধ করুন"} area="admin" />{" "}</button>
             </div>
           </div>
         </div>
@@ -1749,11 +1784,11 @@ export function ProductManagementStudioPanel({
 
             <form onSubmit={handleSaveCategory} className="space-y-4 text-xs">
               <div className="space-y-1">
-                <label className="font-semibold text-ink">ক্যাটাগরি নাম (বাংলা) *</label>
+                <label className="font-semibold text-ink"><LocalizedText source={"ক্যাটাগরি নাম (বাংলা) *"} area="admin" /></label>
                 <input
                   type="text"
                   required
-                  placeholder="যেমন: ঐতিহ্যবাহী পোশাক"
+                  placeholder={uiText("যেমন: ঐতিহ্যবাহী পোশাক", locale)}
                   value={categoryFormData.nameBn}
                   onChange={(e) =>
                     setCategoryFormData({ ...categoryFormData, nameBn: e.target.value })
@@ -1763,7 +1798,7 @@ export function ProductManagementStudioPanel({
               </div>
 
               <div className="space-y-1">
-                <label className="font-semibold text-ink">Category Name (English) *</label>
+                <label className="font-semibold text-ink"><LocalizedText source={"Category Name (English) *"} area="admin" /></label>
                 <input
                   type="text"
                   required
@@ -1777,7 +1812,7 @@ export function ProductManagementStudioPanel({
               </div>
 
               <div className="space-y-1">
-                <label className="font-semibold text-ink">বিবরণ (বাংলা) *</label>
+                <label className="font-semibold text-ink"><LocalizedText source={"বিবরণ (বাংলা) *"} area="admin" /></label>
                 <textarea
                   rows={2}
                   required
@@ -1791,7 +1826,7 @@ export function ProductManagementStudioPanel({
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-semibold text-ink">ক্রমবিন্যাস (Sort Order)</label>
+                  <label className="font-semibold text-ink"><LocalizedText source={"ক্রমবিন্যাস (Sort Order)"} area="admin" /></label>
                   <input
                     type="number"
                     min={1}
@@ -1804,7 +1839,7 @@ export function ProductManagementStudioPanel({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-ink">আইকন প্রতীক</label>
+                  <label className="font-semibold text-ink"><LocalizedText source={"আইকন প্রতীক"} area="admin" /></label>
                   <input
                     type="text"
                     value={categoryFormData.iconName}
@@ -1825,7 +1860,7 @@ export function ProductManagementStudioPanel({
                   }
                   className="w-4 h-4 rounded-none border border-border"
                 />
-                <span className="font-semibold text-ink">স্টোরফ্রন্টে এই ক্যাটাগরি দৃশ্যমান রাখুন</span>
+                <span className="font-semibold text-ink"><LocalizedText source={"স্টোরফ্রন্টে এই ক্যাটাগরি দৃশ্যমান রাখুন"} area="admin" /></span>
               </label>
 
               <div className="pt-4 border-t border-border flex justify-end gap-2">
@@ -1834,14 +1869,12 @@ export function ProductManagementStudioPanel({
                   onClick={() => setIsCategoryModalOpen(false)}
                   className="px-3 py-1.5 bg-surface text-ink border border-border"
                 >
-                  বাতিল
-                </button>
+                  <LocalizedText source={"বাতিল"} area="admin" />{" "}</button>
                 <button
                   type="submit"
                   className="px-4 py-1.5 bg-ink text-bg font-bold border border-ink"
                 >
-                  সংরক্ষণ করুন
-                </button>
+                  <LocalizedText source={"সংরক্ষণ করুন"} area="admin" />{" "}</button>
               </div>
             </form>
           </div>

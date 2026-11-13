@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { assertProductionPersistenceAllowed } from '../supabase/admin';
+import { readRuntimeDocument, writeRuntimeDocument } from './runtime-persistence';
 
 interface LocalStoreShape {
   arrays?: readonly string[];
@@ -20,6 +21,12 @@ export function readLocalJsonStore<T extends object>(
   file: string,
   shape: LocalStoreShape
 ): T | null {
+  const runtime = readRuntimeDocument(file);
+  if (runtime.active) {
+    if (!runtime.value) return null;
+    validateStoreShape(runtime.value, shape);
+    return runtime.value as T;
+  }
   assertProductionPersistenceAllowed();
   let raw: string;
   try {
@@ -35,6 +42,11 @@ export function readLocalJsonStore<T extends object>(
   } catch {
     throw new Error('LOCAL_STORE_INVALID: Existing local data requires operator review.');
   }
+  validateStoreShape(value, shape);
+  return value as T;
+}
+
+function validateStoreShape(value: unknown, shape: LocalStoreShape): void {
   if (!isObject(value) ||
       shape.arrays?.some((key) => !Array.isArray(value[key])) ||
       shape.objects?.some((key) => !isObject(value[key])) ||
@@ -43,11 +55,11 @@ export function readLocalJsonStore<T extends object>(
       shape.optionalObjects?.some((key) => key in value && !isObject(value[key]))) {
     throw new Error('LOCAL_STORE_INVALID: Existing local data requires operator review.');
   }
-  return value as T;
 }
 
 /** Replace one file after a complete write; this is NOT a multi-store transaction or concurrency lock. */
 export function writeLocalJsonStore(file: string, value: object): void {
+  if (writeRuntimeDocument(file, value)) return;
   assertProductionPersistenceAllowed();
   const temporary = `${file}.tmp-${crypto.randomUUID()}`;
   let descriptor: number | undefined;

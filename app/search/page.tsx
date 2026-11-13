@@ -1,3 +1,4 @@
+import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/search/page.tsx
 // Dedicated Search Results Page (/search) — Phase 6 (Master Prompt Section 9.3)
 
@@ -22,7 +23,7 @@ interface SearchPageProps {
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
-  const { siteSettings, categories, products } = getPublicStorefrontCatalog();
+  const { siteSettings, categories, products } = await withRuntimePersistence(() => getPublicStorefrontCatalog());
 
   return (
     <ShopCatalogClient

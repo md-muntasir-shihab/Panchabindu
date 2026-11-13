@@ -1,3 +1,4 @@
+import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/checkout/page.tsx
 // Server Component for Single-Page Accordion Checkout
 
@@ -13,8 +14,8 @@ export const metadata: Metadata = {
   description: 'ক্যাশ অন ডেলিভারি এবং বিকাশ পেমেন্টের মাধ্যমে সহজেই অর্ডার সম্পন্ন করুন।',
 };
 
-export default function CheckoutPage() {
-  const { siteSettings, categories } = getPublicStorefrontData();
+export default async function CheckoutPage() {
+  const { siteSettings, categories } = await withRuntimePersistence(() => getPublicStorefrontData());
 
   return (
     <CheckoutClient siteSettings={siteSettings} categories={categories} />

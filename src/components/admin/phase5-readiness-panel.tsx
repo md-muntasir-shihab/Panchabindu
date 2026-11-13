@@ -1,4 +1,8 @@
 'use client';
+import { localizedField } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/admin/phase5-readiness-panel.tsx
 // Phase 5 (Module Q): Pre-Launch Readiness, 12-Point Security & Financial Audit Center,
@@ -231,7 +235,7 @@ export function Phase5ReadinessPanel({
             <span>
               {locale === 'bn' ? 'প্রি-লঞ্চ রেডিনেস স্কোর' : 'Pre-Launch Readiness Score'}
             </span>
-            <Badge status="success">PASSED</Badge>
+            <Badge status="success"><LocalizedText source={"PASSED"} area="admin" /></Badge>
           </div>
           <p className="text-2xl font-bold font-mono text-success">
             {formatLocaleNumber(auditReport.passedChecks, locale)} /{' '}
@@ -252,9 +256,9 @@ export function Phase5ReadinessPanel({
                 ? 'ডিটিও স্যানিটাইজেশন ও পিআইআই গার্ড'
                 : 'DTO Sanitization & PII Guard'}
             </span>
-            <Badge status="info">5 ROLES</Badge>
+            <Badge status="info"><LocalizedText source={"5 ROLES"} area="admin" /></Badge>
           </div>
-          <p className="text-xl font-bold font-mono text-ink">100% Stripped</p>
+          <p className="text-xl font-bold font-mono text-ink"><LocalizedText source={"100% Stripped"} area="admin" /></p>
           <p className="text-[11px] text-muted">
             {locale === 'bn'
               ? 'কাস্টমার ও স্টাফ ভিউ থেকে কেনা দাম ও নেট প্রফিট সম্পূর্ণ গোপন'
@@ -269,14 +273,12 @@ export function Phase5ReadinessPanel({
                 ? '৯-ধাপ লাইফসাইকেল সিমুলেটর'
                 : '9-Stage Lifecycle Simulator'}
             </span>
-            <Badge status="success">POISHA EXACT</Badge>
+            <Badge status="success"><LocalizedText source={"POISHA EXACT"} area="admin" /></Badge>
           </div>
           <p className="text-xl font-bold font-mono text-ink">
-            9 / 9 Stages Valid
-          </p>
+            <LocalizedText source={"9 / 9 Stages Valid"} area="admin" />{" "}</p>
           <p className="text-[11px] text-muted">
-            Order → Pack → Ship → Remit → Hold → Mature → Payout
-          </p>
+            <LocalizedText source={"Order → Pack → Ship → Remit → Hold → Mature → Payout"} area="admin" />{" "}</p>
         </div>
 
         <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] space-y-1">
@@ -289,8 +291,7 @@ export function Phase5ReadinessPanel({
             <Badge status="info">0001..0007</Badge>
           </div>
           <p className="text-xl font-bold font-mono text-ink">
-            {formatLocaleNumber(auditReport.sqlMigrations.length, locale)} SQL Files
-          </p>
+            {formatLocaleNumber(auditReport.sqlMigrations.length, locale)} {" "}<LocalizedText source={"SQL Files"} area="admin" />{" "}</p>
           <p className="text-[11px] text-muted">
             {locale === 'bn'
               ? '৩১টি টেবিল, আরএলএস পলিসি ও অ্যাপেন্ড-অনলি ট্রিগার প্রস্তুত'
@@ -403,15 +404,15 @@ export function Phase5ReadinessPanel({
               </div>
 
               <p className="text-muted leading-relaxed text-[11px]">
-                {chk.verifiedDetailBn}
+                {localizedField(chk, "verifiedDetailBn", locale)}
               </p>
 
               <div className="p-2.5 rounded-[var(--radius-sm)] bg-bg border border-border font-mono text-[10px] space-y-1">
                 <div className="text-muted">
-                  Invariant: <strong className="text-ink">{chk.invariantRule}</strong>
+                  <LocalizedText source={"Invariant:"} area="admin" />{" "}<strong className="text-ink">{chk.invariantRule}</strong>
                 </div>
                 <div className="text-ink truncate">
-                  Live Proof: <span>{chk.sampleProof}</span>
+                  <LocalizedText source={"Live Proof:"} area="admin" />{" "}<span>{chk.sampleProof}</span>
                 </div>
               </div>
             </div>
@@ -464,7 +465,7 @@ export function Phase5ReadinessPanel({
                 <div className="p-3.5 border border-border rounded-[var(--radius-md)] bg-bg space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-ink text-sm">
-                      {roleInspection.roleLabelBn}
+                      {localizedField(roleInspection, "roleLabelBn", locale)}
                     </span>
                     <Badge
                       status={
@@ -567,7 +568,7 @@ export function Phase5ReadinessPanel({
               <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3.5 border border-border rounded-[var(--radius-md)] bg-bg space-y-2">
                   <h4 className="font-bold text-ink border-b border-border pb-1.5 font-mono text-[11px]">
-                    Sanitized Product DTO ({roleInspection.roleSlug})
+                    <LocalizedText source={"Sanitized Product DTO ("} area="admin" />{roleInspection.roleSlug})
                   </h4>
                   <pre className="text-[11px] font-mono text-ink overflow-x-auto leading-relaxed">
                     {JSON.stringify(
@@ -580,7 +581,7 @@ export function Phase5ReadinessPanel({
 
                 <div className="p-3.5 border border-border rounded-[var(--radius-md)] bg-bg space-y-2">
                   <h4 className="font-bold text-ink border-b border-border pb-1.5 font-mono text-[11px]">
-                    Sanitized Order DTO ({roleInspection.roleSlug})
+                    <LocalizedText source={"Sanitized Order DTO ("} area="admin" />{roleInspection.roleSlug})
                   </h4>
                   <pre className="text-[11px] font-mono text-ink overflow-x-auto leading-relaxed">
                     {JSON.stringify(
@@ -816,10 +817,10 @@ export function Phase5ReadinessPanel({
                     </span>
                     <div className="flex items-center gap-1.5">
                       {m.rlsEnforced && (
-                        <Badge status="success">RLS ENABLED</Badge>
+                        <Badge status="success"><LocalizedText source={"RLS ENABLED"} area="admin" /></Badge>
                       )}
                       {m.appendOnlyTriggers && (
-                        <Badge status="info">APPEND-ONLY TRIGGER</Badge>
+                        <Badge status="info"><LocalizedText source={"APPEND-ONLY TRIGGER"} area="admin" /></Badge>
                       )}
                     </div>
                   </div>
@@ -827,7 +828,7 @@ export function Phase5ReadinessPanel({
                     {locale === 'bn' ? m.titleBn : m.titleEn || m.titleBn}
                   </p>
                   <p className="text-[11px] font-mono text-muted">
-                    Tables: {m.tablesCovered.join(', ')}
+                    <LocalizedText source={"Tables:"} area="admin" />{" "}{m.tablesCovered.join(', ')}
                   </p>
                 </div>
               ))}

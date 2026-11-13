@@ -1,4 +1,8 @@
 'use client';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/storefront/category-detail-client.tsx
 // Dedicated Category Page Client with:
@@ -109,7 +113,7 @@ export function CategoryDetailClient({
       <div className="max-w-7xl mx-auto px-4 py-8 sm:py-12 space-y-8">
         {/* Breadcrumb */}
         <nav
-          aria-label="Breadcrumb"
+          aria-label={uiText("Breadcrumb", locale)}
           className="flex items-center gap-1.5 text-xs text-[#5A655D]"
         >
           <Link href="/" className="hover:text-[#1B4332] transition-colors">
@@ -149,8 +153,7 @@ export function CategoryDetailClient({
               {locale === 'bn' ? 'মোট উপলব্ধ পণ্য' : 'Available Products'}
             </p>
             <p className="text-2xl font-bold text-[#1B4332] tabular-nums mt-0.5">
-              {formatLocaleNumber(displayedProducts.length, locale)}টি
-            </p>
+              {formatLocaleNumber(displayedProducts.length, locale)}<LocalizedText source={"টি"} area="storefront" />{" "}</p>
           </div>
         </div>
 
@@ -237,7 +240,7 @@ export function CategoryDetailClient({
                     {locale === 'bn' ? 'সর্বোচ্চ বাজেট' : 'Max Budget'}
                   </span>
                   <span className="font-mono font-bold text-[#1B4332]">
-                    ৳{maxPriceBdt}
+                    <LocalizedText source={"৳"} area="storefront" />{maxPriceBdt}
                   </span>
                 </div>
                 <input
@@ -277,7 +280,7 @@ export function CategoryDetailClient({
                   {locale === 'bn' ? 'সাজান:' : 'Sort:'}
                 </span>
                 <select
-                  aria-label="Sort products"
+                  aria-label={uiText("Sort products", locale)}
                   value={sortBy}
                   onChange={(e) =>
                     setSortBy(

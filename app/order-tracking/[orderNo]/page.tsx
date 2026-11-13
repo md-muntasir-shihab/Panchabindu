@@ -1,3 +1,4 @@
+import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/order-tracking/[orderNo]/page.tsx
 // Server Component for Live Order Confirmation & Tracking (Phase 1 Hardened)
 // Enforces:
@@ -37,12 +38,12 @@ export default async function OrderTrackingPage({
 }: OrderTrackingPageProps) {
   const { orderNo } = await params;
   const decodedRef = decodeURIComponent(orderNo).trim();
-  const { siteSettings, categories } = getPublicStorefrontData();
+  const { siteSettings, categories } = await withRuntimePersistence(() => getPublicStorefrontData());
 
   let order: PublicOrderTrackingDTO | null = null;
   let errorBn: string | null = null;
 
-  const tokenResult = getPublicOrderTrackingByToken(decodedRef);
+  const tokenResult = await withRuntimePersistence(() => getPublicOrderTrackingByToken(decodedRef));
   if (tokenResult.allowed && tokenResult.order) {
     order = tokenResult.order;
   } else if (tokenResult.code === 'SEQUENTIAL_ORDER_NO_FORBIDDEN') {
@@ -51,7 +52,7 @@ export default async function OrderTrackingPage({
     const sessionToken = cookieStore.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
     const customerSession = verifyCustomerSessionToken(sessionToken);
     if (customerSession) {
-      const ownedOrders = getAuthenticatedCustomerOrders(sessionToken);
+      const ownedOrders = await withRuntimePersistence(() => getAuthenticatedCustomerOrders(sessionToken));
       const matched = ownedOrders.find(
         (o) => o.orderNo.toUpperCase() === decodedRef.toUpperCase()
       );

@@ -7,6 +7,8 @@ import type { ActorSecurityContext } from '../../types/permissions';
 import { readPhase4BStore } from '../admin/phase4b-service';
 import {
   createStorefrontOrder,
+  submitManualBkashPayment,
+  reviewManualBkashSubmission,
   readErpState,
   writeErpState,
 } from '../db/repository';
@@ -438,7 +440,7 @@ describe('Phase 3 — Inventory, Multi-Vendor Order, State Machine & Consignment
     assert.equal(trConfirmReplay.success, true);
     assert.equal(trConfirmReplay.idempotentReplay, true);
 
-    const trPack = executeOrderStateTransition({
+    let trPack = executeOrderStateTransition({
       orderNo,
       toState: 'packed',
       actorUsername: 'packer_rafi',
@@ -446,7 +448,21 @@ describe('Phase 3 — Inventory, Multi-Vendor Order, State Machine & Consignment
       idempotencyKey: `tr-pack-${orderNo}`,
       reasonBn: 'প্যাকিং সম্পন্ন',
     });
-    assert.equal(trPack.success, true);
+    if (!trPack.success) {
+      assert.equal(trPack.errorCode, 'PRECONDITION_FAILED_MANDATORY_ADVANCE');
+      const order = readErpState().orders.find(order => order.orderNo === orderNo)!;
+      const trxId = `SYNTHETIC-ADVANCE-${Date.now()}`;
+      assert.equal(submitManualBkashPayment({ orderNo, senderPhone: order.customerPhone, trxId,
+        submittedAmountPoisha: order.totalPayablePoisha, idempotencyKey: `advance-${orderNo}`,
+      }).success, true);
+      assert.equal(reviewManualBkashSubmission(superAdminCtx, { orderNo, trxId, decision: 'approved',
+        reviewNoteBn: 'Synthetic merchant record verified for the full payment amount.',
+      }).success, true);
+      trPack = executeOrderStateTransition({ orderNo, toState: 'packed', actorUsername: 'packer_rafi',
+        actorRole: 'packaging_manager', idempotencyKey: `tr-pack-${orderNo}`, reasonBn: 'যাচাইকৃত অগ্রিমের পরে প্যাকিং',
+      });
+    }
+    assert.equal(trPack.success, true, JSON.stringify(trPack));
 
     // Customer cannot cancel once packed
     const custCancelPacked = executeOrderStateTransition({

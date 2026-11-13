@@ -51,16 +51,10 @@ export function getPersistenceRuntimeMode(options?: {
     return targetEnv === 'production' ? 'blocked_production_json' : 'local_json_dev_fallback';
   }
 
-  if (
-    process.env.VERCEL === '1' ||
-    Boolean(process.env.VERCEL_ENV) ||
-    process.env.ALLOW_DEMO_JSON_PERSISTENCE === 'true'
-  ) {
-    return 'local_json_dev_fallback';
-  }
-
   const nodeEnv = process.env.NODE_ENV ?? 'development';
-  return nodeEnv === 'production' ? 'blocked_production_json' : 'local_json_dev_fallback';
+  return nodeEnv === 'production' || process.env.VERCEL === '1' || Boolean(process.env.VERCEL_ENV)
+    ? 'blocked_production_json'
+    : 'local_json_dev_fallback';
 }
 
 export function assertProductionPersistenceAllowed(options?: {

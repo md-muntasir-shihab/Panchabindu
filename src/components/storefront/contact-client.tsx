@@ -1,4 +1,5 @@
 'use client';
+import { localizedFetch as fetch } from '@/src/lib/i18n/localized-fetch';
 
 // src/components/storefront/contact-client.tsx
 // Botanical Heritage Calm — Contact & About Showcase

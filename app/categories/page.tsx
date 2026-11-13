@@ -1,3 +1,4 @@
+import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/categories/page.tsx
 // Dedicated All Categories & Sub-Categories Directory Page
 // Features:
@@ -20,8 +21,8 @@ export const metadata: Metadata = {
     'পঞ্চগড় কনসাইনমেন্ট স্টোরের সকল পণ্য ক্যাটাগরি ও সাব-ক্যাটাগরি এক্সপ্লোর করুন।',
 };
 
-export default function CategoriesPage() {
-  const { siteSettings, categories, products } = getPublicStorefrontData();
+export default async function CategoriesPage() {
+  const { siteSettings, categories, products } = await withRuntimePersistence(() => getPublicStorefrontData());
 
   return (
     <StorefrontShell siteSettings={siteSettings} categories={categories}>

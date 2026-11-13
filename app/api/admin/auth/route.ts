@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/admin/auth/route.ts
 // Server-Side Admin Authentication & First-Login 2FA Gate Endpoint (Phase 1 Hardened)
 // Enforces:
@@ -8,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { hasDurableRuntimeContext } from '@/src/lib/db/runtime-persistence';
 import {
   authenticateAdminUser,
   completeFirstLoginGate,
@@ -47,7 +49,7 @@ const authActionSchema = z.discriminatedUnion('action', [
   }),
 ]);
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const csrfCheck = verifyOriginAndCsrf(req);
     if (!csrfCheck.ok) {
@@ -106,7 +108,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' && !hasDurableRuntimeContext()) {
       return NextResponse.json({ success: false, code: 'NOT_INTEGRATED', errorBn: 'Production identity adapter এখনও সংযুক্ত নয়।' }, { status: 503 });
     }
 
@@ -240,3 +242,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = backendRoute(handlePOST, { commitAuthFailure: true });

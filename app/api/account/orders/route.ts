@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/account/orders/route.ts
 // Server-Side Customer Account Phone + OTP Verification & Authenticated Order History Endpoint (Phase 1 Hardened)
 // Enforces:
@@ -42,7 +43,7 @@ const customerAuthActionSchema = z.discriminatedUnion('action', [
   }),
 ]);
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   const token = req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
   const session = verifyCustomerSessionToken(token);
   const smsConfigured = isSmsOtpProviderConfigured();
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
   });
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const csrfCheck = verifyOriginAndCsrf(req);
     if (!csrfCheck.ok) {
@@ -248,3 +249,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const GET = backendRoute(handleGET, { commitAuthFailure: true });
+export const POST = backendRoute(handlePOST, { commitAuthFailure: true });

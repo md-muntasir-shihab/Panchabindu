@@ -540,7 +540,7 @@ export function verifySqlMigrationsAndRlsCoverage(): SqlRlsAndManifestAuditRepor
     combinedSql += `\n${sql}`;
 
     const createMatches = sql.matchAll(
-      /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-z0-9_]+)\s*\(/gi
+      /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?([a-z0-9_]+)\s*\(/gi
     );
     const fileTables = new Set<string>();
     for (const m of createMatches) {
@@ -560,14 +560,14 @@ export function verifySqlMigrationsAndRlsCoverage(): SqlRlsAndManifestAuditRepor
   }
 
   const rlsMatches = combinedSql.matchAll(
-    /ALTER\s+TABLE\s+([a-z0-9_]+)\s+ENABLE\s+ROW\s+LEVEL\s+SECURITY/gi
+    /ALTER\s+TABLE\s+(?:public\.)?([a-z0-9_]+)\s+ENABLE\s+ROW\s+LEVEL\s+SECURITY/gi
   );
   for (const m of rlsMatches) {
     rlsEnabledTables.add(m[1].toLowerCase());
   }
 
   const policyMatches = combinedSql.matchAll(
-    /CREATE\s+POLICY\s+[a-z0-9_]+\s+ON\s+([a-z0-9_]+)/gi
+    /CREATE\s+POLICY\s+[a-z0-9_]+\s+ON\s+(?:public\.)?([a-z0-9_]+)/gi
   );
   for (const m of policyMatches) {
     tablesWithPolicies.add(m[1].toLowerCase());

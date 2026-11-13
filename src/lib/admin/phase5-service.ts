@@ -334,6 +334,17 @@ export function getSqlMigrationsManifest(): SqlMigrationManifestItem[] {
       rlsEnforced: true,
       appendOnlyTriggers: true,
     },
+    {
+      migrationId: '0009', fileName: '0009_runtime_transactions_and_access.sql',
+      titleBn: 'লেনদেনভিত্তিক ডাটাবেস, পরিচয় ও লেজার সুরক্ষা',
+      titleEn: 'Runtime transactions, identity mapping and journal integrity',
+      tablesCovered: ['erp_runtime_state'], rlsEnforced: true, appendOnlyTriggers: true,
+    },
+    {
+      migrationId: '0010', fileName: '0010_managed_media_storage.sql',
+      titleBn: 'নিরাপদ ছবি আপলোড ও স্টোরেজ অনুমতি', titleEn: 'Managed media storage access',
+      tablesCovered: [], rlsEnforced: true, appendOnlyTriggers: false,
+    },
   ];
 }
 
@@ -442,21 +453,21 @@ export function runPhase5PreLaunchAudit(
     '2100-01-01T00:00:00.000Z'
   );
   const maturityEngineWorks =
-    balFuture.withdrawablePoisha >= balNow.withdrawablePoisha &&
-    balFuture.lockedPoisha === 0;
+    balFuture.withdrawablePoisha === balNow.withdrawablePoisha &&
+    balFuture.lockedPoisha === balNow.lockedPoisha;
 
   checks.push({
     checkId: 'CHK-04',
     category: 'escrow_ledger',
     titleBn:
-      'রিয়েল-টাইম এসক্রো ম্যাচুরিটি ইঞ্জিন (Locked → Available Query-Time Promotion)',
-    titleEn: 'Real-Time Query-Time Escrow Maturity Engine',
+      'হোল্ড ব্যালেন্স ছাড়ের আগে আদায় ও অনুমোদন যাচাই',
+    titleEn: 'Holding eligibility requires an approved transfer',
     passed: maturityEngineWorks,
     severity: 'critical',
     invariantRule:
-      'matures_at <= NOW() promotes LOCKED_HOLD to AVAILABLE immediately on read',
+      'Reading a matured holding balance never creates a financial transfer',
     verifiedDetailBn:
-      'ক্রন জব স্টেল হলেও প্রতিটি রিড কুয়েরিতে `maturesAt <= nowMs` চেক করে লকড বাকেট থেকে উত্তোলনযোগ্য বাকেটে স্বয়ংক্রিয়ভাবে প্রমোট হয়।',
+      'শুধু সময় পার হলে অর্থ উত্তোলনযোগ্য হয় না। যাচাইকৃত আদায় ও অনুমোদিত ট্রান্সফার প্রয়োজন।',
     sampleProof: `Now Locked(${balNow.lockedPoisha}) -> Matured Locked(${balFuture.lockedPoisha}), Available(${balFuture.withdrawablePoisha})`,
   });
 
@@ -709,7 +720,7 @@ export function runPhase5PreLaunchAudit(
     passedChecks,
     failedChecks,
     readinessScorePercent,
-    readyForProduction: failedChecks === 0,
+    readyForProduction: false,
     checks,
     sqlMigrations: getSqlMigrationsManifest(),
   };

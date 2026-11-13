@@ -1,4 +1,8 @@
 'use client';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/storefront/homepage-client.tsx
 // Botanical Heritage Calm — Modern Minimalist Storefront Homepage
@@ -186,7 +190,7 @@ export function HomepageClient({
         {/* 2. MINIMALIST 4-PILLAR TRUST STRIP (Hairline Divided, Unboxed Typography) */}
         {!searchQuery.trim() && !activeCategorySlug && (
           <section
-            aria-label="Trust guarantees"
+            aria-label={uiText("Trust guarantees", locale)}
             className="border-y border-[#E4E2DC] py-6 grid grid-cols-2 lg:grid-cols-4 gap-6"
           >
             {siteSettings.trustBadges.map((badge, idx) => {
@@ -362,7 +366,7 @@ export function HomepageClient({
                 {locale === 'bn' ? 'সাজান:' : 'Sort:'}
               </span>
               <select
-                aria-label="Sort products"
+                aria-label={uiText("Sort products", locale)}
                 value={sortBy}
                 onChange={(e) =>
                   setSortBy(
@@ -496,7 +500,7 @@ export function HomepageClient({
               <label className="font-semibold uppercase text-[11px] tracking-wider text-[#5A655D]">
                 {locale === 'bn' ? 'সর্বোচ্চ বাজেট' : 'Max Budget'}
               </label>
-              <span className="font-mono font-bold text-[#1B4332]">৳{maxPriceBdt}</span>
+              <span className="font-mono font-bold text-[#1B4332]"><LocalizedText source={"৳"} area="storefront" />{maxPriceBdt}</span>
             </div>
             <input
               type="range"

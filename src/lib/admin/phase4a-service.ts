@@ -5,9 +5,11 @@
 //   - Module M: Today Operational Command Screen & Customer Phone Fraud/History Lookup
 //   - Module A & N: Smart Order Entry + Orders Grid One-Click & Bulk Action System + Immutable Audit Log
 
-import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
+import { readLocalJsonStore, writeLocalJsonStore } from '../db/local-json-store';
+import { hasDurableRuntimeContext } from '../db/runtime-persistence';
+import { reconcileOrderReservationRecords, executeOrderStateTransition } from '../inventory/phase3-inventory-order-engine';
 import type {
   CourierProvider,
   OrderSource,
@@ -513,11 +515,12 @@ function getInitialAdminStore(): AdminPersistentStore {
 }
 
 export function readAdminStore(): AdminPersistentStore {
-  if (process.env.NODE_ENV === 'production' || (process.env.NODE_ENV !== 'test' && process.env.PANCHAGARH_ENABLE_SANDBOX_AUTH !== '1')) throw new Error('ADMIN_IDENTITY_NOT_INTEGRATED: local sandbox identity is disabled.');
+  if (!hasDurableRuntimeContext() && (process.env.NODE_ENV === 'production' || (process.env.NODE_ENV !== 'test' && process.env.PANCHAGARH_ENABLE_SANDBOX_AUTH !== '1'))) throw new Error('ADMIN_IDENTITY_NOT_INTEGRATED: local sandbox identity is disabled.');
   try {
-    if (fs.existsSync(ADMIN_DATA_FILE)) {
-      const raw = fs.readFileSync(ADMIN_DATA_FILE, 'utf8');
-      const parsed = JSON.parse(raw) as Partial<AdminPersistentStore>;
+    const parsed = readLocalJsonStore<AdminPersistentStore>(ADMIN_DATA_FILE, {
+      arrays: ['users', 'roles', 'auditLogs'], objects: ['orderMeta', 'blacklistedPhones'],
+    });
+    if (parsed) {
       // Generating demo password hashes on every identity read is expensive and
       // must never replace an existing malformed identity registry with defaults.
       if (!Array.isArray(parsed.users) || !Array.isArray(parsed.roles) ||
@@ -610,14 +613,7 @@ export function readAdminStore(): AdminPersistentStore {
 }
 
 export function writeAdminStore(store: AdminPersistentStore): void {
-  try {
-    if (!fs.existsSync(ADMIN_DATA_DIR)) {
-      fs.mkdirSync(ADMIN_DATA_DIR, { recursive: true });
-    }
-    fs.writeFileSync(ADMIN_DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
-  } catch {
-    throw new Error('Admin identity persistence failed.');
-  }
+  writeLocalJsonStore(ADMIN_DATA_FILE, store);
 }
 
 function sanitizeUserAccount(u: AdminUserAccount): SanitizedAdminUserDTO {
@@ -1053,36 +1049,7 @@ export function getSanitizedOrdersForActor(
       addressOverrideReason: null,
     };
 
-    let rawLines = erpState.orderLines.filter((l) => l.orderId === ord.id);
-    if (rawLines.length === 0) {
-      const fallbackProd = erpState.products[0];
-      const fallbackVar = fallbackProd?.variants[0];
-      if (fallbackProd && fallbackVar) {
-        rawLines = [
-          {
-            orderId: ord.id,
-            productId: fallbackProd.productId,
-            variantId: fallbackVar.variantId,
-            vendorId: fallbackProd.vendorId,
-            productNameBn: fallbackProd.nameBn,
-            variantTitleBn: fallbackVar.titleBn,
-            publicSku: fallbackVar.publicSku,
-            internalVendorSku: fallbackVar.internalVendorSku,
-            quantity: 1,
-            weightGrams: fallbackVar.weightGrams,
-            snapSupplierCostPoisha: fallbackVar.supplierCostPoisha,
-            snapSupplierProfitPoisha: fallbackVar.supplierProfitPoisha,
-            snapSupplierPayablePoisha: fallbackVar.supplierPayablePoisha,
-            snapPlatformMarginPoisha: fallbackVar.platformMarginPoisha,
-            snapUnitSalePricePoisha: ord.subtotalPoisha || fallbackVar.salePricePoisha,
-            lineSubtotalPoisha: ord.subtotalPoisha || fallbackVar.salePricePoisha,
-            lineDiscountPoisha: 0,
-            lineNetPlatformMarginPoisha: fallbackVar.platformMarginPoisha,
-          },
-        ];
-      }
-    }
-
+    const rawLines = erpState.orderLines.filter((l) => l.orderId === ord.id);
     const orderItems = rawLines.map((l) => ({
       productId: l.productId,
       variantId: l.variantId,
@@ -1477,7 +1444,7 @@ export function executeOrderGridAction(
   const results: Array<{ orderNo: string; ok: boolean; messageBn: string }> = [];
 
   for (const orderNo of payload.orderNos) {
-    const ord = erpState.orders.find(
+    let ord = erpState.orders.find(
       (o) => o.orderNo.toUpperCase() === orderNo.trim().toUpperCase()
     );
     if (!ord) {
@@ -1497,9 +1464,26 @@ export function executeOrderGridAction(
       addressOverrideReason: null,
     };
 
+    const selectedOrderNo = ord.orderNo;
+    const transition = (toState: OrderStatus): { success: boolean; errorBn?: string } => {
+      if (!ord) return { success: false };
+      writeErpState(erpState);
+      writeAdminStore(adminStore);
+      const result = executeOrderStateTransition({ orderNo: ord.orderNo, toState,
+        actorUsername: ctx.username, actorRole: ctx.roleSlug,
+        idempotencyKey: `grid:${ctx.userId}:${ord.orderNo}:${ord.status}:${toState}`,
+        reasonBn: payload.staffNote?.trim() || payload.callStatusNote?.trim() || 'অনুমোদিত অর্ডার কার্যক্রম',
+      });
+      Object.assign(erpState, readErpState());
+      Object.assign(adminStore, readAdminStore());
+      ord = erpState.orders.find(order => order.orderNo === selectedOrderNo)!;
+      return result;
+    };
+
     if (payload.actionType === 'update_status' && payload.newStatus) {
       const prevStatus = ord.status;
-      ord.status = payload.newStatus;
+      const changed = transition(payload.newStatus);
+      if (!changed.success) { results.push({ orderNo: ord.orderNo, ok: false, messageBn: changed.errorBn || 'অবস্থা পরিবর্তন করা যায়নি।' }); continue; }
       ord.nextBestAction = deriveNextBestAction(ord);
 
       appendImmutableAuditLog(adminStore, {
@@ -1553,10 +1537,13 @@ export function executeOrderGridAction(
         messageBn: `ঠিকানা আপডেট সম্পন্ন (কোয়ালিটি স্কোর: ${quality.score}%)।`,
       });
     } else if (payload.actionType === 'verify_bkash') {
+      if (!payload.staffNote?.trim()) { results.push({ orderNo: ord.orderNo, ok: false, messageBn: 'পেমেন্ট যাচাইয়ের প্রমাণ ও নোট লিখুন।' }); continue; }
+      writeErpState(erpState);
+      writeAdminStore(adminStore);
       const reviewRes = reviewManualBkashSubmission(ctx, {
         orderNo: ord.orderNo,
         decision: 'approved',
-        reviewNoteBn: 'অর্ডার গ্রিড থেকে বিকাশ TrxID ভেরিফাই ও অনুমোদন করা হয়েছে।',
+        reviewNoteBn: payload.staffNote.trim(),
       });
       if (!reviewRes.success) {
         results.push({
@@ -1570,8 +1557,11 @@ export function executeOrderGridAction(
 
       // Sync updated order state after reviewManualBkashSubmission
       const refreshedErp = readErpState();
+      Object.assign(erpState, refreshedErp);
+      Object.assign(adminStore, readAdminStore());
+      ord = erpState.orders.find(order => order.orderNo === selectedOrderNo)!;
       const refreshedOrd = refreshedErp.orders.find(
-        (o) => o.orderNo === ord.orderNo
+        (o) => o.orderNo === selectedOrderNo
       );
       if (refreshedOrd) {
         ord.advancePaidPoisha = refreshedOrd.advancePaidPoisha;
@@ -1603,70 +1593,7 @@ export function executeOrderGridAction(
         messageBn: 'বিকাশ পেমেন্ট ভেরিফাইড মার্ক করা হয়েছে।',
       });
     } else if (payload.actionType === 'book_courier') {
-      // Address Quality Guard: block courier booking if score < 70 without override reason
-      if (
-        ord.addressQualityScore < 70 &&
-        (!payload.addressOverrideReason ||
-          payload.addressOverrideReason.trim().length < 4)
-      ) {
-        results.push({
-          orderNo: ord.orderNo,
-          ok: false,
-          messageBn: `ঠিকানা অসম্পূর্ণ (স্কোর ${ord.addressQualityScore}%)। আগে ঠিকানা ও ল্যান্ডমার্ক ঠিক করুন অথবা ওভাররাইড কারণ দিন।`,
-        });
-        continue;
-      }
-
-      if (ord.trackingCode) {
-        results.push({
-          orderNo: ord.orderNo,
-          ok: true,
-          messageBn: `ইতিমধ্যে কুরিয়ারে বুক করা আছে (${ord.trackingCode})।`,
-        });
-        continue;
-      }
-
-      const provider = payload.courierProvider ?? ord.courierProvider;
-      const prefix =
-        provider === 'pathao'
-          ? 'PT'
-          : provider === 'redx'
-          ? 'RX'
-          : provider === 'bd_post'
-          ? 'BDP'
-          : 'SF';
-      const generatedCode = `${prefix}-${ord.orderNo.slice(-4)}-${Math.floor(
-        100 + Math.random() * 899
-      )}`;
-
-      ord.courierProvider = provider;
-      ord.consignmentId = `CNS-${ord.orderNo}`;
-      ord.trackingCode = generatedCode;
-      if (ord.status === 'pending_confirmation' || ord.status === 'confirmed') {
-        ord.status = 'packed';
-      }
-      ord.nextBestAction = deriveNextBestAction(ord);
-
-      appendImmutableAuditLog(adminStore, {
-        actorUserId: ctx.userId,
-        actorUsername: ctx.username,
-        actorRole: ctx.roleSlug,
-        actionCode: 'COURIER_BOOKED_MANUAL_OR_ADAPTER',
-        targetType: 'order',
-        targetId: ord.orderNo,
-        summaryBn: `${ord.orderNo} অর্ডারটি ${provider} কুরিয়ারে বুক করা হয়েছে (ট্র্যাকিং: ${generatedCode})।`,
-        metadata: {
-          provider,
-          trackingCode: generatedCode,
-          overrideReason: payload.addressOverrideReason ?? null,
-        },
-      });
-
-      results.push({
-        orderNo: ord.orderNo,
-        ok: true,
-        messageBn: `${provider} বুকিং সম্পন্ন (${generatedCode})।`,
-      });
+      results.push({ orderNo: ord.orderNo, ok: false, messageBn: 'যাচাইকৃত adapter বা প্রকৃত বুকিং রেফারেন্স ছাড়া কুরিয়ার বুকিং করা যাবে না।' });
     } else if (payload.actionType === 'log_call_attempt') {
       meta.callAttempts += 1;
       meta.lastCalledAt = new Date().toISOString();
@@ -1725,11 +1652,15 @@ export function executeOrderGridAction(
 
       let outcomeMessageBn = '';
       if (statusOutcome === 'confirmed_yes') {
-        ord.status = 'confirmed';
+        if (ord.status === 'pending_confirmation') {
+          const result = transition('confirmed');
+          if (!result.success) { results.push({ orderNo: ord.orderNo, ok: false, messageBn: result.errorBn || 'অর্ডার নিশ্চিত করা যায়নি।' }); continue; }
+        }
         ord.nextBestAction = deriveNextBestAction(ord);
         outcomeMessageBn = 'কল কনফার্মড: অর্ডার নিশ্চিত করা হয়েছে (Confirmed)';
       } else if (statusOutcome === 'cancelled_no') {
-        ord.status = 'cancelled';
+        const result = transition('cancelled');
+        if (!result.success) { results.push({ orderNo: ord.orderNo, ok: false, messageBn: result.errorBn || 'অর্ডার বাতিল করা যায়নি।' }); continue; }
         ord.nextBestAction = deriveNextBestAction(ord);
         outcomeMessageBn = 'কল বাতিল: গ্রাহকের অনুরোধে অর্ডার বাতিল করা হয়েছে (Cancelled)';
       } else if (statusOutcome === 'not_answered_busy') {
@@ -1852,6 +1783,26 @@ export function updateFullOrderDetails(
     };
   }
 
+  if (!['pending_confirmation', 'confirmed'].includes(ord.status) || ord.paymentStatus !== 'unpaid' || ord.advancePaidPoisha > 0) {
+    return { success: false, errorBn: 'প্যাকিং, পেমেন্ট বা শিপমেন্টের পরে পূর্ণ অর্ডার এডিট বন্ধ। নির্দিষ্ট সংশোধন ও রিভার্সাল প্রক্রিয়া ব্যবহার করুন।' };
+  }
+  if (payload.status !== ord.status || payload.paymentStatus !== ord.paymentStatus ||
+      payload.advancePaidPoisha !== ord.advancePaidPoisha ||
+      (payload.manualPaymentTrxId?.trim() || null) !== (ord.manualPaymentTrxId || null) ||
+      (payload.consignmentId?.trim() || null) !== (ord.consignmentId || null) ||
+      (payload.trackingCode?.trim() || null) !== (ord.trackingCode || null) ||
+      (payload.callStatus && payload.callStatus !== (adminStore.orderMeta[ord.orderNo]?.callStatus ?? 'pending'))) {
+    return { success: false, errorBn: 'অর্ডার, পেমেন্ট ও শিপমেন্টের অবস্থা বদলাতে নির্দিষ্ট ওয়ার্কফ্লো ব্যবহার করুন।' };
+  }
+  if (!['cod', 'bkash_manual'].includes(payload.paymentMethod) ||
+      !['manual', 'pathao', 'steadfast', 'bd_post'].includes(payload.courierProvider) ||
+      ![payload.discountPoisha, payload.deliveryChargePoisha, payload.advancePaidPoisha].every(value => Number.isSafeInteger(value) && value >= 0) ||
+      (payload.items && (payload.items.length === 0 || new Set(payload.items.map(item => item.variantId)).size !== payload.items.length))) {
+    return { success: false, errorBn: 'সঠিক পূর্ণসংখ্যা পয়সা, স্বতন্ত্র ভ্যারিয়েন্ট ও অনুমোদিত পদ্ধতি নির্বাচন করুন।' };
+  }
+  const previousLines = erpState.orderLines.filter(line => line.orderId === ord.id).map(line => ({ ...line }));
+  if (!previousLines.length) return { success: false, errorBn: 'ঐতিহাসিক অর্ডার লাইন নেই। সমন্বয় ছাড়া এডিট করা যাবে না।' };
+
   const prevSnapshot = {
     customerName: ord.customerName,
     customerPhone: ord.customerPhone,
@@ -1873,6 +1824,7 @@ export function updateFullOrderDetails(
     trackingCode: ord.trackingCode,
     status: ord.status,
     source: ord.source,
+    items: previousLines,
   };
 
   // 1. Handle items & quantities
@@ -1885,7 +1837,9 @@ export function updateFullOrderDetails(
     let calculatedSupplierPayable: Poisha = 0;
 
     for (const itemInput of payload.items) {
-      if (itemInput.quantity < 1) continue;
+      if (!Number.isSafeInteger(itemInput.quantity) || itemInput.quantity < 1) {
+        return { success: false, errorBn: 'পণ্যের পরিমাণ কমপক্ষে ১টি পূর্ণসংখ্যা হতে হবে।' };
+      }
 
       const matchedProd = erpState.products.find((p) =>
         p.variants.some((v) => v.variantId === itemInput.variantId)
@@ -1926,12 +1880,14 @@ export function updateFullOrderDetails(
           productId: matchedProd.productId,
           variantId: matchedVar.variantId,
           vendorId: previousLine?.vendorId ?? matchedProd.vendorId,
-          productNameBn: matchedProd.nameBn,
-          variantTitleBn: matchedVar.titleBn,
-          publicSku: matchedVar.publicSku,
-          internalVendorSku: matchedVar.internalVendorSku,
+          productNameBn: previousLine?.productNameBn ?? matchedProd.nameBn,
+          productNameEn: previousLine ? previousLine.productNameEn : matchedProd.nameEn,
+          variantTitleBn: previousLine?.variantTitleBn ?? matchedVar.titleBn,
+          variantTitleEn: previousLine ? previousLine.variantTitleEn : matchedVar.titleEn,
+          publicSku: previousLine?.publicSku ?? matchedVar.publicSku,
+          internalVendorSku: previousLine?.internalVendorSku ?? matchedVar.internalVendorSku,
           quantity: itemInput.quantity,
-          weightGrams: matchedVar.weightGrams,
+          weightGrams: previousLine?.weightGrams ?? matchedVar.weightGrams,
           snapSupplierCostPoisha: unitCost,
           snapSupplierProfitPoisha: unitProfit,
           snapSupplierPayablePoisha: unitPayable,
@@ -1955,19 +1911,34 @@ export function updateFullOrderDetails(
   }
 
   // 2. Strict Zero-Float Money Math (Rule A1)
-  const discountPoisha = Math.max(0, Math.round(payload.discountPoisha));
-  const deliveryChargePoisha = Math.max(
-    0,
-    Math.round(payload.deliveryChargePoisha)
-  );
-  const totalPayablePoisha = Math.max(
-    0,
-    subtotalPoisha - discountPoisha + deliveryChargePoisha
-  );
-  const advancePaidPoisha = Math.max(
-    0,
-    Math.min(totalPayablePoisha, Math.round(payload.advancePaidPoisha))
-  );
+  const discountPoisha = payload.discountPoisha;
+  const deliveryChargePoisha = payload.deliveryChargePoisha;
+  const totalPayablePoisha = subtotalPoisha - discountPoisha + deliveryChargePoisha;
+  const advancePaidPoisha = payload.advancePaidPoisha;
+  if (discountPoisha > subtotalPoisha - snapTotalSupplierPayablePoisha ||
+      !Number.isSafeInteger(totalPayablePoisha) || totalPayablePoisha < advancePaidPoisha) {
+    return { success: false, errorBn: 'ডিসকাউন্ট প্ল্যাটফর্ম মার্জিনের বেশি হতে পারবে না।' };
+  }
+  let remainingDiscount = discountPoisha;
+  const amendedLines = erpState.orderLines.filter(line => line.orderId === ord.id);
+  for (const line of amendedLines) {
+    const margin = line.snapPlatformMarginPoisha * line.quantity;
+    line.lineDiscountPoisha = Math.min(remainingDiscount, margin);
+    line.lineNetPlatformMarginPoisha = margin - line.lineDiscountPoisha;
+    remainingDiscount -= line.lineDiscountPoisha;
+  }
+  for (const variantId of new Set([...previousLines, ...amendedLines].map(line => line.variantId))) {
+    const beforeQuantity = previousLines.filter(line => line.variantId === variantId).reduce((sum, line) => sum + line.quantity, 0);
+    const afterQuantity = amendedLines.filter(line => line.variantId === variantId).reduce((sum, line) => sum + line.quantity, 0);
+    const delta = afterQuantity - beforeQuantity;
+    const variant = erpState.products.flatMap(product => product.variants).find(item => item.variantId === variantId);
+    if (!variant || !Number.isSafeInteger(delta) || variant.stockReserved + delta < 0 ||
+        variant.stockAvailable - delta < 0 || variant.stockReserved + delta > variant.stockOnHand) {
+      return { success: false, errorBn: 'ইনভেন্টরি মেলেনি বা পর্যাপ্ত স্টক নেই। আগে স্টক সমন্বয় করুন।' };
+    }
+    variant.stockReserved += delta;
+    variant.stockAvailable -= delta;
+  }
   const codCollectablePoisha = Math.max(
     0,
     totalPayablePoisha - advancePaidPoisha
@@ -2098,11 +2069,16 @@ export function updateFullOrderDetails(
         courierProvider: ord.courierProvider,
         trackingCode: ord.trackingCode,
         callStatus: meta.callStatus,
+        items: amendedLines,
+        paymentMethod: ord.paymentMethod,
+        paymentStatus: ord.paymentStatus,
+        advancePaidPoisha: ord.advancePaidPoisha,
       },
     },
   });
 
   writeErpState(erpState);
+  reconcileOrderReservationRecords(ord.orderNo, ctx.username, previousLines);
   writeAdminStore(adminStore);
 
   return {

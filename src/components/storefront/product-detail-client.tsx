@@ -1,4 +1,9 @@
 'use client';
+import { localizedFetch as fetch } from '@/src/lib/i18n/localized-fetch';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/storefront/product-detail-client.tsx
 // Botanical Heritage Calm — Product Detail Page (PDP)
@@ -202,7 +207,7 @@ export function ProductDetailClient({
       <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10 space-y-14">
         {/* Breadcrumb */}
         <nav
-          aria-label="Breadcrumb"
+          aria-label={uiText("Breadcrumb", locale)}
           className="flex flex-wrap items-center gap-1.5 text-xs text-[#5A655D]"
         >
           <Link href="/" className="hover:text-[#1B4332] hover:underline">
@@ -322,7 +327,7 @@ export function ProductDetailClient({
                 </div>
 
                 <span className="font-mono text-[#5A655D]">
-                  SKU: {selectedVariant.publicSku}
+                  <LocalizedText source={"SKU:"} area="storefront" />{" "}{selectedVariant.publicSku}
                 </span>
               </div>
 
@@ -398,7 +403,7 @@ export function ProductDetailClient({
                     type="button"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     disabled={isOutOfStock || quantity <= 1}
-                    aria-label="Decrease quantity"
+                    aria-label={uiText("Decrease quantity", locale)}
                     className="px-3.5 py-2.5 text-[#162119] hover:bg-[#F2EFE9] rounded-l-xl disabled:opacity-40 cursor-pointer"
                   >
                     <Minus className="w-4 h-4" aria-hidden="true" />
@@ -416,7 +421,7 @@ export function ProductDetailClient({
                     disabled={
                       isOutOfStock || quantity >= selectedVariant.stockAvailable
                     }
-                    aria-label="Increase quantity"
+                    aria-label={uiText("Increase quantity", locale)}
                     className="px-3.5 py-2.5 text-[#162119] hover:bg-[#F2EFE9] rounded-r-xl disabled:opacity-40 cursor-pointer"
                   >
                     <Plus className="w-4 h-4" aria-hidden="true" />
@@ -552,7 +557,7 @@ export function ProductDetailClient({
                 </div>
 
                 <select
-                  aria-label="Select delivery district"
+                  aria-label={uiText("Select delivery district", locale)}
                   value={estimatorDistrictId}
                   onChange={(e) =>
                     setEstimatorDistrictId(Number(e.target.value))

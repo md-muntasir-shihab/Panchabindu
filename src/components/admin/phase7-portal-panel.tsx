@@ -1,4 +1,8 @@
 'use client';
+import { localizedField } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 import React, { useState } from 'react';
 import { adminFetch as fetch } from '@/src/lib/admin/admin-fetch';
@@ -557,8 +561,7 @@ export function Phase7PortalPanel({
                 {isBn ? 'মার্জিন-সেফ প্রোমো ক্যাম্পেইন' : 'Margin-Safe Promo Deals'}
               </span>
               <span className="rounded border border-[var(--color-success)] px-2 py-0.5 text-[11px] font-bold text-[var(--color-success)]">
-                Golden Rule Guard
-              </span>
+                <LocalizedText source={"Golden Rule Guard"} area="admin" />{" "}</span>
             </div>
             <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-[var(--color-ink)]">
               {flashCampaigns.length} {isBn ? 'টি ডিল' : 'Deals'}
@@ -574,8 +577,7 @@ export function Phase7PortalPanel({
                 {isBn ? 'নিট প্ল্যাটফর্ম রিটেইনড প্রফিট' : 'Net Retained Platform Profit'}
               </span>
               <span className="rounded border border-[var(--color-ink)] px-2 py-0.5 text-[11px] font-bold text-[var(--color-ink)]">
-                VAT 5% Deducted
-              </span>
+                <LocalizedText source={"VAT 5% Deducted"} area="admin" />{" "}</span>
             </div>
             <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-[var(--color-ink)]">
               {accounting
@@ -695,11 +697,9 @@ export function Phase7PortalPanel({
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-5">
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <PackagePlus className="h-4 w-4" />
-              নতুন কনসাইনমেন্ট স্টক চালান (Dispatch Lot) জমা দিন
-            </h3>
+              <LocalizedText source={"নতুন কনসাইনমেন্ট স্টক চালান (Dispatch Lot) জমা দিন"} area="admin" />{" "}</h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              ভেন্ডর বা স্টাফ নতুন পণ্যের চালান পাঠালে এখানে এন্ট্রি দিন। ওয়্যারহাউস কিউসি অনুমোদনের সাথে সাথে `stockAvailable` স্বয়ংক্রিয়ভাবে বৃদ্ধি পাবে।
-            </p>
+              <LocalizedText source={"ভেন্ডর বা স্টাফ নতুন পণ্যের চালান পাঠালে এখানে এন্ট্রি দিন। ওয়্যারহাউস কিউসি অনুমোদনের সাথে সাথে `stockAvailable` স্বয়ংক্রিয়ভাবে বৃদ্ধি পাবে।"} area="admin" />{" "}</p>
 
             <form
               onSubmit={handleSubmitConsignmentLot}
@@ -707,8 +707,7 @@ export function Phase7PortalPanel({
             >
               <div>
                 <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                  প্রোডাক্ট ভ্যারিয়েন্ট ও পাবলিক SKU নির্বাচন করুন
-                </label>
+                  <LocalizedText source={"প্রোডাক্ট ভ্যারিয়েন্ট ও পাবলিক SKU নির্বাচন করুন"} area="admin" />{" "}</label>
                 <select
                   value={selectedLotVariantId}
                   onChange={(e) => setSelectedLotVariantId(e.target.value)}
@@ -716,7 +715,7 @@ export function Phase7PortalPanel({
                 >
                   {productVariants.map((v) => (
                     <option key={v.variantId} value={v.variantId}>
-                      {v.publicSku} — {v.productNameBn} ({v.variantTitleBn}) [স্টক: {v.stockAvailable}]
+                      {v.publicSku} — {localizedField(v, "productNameBn", locale)} ({localizedField(v, "variantTitleBn", locale)}<LocalizedText source={") [স্টক:"} area="admin" />{" "}{v.stockAvailable}]
                     </option>
                   ))}
                 </select>
@@ -725,8 +724,7 @@ export function Phase7PortalPanel({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                    পাঠানো পণ্যের সংখ্যা (পিস)
-                  </label>
+                    <LocalizedText source={"পাঠানো পণ্যের সংখ্যা (পিস)"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     min={1}
@@ -737,8 +735,7 @@ export function Phase7PortalPanel({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                    চালান বা কুরিয়ার রেফারেন্স নম্বর
-                  </label>
+                    <LocalizedText source={"চালান বা কুরিয়ার রেফারেন্স নম্বর"} area="admin" />{" "}</label>
                   <input
                     type="text"
                     value={challanRef}
@@ -750,8 +747,7 @@ export function Phase7PortalPanel({
 
               <div>
                 <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                  চালান নোট / বিবরণ
-                </label>
+                  <LocalizedText source={"চালান নোট / বিবরণ"} area="admin" />{" "}</label>
                 <input
                   type="text"
                   value={lotNoteBn}
@@ -776,11 +772,10 @@ export function Phase7PortalPanel({
           {/* Right: Consignment Lot QC Queue */}
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-7">
             <h3 className="text-sm font-bold text-[var(--color-ink)]">
-              ওয়্যারহাউস কনসাইনমেন্ট চালান ও কিউসি পরিদর্শন তালিকা ({lots.length})
+              <LocalizedText source={"ওয়্যারহাউস কনসাইনমেন্ট চালান ও কিউসি পরিদর্শন তালিকা ("} area="admin" />{lots.length})
             </h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              কিউসি অনুমোদন করলে ত্রুটিমুক্ত পিসগুলো সরাসরি মূল প্রোডাক্ট ইনভেন্টরিতে যোগ হবে।
-            </p>
+              <LocalizedText source={"কিউসি অনুমোদন করলে ত্রুটিমুক্ত পিসগুলো সরাসরি মূল প্রোডাক্ট ইনভেন্টরিতে যোগ হবে।"} area="admin" />{" "}</p>
 
             <div className="mt-4 space-y-3">
               {lots.map((lot) => (
@@ -813,25 +808,23 @@ export function Phase7PortalPanel({
                       </span>
                     </div>
                     <span className="font-mono text-xs font-bold tabular-nums text-[var(--color-ink)]">
-                      চালান: {lot.dispatchedQty} পিস · কস্ট:{' '}
-                      {formatPoishaToBdt(lot.unitSupplierCostPoisha)}/পিস
-                    </span>
+                      <LocalizedText source={"চালান:"} area="admin" />{" "}{lot.dispatchedQty} {" "}<LocalizedText source={"পিস · কস্ট:"} area="admin" />{' '}
+                      {formatPoishaToBdt(lot.unitSupplierCostPoisha)}<LocalizedText source={"/পিস"} area="admin" />{" "}</span>
                   </div>
 
                   <p className="mt-1.5 text-xs font-semibold text-[var(--color-ink)]">
-                    {lot.productNameBn} ({lot.variantTitleBn})
+                    {localizedField(lot, "productNameBn", locale)} ({localizedField(lot, "variantTitleBn", locale)})
                   </p>
                   <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">
-                    ভেন্ডর: {lot.vendorNameBn} ({lot.vendorCode}) · চালান রেফ:{' '}
-                    {lot.challanRef} · নোট: {lot.noteBn}
+                    <LocalizedText source={"ভেন্ডর:"} area="admin" />{" "}{localizedField(lot, "vendorNameBn", locale)} ({lot.vendorCode}<LocalizedText source={") · চালান রেফ:"} area="admin" />{' '}
+                    {lot.challanRef} {" "}<LocalizedText source={"· নোট:"} area="admin" />{" "}{localizedField(lot, "noteBn", locale)}
                   </p>
 
                   {lot.status === 'pending_qc' && !isVendor && (
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-border)] pt-3">
                       <div className="flex items-center gap-2">
                         <label className="text-[11px] font-semibold text-[var(--color-ink)]">
-                          কিউসি রিজেক্ট সংখ্যা:
-                        </label>
+                          <LocalizedText source={"কিউসি রিজেক্ট সংখ্যা:"} area="admin" />{" "}</label>
                         <input
                           type="number"
                           min={0}
@@ -855,8 +848,7 @@ export function Phase7PortalPanel({
                           className="inline-flex h-8 items-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)] hover:opacity-90"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
-                          কিউসি পাস ও স্টকে যোগ করুন
-                        </button>
+                          <LocalizedText source={"কিউসি পাস ও স্টকে যোগ করুন"} area="admin" />{" "}</button>
                         <button
                           type="button"
                           disabled={busyAction !== null}
@@ -864,8 +856,7 @@ export function Phase7PortalPanel({
                           className="inline-flex h-8 items-center gap-1.5 rounded border border-[var(--color-danger)] bg-[var(--color-bg)] px-3 text-xs font-bold text-[var(--color-danger)]"
                         >
                           <XCircle className="h-3.5 w-3.5" />
-                          চালান রিজেক্ট
-                        </button>
+                          <LocalizedText source={"চালান রিজেক্ট"} area="admin" />{" "}</button>
                       </div>
                     </div>
                   )}
@@ -883,11 +874,9 @@ export function Phase7PortalPanel({
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-5">
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <Tag className="h-4 w-4" />
-              ভেন্ডর কস্ট ও খুচরা বিক্রয়মূল্য পরিবর্তনের প্রস্তাব
-            </h3>
+              <LocalizedText source={"ভেন্ডর কস্ট ও খুচরা বিক্রয়মূল্য পরিবর্তনের প্রস্তাব"} area="admin" />{" "}</h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              নতুন সাপ্লায়ার কস্ট ও খুচরা মূল্য প্রস্তাব করলে সিস্টেম স্বয়ংক্রিয়ভাবে ৩-স্তরের পয়সা স্প্লিট এবং কমিশন রেট (`bp`) হিসাব করবে।
-            </p>
+              <LocalizedText source={"নতুন সাপ্লায়ার কস্ট ও খুচরা মূল্য প্রস্তাব করলে সিস্টেম স্বয়ংক্রিয়ভাবে ৩-স্তরের পয়সা স্প্লিট এবং কমিশন রেট (`bp`) হিসাব করবে।"} area="admin" />{" "}</p>
 
             <form
               onSubmit={handleSubmitPriceProposal}
@@ -895,8 +884,7 @@ export function Phase7PortalPanel({
             >
               <div>
                 <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                  প্রোডাক্ট ভ্যারিয়েন্ট নির্বাচন করুন
-                </label>
+                  <LocalizedText source={"প্রোডাক্ট ভ্যারিয়েন্ট নির্বাচন করুন"} area="admin" />{" "}</label>
                 <select
                   value={selectedPropVariantId}
                   onChange={(e) => setSelectedPropVariantId(e.target.value)}
@@ -904,7 +892,7 @@ export function Phase7PortalPanel({
                 >
                   {productVariants.map((v) => (
                     <option key={v.variantId} value={v.variantId}>
-                      {v.publicSku} — {v.productNameBn} [বর্তমান বিক্রয়মূল্য:{' '}
+                      {v.publicSku} — {localizedField(v, "productNameBn", locale)} {" "}<LocalizedText source={"[বর্তমান বিক্রয়মূল্য:"} area="admin" />{' '}
                       {formatPoishaToBdt(v.salePricePoisha)}]
                     </option>
                   ))}
@@ -914,8 +902,7 @@ export function Phase7PortalPanel({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                    প্রস্তাবিত সাপ্লায়ার কস্ট (টাকা)
-                  </label>
+                    <LocalizedText source={"প্রস্তাবিত সাপ্লায়ার কস্ট (টাকা)"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     min={10}
@@ -926,8 +913,7 @@ export function Phase7PortalPanel({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                    প্রস্তাবিত খুচরা মূল্য (টাকা)
-                  </label>
+                    <LocalizedText source={"প্রস্তাবিত খুচরা মূল্য (টাকা)"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     min={20}
@@ -940,8 +926,7 @@ export function Phase7PortalPanel({
 
               <div>
                 <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                  মূল্য পরিবর্তনের কারণ
-                </label>
+                  <LocalizedText source={"মূল্য পরিবর্তনের কারণ"} area="admin" />{" "}</label>
                 <input
                   type="text"
                   value={proposalReasonBn}
@@ -956,19 +941,17 @@ export function Phase7PortalPanel({
                 className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[var(--color-ink)] px-4 text-xs font-bold text-[var(--color-bg)] hover:opacity-90"
               >
                 <ArrowRight className="h-4 w-4" />
-                মূল্য প্রস্তাব জমা দিন
-              </button>
+                <LocalizedText source={"মূল্য প্রস্তাব জমা দিন"} area="admin" />{" "}</button>
             </form>
           </div>
 
           {/* Right: Price Proposal Queue */}
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-7">
             <h3 className="text-sm font-bold text-[var(--color-ink)]">
-              ভেন্ডর মূল্য পরিবর্তন প্রস্তাব কিউ ({proposals.length})
+              <LocalizedText source={"ভেন্ডর মূল্য পরিবর্তন প্রস্তাব কিউ ("} area="admin" />{proposals.length})
             </h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              সুপার অ্যাডমিন অনুমোদন করলে প্রোডাক্টের কস্ট, খুচরা মূল্য ও প্ল্যাটফর্ম মার্জিন সাথে সাথে আপডেট হবে।
-            </p>
+              <LocalizedText source={"সুপার অ্যাডমিন অনুমোদন করলে প্রোডাক্টের কস্ট, খুচরা মূল্য ও প্ল্যাটফর্ম মার্জিন সাথে সাথে আপডেট হবে।"} area="admin" />{" "}</p>
 
             <div className="mt-4 space-y-3">
               {proposals.map((prop) => (
@@ -982,7 +965,7 @@ export function Phase7PortalPanel({
                         {prop.publicSku}
                       </span>
                       <span className="text-xs font-bold text-[var(--color-ink)]">
-                        {prop.productNameBn}
+                        {localizedField(prop, "productNameBn", locale)}
                       </span>
                     </div>
                     <span
@@ -1001,8 +984,7 @@ export function Phase7PortalPanel({
                   <div className="mt-2.5 grid grid-cols-3 gap-2 rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-2.5 text-xs">
                     <div>
                       <span className="text-[11px] text-[var(--color-muted)]">
-                        সাপ্লায়ার কস্ট (আগে → প্রস্তাবিত)
-                      </span>
+                        <LocalizedText source={"সাপ্লায়ার কস্ট (আগে → প্রস্তাবিত)"} area="admin" />{" "}</span>
                       <p className="font-mono font-bold tabular-nums text-[var(--color-ink)]">
                         {formatPoishaToBdt(prop.currentSupplierCostPoisha)} →{' '}
                         {formatPoishaToBdt(prop.proposedSupplierCostPoisha)}
@@ -1010,8 +992,7 @@ export function Phase7PortalPanel({
                     </div>
                     <div>
                       <span className="text-[11px] text-[var(--color-muted)]">
-                        খুচরা মূল্য (আগে → প্রস্তাবিত)
-                      </span>
+                        <LocalizedText source={"খুচরা মূল্য (আগে → প্রস্তাবিত)"} area="admin" />{" "}</span>
                       <p className="font-mono font-bold tabular-nums text-[var(--color-ink)]">
                         {formatPoishaToBdt(prop.currentSalePricePoisha)} →{' '}
                         {formatPoishaToBdt(prop.proposedSalePricePoisha)}
@@ -1019,8 +1000,7 @@ export function Phase7PortalPanel({
                     </div>
                     <div>
                       <span className="text-[11px] text-[var(--color-muted)]">
-                        প্রস্তাবিত প্ল্যাটফর্ম মার্জিন
-                      </span>
+                        <LocalizedText source={"প্রস্তাবিত প্ল্যাটফর্ম মার্জিন"} area="admin" />{" "}</span>
                       <p className="font-mono font-bold tabular-nums text-[var(--color-success)]">
                         {formatPoishaToBdt(prop.projectedPlatformMarginPoisha)}{' '}
                         ({(prop.proposedCommissionBp / 100).toFixed(2)}%)
@@ -1030,7 +1010,7 @@ export function Phase7PortalPanel({
 
                   <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[11px] text-[var(--color-muted)]">
-                      ভেন্ডর: {prop.vendorNameBn} · কারণ: {prop.reasonBn}
+                      <LocalizedText source={"ভেন্ডর:"} area="admin" />{" "}{localizedField(prop, "vendorNameBn", locale)} {" "}<LocalizedText source={"· কারণ:"} area="admin" />{" "}{prop.reasonBn}
                     </span>
 
                     {prop.status === 'pending_review' && isSuperAdmin && (
@@ -1045,8 +1025,7 @@ export function Phase7PortalPanel({
                           }
                           className="inline-flex h-8 items-center gap-1 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
                         >
-                          অনুমোদন (Approve)
-                        </button>
+                          <LocalizedText source={"অনুমোদন (Approve)"} area="admin" />{" "}</button>
                         <button
                           type="button"
                           onClick={() =>
@@ -1057,8 +1036,7 @@ export function Phase7PortalPanel({
                           }
                           className="inline-flex h-8 items-center gap-1 rounded border border-[var(--color-danger)] bg-[var(--color-bg)] px-3 text-xs font-bold text-[var(--color-danger)]"
                         >
-                          প্রত্যাখ্যান (Reject)
-                        </button>
+                          <LocalizedText source={"প্রত্যাখ্যান (Reject)"} area="admin" />{" "}</button>
                       </div>
                     )}
                   </div>
@@ -1076,32 +1054,26 @@ export function Phase7PortalPanel({
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-6">
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <ShieldCheck className="h-4 w-4" />
-              গোল্ডেন রুল প্রোমো গার্ড ও নেগেটিভ স্কোপ ফ্রিজ (Section 2.1 &amp; 6.2)
-            </h3>
+              <LocalizedText source={"গোল্ডেন রুল প্রোমো গার্ড ও নেগেটিভ স্কোপ ফ্রিজ (Section 2.1 & 6.2)"} area="admin" />{" "}</h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              প্ল্যাটফর্মের যেকোনো প্রোমো ডিসকাউন্ট শুধুমাত্র নিজস্ব কমিশন মার্জিন (`platformMarginPoisha`) থেকে কাটা হবে—ভেন্ডরের প্রাপ্য (`supplierPayablePoisha`) ১ পয়সাও কমবে না।
-            </p>
+              <LocalizedText source={"প্ল্যাটফর্মের যেকোনো প্রোমো ডিসকাউন্ট শুধুমাত্র নিজস্ব কমিশন মার্জিন (`platformMarginPoisha`) থেকে কাটা হবে—ভেন্ডরের প্রাপ্য (`supplierPayablePoisha`) ১ পয়সাও কমবে না।"} area="admin" />{" "}</p>
 
             <div className="mt-4 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-xs">
               <p className="font-bold text-[var(--color-ink)]">
-                Negative Scope Freeze (সক্রিয় নীতিমালা):
-              </p>
+                <LocalizedText source={"Negative Scope Freeze (সক্রিয় নীতিমালা):"} area="admin" />{" "}</p>
               <ul className="mt-2 list-disc space-y-1.5 pl-4 text-[11px] text-[var(--color-muted)]">
                 <li>
-                  ফ্ল্যাশ-সেল (Flash Sale), কাউন্টডাউন টাইমার (Countdown Timer), এবং বান্ডেল/কম্বো (Bundle/Combo) অফার সম্পূর্ণ নিষিদ্ধ।
-                </li>
+                  <LocalizedText source={"ফ্ল্যাশ-সেল (Flash Sale), কাউন্টডাউন টাইমার (Countdown Timer), এবং বান্ডেল/কম্বো (Bundle/Combo) অফার সম্পূর্ণ নিষিদ্ধ।"} area="admin" />{" "}</li>
                 <li>
-                  অনুমোদিত প্রোমো কোড (`EID10`, `WELCOME50`) চেকআউটের সময় লাইন-ভিত্তিক আনুপাতিক হারে শুধুমাত্র `platformMarginPoisha` থেকে কর্তন করা হয়।
-                </li>
+                  <LocalizedText source={"অনুমোদিত প্রোমো কোড (`EID10`, `WELCOME50`) চেকআউটের সময় লাইন-ভিত্তিক আনুপাতিক হারে শুধুমাত্র `platformMarginPoisha` থেকে কর্তন করা হয়।"} area="admin" />{" "}</li>
                 <li>
-                  কোনো পণ্যের প্ল্যাটফর্ম মার্জিনের চেয়ে বেশি ডিসকাউন্ট স্বয়ংক্রিয়ভাবে ক্যাপ (`Math.min(discount, platformMarginPoisha)`) করা হয় যাতে ভেন্ডর প্রদেয় ১০০% অক্ষুণ্ণ থাকে।
-                </li>
+                  <LocalizedText source={"কোনো পণ্যের প্ল্যাটফর্ম মার্জিনের চেয়ে বেশি ডিসকাউন্ট স্বয়ংক্রিয়ভাবে ক্যাপ (`Math.min(discount, platformMarginPoisha)`) করা হয় যাতে ভেন্ডর প্রদেয় ১০০% অক্ষুণ্ণ থাকে।"} area="admin" />{" "}</li>
               </ul>
             </div>
 
             <div className="mt-5 space-y-2.5 border-t border-[var(--color-border)] pt-4">
               <h4 className="text-xs font-bold text-[var(--color-ink)]">
-                মার্জিন-সেফ প্রোমো অডিট রেকর্ড ({flashCampaigns.length})
+                <LocalizedText source={"মার্জিন-সেফ প্রোমো অডিট রেকর্ড ("} area="admin" />{flashCampaigns.length})
               </h4>
               {flashCampaigns.map((fc) => (
                 <div
@@ -1113,17 +1085,17 @@ export function Phase7PortalPanel({
                       {fc.campaignCode} · {fc.publicSku}
                     </span>
                     <span className="rounded border border-[var(--color-success)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-success)]">
-                      ভেন্ডর প্রদেয় অক্ষুণ্ণ:{' '}
+                      <LocalizedText source={"ভেন্ডর প্রদেয় অক্ষুণ্ণ:"} area="admin" />{' '}
                       {formatPoishaToBdt(fc.supplierPayablePoisha)}
                     </span>
                   </div>
                   <p className="mt-1 font-semibold text-[var(--color-ink)]">
-                    {fc.titleBn}
+                    {localizedField(fc, "titleBn", locale)}
                   </p>
                   <p className="mt-1 font-mono text-[11px] text-[var(--color-muted)]">
-                    নিয়মিত মূল্য: {formatPoishaToBdt(fc.regularSalePricePoisha)}{' '}
-                    | প্রোমো মূল্য: {formatPoishaToBdt(fc.flashSalePricePoisha)}{' '}
-                    | অবশিষ্ট মার্জিন:{' '}
+                    <LocalizedText source={"নিয়মিত মূল্য:"} area="admin" />{" "}{formatPoishaToBdt(fc.regularSalePricePoisha)}{' '}
+                    <LocalizedText source={"| প্রোমো মূল্য:"} area="admin" />{" "}{formatPoishaToBdt(fc.flashSalePricePoisha)}{' '}
+                    <LocalizedText source={"| অবশিষ্ট মার্জিন:"} area="admin" />{' '}
                     {formatPoishaToBdt(fc.remainingPlatformMarginPoisha)}
                   </p>
                 </div>
@@ -1135,11 +1107,9 @@ export function Phase7PortalPanel({
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-6">
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <Clock className="h-4 w-4" />
-              অটোমেটেড ৭-দিন এসক্রো ম্যাচুরিটি প্রমোটার (Locked → Available)
-            </h3>
+              <LocalizedText source={"অটোমেটেড ৭-দিন এসক্রো ম্যাচুরিটি প্রমোটার (Locked → Available)"} area="admin" />{" "}</h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              ডেলিভারি ও রেমিট্যান্সের পর ৭-দিন হোল্ড পিরিয়ড পূর্ণ হওয়া লকড এসক্রো এন্ট্রিগুলো ১-ক্লিকে উত্তোলনযোগ্য (`Available`) বাকেটে প্রমোট করুন।
-            </p>
+              <LocalizedText source={"ডেলিভারি ও রেমিট্যান্সের পর ৭-দিন হোল্ড পিরিয়ড পূর্ণ হওয়া লকড এসক্রো এন্ট্রিগুলো ১-ক্লিকে উত্তোলনযোগ্য (`Available`) বাকেটে প্রমোট করুন।"} area="admin" />{" "}</p>
 
             <div className="mt-4 flex flex-wrap gap-2.5">
               <button
@@ -1149,8 +1119,7 @@ export function Phase7PortalPanel({
                 className="inline-flex h-10 items-center gap-2 rounded-md bg-[var(--color-ink)] px-4 text-xs font-bold text-[var(--color-bg)]"
               >
                 <ShieldCheck className="h-4 w-4" />
-                মেয়াদোত্তীর্ণ লকড এসক্রো প্রমোট করুন
-              </button>
+                <LocalizedText source={"মেয়াদোত্তীর্ণ লকড এসক্রো প্রমোট করুন"} area="admin" />{" "}</button>
 
               {isSuperAdmin && (
                 <button
@@ -1159,14 +1128,13 @@ export function Phase7PortalPanel({
                   onClick={() => handlePromoteMaturedEscrow(true)}
                   className="inline-flex h-10 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-border)]"
                 >
-                  সকল লকড এন্ট্রি ফোর্স-ম্যাচিউর করুন (Admin Override)
-                </button>
+                  <LocalizedText source={"সকল লকড এন্ট্রি ফোর্স-ম্যাচিউর করুন (Admin Override)"} area="admin" />{" "}</button>
               )}
             </div>
 
             <div className="mt-5 space-y-2.5 border-t border-[var(--color-border)] pt-4">
               <h4 className="text-xs font-bold text-[var(--color-ink)]">
-                এসক্রো ম্যাচুরিটি প্রমোশন ব্যাচ হিস্ট্রি ({maturityBatches.length})
+                <LocalizedText source={"এসক্রো ম্যাচুরিটি প্রমোশন ব্যাচ হিস্ট্রি ("} area="admin" />{maturityBatches.length})
               </h4>
               {maturityBatches.map((mb) => (
                 <div
@@ -1178,14 +1146,13 @@ export function Phase7PortalPanel({
                       {mb.batchId}
                     </span>
                     <span className="font-mono font-bold text-[var(--color-success)]">
-                      +{formatPoishaToBdt(mb.totalPromotedPoisha)} ({mb.promotedEntriesCount} এন্ট্রি)
-                    </span>
+                      +{formatPoishaToBdt(mb.totalPromotedPoisha)} ({mb.promotedEntriesCount} {" "}<LocalizedText source={"এন্ট্রি)"} area="admin" />{" "}</span>
                   </div>
                   <p className="mt-1 text-[11px] text-[var(--color-ink)]">
                     {mb.summaryBn}
                   </p>
                   <p className="mt-0.5 text-[10px] text-[var(--color-muted)]">
-                    রানিং ইউজার: @{mb.executedByUsername} · সময়:{' '}
+                    <LocalizedText source={"রানিং ইউজার: @"} area="admin" />{mb.executedByUsername} {" "}<LocalizedText source={"· সময়:"} area="admin" />{' '}
                     {new Date(mb.executedAt).toLocaleString('bn-BD')}
                   </p>
                 </div>
@@ -1201,17 +1168,14 @@ export function Phase7PortalPanel({
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5">
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <FileSpreadsheet className="h-4 w-4" />
-              এক্সিকিউটিভ ডাবল-এন্ট্রি বিডিটি একাউন্টিং, এসক্রো লায়াবিলিটি ও ভ্যাট লেজার
-            </h3>
+              <LocalizedText source={"এক্সিকিউটিভ ডাবল-এন্ট্রি বিডিটি একাউন্টিং, এসক্রো লায়াবিলিটি ও ভ্যাট লেজার"} area="admin" />{" "}</h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              সকল হিসাব পূর্ণসংখ্যা পয়সায় (`1 BDT = 100 Poisha`) সংরক্ষিত। ভ্যাট (`5% / 500 bp`) শুধুমাত্র প্ল্যাটফর্মের নিট কমিশন মার্জিনের ওপর প্রযোজ্য—ভেন্ডর প্রিন্সিপালের ওপর নয়।
-            </p>
+              <LocalizedText source={"সকল হিসাব পূর্ণসংখ্যা পয়সায় (`1 BDT = 100 Poisha`) সংরক্ষিত। ভ্যাট (`5% / 500 bp`) শুধুমাত্র প্ল্যাটফর্মের নিট কমিশন মার্জিনের ওপর প্রযোজ্য—ভেন্ডর প্রিন্সিপালের ওপর নয়।"} area="admin" />{" "}</p>
 
             <div className="mt-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
                 <span className="text-[11px] font-semibold text-[var(--color-muted)]">
-                  ডেলিভারিকৃত মোট গ্রস রেভিনিউ
-                </span>
+                  <LocalizedText source={"ডেলিভারিকৃত মোট গ্রস রেভিনিউ"} area="admin" />{" "}</span>
                 <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[var(--color-ink)]">
                   {formatPoishaToBdt(
                     accounting.totalDeliveredGrossRevenuePoisha
@@ -1221,8 +1185,7 @@ export function Phase7PortalPanel({
 
               <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
                 <span className="text-[11px] font-semibold text-[var(--color-muted)]">
-                  নগদ প্রাপ্তি (Remitted COD + Advance)
-                </span>
+                  <LocalizedText source={"নগদ প্রাপ্তি (Remitted COD + Advance)"} area="admin" />{" "}</span>
                 <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[var(--color-success)]">
                   {formatPoishaToBdt(
                     accounting.totalCashRemittedAndAdvancePoisha
@@ -1232,8 +1195,7 @@ export function Phase7PortalPanel({
 
               <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
                 <span className="text-[11px] font-semibold text-[var(--color-muted)]">
-                  কুরিয়ারের কাছে বকেয়া রিসিভেবল
-                </span>
+                  <LocalizedText source={"কুরিয়ারের কাছে বকেয়া রিসিভেবল"} area="admin" />{" "}</span>
                 <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[var(--color-warning)]">
                   {formatPoishaToBdt(
                     accounting.totalCourierUnsettledReceivablePoisha
@@ -1243,8 +1205,7 @@ export function Phase7PortalPanel({
 
               <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
                 <span className="text-[11px] font-semibold text-[var(--color-muted)]">
-                  ভেন্ডর পেআউট বাবদ পরিশোধিত
-                </span>
+                  <LocalizedText source={"ভেন্ডর পেআউট বাবদ পরিশোধিত"} area="admin" />{" "}</span>
                 <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[var(--color-ink)]">
                   {formatPoishaToBdt(accounting.totalVendorPaidDisbursedPoisha)}
                 </p>
@@ -1254,8 +1215,7 @@ export function Phase7PortalPanel({
             <div className="mt-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
                 <span className="text-[11px] font-semibold text-[var(--color-muted)]">
-                  প্ল্যাটফর্ম গ্রস কমিশন মার্জিন
-                </span>
+                  <LocalizedText source={"প্ল্যাটফর্ম গ্রস কমিশন মার্জিন"} area="admin" />{" "}</span>
                 <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[var(--color-ink)]">
                   {formatPoishaToBdt(
                     accounting.grossPlatformCommissionEarnedPoisha
@@ -1265,8 +1225,7 @@ export function Phase7PortalPanel({
 
               <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
                 <span className="text-[11px] font-semibold text-[var(--color-muted)]">
-                  প্রোমো ও ফ্ল্যাশ ডিসকাউন্ট ভর্তুকি
-                </span>
+                  <LocalizedText source={"প্রোমো ও ফ্ল্যাশ ডিসকাউন্ট ভর্তুকি"} area="admin" />{" "}</span>
                 <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[var(--color-danger)]">
                   -{formatPoishaToBdt(accounting.totalPromoAndFlashSubsidyPoisha)}
                 </p>
@@ -1274,8 +1233,7 @@ export function Phase7PortalPanel({
 
               <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
                 <span className="text-[11px] font-semibold text-[var(--color-muted)]">
-                  কমিশন মার্জিনের ওপর ৫% ভ্যাট প্রভিশন
-                </span>
+                  <LocalizedText source={"কমিশন মার্জিনের ওপর ৫% ভ্যাট প্রভিশন"} area="admin" />{" "}</span>
                 <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[var(--color-warning)]">
                   -{formatPoishaToBdt(accounting.estimatedVatOnMarginPoisha)}
                 </p>
@@ -1283,8 +1241,7 @@ export function Phase7PortalPanel({
 
               <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
                 <span className="text-[11px] font-semibold text-[var(--color-muted)]">
-                  নিট প্ল্যাটফর্ম রিটেইনড আর্নিংস
-                </span>
+                  <LocalizedText source={"নিট প্ল্যাটফর্ম রিটেইনড আর্নিংস"} area="admin" />{" "}</span>
                 <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[var(--color-success)]">
                   {formatPoishaToBdt(
                     accounting.netRetainedPlatformProfitPoisha
@@ -1297,28 +1254,26 @@ export function Phase7PortalPanel({
           {/* Payout Cashout / Send Money Fee Schedule */}
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5">
             <h4 className="text-sm font-bold text-[var(--color-ink)]">
-              ভেন্ডর পেআউট ক্যাশআউট ও সেন্ড-মানি চার্জ শিডিউল (৳১০,০০০ পেআউট উদাহরণ)
-            </h4>
+              <LocalizedText source={"ভেন্ডর পেআউট ক্যাশআউট ও সেন্ড-মানি চার্জ শিডিউল (৳১০,০০০ পেআউট উদাহরণ)"} area="admin" />{" "}</h4>
             <div className="mt-3 overflow-x-auto">
               <table className="w-full border-collapse text-left text-xs">
                 <thead>
                   <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)] text-[11px] font-bold text-[var(--color-ink)]">
-                    <th className="p-2.5">পেআউট মাধ্যম (Payout Channel)</th>
-                    <th className="p-2.5">চার্জ হার (Basis Points)</th>
-                    <th className="p-2.5">অনুরোধকৃত পেআউট</th>
-                    <th className="p-2.5">ক্যাশআউট / ট্রান্সফার চার্জ</th>
-                    <th className="p-2.5">ভেন্ডর নিট প্রাপ্তি</th>
+                    <th className="p-2.5"><LocalizedText source={"পেআউট মাধ্যম (Payout Channel)"} area="admin" /></th>
+                    <th className="p-2.5"><LocalizedText source={"চার্জ হার (Basis Points)"} area="admin" /></th>
+                    <th className="p-2.5"><LocalizedText source={"অনুরোধকৃত পেআউট"} area="admin" /></th>
+                    <th className="p-2.5"><LocalizedText source={"ক্যাশআউট / ট্রান্সফার চার্জ"} area="admin" /></th>
+                    <th className="p-2.5"><LocalizedText source={"ভেন্ডর নিট প্রাপ্তি"} area="admin" /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border)]">
                   {accounting.payoutFeeSchedule.map((row) => (
                     <tr key={row.methodNameBn}>
                       <td className="p-2.5 font-semibold text-[var(--color-ink)]">
-                        {row.methodNameBn}
+                        {localizedField(row, "methodNameBn", locale)}
                       </td>
                       <td className="p-2.5 font-mono text-[var(--color-ink)]">
-                        {(row.feeRateBp / 100).toFixed(2)}% ({row.feeRateBp} bp)
-                      </td>
+                        {(row.feeRateBp / 100).toFixed(2)}% ({row.feeRateBp} {" "}<LocalizedText source={"bp)"} area="admin" />{" "}</td>
                       <td className="p-2.5 font-mono tabular-nums text-[var(--color-ink)]">
                         {formatPoishaToBdt(row.sample10kPayoutGrossPoisha)}
                       </td>
@@ -1344,11 +1299,9 @@ export function Phase7PortalPanel({
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-6">
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <GitFork className="h-4 w-4" />
-              মাল্টি-সাপ্লায়ার প্রোডাক্ট অফার ও অ্যালোকেশন র‍্যাংক (`supplier_product_offers`)
-            </h3>
+              <LocalizedText source={"মাল্টি-সাপ্লায়ার প্রোডাক্ট অফার ও অ্যালোকেশন র‍্যাংক (`supplier_product_offers`)"} area="admin" />{" "}</h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              একই ভ্যারিয়েন্টে একাধিক ভেন্ডরের কনসাইনমেন্ট অফার, ৩-স্তরের পয়সা স্প্লিট (`কস্ট + লাভ = প্রদেয়`) ও স্টক অগ্রাধিকার।
-            </p>
+              <LocalizedText source={"একই ভ্যারিয়েন্টে একাধিক ভেন্ডরের কনসাইনমেন্ট অফার, ৩-স্তরের পয়সা স্প্লিট (`কস্ট + লাভ = প্রদেয়`) ও স্টক অগ্রাধিকার।"} area="admin" />{" "}</p>
 
             <form
               onSubmit={handleUpsertSupplierOffer}
@@ -1357,8 +1310,7 @@ export function Phase7PortalPanel({
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                    প্রোডাক্ট ভ্যারিয়েন্ট
-                  </label>
+                    <LocalizedText source={"প্রোডাক্ট ভ্যারিয়েন্ট"} area="admin" />{" "}</label>
                   <select
                     value={offerVariantId}
                     onChange={(e) => setOfferVariantId(e.target.value)}
@@ -1366,7 +1318,7 @@ export function Phase7PortalPanel({
                   >
                     {productVariants.map((v) => (
                       <option key={v.variantId} value={v.variantId}>
-                        {v.publicSku} — {v.productNameBn} ({formatPoishaToBdt(v.salePricePoisha)})
+                        {v.publicSku} — {localizedField(v, "productNameBn", locale)} ({formatPoishaToBdt(v.salePricePoisha)})
                       </option>
                     ))}
                   </select>
@@ -1375,22 +1327,18 @@ export function Phase7PortalPanel({
                 {!isVendor && (
                   <div>
                     <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                      ভেন্ডর নির্বাচন করুন
-                    </label>
+                      <LocalizedText source={"ভেন্ডর নির্বাচন করুন"} area="admin" />{" "}</label>
                     <select
                       value={offerVendorId}
                       onChange={(e) => setOfferVendorId(e.target.value)}
                       className="mt-1 h-9 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-xs text-[var(--color-ink)]"
                     >
                       <option value="00000000-0000-4000-8000-000000000901">
-                        VND-001 — রূপগঞ্জ উইভার্স
-                      </option>
+                        <LocalizedText source={"VND-001 — রূপগঞ্জ উইভার্স"} area="admin" />{" "}</option>
                       <option value="00000000-0000-4000-8000-000000000902">
-                        VND-002 — হাজারীবাগ লেদার ক্রাফট
-                      </option>
+                        <LocalizedText source={"VND-002 — হাজারীবাগ লেদার ক্রাফট"} area="admin" />{" "}</option>
                       <option value="00000000-0000-4000-8000-000000000903">
-                        VND-003 — সুন্দরবন অর্গানিকস
-                      </option>
+                        <LocalizedText source={"VND-003 — সুন্দরবন অর্গানিকস"} area="admin" />{" "}</option>
                     </select>
                   </div>
                 )}
@@ -1399,8 +1347,7 @@ export function Phase7PortalPanel({
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                    ইন্টারনাল SKU
-                  </label>
+                    <LocalizedText source={"ইন্টারনাল SKU"} area="admin" />{" "}</label>
                   <input
                     type="text"
                     value={offerInternalSku}
@@ -1410,8 +1357,7 @@ export function Phase7PortalPanel({
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                    সাপ্লায়ার কস্ট (৳)
-                  </label>
+                    <LocalizedText source={"সাপ্লায়ার কস্ট (৳)"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     min={10}
@@ -1422,8 +1368,7 @@ export function Phase7PortalPanel({
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                    সাপ্লায়ার প্রফিট (৳)
-                  </label>
+                    <LocalizedText source={"সাপ্লায়ার প্রফিট (৳)"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     min={0}
@@ -1434,8 +1379,7 @@ export function Phase7PortalPanel({
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                    র‍্যাংক (1=প্রথম)
-                  </label>
+                    <LocalizedText source={"র‍্যাংক (1=প্রথম)"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     min={1}
@@ -1447,8 +1391,7 @@ export function Phase7PortalPanel({
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                    অফার স্টক (পিস)
-                  </label>
+                    <LocalizedText source={"অফার স্টক (পিস)"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     min={0}
@@ -1464,8 +1407,7 @@ export function Phase7PortalPanel({
                 disabled={busyAction === 'upsert-offer'}
                 className="inline-flex h-9 w-full items-center justify-center gap-2 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
               >
-                সাপ্লায়ার কনসাইনমেন্ট অফার সংরক্ষণ করুন
-              </button>
+                <LocalizedText source={"সাপ্লায়ার কনসাইনমেন্ট অফার সংরক্ষণ করুন"} area="admin" />{" "}</button>
             </form>
 
             <div className="mt-4 space-y-2.5">
@@ -1476,24 +1418,24 @@ export function Phase7PortalPanel({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-mono font-bold text-[var(--color-ink)]">
-                      Rank #{offer.priorityRank} · {offer.publicSku} ·{' '}
+                      <LocalizedText source={"Rank #"} area="admin" />{offer.priorityRank} · {offer.publicSku} ·{' '}
                       {offer.vendorCode}
                     </span>
                     <span className="rounded border border-[var(--color-success)] px-2 py-0.5 font-mono text-[10px] font-bold text-[var(--color-success)]">
-                      স্টক: {offer.stockAvailable} পিস · প্রদেয়:{' '}
+                      <LocalizedText source={"স্টক:"} area="admin" />{" "}{offer.stockAvailable} {" "}<LocalizedText source={"পিস · প্রদেয়:"} area="admin" />{' '}
                       {formatPoishaToBdt(offer.supplierPayablePoisha)}
                     </span>
                   </div>
                   <p className="mt-1 font-semibold text-[var(--color-ink)]">
-                    {offer.productNameBn} ({offer.variantTitleBn}) —{' '}
-                    {offer.vendorNameBn}
+                    {localizedField(offer, "productNameBn", locale)} ({localizedField(offer, "variantTitleBn", locale)}) —{' '}
+                    {localizedField(offer, "vendorNameBn", locale)}
                   </p>
                   {!isVendor && (
                     <p className="mt-1 font-mono text-[11px] text-[var(--color-muted)]">
-                      কস্ট: {formatPoishaToBdt(offer.supplierCostPoisha)} + লাভ:{' '}
-                      {formatPoishaToBdt(offer.supplierProfitPoisha)} = প্রদেয়:{' '}
-                      {formatPoishaToBdt(offer.supplierPayablePoisha)} | মার্জিন:{' '}
-                      {formatPoishaToBdt(offer.platformMarginPoisha)} | বিক্রয়:{' '}
+                      <LocalizedText source={"কস্ট:"} area="admin" />{" "}{formatPoishaToBdt(offer.supplierCostPoisha)} {" "}<LocalizedText source={"+ লাভ:"} area="admin" />{' '}
+                      {formatPoishaToBdt(offer.supplierProfitPoisha)} {" "}<LocalizedText source={"= প্রদেয়:"} area="admin" />{' '}
+                      {formatPoishaToBdt(offer.supplierPayablePoisha)} {" "}<LocalizedText source={"| মার্জিন:"} area="admin" />{' '}
+                      {formatPoishaToBdt(offer.platformMarginPoisha)} {" "}<LocalizedText source={"| বিক্রয়:"} area="admin" />{' '}
                       {formatPoishaToBdt(offer.salePricePoisha)}
                     </p>
                   )}
@@ -1506,11 +1448,9 @@ export function Phase7PortalPanel({
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-6">
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <Layers className="h-4 w-4" />
-              মাল্টি-ভেন্ডর ফুলফিলমেন্ট গ্রুপ স্প্লিট ইঞ্জিন (`VFG-...`)
-            </h3>
+              <LocalizedText source={"মাল্টি-ভেন্ডর ফুলফিলমেন্ট গ্রুপ স্প্লিট ইঞ্জিন (`VFG-...`)"} area="admin" />{" "}</h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              একটি অর্ডারে একাধিক ভেন্ডরের পণ্য থাকলে সাপ্লায়ার অফার অনুযায়ী স্বয়ংক্রিয়ভাবে ভেন্ডর-ভিত্তিক ফুলফিলমেন্ট সাব-অর্ডারে বিভক্ত করুন।
-            </p>
+              <LocalizedText source={"একটি অর্ডারে একাধিক ভেন্ডরের পণ্য থাকলে সাপ্লায়ার অফার অনুযায়ী স্বয়ংক্রিয়ভাবে ভেন্ডর-ভিত্তিক ফুলফিলমেন্ট সাব-অর্ডারে বিভক্ত করুন।"} area="admin" />{" "}</p>
 
             {!isVendor && (
               <form
@@ -1519,8 +1459,7 @@ export function Phase7PortalPanel({
               >
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                    অর্ডার নম্বর
-                  </label>
+                    <LocalizedText source={"অর্ডার নম্বর"} area="admin" />{" "}</label>
                   <input
                     type="text"
                     value={splitOrderNo}
@@ -1530,8 +1469,7 @@ export function Phase7PortalPanel({
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                    অ্যালোকেশন পলিসি
-                  </label>
+                    <LocalizedText source={"অ্যালোকেশন পলিসি"} area="admin" />{" "}</label>
                   <select
                     value={splitStrategy}
                     onChange={(e) =>
@@ -1544,11 +1482,10 @@ export function Phase7PortalPanel({
                     }
                     className="mt-1 h-9 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-xs text-[var(--color-ink)]"
                   >
-                    <option value="priority_rank">Priority Rank #1</option>
+                    <option value="priority_rank"><LocalizedText source={"Priority Rank #1"} area="admin" /></option>
                     <option value="lowest_payable_highest_margin">
-                      সর্বোচ্চ প্ল্যাটফর্ম মার্জিন
-                    </option>
-                    <option value="highest_stock">সর্বোচ্চ স্টক ভেন্ডর</option>
+                      <LocalizedText source={"সর্বোচ্চ প্ল্যাটফর্ম মার্জিন"} area="admin" />{" "}</option>
+                    <option value="highest_stock"><LocalizedText source={"সর্বোচ্চ স্টক ভেন্ডর"} area="admin" /></option>
                   </select>
                 </div>
                 <div className="flex items-end">
@@ -1557,8 +1494,7 @@ export function Phase7PortalPanel({
                     disabled={busyAction === 'split-order'}
                     className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
                   >
-                    অর্ডার স্প্লিট করুন
-                  </button>
+                    <LocalizedText source={"অর্ডার স্প্লিট করুন"} area="admin" />{" "}</button>
                 </div>
               </form>
             )}
@@ -1571,23 +1507,22 @@ export function Phase7PortalPanel({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-mono font-bold text-[var(--color-ink)]">
-                      {fg.groupCode} · অর্ডার: {fg.orderNo}
+                      {fg.groupCode} {" "}<LocalizedText source={"· অর্ডার:"} area="admin" />{" "}{fg.orderNo}
                     </span>
                     <span className="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-0.5 font-mono text-[10px] font-bold text-[var(--color-ink)]">
-                      {fg.vendorCode} · {fg.fulfillmentStatus.toUpperCase()} · {fg.totalUnits} পিস
-                    </span>
+                      {fg.vendorCode} · {fg.fulfillmentStatus.toUpperCase()} · {fg.totalUnits} {" "}<LocalizedText source={"পিস"} area="admin" />{" "}</span>
                   </div>
                   <p className="mt-1 font-semibold text-[var(--color-ink)]">
-                    ভেন্ডর: {fg.vendorNameBn}
+                    <LocalizedText source={"ভেন্ডর:"} area="admin" />{" "}{localizedField(fg, "vendorNameBn", locale)}
                   </p>
                   <p className="mt-1 font-mono text-[11px] text-[var(--color-muted)]">
-                    ভেন্ডর প্রদেয়:{' '}
-                    {formatPoishaToBdt(fg.groupSupplierPayablePoisha)} | সাবটোটাল:{' '}
+                    <LocalizedText source={"ভেন্ডর প্রদেয়:"} area="admin" />{' '}
+                    {formatPoishaToBdt(fg.groupSupplierPayablePoisha)} {" "}<LocalizedText source={"| সাবটোটাল:"} area="admin" />{' '}
                     {formatPoishaToBdt(fg.groupSaleSubtotalPoisha)}
                     {!isVendor && (
                       <>
                         {' '}
-                        | প্ল্যাটফর্ম মার্জিন:{' '}
+                        <LocalizedText source={"| প্ল্যাটফর্ম মার্জিন:"} area="admin" />{' '}
                         {formatPoishaToBdt(fg.groupPlatformMarginPoisha)}
                       </>
                     )}
@@ -1606,11 +1541,9 @@ export function Phase7PortalPanel({
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-6">
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <RotateCcw className="h-4 w-4" />
-              মেকার-চেকার ডাবল-এন্ট্রি লেজার রিভার্সাল ও জরুরি ওভাররাইড (`REV-...`)
-            </h3>
+              <LocalizedText source={"মেকার-চেকার ডাবল-এন্ট্রি লেজার রিভার্সাল ও জরুরি ওভাররাইড (`REV-...`)"} area="admin" />{" "}</h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              পোস্টকৃত লেজার এন্ট্রি কখনো সরাসরি ডিলিট বা এডিট হয় না; বিপরীত ডেবিট-ক্রেডিট রিভার্সাল (`Maker !== Checker`) পোস্ট করতে হয়।
-            </p>
+              <LocalizedText source={"পোস্টকৃত লেজার এন্ট্রি কখনো সরাসরি ডিলিট বা এডিট হয় না; বিপরীত ডেবিট-ক্রেডিট রিভার্সাল (`Maker !== Checker`) পোস্ট করতে হয়।"} area="admin" />{" "}</p>
 
             <form
               onSubmit={handleCreateLedgerReversal}
@@ -1619,8 +1552,7 @@ export function Phase7PortalPanel({
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                    মূল লেজার এন্ট্রি আইডি (`originalLedgerEntryId`)
-                  </label>
+                    <LocalizedText source={"মূল লেজার এন্ট্রি আইডি (`originalLedgerEntryId`)"} area="admin" />{" "}</label>
                   <input
                     type="text"
                     value={revOriginalEntryId}
@@ -1630,8 +1562,7 @@ export function Phase7PortalPanel({
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                    সংশোধিত ক্রেডিট অংক (টাকা)
-                  </label>
+                    <LocalizedText source={"সংশোধিত ক্রেডিট অংক (টাকা)"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     min={0}
@@ -1643,8 +1574,7 @@ export function Phase7PortalPanel({
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                  রিভার্সালের কারণ (Audit Reason)
-                </label>
+                  <LocalizedText source={"রিভার্সালের কারণ (Audit Reason)"} area="admin" />{" "}</label>
                 <input
                   type="text"
                   value={revReasonBn}
@@ -1657,15 +1587,13 @@ export function Phase7PortalPanel({
                 disabled={busyAction === 'create-reversal'}
                 className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
               >
-                মেকার হিসেবে রিভার্সাল অনুরোধ জমা দিন
-              </button>
+                <LocalizedText source={"মেকার হিসেবে রিভার্সাল অনুরোধ জমা দিন"} area="admin" />{" "}</button>
             </form>
 
             {isSuperAdmin && (
               <div className="mt-3 flex items-center justify-between gap-2 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xs">
                 <span className="font-semibold text-[var(--color-ink)]">
-                  সুপার অ্যাডমিন ২এফএ ইমার্জেন্সি ওভাররাইড কোড (Self-Approval Guard):
-                </span>
+                  <LocalizedText source={"সুপার অ্যাডমিন ২এফএ ইমার্জেন্সি ওভাররাইড কোড (Self-Approval Guard):"} area="admin" />{" "}</span>
                 <input
                   type="text"
                   maxLength={6}
@@ -1684,7 +1612,7 @@ export function Phase7PortalPanel({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-mono font-bold text-[var(--color-ink)]">
-                      {rev.reversalCode} · অর্ডার: {rev.orderNo ?? 'N/A'} (মূল:{' '}
+                      {rev.reversalCode} {" "}<LocalizedText source={"· অর্ডার:"} area="admin" />{" "}{rev.orderNo ?? 'N/A'} {" "}<LocalizedText source={"(মূল:"} area="admin" />{' '}
                       {rev.originalLedgerEntryId})
                     </span>
                     <span className="font-mono font-bold text-[var(--color-danger)]">
@@ -1694,15 +1622,14 @@ export function Phase7PortalPanel({
                     </span>
                   </div>
                   <p className="mt-1 font-mono text-[11px] text-[var(--color-muted)]">
-                    DR: {formatPoishaToBdt(rev.reversalDebitPoisha)} / CR:{' '}
-                    {formatPoishaToBdt(rev.reversalCreditPoisha)} · Maker: @
-                    {rev.createdByUsername}
+                    <LocalizedText source={"DR:"} area="admin" />{" "}{formatPoishaToBdt(rev.reversalDebitPoisha)} {" "}<LocalizedText source={"/ CR:"} area="admin" />{' '}
+                    {formatPoishaToBdt(rev.reversalCreditPoisha)} {" "}<LocalizedText source={"· Maker: @"} area="admin" />{" "}{rev.createdByUsername}
                     {rev.approvedByUsername
                       ? ` · Checker: @${rev.approvedByUsername}`
                       : ''}
                   </p>
                   <p className="mt-1 text-[11px] text-[var(--color-ink)]">
-                    কারণ: {rev.reasonBn}
+                    <LocalizedText source={"কারণ:"} area="admin" />{" "}{rev.reasonBn}
                   </p>
                   {rev.status === 'pending_checker_approval' && isSuperAdmin && (
                     <div className="mt-2.5 flex items-center gap-2">
@@ -1713,8 +1640,7 @@ export function Phase7PortalPanel({
                         }
                         className="inline-flex h-8 items-center gap-1 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
                       >
-                        চেকার অনুমোদন ও রিভার্সাল পোস্ট করুন
-                      </button>
+                        <LocalizedText source={"চেকার অনুমোদন ও রিভার্সাল পোস্ট করুন"} area="admin" />{" "}</button>
                       <button
                         type="button"
                         onClick={() =>
@@ -1722,8 +1648,7 @@ export function Phase7PortalPanel({
                         }
                         className="inline-flex h-8 items-center gap-1 rounded border border-[var(--color-danger)] px-3 text-xs font-bold text-[var(--color-danger)]"
                       >
-                        বাতিল
-                      </button>
+                        <LocalizedText source={"বাতিল"} area="admin" />{" "}</button>
                     </div>
                   )}
                 </div>
@@ -1735,11 +1660,9 @@ export function Phase7PortalPanel({
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-6">
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <ShieldCheck className="h-4 w-4" />
-              গ্রাহক রিফান্ড এক্সিকিউশন ও ডাবল-এন্ট্রি ভাউচার (`REF-...`)
-            </h3>
+              <LocalizedText source={"গ্রাহক রিফান্ড এক্সিকিউশন ও ডাবল-এন্ট্রি ভাউচার (`REF-...`)"} area="admin" />{" "}</h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              অর্ডার বাতিল বা রিটার্নের পর ম্যানুয়াল বিকাশ বা ব্যাংক ট্রান্সফারে গ্রাহককে অর্থ ফেরত দিলে ব্যালেন্সড রিফান্ড ভাউচার ও পেমেন্ট স্ট্যাটাস আপডেট হবে।
-            </p>
+              <LocalizedText source={"অর্ডার বাতিল বা রিটার্নের পর ম্যানুয়াল বিকাশ বা ব্যাংক ট্রান্সফারে গ্রাহককে অর্থ ফেরত দিলে ব্যালেন্সড রিফান্ড ভাউচার ও পেমেন্ট স্ট্যাটাস আপডেট হবে।"} area="admin" />{" "}</p>
 
             {isSuperAdmin && (
               <form
@@ -1749,8 +1672,7 @@ export function Phase7PortalPanel({
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                      অর্ডার নম্বর
-                    </label>
+                      <LocalizedText source={"অর্ডার নম্বর"} area="admin" />{" "}</label>
                     <input
                       type="text"
                       value={refundOrderNo}
@@ -1760,8 +1682,7 @@ export function Phase7PortalPanel({
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                      রিফান্ড পরিমাণ (টাকা)
-                    </label>
+                      <LocalizedText source={"রিফান্ড পরিমাণ (টাকা)"} area="admin" />{" "}</label>
                     <input
                       type="number"
                       min={10}
@@ -1775,8 +1696,7 @@ export function Phase7PortalPanel({
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                      রিফান্ড মাধ্যম
-                    </label>
+                      <LocalizedText source={"রিফান্ড মাধ্যম"} area="admin" />{" "}</label>
                     <select
                       value={refundChannel}
                       onChange={(e) =>
@@ -1787,15 +1707,13 @@ export function Phase7PortalPanel({
                       className="mt-1 h-9 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-xs text-[var(--color-ink)]"
                     >
                       <option value="bkash_manual">
-                        ম্যানুয়াল বিকাশ রিফান্ড (bKash Manual)
-                      </option>
-                      <option value="bank_transfer">ব্যাংক ট্রান্সফার</option>
+                        <LocalizedText source={"ম্যানুয়াল বিকাশ রিফান্ড (bKash Manual)"} area="admin" />{" "}</option>
+                      <option value="bank_transfer"><LocalizedText source={"ব্যাংক ট্রান্সফার"} area="admin" /></option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                      রিফান্ড TrxID / ভাউচার রেফ
-                    </label>
+                      <LocalizedText source={"রিফান্ড TrxID / ভাউচার রেফ"} area="admin" />{" "}</label>
                     <input
                       type="text"
                       value={refundTrxRef}
@@ -1807,8 +1725,7 @@ export function Phase7PortalPanel({
 
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--color-ink)]">
-                    রিফান্ড কারণ
-                  </label>
+                    <LocalizedText source={"রিফান্ড কারণ"} area="admin" />{" "}</label>
                   <input
                     type="text"
                     value={refundReasonBn}
@@ -1822,8 +1739,7 @@ export function Phase7PortalPanel({
                   disabled={busyAction === 'execute-refund'}
                   className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
                 >
-                  গ্রাহক রিফান্ড কার্যকর ও লেজার পোস্ট করুন
-                </button>
+                  <LocalizedText source={"গ্রাহক রিফান্ড কার্যকর ও লেজার পোস্ট করুন"} area="admin" />{" "}</button>
               </form>
             )}
 
@@ -1835,7 +1751,7 @@ export function Phase7PortalPanel({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-mono font-bold text-[var(--color-ink)]">
-                      {rf.refundCode} · অর্ডার: {rf.orderNo} ({rf.customerName})
+                      {rf.refundCode} {" "}<LocalizedText source={"· অর্ডার:"} area="admin" />{" "}{rf.orderNo} ({rf.customerName})
                     </span>
                     <span className="font-mono font-bold text-[var(--color-success)]">
                       {formatPoishaToBdt(rf.refundAmountPoisha)} [
@@ -1843,11 +1759,10 @@ export function Phase7PortalPanel({
                     </span>
                   </div>
                   <p className="mt-1 font-mono text-[11px] text-[var(--color-muted)]">
-                    চ্যানেল: {rf.refundChannel} · TrxID: {rf.refundTrxId} ·
-                    নির্বাহী: @{rf.approvedByUsername ?? rf.requestedByUsername}
+                    <LocalizedText source={"চ্যানেল:"} area="admin" />{" "}{rf.refundChannel} {" "}<LocalizedText source={"· TrxID:"} area="admin" />{" "}{rf.refundTrxId} {" "}<LocalizedText source={"· নির্বাহী: @"} area="admin" />{rf.approvedByUsername ?? rf.requestedByUsername}
                   </p>
                   <p className="mt-0.5 text-[11px] text-[var(--color-ink)]">
-                    কারণ: {rf.reasonBn}
+                    <LocalizedText source={"কারণ:"} area="admin" />{" "}{rf.reasonBn}
                   </p>
                 </div>
               ))}

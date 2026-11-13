@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/admin/workspace/route.ts
 // Server-Side Admin ERP Workspace API (Phase 4A + Phase 4B + Phase 4C):
 //   - GET: Role-filtered, field-sanitized workspace snapshot + Phase 4B Print/Courier360/VendorEscrow + Phase 4C Finance/Product360/Automation/ControlCenter
@@ -114,7 +115,7 @@ import {
   type SystemRoleSlug,
 } from '@/src/types/permissions';
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   // CRITICAL SECURITY FIX (Phase 1): NEVER default to 'usr-super-admin' when token is missing or invalid!
   const rawToken =
     req.cookies.get(ADMIN_SESSION_COOKIE_NAME)?.value ||
@@ -296,7 +297,6 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
       'manual',
       'steadfast',
       'pathao',
-      'redx',
       'bd_post',
     ]),
     consignmentId: z.string().nullable().optional(),
@@ -432,7 +432,6 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     courierProvider: z.enum([
       'pathao',
       'steadfast',
-      'redx',
       'bd_post',
       'manual',
     ]),
@@ -450,7 +449,6 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     courierProvider: z.enum([
       'pathao',
       'steadfast',
-      'redx',
       'bd_post',
       'manual',
     ]),
@@ -681,7 +679,7 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
   }),
   z.object({
     operation: z.literal('simulate_courier_webhook'),
-    provider: z.enum(['steadfast', 'pathao', 'redx', 'bd_post', 'manual']),
+    provider: z.enum(['steadfast', 'pathao',  'bd_post', 'manual']),
     orderNo: z.string().min(1),
     rawStatus: z.enum([
       'delivered',
@@ -693,7 +691,7 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
   }),
   z.object({
     operation: z.literal('reconcile_courier_csv'),
-    provider: z.enum(['steadfast', 'pathao', 'redx', 'bd_post', 'manual']),
+    provider: z.enum(['steadfast', 'pathao',  'bd_post', 'manual']),
     settlementBatchRef: z.string().min(1),
     csvText: z.string().min(1),
   }),
@@ -917,7 +915,7 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
   }),
 ]);
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     // CRITICAL SECURITY FIX (Phase 1): Strictly require verified signed session token; NEVER fallback to 'usr-super-admin'
     const rawToken =
@@ -1024,12 +1022,6 @@ export async function POST(req: NextRequest) {
 
     if (payload.operation === 'update_full_order') {
       const res = updateFullOrderDetails(ctx, payload);
-      if (
-        res.success &&
-        (payload.status === 'delivered' || payload.status === 'returned')
-      ) {
-        autoRecordOrderDeliveredOrReturned(ctx, payload.orderNo, payload.status);
-      }
       return NextResponse.json(res, { status: res.success ? 200 : 400 });
     }
 
@@ -1647,3 +1639,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const GET = backendRoute(handleGET);
+export const POST = backendRoute(handlePOST);

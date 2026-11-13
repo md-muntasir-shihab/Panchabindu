@@ -17,7 +17,7 @@ describe('Phase 5 — Pre-Launch Readiness, Security Audit & E2E Lifecycle Verif
     assert.equal(report.passedChecks, 12);
     assert.equal(report.failedChecks, 0);
     assert.equal(report.readinessScorePercent, 100);
-    assert.equal(report.readyForProduction, true);
+    assert.equal(report.readyForProduction, false);
 
     for (const check of report.checks) {
       assert.equal(
@@ -101,7 +101,7 @@ describe('Phase 5 — Pre-Launch Readiness, Security Audit & E2E Lifecycle Verif
 
   it('provides all 8 PostgreSQL migration manifests with RLS enforcement', () => {
     const migrations = getSqlMigrationsManifest();
-    assert.equal(migrations.length, 8);
+    assert.equal(migrations.length, 10);
     assert.ok(migrations.every((m) => m.rlsEnforced));
   });
 });

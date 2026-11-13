@@ -1,11 +1,10 @@
 // src/lib/db/repository.ts
-// Local JSON repository. PostgreSQL cutover is not implemented; production is blocked.
 // Enforces:
 //   - Rule A1/A2: Server-side field hiding (Customer NEVER sees vendor_id, internal_vendor_sku, supplier_cost_poisha, or margin)
 //   - Zero hardcoded business constants in UI — everything comes from site_settings & database tables
-//   - Local storage on disk (.data/erp-store.json); credentials do not change the persistence adapter
 
 import crypto from 'node:crypto';
+import { postVerifiedManualBkashPaymentJournal } from '../finance/phase4-general-ledger-engine';
 import path from 'node:path';
 import type {
   DeliveryMethod,
@@ -239,7 +238,9 @@ export interface CustomerInquiryRecord {
 
 export interface PublicOrderTrackingItemDTO {
   productNameBn: string;
+  productNameEn?: string;
   variantTitleBn: string;
+  variantTitleEn?: string;
   publicSku: string;
   quantity: number;
   unitSalePricePoisha: Poisha;
@@ -307,7 +308,9 @@ export interface InternalOrderLineRecord {
   variantId: string;
   vendorId: string;
   productNameBn: string;
+  productNameEn?: string;
   variantTitleBn: string;
+  variantTitleEn?: string;
   publicSku: string;
   internalVendorSku: string;
   quantity: number;
@@ -339,6 +342,11 @@ export interface AbandonedCartSnapshot {
 }
 
 export interface ErpPersistentState {
+  mediaAssets?: Array<{
+    assetId: string; productId: string; vendorId: string; uploaderId: string;
+    stagingPath: string; publicPath: string | null; status: 'pending' | 'approved';
+    sha256: string; width: number; height: number; createdAt: string; approvedBy: string | null;
+  }>;
   siteSettings: SiteSettingsRecord;
   categories: CategoryRecord[];
   products: InternalProductRecord[];
@@ -347,6 +355,7 @@ export interface ErpPersistentState {
   orders: OrderGridRowDTO[];
   orderLines: InternalOrderLineRecord[];
   idempotencyKeys: Record<string, string>; // idempotencyKey -> orderNo
+  idempotencyPayloadHashes?: Record<string, string>;
   abandonedCarts: AbandonedCartSnapshot[];
   inquiries: CustomerInquiryRecord[];
   manualBkashSubmissions?: ManualBkashSubmissionRecord[];
@@ -1160,6 +1169,7 @@ export function readErpState(): ErpPersistentState {
         }
       }
       const state: ErpPersistentState = {
+        mediaAssets: parsed.mediaAssets ?? [],
         siteSettings: {
           ...fallback.siteSettings,
           ...parsed.siteSettings,
@@ -1174,6 +1184,7 @@ export function readErpState(): ErpPersistentState {
         orders: parsed.orders,
         orderLines: parsed.orderLines,
         idempotencyKeys: parsed.idempotencyKeys ?? {},
+        idempotencyPayloadHashes: parsed.idempotencyPayloadHashes ?? {},
         abandonedCarts: parsed.abandonedCarts ?? [],
         inquiries: parsed.inquiries ?? [],
         manualBkashSubmissions:
@@ -1453,8 +1464,18 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
 
   // 1. Check Idempotency Key
   const idempotencyKey = principal ? `customer:${principal.customerId}:${input.idempotencyKey}` : input.idempotencyKey;
+  const payloadHash = crypto.createHash('sha256').update(JSON.stringify({
+    phone: input.customerPhone, name: input.customerName, district: input.districtId,
+    upazila: input.upazilaId, address: input.streetAddress, landmark: input.landmark,
+    items: input.items.map(item => ({ variantId: item.variantId, quantity: item.quantity })),
+    payment: input.paymentMethod, delivery: input.deliveryMethod, promo: input.promoCode,
+    reference: input.manualPaymentTrxId,
+  })).digest('hex');
   const existingOrderNo = state.idempotencyKeys[idempotencyKey];
   if (existingOrderNo) {
+    if (state.idempotencyPayloadHashes?.[idempotencyKey] && state.idempotencyPayloadHashes[idempotencyKey] !== payloadHash) {
+      return { success: false, errorBn: 'একই অনুরোধের চাবি দিয়ে ভিন্ন অর্ডার পাঠানো যাবে না।' };
+    }
     const existingTracking = getPublicOrderTracking(existingOrderNo);
     if (existingTracking) {
       return { success: true, order: existingTracking };
@@ -1787,17 +1808,21 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
     });
   }
 
-  const newOrderLines: InternalOrderLineRecord[] = resolvedLines.map((l, idx) => {
+  let remainingOrderDiscount = appliedDiscountPoisha;
+  const newOrderLines: InternalOrderLineRecord[] = resolvedLines.map((l) => {
     const lineSub = l.snapshot.lineSubtotalPoisha;
     const lineGrossMargin = l.snapshot.linePlatformMarginPoisha;
-    const lineDisc = idx === 0 ? appliedDiscountPoisha : 0;
+    const lineDisc = Math.min(remainingOrderDiscount, lineGrossMargin);
+    remainingOrderDiscount -= lineDisc;
     return {
       orderId,
       productId: l.product.productId,
       variantId: l.variant.variantId,
       vendorId: l.product.vendorId,
       productNameBn: l.product.nameBn,
+      productNameEn: l.product.nameEn,
       variantTitleBn: l.variant.titleBn,
+      variantTitleEn: l.variant.titleEn,
       publicSku: l.variant.publicSku,
       internalVendorSku: l.variant.internalVendorSku,
       quantity: l.quantity,
@@ -1816,6 +1841,8 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
   state.orders.unshift(newOrderRow);
   state.orderLines.push(...newOrderLines);
   state.idempotencyKeys[idempotencyKey] = orderNo;
+  state.idempotencyPayloadHashes ??= {};
+  state.idempotencyPayloadHashes[idempotencyKey] = payloadHash;
   state.abandonedCarts = state.abandonedCarts.filter(
     (c) => c.customerPhone !== input.customerPhone
   );
@@ -1867,7 +1894,9 @@ function mapOrderRowToPublicTrackingDTO(
     createdAt: order.createdAt,
     items: lines.map((l) => ({
       productNameBn: l.productNameBn,
+      productNameEn: l.productNameEn,
       variantTitleBn: l.variantTitleBn,
+      variantTitleEn: l.variantTitleEn,
       publicSku: l.publicSku,
       quantity: l.quantity,
       unitSalePricePoisha: l.snapUnitSalePricePoisha,
@@ -2204,29 +2233,55 @@ export function upsertAdminProduct(input: {
   const vendorCode = vendor.vendorCode;
   const vendorBusinessName = vendor.businessNameBn;
 
+  const existingProduct = state.products.find((product) => product.productId === productId);
+  if (state.products.some(product => product.slug === targetSlug && product.productId !== productId)) {
+    return { success: false, errorBn: 'এই পণ্যের slug ইতিমধ্যে ব্যবহৃত হয়েছে। অন্য slug দিন।' };
+  }
   const normalizedVariants: InternalVariantRecord[] = [];
+  const variantIds = new Set<string>();
+  const publicSkus = new Set<string>();
 
   for (const v of input.variants) {
-    const costPoisha = Math.round(v.supplierCostPoisha);
-    const salePoisha = Math.round(v.salePricePoisha);
+    const costPoisha = v.supplierCostPoisha;
+    const salePoisha = v.salePricePoisha;
+    const profitPoisha = v.supplierProfitPoisha ?? 0;
+    if (![costPoisha, salePoisha, profitPoisha, v.stockOnHand ?? 0].every(Number.isSafeInteger) ||
+        profitPoisha < 0 || (v.stockOnHand !== undefined && v.stockOnHand < 0)) {
+      return { success: false, errorBn: 'মূল্য ও স্টক সঠিক পূর্ণসংখ্যা হতে হবে।' };
+    }
 
     if (costPoisha <= 0 || salePoisha <= 0) {
       return { success: false, errorBn: 'ক্রয়মূল্য এবং বিক্রয়মূল্য শূন্যের বেশি হতে হবে।' };
     }
 
-    if (salePoisha <= costPoisha) {
+    if (salePoisha < costPoisha) {
       return { success: false, errorBn: `বিক্রয়মূল্য (${salePoisha / 100} ৳) অবশ্যই সাপ্লায়ার কস্টের (${costPoisha / 100} ৳) চেয়ে বেশি হতে হবে।` };
     }
 
-    const profitPoisha = Math.max(0, Math.round(v.supplierProfitPoisha ?? 0));
     const payablePoisha = costPoisha + profitPoisha;
-    const marginPoisha = Math.max(0, salePoisha - payablePoisha);
+    const marginPoisha = salePoisha - payablePoisha;
+    if (!Number.isSafeInteger(payablePoisha) || marginPoisha < 0 ||
+        (v.platformMarginPoisha !== undefined && v.platformMarginPoisha !== marginPoisha)) {
+      return { success: false, errorBn: 'বিক্রয়মূল্য সাপ্লায়ার প্রদেয় ও প্ল্যাটফর্ম মার্জিনের সমান হতে হবে।' };
+    }
 
     const variantId = v.variantId || `var-${Date.now()}-${Math.floor(100 + Math.random() * 899)}`;
     const publicSku = v.publicSku.trim().toUpperCase() || `BG-${targetSlug.slice(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 899)}`;
     const internalVendorSku = v.internalVendorSku?.trim().toUpperCase() || `${vendorCode}-${publicSku}`;
 
-    const stockOnHand = Math.max(0, Math.round(v.stockOnHand ?? 10));
+    const previousVariant = existingProduct?.variants.find((variant) => variant.variantId === variantId);
+    if (variantIds.has(variantId) || publicSkus.has(publicSku) ||
+        state.products.some((product) => product.variants.some((variant) =>
+          (variant.publicSku === publicSku && variant.variantId !== variantId) ||
+          (product.productId !== productId && variant.variantId === variantId)))) {
+      return { success: false, errorBn: 'একই ভ্যারিয়েন্ট বা SKU একাধিকবার ব্যবহার করা যাবে না।' };
+    }
+    variantIds.add(variantId);
+    publicSkus.add(publicSku);
+    const stockOnHand = previousVariant?.stockOnHand ?? v.stockOnHand ?? 0;
+    if (previousVariant && v.stockOnHand !== undefined && v.stockOnHand !== previousVariant.stockOnHand) {
+      return { success: false, errorBn: 'স্টক পরিবর্তনের জন্য কারণসহ ইনভেন্টরি সমন্বয় ব্যবহার করুন।' };
+    }
 
     normalizedVariants.push({
       variantId,
@@ -2245,15 +2300,19 @@ export function upsertAdminProduct(input: {
       compareAtPricePoisha: v.compareAtPricePoisha ? Math.round(v.compareAtPricePoisha) : null,
       weightGrams: Math.max(100, Math.round(v.weightGrams ?? 500)),
       stockOnHand,
-      stockReserved: 0,
-      stockInTransit: 0,
-      stockDamaged: 0,
-      stockAvailable: stockOnHand,
+      stockReserved: previousVariant?.stockReserved ?? 0,
+      stockInTransit: previousVariant?.stockInTransit ?? 0,
+      stockDamaged: previousVariant?.stockDamaged ?? 0,
+      stockAvailable: previousVariant?.stockAvailable ?? stockOnHand,
     });
   }
 
   const existingIdx = state.products.findIndex((p) => p.productId === productId);
-  const existingProduct = existingIdx >= 0 ? state.products[existingIdx] : null;
+  if (existingProduct?.variants.some((variant) => !variantIds.has(variant.variantId) &&
+      (variant.stockOnHand > 0 || variant.stockReserved > 0 || variant.stockInTransit > 0 ||
+       state.orderLines.some((line) => line.variantId === variant.variantId)))) {
+    return { success: false, errorBn: 'স্টক বা অর্ডারযুক্ত ভ্যারিয়েন্ট মুছে ফেলা যাবে না।' };
+  }
 
   const productRecord: InternalProductRecord = {
     productId,
@@ -2587,39 +2646,11 @@ export function reviewManualBkashSubmission(
     return { success: false, errorBn: 'অর্ডারটি খুঁজে পাওয়া যায়নি।' };
   }
 
-  let sub = state.manualBkashSubmissions.find(
+  const sub = state.manualBkashSubmissions.find(
     (s) =>
       s.orderNo.toUpperCase() === orderNoUpper &&
       (!input.trxId || s.trxId.toUpperCase() === input.trxId.trim().toUpperCase())
   );
-
-  // If legacy order had manualPaymentTrxId without a submission record, synthesize one
-  if (!sub && targetOrder.manualPaymentTrxId) {
-    sub = {
-      submissionId: `sub-${targetOrder.orderNo}-${targetOrder.manualPaymentTrxId}`,
-      orderNo: targetOrder.orderNo,
-      senderPhone: targetOrder.customerPhone,
-      senderPhoneMasked: maskBdPhone(targetOrder.customerPhone),
-      orderCustomerPhone: targetOrder.customerPhone,
-      senderPhoneMatchesOrderPhone: true,
-      trxId: targetOrder.manualPaymentTrxId,
-      submittedAmountPoisha:
-        targetOrder.advancePaidPoisha > 0
-          ? targetOrder.advancePaidPoisha
-          : targetOrder.deliveryChargePoisha > 0
-          ? targetOrder.deliveryChargePoisha
-          : targetOrder.totalPayablePoisha,
-      expectedPayablePoisha: targetOrder.totalPayablePoisha,
-      status: 'pending_verification',
-      submittedByRole: 'customer',
-      submittedByUsername: 'customer',
-      reviewedByUsername: null,
-      reviewNoteBn: null,
-      submittedAt: targetOrder.createdAt,
-      reviewedAt: null,
-    };
-    state.manualBkashSubmissions.unshift(sub);
-  }
 
   if (!sub) {
     return {
@@ -2647,7 +2678,17 @@ export function reviewManualBkashSubmission(
 
   const prevStatus = sub.status;
   const nowIso = new Date().toISOString();
+  if (prevStatus === 'approved' && input.decision !== 'approved') {
+    return { success: false, errorBn: 'অনুমোদিত পেমেন্ট সংশোধনে অনুমোদিত লেজার রিভার্সাল প্রক্রিয়া ব্যবহার করুন।' };
+  }
 
+  if (input.decision === 'approved' && prevStatus !== 'approved' &&
+      (!['pending_verification', 'under_review'].includes(prevStatus) ||
+       !Number.isSafeInteger(sub.submittedAmountPoisha) || sub.submittedAmountPoisha <= 0 ||
+       sub.submittedAmountPoisha > targetOrder.totalPayablePoisha - targetOrder.advancePaidPoisha ||
+       !input.reviewNoteBn?.trim())) {
+    return { success: false, errorBn: 'যাচাইয়ের প্রমাণ, সঠিক পরিমাণ ও বৈধ পেমেন্ট অবস্থা প্রয়োজন।' };
+  }
   if (input.decision === 'approved' && prevStatus !== 'approved') {
     const newAdvance = Math.min(
       targetOrder.totalPayablePoisha,
@@ -2693,6 +2734,14 @@ export function reviewManualBkashSubmission(
   sub.reviewedByUsername = checkerCtx.username;
   sub.reviewNoteBn = input.reviewNoteBn?.trim() || null;
   sub.reviewedAt = nowIso;
+
+  if (input.decision === 'approved' && prevStatus !== 'approved') {
+    const posting = postVerifiedManualBkashPaymentJournal({ submissionId: sub.submissionId, orderNo: targetOrder.orderNo,
+      trxId: sub.trxId, verifiedAmountPoisha: sub.submittedAmountPoisha,
+      makerUsername: sub.submittedByUsername, checkerUsername: checkerCtx.username,
+    });
+    if (!posting.success) return { success: false, errorBn: posting.errorBn ?? 'পেমেন্টের জার্নাল পোস্ট করা যায়নি।' };
+  }
 
   writeErpState(state);
   return {
@@ -2741,11 +2790,7 @@ export function requestOrderCancellation(input: {
     };
   }
 
-  if (
-    targetOrder.status === 'shipped' ||
-    targetOrder.status === 'out_for_delivery' ||
-    targetOrder.status === 'delivered'
-  ) {
+  if (!['pending_confirmation', 'confirmed', 'cancelled'].includes(targetOrder.status)) {
     return {
       success: false,
       code: 'ALREADY_DISPATCHED',
@@ -2765,11 +2810,11 @@ export function requestOrderCancellation(input: {
           (v) => v.variantId === line.variantId
         );
         if (variant) {
-          variant.stockReserved = Math.max(
-            0,
-            variant.stockReserved - line.quantity
-          );
-          variant.stockAvailable += line.quantity;
+          if (variant.stockReserved < line.quantity) return {
+            success: false, code: 'ALREADY_DISPATCHED', errorBn: 'স্টক সংরক্ষণ মেলেনি। অর্ডার বাতিলের আগে ইনভেন্টরি সমন্বয় প্রয়োজন।',
+          };
+          variant.stockReserved -= line.quantity;
+          variant.stockAvailable = variant.stockOnHand - variant.stockReserved;
         }
       }
     }

@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/payments/manual-bkash/submissions/route.ts
 // Public Manual bKash TrxID Submission Endpoint (Section 2.3, 10.4B, 11.2 & 21.1)
 // Enforces:
@@ -48,7 +49,7 @@ const manualBkashSubmissionSchema = z.object({
     .min(6, 'Idempotency Key আবশ্যক।'),
 });
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const requestId = createRequestId();
   try {
     if (!verifyOriginAndCsrf(req).ok) {
@@ -205,3 +206,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = backendRoute(handlePOST);

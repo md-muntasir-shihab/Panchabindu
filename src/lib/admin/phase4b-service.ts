@@ -1665,6 +1665,7 @@ export function autoRecordOrderDeliveredOrReturned(
         (e) =>
           e.orderNo === ord.orderNo &&
           e.vendorId === line.vendorId &&
+          e.orderItemId === `${ord.id}-${line.variantId}` &&
           e.escrowBucket === 'locked'
       );
 
@@ -1674,6 +1675,7 @@ export function autoRecordOrderDeliveredOrReturned(
           (e) =>
             e.orderNo === ord.orderNo &&
             e.vendorId === line.vendorId &&
+            e.orderItemId === `${ord.id}-${line.variantId}` &&
             e.escrowBucket === 'pending' &&
             e.amountPoisha > 0
         );

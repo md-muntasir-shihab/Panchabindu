@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/webhooks/courier/route.ts
 // Real-Time Courier Webhook Receiver Endpoint (Phase 1 Hardened — Section 4.6)
 // Enforces:
@@ -22,7 +23,7 @@ import {
 import { WEBHOOK_SERVICE_CONTEXT } from '@/src/types/permissions';
 
 const courierWebhookBodySchema = z.object({
-  provider: z.enum(['steadfast', 'pathao', 'redx', 'bd_post', 'manual']),
+  provider: z.enum(['steadfast', 'pathao']),
   orderNo: z.string().min(3).max(40),
   consignmentId: z.string().max(64).optional(),
   eventId: z.string().max(128).optional(),
@@ -36,7 +37,7 @@ const courierWebhookBodySchema = z.object({
   collectedCodPoisha: z.number().int().min(0).optional(),
 });
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const clientIp = getClientIpFromRequest(req);
     const rateLimit = checkRateLimit(
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest) {
       signatureHeader,
       secret: configuredSecret,
       timestampHeader,
+      requireSignedTimestamp: true,
     });
 
     if (!hmacVerification.valid) {
@@ -140,3 +142,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = backendRoute(handlePOST);

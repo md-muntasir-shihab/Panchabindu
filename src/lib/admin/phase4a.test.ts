@@ -7,7 +7,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readErpState, writeErpState } from '../db/repository';
+import { readErpState, writeErpState, submitManualBkashPayment } from '../db/repository';
 import {
   authenticateAdminUser,
   completeFirstLoginGate,
@@ -193,9 +193,14 @@ test('Phase 4A Case 4: Orders Grid One-Click Actions & Immutable Audit Log Recor
   const beforeSnap = getAdminWorkspaceSnapshot('usr-super-admin');
   const beforeAuditCount = beforeSnap.auditLogs?.length ?? 0;
 
+  const order = readErpState().orders.find(order => order.orderNo === 'ORD-261106-0002')!;
+  const submission = submitManualBkashPayment({ orderNo: order.orderNo, senderPhone: order.customerPhone,
+    trxId: `SYNTHETIC-${Date.now()}`, submittedAmountPoisha: 1000, idempotencyKey: `review-${Date.now()}`,
+  });
+  assert.equal(submission.success, true);
   const actionRes = executeOrderGridAction(adminCtx, {
-    orderNos: ['ORD-261106-0002'],
-    actionType: 'verify_bkash',
+    orderNos: ['ORD-261106-0002'], actionType: 'verify_bkash',
+    staffNote: 'Synthetic merchant statement and payment amount verified.',
   });
   assert.equal(actionRes.success, true);
 
@@ -208,116 +213,43 @@ test('Phase 4A Case 4: Orders Grid One-Click Actions & Immutable Audit Log Recor
   assert.equal(afterSnap.auditLogs?.[0]?.actionCode, 'MANUAL_BKASH_VERIFIED');
 });
 
-test('Phase 4A Case 5: Full Order Master Editor (Customer, Address, Items, Discount, Manual Courier Tracking & Call Confirmation)', async () => {
+test('full order amendments cannot bypass payment, tracking or lifecycle workflows', async () => {
   const { updateFullOrderDetails } = await import('./phase4a-service');
-  const { getLiveCourierTrackingUrl } = await import('../courier/tracking-urls');
-  const adminCtx = getActorSecurityContext('usr-super-admin')!;
-
-  // Ensure ORD-261106-0001 stays at its seed 245,000 poisha COD for Phase 4B tests
-  updateFullOrderDetails(adminCtx, {
-    orderNo: 'ORD-261106-0001',
-    customerName: 'তানভীর আহমেদ',
-    customerPhone: '01712345678',
-    districtId: 47,
-    upazilaId: 365,
-    streetAddress: 'বাড়ি ২৪, রোড ৭/এ, ধানমন্ডি আবাসিক এলাকা',
-    landmark: 'সাত মসজিদ রোড ওভারব্রিজের পাশে',
-    items: [
-      {
-        productId: '00000000-0000-4000-8000-000000000101',
-        variantId: '00000000-0000-4000-8000-000000000201',
-        quantity: 1,
-        unitSalePricePoisha: 239000,
-      },
-    ],
-    discountPoisha: 0,
-    deliveryChargePoisha: 6000,
-    advancePaidPoisha: 0,
-    paymentMethod: 'cod',
-    paymentStatus: 'unpaid',
-    courierProvider: 'steadfast',
-    consignmentId: 'CNS-ORD-0001',
-    trackingCode: 'SF-BD-990011',
-    status: 'pending_confirmation',
-    source: 'storefront',
+  const { withRuntimePersistence } = await import('../db/runtime-persistence');
+  const actor = getActorSecurityContext('usr-super-admin')!;
+  const result = createSmartAdminOrder(actor, {
+    idempotencyKey: `amend-${Date.now()}`, customerName: 'Synthetic buyer', customerPhone: '01719998877',
+    districtId: 47, upazilaId: 365, streetAddress: 'House 18, Road 9, Dhanmondi residential area',
+    landmark: 'Near the school', source: 'storefront', deliveryMethod: 'courier', paymentMethod: 'cod',
+    advancePaidPoisha: 0, customerNote: '', internalStaffNote: '', duplicateOverrideReason: 'Synthetic amendment test',
+    items: [{ productId: '00000000-0000-4000-8000-000000000101', variantId: '00000000-0000-4000-8000-000000000201', quantity: 1 }],
   });
-
-  // Create a dedicated order to test full master editing
-  const createdForEdit = createSmartAdminOrder(adminCtx, {
-    idempotencyKey: `edit-test-${Date.now()}`,
-    customerName: 'আরিফুল ইসলাম',
-    customerPhone: '01719998877',
-    districtId: 47,
-    upazilaId: 365,
-    streetAddress: 'বাড়ি ১৮, রোড ৯/এ, ধানমন্ডি আবাসিক এলাকা',
-    landmark: 'স্কুলের পাশে',
-    source: 'storefront',
-    deliveryMethod: 'courier',
-    paymentMethod: 'cod',
-    advancePaidPoisha: 0,
-    customerNote: '',
-    internalStaffNote: '',
-    duplicateOverrideReason: 'এডিট টেস্ট অর্ডার',
-    items: [
-      {
-        productId: '00000000-0000-4000-8000-000000000101',
-        variantId: '00000000-0000-4000-8000-000000000201',
-        quantity: 1,
-      },
-    ],
-  });
-  assert.equal(createdForEdit.success, true);
-  const targetOrderNo = createdForEdit.orderNo!;
-
-  const updateRes = updateFullOrderDetails(adminCtx, {
-    orderNo: targetOrderNo,
-    customerName: 'আরিফুল ইসলাম (ভিআইপি)',
-    customerPhone: '01719998877',
-    districtId: 47,
-    upazilaId: 365,
-    streetAddress: 'বাড়ি ১৮, রোড ৯/এ, ধানমন্ডি আবাসিক এলাকা (তৃতীয় তলা)',
-    landmark: 'সাত মসজিদ রোড ওভারব্রিজের পাশে',
-    items: [
-      {
-        productId: '00000000-0000-4000-8000-000000000101',
-        variantId: '00000000-0000-4000-8000-000000000201',
-        quantity: 2,
-        unitSalePricePoisha: 245000, // 2,450 BDT * 2 = 4,900 BDT (490,000 poisha)
-      },
-    ],
-    discountPoisha: 30000, // 300 BDT discount
-    deliveryChargePoisha: 6000, // 60 BDT delivery
-    advancePaidPoisha: 50000, // 500 BDT advance
-    paymentMethod: 'cod',
-    paymentStatus: 'partial_verified',
-    manualPaymentTrxId: 'BK-998877',
-    courierProvider: 'steadfast',
-    consignmentId: 'CNS-SF-9090',
-    trackingCode: 'SF-TRACK-778899',
-    status: 'confirmed',
-    source: 'phone_call',
-    callStatus: 'confirmed_yes',
-    callStatusNote: 'গ্রাহক ফোনে ২ পিস নিশ্চিত করেছেন এবং ৩০০ টাকা ডিসকাউন্ট দেওয়া হয়েছে।',
-    internalStaffNote: 'দ্রুত প্যাকিং করতে হবে।',
-  });
-
-  assert.equal(updateRes.success, true);
-  assert.equal(updateRes.order?.subtotalPoisha, 490000);
-  assert.equal(updateRes.order?.discountPoisha, 30000);
-  assert.equal(updateRes.order?.deliveryChargePoisha, 6000);
-  // Total = 490,000 - 30,000 + 6,000 = 466,000 poisha
-  assert.equal(updateRes.order?.totalPayablePoisha, 466000);
-  // COD Collectable = 466,000 - 50,000 = 416,000 poisha
-  assert.equal(updateRes.order?.codCollectablePoisha, 416000);
-  assert.equal(updateRes.order?.courierProvider, 'steadfast');
-  assert.equal(updateRes.order?.trackingCode, 'SF-TRACK-778899');
-  assert.equal(updateRes.order?.status, 'confirmed');
-
-  const liveUrl = getLiveCourierTrackingUrl(
-    'steadfast',
-    'SF-TRACK-778899',
-    'CNS-SF-9090',
-    targetOrderNo
-  );
-  assert.equal(liveUrl, 'https://steadfast.com.bd/t/SF-TRACK-778899');
+  assert.equal(result.success, true);
+  const before = readErpState();
+  const order = before.orders.find(order => order.orderNo === result.orderNo)!;
+  const line = before.orderLines.find(line => line.orderId === order.id)!;
+  const variant = before.products.flatMap(product => product.variants).find(variant => variant.variantId === line.variantId)!;
+  const payload = { ...order, discountPoisha: 30000, deliveryChargePoisha: 6000,
+    items: [{ variantId: line.variantId, quantity: 2, unitSalePricePoisha: line.snapUnitSalePricePoisha }],
+  };
+  for (const unsafe of [
+    { status: 'delivered' as const }, { paymentStatus: 'remitted' as const }, { advancePaidPoisha: 50000 },
+    { trackingCode: 'UNVERIFIED' }, { discountPoisha: 490000 },
+    { items: [...payload.items, ...payload.items] }, { discountPoisha: 0.5 },
+  ]) {
+    const rejected = updateFullOrderDetails(actor, { ...payload, ...unsafe });
+    assert.equal(rejected.success, false);
+    assert.deepEqual(readErpState(), before);
+  }
+  const amended = await withRuntimePersistence(() => updateFullOrderDetails(actor, payload));
+  assert.equal(amended.success, true);
+  const after = readErpState();
+  const updatedVariant = after.products.flatMap(product => product.variants).find(item => item.variantId === line.variantId)!;
+  assert.equal(updatedVariant.stockReserved, variant.stockReserved + 1);
+  assert.equal(updatedVariant.stockAvailable, variant.stockAvailable - 1);
+  const amendedLine = after.orderLines.find(item => item.orderId === order.id)!;
+  assert.equal(amendedLine.snapSupplierPayablePoisha, line.snapSupplierPayablePoisha);
+  assert.equal(amendedLine.lineDiscountPoisha, 30000);
+  assert.equal(amended.order?.status, order.status);
+  assert.equal(amended.order?.paymentStatus, 'unpaid');
 });

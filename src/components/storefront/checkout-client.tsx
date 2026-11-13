@@ -1,4 +1,9 @@
 'use client';
+import { localizedFetch as fetch } from '@/src/lib/i18n/localized-fetch';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/storefront/checkout-client.tsx
 // Single-Page Accordion Checkout (01_FRONTEND_MASTER_PROMPT):
@@ -816,8 +821,7 @@ export function CheckoutClient({
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 text-xs font-bold rounded-md bg-ink text-bg">
-                          বিকাশ (bKash)
-                        </span>
+                          <LocalizedText source={"বিকাশ (bKash)"} area="storefront" />{" "}</span>
                         <span className="text-xs text-muted">
                           {locale === 'bn'
                             ? 'পার্সোনাল সেন্ড মানি নম্বর:'
@@ -902,7 +906,7 @@ export function CheckoutClient({
                           ? 'বিকাশ Transaction ID (TrxID) *'
                           : 'bKash Transaction ID (TrxID) *'
                       }
-                      placeholder="যেমন: 9K28X91A"
+                      placeholder={uiText("যেমন: 9K28X91A", locale)}
                       value={manualPaymentTrxId}
                       onChange={(e) => setManualPaymentTrxId(e.target.value)}
                       required
@@ -963,7 +967,7 @@ export function CheckoutClient({
                                     item.quantity - 1
                                   )
                                 }
-                                aria-label="Decrease quantity"
+                                aria-label={uiText("Decrease quantity", locale)}
                                 className="p-1 text-ink hover:bg-surface cursor-pointer"
                               >
                                 <Minus className="w-3 h-3" aria-hidden="true" />
@@ -979,7 +983,7 @@ export function CheckoutClient({
                                     item.quantity + 1
                                   )
                                 }
-                                aria-label="Increase quantity"
+                                aria-label={uiText("Increase quantity", locale)}
                                 className="p-1 text-ink hover:bg-surface cursor-pointer"
                               >
                                 <Plus className="w-3 h-3" aria-hidden="true" />
