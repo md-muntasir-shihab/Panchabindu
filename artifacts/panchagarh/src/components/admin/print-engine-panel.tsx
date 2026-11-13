@@ -596,7 +596,7 @@ export function PrintEnginePanel({
                 return (
                   <div
                     key={slip.orderNo}
-                    className="max-w-[101.6mm] mx-auto border-2 border-ink bg-bg text-ink p-4 space-y-3 print:break-after-page"
+                    className="print-thermal-sheet max-w-[101.6mm] mx-auto border-2 border-ink bg-bg text-ink p-4 space-y-3 print:break-after-page"
                   >
                     <div className="flex items-center justify-between border-b border-border pb-2">
                       <div>

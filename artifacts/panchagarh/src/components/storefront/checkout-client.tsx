@@ -118,7 +118,6 @@ export function CheckoutClient({
     const controller = new AbortController();
     fetch('/api/account/orders', { cache: 'no-store', signal: controller.signal })
       .then(async (response) => {
-        if (!response.ok) throw new Error('Account unavailable');
         const data = await response.json() as { authenticated?: boolean; customerPhone?: string };
         if (controller.signal.aborted) return;
         setSessionStatus(data.authenticated ? 'authenticated' : 'anonymous');
@@ -264,8 +263,8 @@ export function CheckoutClient({
       setSubmitError(locale === 'bn' ? 'সার্ভারের হিসাব আসা পর্যন্ত অপেক্ষা করুন।' : 'Please wait for the server quote.');
       return;
     }
-    if (sessionStatus !== 'authenticated') {
-      setSubmitError('অর্ডার নিশ্চিত করার আগে অ্যাকাউন্টে লগইন করুন।');
+    if (sessionStatus === 'loading' || sessionStatus === 'error') {
+      setSubmitError('চেকআউট প্রস্তুত হচ্ছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।');
       return;
     }
 
@@ -383,12 +382,9 @@ export function CheckoutClient({
   return (
     <StorefrontShell siteSettings={siteSettings} categories={categories}>
       <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-6">
-        {sessionStatus !== 'authenticated' && (
+        {sessionStatus === 'error' && (
           <Card className="space-y-3">
-            <p role="status" className="text-sm">
-              {sessionStatus === 'loading' ? 'অ্যাকাউন্ট যাচাই হচ্ছে…' : sessionStatus === 'error' ? 'অ্যাকাউন্ট যাচাই করা যায়নি। লগইন পেজ থেকে আবার চেষ্টা করুন।' : 'অর্ডার নিশ্চিত করতে আগে লগইন করুন। আপনার কার্ট সংরক্ষিত থাকবে।'}
-            </p>
-            {sessionStatus !== 'loading' && <Link href="/account?tab=orders&returnTo=checkout" className="inline-flex min-h-[44px] items-center font-semibold underline">অ্যাকাউন্টে লগইন করুন</Link>}
+            <p role="status" className="text-sm">চেকআউট প্রস্তুত করা যায়নি। পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।</p>
           </Card>
         )}
         <div className="flex items-center justify-between border-b border-border pb-4">
@@ -1173,7 +1169,7 @@ export function CheckoutClient({
                   type="submit"
                   variant="primary"
                   size="lg"
-                  disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus !== 'authenticated'}
+                  disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus === 'loading' || sessionStatus === 'error'}
                   className="w-full min-h-[46px] text-sm font-bold shadow-sm"
                   leftIcon={
                     <ShieldCheck className="w-4 h-4" aria-hidden="true" />
@@ -1203,7 +1199,7 @@ export function CheckoutClient({
                 type="submit"
                 variant="primary"
                 size="md"
-                disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus !== 'authenticated'}
+                disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus === 'loading' || sessionStatus === 'error'}
                 className="min-h-[42px] px-4 font-bold"
                 leftIcon={<ShieldCheck className="w-4 h-4" aria-hidden="true" />}
               >
