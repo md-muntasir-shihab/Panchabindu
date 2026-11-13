@@ -140,7 +140,7 @@ test('Phase 7 Case 3: Margin-Safe Flash Campaign Guard & Automated Escrow Maturi
   });
   assert.equal(blockedFlash.success, false);
 
-  // 2. Valid flash discount (15,000 poisha = 150 BDT) succeeds and keeps supplierPayablePoisha intact
+  // 2. Even a margin-safe discount is quarantined by default (D-08).
   const validFlash = createMarginSafeFlashCampaign(adminCtx, {
     campaignCode: 'FLASH-JAM-150',
     titleBn: 'জামদানি ১৫০ টাকা ফ্ল্যাশ ছাড়',
@@ -148,15 +148,8 @@ test('Phase 7 Case 3: Margin-Safe Flash Campaign Guard & Automated Escrow Maturi
     flashDiscountPoisha: 15000,
     maxUnitsQuota: 20,
   });
-  assert.equal(validFlash.success, true);
-  assert.equal(
-    validFlash.campaign?.supplierPayablePoisha,
-    targetVar.supplierPayablePoisha
-  );
-  assert.equal(
-    validFlash.campaign?.remainingPlatformMarginPoisha,
-    targetVar.platformMarginPoisha - 15000
-  );
+  assert.equal(validFlash.success, false);
+  assert.equal(validFlash.campaign, undefined);
 
   // 3. Automated Escrow Maturity Batch execution
   const matRes = promoteMaturedEscrowEntriesBatch(adminCtx, false);

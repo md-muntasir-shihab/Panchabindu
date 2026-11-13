@@ -9,6 +9,10 @@ const require = createRequire(import.meta.url);
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const imported = path.join(root, 'artifacts/api-server/imported');
 const suites = {
+  quarantine: [
+    'lib/storefront/flash-quarantine.test.ts',
+    'lib/storefront/storefront-config.test.ts',
+  ],
   security: [
     'lib/security/phase1-security.test.ts',
     'lib/security/customer-route-guards.test.ts',
@@ -27,7 +31,7 @@ const suites = {
   ],
 };
 const suite = process.argv[2];
-if (!Object.hasOwn(suites, suite)) throw new Error('Choose security or payments');
+if (!Object.hasOwn(suites, suite)) throw new Error('Choose security, payments or quarantine');
 
 // One fresh working directory AND process per file: module-level store paths,
 // cached state, sessions and JSON writes cannot reach another suite or real .data.

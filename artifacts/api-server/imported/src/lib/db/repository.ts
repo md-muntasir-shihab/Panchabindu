@@ -1233,9 +1233,12 @@ function mapPublicCategory(value: CategoryRecord): CategoryRecord {
 export function sanitizeSiteSettingsForPublic(
   settings: PublicSafeSiteSettingsDTO
 ): PublicSafeSiteSettingsDTO {
+  // Operational flags stay private. Nested promo/countdown fields are excluded
+  // by the explicit allowlist below, independently of stored legacy content.
+  const { flashCampaignsEnabled: _flashCampaignsEnabled, ...publicStorefront } = getStorefrontConfig(settings);
   return {
     ...pickFields(settings, PUBLIC_SETTINGS_KEYS),
-    storefront: getStorefrontConfig(settings),
+    storefront: publicStorefront,
     delayBanner: pickFields(settings.delayBanner, ['enabled', 'messageBn', 'messageEn']),
     promoCampaign: pickFields(settings.promoCampaign, ['enabled', 'titleBn', 'titleEn', 'code', 'discountLabelBn', 'discountLabelEn']),
     trustBadges: settings.trustBadges.map((v) => pickFields(v, ['id', 'labelBn', 'labelEn', 'descBn', 'descEn'])),

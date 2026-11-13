@@ -18,6 +18,7 @@ The workflows supply `PORT` and `BASE_PATH`; do not run a root-level `pnpm dev`.
 - `pnpm --filter @workspace/scripts run test:domain` — original finance, checkout validators, runtime transaction and image precheck tests.
 - `pnpm --filter @workspace/scripts run test:security` — isolated security/session/customer and endpoint guards, staff RBAC, print privacy and committed workspace permission snapshot.
 - `pnpm --filter @workspace/scripts run test:payments` — isolated manual-MFS validation, inventory integrity, ledger posting, courier signature/replay and notification tests.
+- `pnpm --filter @workspace/scripts run test:quarantine` — isolated flash-sale default-off, data retention, public DTO leak and storefront configuration tests.
 - These two suites create fresh temporary JSON fixtures per file, discard inherited secrets/provider/sandbox configuration, block network calls and remove fixtures afterward. They never use the development `.data/` accounts. See `docs/planning/panchagarh/08-local-test-evidence.md` for scope and snapshot regeneration.
 - `pnpm --filter @workspace/scripts run test:shopping` — Chromium cart-to-checkout, refresh persistence and mobile catalog checks. Does not place an order. Requires Chromium at `/repl/tools/bin/chromium` or `CHROMIUM_PATH`.
 - `pnpm --filter @workspace/scripts run test:sandbox` — verifies development-only admin/vendor first login and customer phone-OTP login without printing credentials or OTPs.

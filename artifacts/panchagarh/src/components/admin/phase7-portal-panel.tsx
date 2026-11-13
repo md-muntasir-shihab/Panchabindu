@@ -141,6 +141,7 @@ export function Phase7PortalPanel({
 
   const lots: ConsignmentDispatchLotRecord[] = overview?.consignmentLots ?? [];
   const proposals: VendorPriceProposalRecord[] = overview?.priceProposals ?? [];
+  const flashCampaignsEnabled = overview?.flashCampaignsEnabled === true;
   const flashCampaigns: FlashSaleCampaignRecord[] =
     overview?.flashCampaigns ?? [];
   const maturityBatches: EscrowMaturityBatchRecord[] =
@@ -500,13 +501,13 @@ export function Phase7PortalPanel({
             <h2 className="flex items-center gap-2 text-lg font-bold text-[var(--color-ink)]">
               <Layers className="h-5 w-5 text-[var(--color-ink)]" />
               {isBn
-                ? 'সেলফ-সার্ভিস ভেন্ডর পোর্টাল, প্রোমো ক্যাম্পেইন ও এক্সিকিউটিভ একাউন্টিং (Phase 7 — Module T)'
-                : 'Self-Service Vendor Portal, Promo Campaigns & Executive Accounting (Phase 7 — Module T)'}
+                ? 'সেলফ-সার্ভিস ভেন্ডর পোর্টাল ও এক্সিকিউটিভ একাউন্টিং (Phase 7 — Module T)'
+                : 'Self-Service Vendor Portal & Executive Accounting (Phase 7 — Module T)'}
             </h2>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
               {isBn
-                ? 'কনসাইনমেন্ট স্টক চালান ও কিউসি অনুমোদন, ভেন্ডর মূল্য প্রস্তাব, মার্জিন-সেফ প্রোমো ক্যাম্পেইন, ৭-দিন এসক্রো ম্যাচুরিটি প্রমোটার এবং ডাবল-এন্ট্রি বিডিটি একাউন্টিং ও ভ্যাট লেজার।'
-                : 'Consignment stock dispatch & QC review, supplier price proposals, margin-safe flash campaigns, 7-day escrow maturity and double-entry VAT accounting.'}
+                ? 'কনসাইনমেন্ট স্টক চালান ও কিউসি অনুমোদন, ভেন্ডর মূল্য প্রস্তাব, ৭-দিন এসক্রো ম্যাচুরিটি প্রমোটার এবং ডাবল-এন্ট্রি বিডিটি একাউন্টিং ও ভ্যাট লেজার।'
+                : 'Consignment stock dispatch & QC review, supplier price proposals, 7-day escrow maturity and double-entry VAT accounting.'}
             </p>
           </div>
           <button
@@ -555,6 +556,7 @@ export function Phase7PortalPanel({
             </p>
           </div>
 
+          {flashCampaignsEnabled && (
           <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[var(--color-ink)]">
@@ -570,6 +572,7 @@ export function Phase7PortalPanel({
               {isBn ? 'ভেন্ডর প্রদেয় ১০০% অক্ষুণ্ণ রেখে প্ল্যাটফর্ম মার্জিন ছাড়' : 'Platform discounts funded exclusively from net margin'}
             </p>
           </div>
+          )}
 
           <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
             <div className="flex items-center justify-between">
@@ -634,8 +637,8 @@ export function Phase7PortalPanel({
             >
               <Zap className="h-4 w-4" />
               {isBn
-                ? '৩. মার্জিন-সেফ প্রোমো ক্যাম্পেইন ও এসক্রো ম্যাচুরিটি'
-                : '3. Margin-Safe Promos & Escrow Maturity'}
+                ? (flashCampaignsEnabled ? '৩. প্রোমো ক্যাম্পেইন ও এসক্রো ম্যাচুরিটি' : '৩. এসক্রো ম্যাচুরিটি')
+                : (flashCampaignsEnabled ? '3. Promos & Escrow Maturity' : '3. Escrow Maturity')}
             </button>
           )}
 
@@ -1051,6 +1054,7 @@ export function Phase7PortalPanel({
       {activeSubTab === 'flash_and_maturity' && !isVendor && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left: Golden Rule Margin-Safe Promo Guard & Negative Scope Freeze */}
+          {flashCampaignsEnabled && (
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-6">
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <ShieldCheck className="h-4 w-4" />
@@ -1103,8 +1107,9 @@ export function Phase7PortalPanel({
             </div>
           </div>
 
+          )}
           {/* Right: Automated Escrow Maturity Promoter */}
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-6">
+          <div className={`rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 ${flashCampaignsEnabled ? 'lg:col-span-6' : 'lg:col-span-12'}`}>
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <Clock className="h-4 w-4" />
               <LocalizedText source={"অটোমেটেড ৭-দিন এসক্রো ম্যাচুরিটি প্রমোটার (Locked → Available)"} area="admin" />{" "}</h3>

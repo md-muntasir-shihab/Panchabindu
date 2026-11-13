@@ -259,6 +259,7 @@ export interface Phase7PersistedStore {
 }
 
 export interface Phase7WorkspaceOverviewDTO {
+  flashCampaignsEnabled?: boolean;
   consignmentLots: ConsignmentDispatchLotRecord[];
   priceProposals: VendorPriceProposalRecord[];
   flashCampaigns: FlashSaleCampaignRecord[];

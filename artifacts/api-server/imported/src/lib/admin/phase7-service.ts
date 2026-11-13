@@ -32,6 +32,7 @@ import {
   type ImmutableVendorLedgerRecord,
 } from './phase4b-service';
 import { readPhase4CStore } from './phase4c-service';
+import { getStorefrontConfig } from '../storefront/storefront-config';
 
 // ============================================================================
 // 1. INTERFACES & DATA STRUCTURES (PHASE 7 — MODULE T)
@@ -259,6 +260,7 @@ export interface Phase7PersistedStore {
 }
 
 export interface Phase7WorkspaceOverviewDTO {
+  flashCampaignsEnabled?: boolean;
   consignmentLots: ConsignmentDispatchLotRecord[];
   priceProposals: VendorPriceProposalRecord[];
   flashCampaigns: FlashSaleCampaignRecord[];
@@ -958,6 +960,9 @@ export function createMarginSafeFlashCampaign(
   errorBn?: string;
   campaign?: FlashSaleCampaignRecord;
 } {
+  if (getStorefrontConfig(readErpState().siteSettings).flashCampaignsEnabled !== true) {
+    return { success: false, errorBn: 'ফ্ল্যাশ-সেল ক্যাম্পেইন বন্ধ রাখা হয়েছে (D-08)।' };
+  }
   if (ctx.roleSlug === 'vendor' || ctx.roleSlug === 'packaging_manager') {
     return {
       success: false,
@@ -1991,15 +1996,17 @@ export function getPhase7WorkspaceOverview(
 ): Phase7WorkspaceOverviewDTO {
   const store = readPhase7Store();
   const isVendor = ctx.roleSlug === 'vendor';
+  const flashCampaignsEnabled = getStorefrontConfig(readErpState().siteSettings).flashCampaignsEnabled === true;
 
   return {
+    flashCampaignsEnabled: !isVendor && flashCampaignsEnabled,
     consignmentLots: isVendor
       ? store.consignmentLots.filter((l) => l.vendorId === ctx.vendorId)
       : store.consignmentLots,
     priceProposals: isVendor
       ? store.priceProposals.filter((p) => p.vendorId === ctx.vendorId)
       : store.priceProposals,
-    flashCampaigns: isVendor ? [] : store.flashCampaigns,
+    flashCampaigns: isVendor || !flashCampaignsEnabled ? [] : store.flashCampaigns,
     maturityBatches: isVendor ? [] : store.maturityBatches,
     supplierProductOffers: isVendor
       ? (store.supplierProductOffers ?? []).filter(

@@ -1,4 +1,4 @@
-import { storefrontContentSchema } from '@/src/lib/storefront/storefront-config';
+import { getStorefrontConfig, storefrontContentSchema } from '@/src/lib/storefront/storefront-config';
 import { updateStorefrontContent } from '@/src/lib/admin/storefront-settings-service';
 import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/admin/workspace/route.ts
@@ -981,6 +981,14 @@ async function handlePOST(req: NextRequest) {
     }
 
     const payload = parsed.data;
+
+    if (payload.operation === 'create_flash_campaign' &&
+        getStorefrontConfig(readErpState().siteSettings).flashCampaignsEnabled !== true) {
+      return NextResponse.json({
+        success: false, code: 'FEATURE_QUARANTINED',
+        errorBn: 'ফ্ল্যাশ-সেল ক্যাম্পেইন বন্ধ রাখা হয়েছে (D-08)।',
+      }, { status: 403 });
+    }
 
     if (payload.operation === 'order_grid_action' && payload.actionType === 'book_courier') {
       return NextResponse.json({ success: false, code: 'NOT_INTEGRATED', errorBn: 'যাচাইকৃত বুকিং adapter ছাড়া স্বয়ংক্রিয় কুরিয়ার বুকিং বন্ধ।' }, { status: 503 });

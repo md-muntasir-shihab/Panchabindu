@@ -14,6 +14,7 @@ const imageUrl = url.refine(v => !v || !v.startsWith('#'), 'Use an image URL');
 const link = z.object({ id: text.min(1), labelBn: text.min(1), labelEn: text.min(1), href: url.min(1), enabled: z.boolean() });
 const uniqueIds = <T extends { id: string }>(items: T[]) => new Set(items.map(v => v.id)).size === items.length;
 export const storefrontConfigSchema = z.object({
+  flashCampaignsEnabled: z.boolean().optional(),
   logoUrl: imageUrl, faviconUrl: imageUrl, logoWidth: z.number().int().min(32).max(200),
   showBrandName: z.boolean(), showTagline: z.boolean(), showSupportPhone: z.boolean(), showWhatsApp: z.boolean(),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).refine(hex => {
@@ -33,6 +34,7 @@ export type StorefrontConfig = z.infer<typeof storefrontConfigSchema>;
 
 export function getStorefrontConfig(settings: { storefront?: StorefrontConfig; taglineBn?: string; taglineEn?: string }): StorefrontConfig {
   const config = {
+    flashCampaignsEnabled: false,
     logoUrl: '', faviconUrl: '', logoWidth: 44, showBrandName: true, showTagline: false,
     showSupportPhone: true, showWhatsApp: true, accentColor: '#1B4332',
     footerTextBn: settings.taglineBn ?? '', footerTextEn: settings.taglineEn ?? '',

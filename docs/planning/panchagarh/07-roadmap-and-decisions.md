@@ -29,7 +29,7 @@
 | D-05 | Customer OTP SMS provider (কোন provider, paid?) | Default: none → prod customer login fail-closed until configured | H, J |
 | D-06 | Courier credentials (Pathao/Steadfast merchant) দেওয়া হবে? | Default: locked simulation | H |
 | D-07 | Money naming: বিদ্যমান `*_poisha` canonical (addendum `*_paisa` নয়); API amount number বজায় | Default: `poisha`, number | C |
-| D-08 | Flash-sale engine: quarantine (flag off + hidden) নাকি delete? | Default: quarantine, data retained | D/F |
+| D-08 | Flash-sale engine: quarantine (flag off + hidden) নাকি delete? | Owner approved quarantine on 2026-11-13: default off, hidden admin section, public countdown/flash fields omitted; code and data retained | D/F |
 | D-09 | Accountant sign-off: CoA, VAT 500bp on margin, holding ledger legal wording | Default: current values labeled `VERIFY_REQUIRED` in UI | G |
 | D-10 | Google Sheets mirror: keep disabled-by-config, keep enabled, or remove | Default: disabled unless configured | H |
 | D-11 | Persistence architecture: (a) doc-store বজায় + app-layer leak tests; (b) normalized tables-এ runtime migration roadmap (বড় কাজ, RLS কার্যকর) | Default: (a) এখন, (b) J-পরবর্তী আলাদা proposal | B, C, G |
