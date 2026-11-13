@@ -7,7 +7,8 @@
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
-    "build:vercel": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/panchagarh run build"
+    "build:vercel": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/panchagarh run build",
+    "db:initialize-runtime": "node scripts/database/initialize-production-runtime.mjs"
   },
   "private": true,
   "dependencies": {

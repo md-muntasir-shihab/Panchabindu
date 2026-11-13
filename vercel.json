@@ -1,6 +1,6 @@
 {
   "installCommand": "npx --yes pnpm@10.34.9 install --frozen-lockfile",
-  "buildCommand": "PORT=3000 BASE_PATH=/ npx --yes pnpm@10.34.9 run build",
+  "buildCommand": "npx --yes pnpm@10.34.9 run db:initialize-runtime && PORT=3000 BASE_PATH=/ npx --yes pnpm@10.34.9 run build",
   "outputDirectory": "artifacts/panchagarh/dist/public",
   "functions": {
     "api/*.mjs": {
