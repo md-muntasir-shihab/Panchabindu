@@ -87,7 +87,7 @@ export function CheckoutClient({
     'courier' | 'post_office'
   >('courier');
   const [paymentMethod, setPaymentMethod] = React.useState<
-    'cod' | 'bkash_manual' | 'nagad_manual' | 'rocket_manual'
+    'cod' | 'bkash_manual'
   >('cod');
   const [manualPaymentTrxId, setManualPaymentTrxId] = React.useState('');
   const [copiedMfsNumber, setCopiedMfsNumber] = React.useState(false);
@@ -110,6 +110,24 @@ export function CheckoutClient({
   );
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const submittingRef = React.useRef(false);
+  const [sessionStatus, setSessionStatus] = React.useState<'loading' | 'authenticated' | 'anonymous' | 'error'>('loading');
+
+  React.useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/account/orders', { cache: 'no-store', signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Account unavailable');
+        const data = await response.json() as { authenticated?: boolean; customerPhone?: string };
+        if (controller.signal.aborted) return;
+        setSessionStatus(data.authenticated ? 'authenticated' : 'anonymous');
+        if (data.authenticated && typeof data.customerPhone === 'string') setCustomerPhone(data.customerPhone);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setSessionStatus('error');
+      });
+    return () => controller.abort();
+  }, []);
 
   // Keep upazilaId in sync when districtId changes
   const handleDistrictChange = (newDistrictId: number) => {
@@ -256,7 +274,13 @@ export function CheckoutClient({
 
   const handleConfirmOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setSubmitError(null);
+
+    if (sessionStatus !== 'authenticated') {
+      setSubmitError('অর্ডার নিশ্চিত করার আগে অ্যাকাউন্টে লগইন করুন।');
+      return;
+    }
 
     const normalizedPhone = normalizeBdPhone(customerPhone);
     if (!customerName.trim() || customerName.trim().length < 2) {
@@ -275,23 +299,18 @@ export function CheckoutClient({
     }
     if (hasItemRequiringAdvance && effectivePaymentMethod === 'cod') {
       setSubmitError(
-        'এই অর্ডারে নির্বাচিত পণ্যের জন্য কুরিয়ার ডেলিভারি চার্জ অগ্রিম প্রযোজ্য। অনুগ্রহ করে বিকাশ, নগদ বা রকেট নির্বাচন করুন।'
+        'এই অর্ডারে কুরিয়ার ডেলিভারি চার্জ অগ্রিম প্রযোজ্য। অনুগ্রহ করে বিকাশ নির্বাচন করুন।'
       );
       return;
     }
     if (effectivePaymentMethod !== 'cod' && manualPaymentTrxId.trim().length < 4) {
-      const providerLabel =
-        effectivePaymentMethod === 'nagad_manual'
-          ? 'নগদ'
-          : effectivePaymentMethod === 'rocket_manual'
-          ? 'রকেট'
-          : 'বিকাশ';
       setSubmitError(
-        `${providerLabel} সেন্ড মানির সঠিক Transaction ID (TrxID) লিখুন।`
+        'বিকাশ সেন্ড মানির সঠিক Transaction ID (TrxID) লিখুন।'
       );
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
       const advancePortion =
@@ -339,6 +358,7 @@ export function CheckoutClient({
       };
 
       if (!response.ok || !result.success || !result.order) {
+        if (response.status === 401) setSessionStatus('anonymous');
         setSubmitError(
           result.errorBn ?? 'অর্ডার সম্পন্ন করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।'
         );
@@ -369,12 +389,23 @@ export function CheckoutClient({
     } catch {
       setSubmitError('নেটওয়ার্ক ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।');
       setIsSubmitting(false);
+    } finally {
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
   return (
     <StorefrontShell siteSettings={siteSettings} categories={categories}>
       <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+        {sessionStatus !== 'authenticated' && (
+          <Card className="space-y-3">
+            <p role="status" className="text-sm">
+              {sessionStatus === 'loading' ? 'অ্যাকাউন্ট যাচাই হচ্ছে…' : sessionStatus === 'error' ? 'অ্যাকাউন্ট যাচাই করা যায়নি। লগইন পেজ থেকে আবার চেষ্টা করুন।' : 'অর্ডার নিশ্চিত করতে আগে লগইন করুন। আপনার কার্ট সংরক্ষিত থাকবে।'}
+            </p>
+            {sessionStatus !== 'loading' && <Link href="/account?tab=orders&returnTo=checkout" className="inline-flex min-h-[44px] items-center font-semibold underline">অ্যাকাউন্টে লগইন করুন</Link>}
+          </Card>
+        )}
         <div className="flex items-center justify-between border-b border-border pb-4">
           <div>
             <Link
@@ -711,8 +742,8 @@ export function CheckoutClient({
                     </div>
                     <p className="text-[11px] leading-relaxed">
                       {locale === 'bn'
-                        ? `এই অর্ডারের স্পেশাল/তাঁত পণ্যের জন্য কুরিয়ার ডেলিভারি চার্জ ৳${(requiredAdvancePoisha / 100).toFixed(0)} অগ্রিম (বিকাশ/নগদ/রকেট) পরিশোধ করতে হবে। অবশিষ্ট ৳${(Math.max(0, totalPayablePoisha - requiredAdvancePoisha) / 100).toFixed(0)} ক্যাশ অন ডেলিভারি (COD)-তে প্রদেয়।`
-                        : `To confirm the order for these artisan products, advance courier charge of ৳${(requiredAdvancePoisha / 100).toFixed(0)} is required via bKash/Nagad/Rocket. Remaining ৳${(Math.max(0, totalPayablePoisha - requiredAdvancePoisha) / 100).toFixed(0)} will be paid upon delivery.`}
+                        ? `এই অর্ডারের কুরিয়ার চার্জ ${formatPoishaToBdt(requiredAdvancePoisha, locale)} অগ্রিম বিকাশে জমা দিতে হবে। যাচাইয়ের পর অর্থ প্রাপ্তি নিশ্চিত হবে।`
+                        : `Submit the advance courier charge of ${formatPoishaToBdt(requiredAdvancePoisha, locale)} via bKash. Payment remains pending until verified.`}
                     </p>
                   </div>
                 )}
@@ -785,11 +816,7 @@ export function CheckoutClient({
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 text-xs font-bold rounded-md bg-ink text-bg">
-                          {effectivePaymentMethod === 'nagad_manual'
-                            ? 'নগদ (Nagad)'
-                            : effectivePaymentMethod === 'rocket_manual'
-                            ? 'রকেট (Rocket)'
-                            : 'বিকাশ (bKash)'}
+                          বিকাশ (bKash)
                         </span>
                         <span className="text-xs text-muted">
                           {locale === 'bn'
@@ -803,12 +830,14 @@ export function CheckoutClient({
 
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           const targetNum = siteSettings.bkashManualNumber;
-                          if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                            void navigator.clipboard.writeText(targetNum);
+                          try {
+                            await navigator.clipboard.writeText(targetNum);
                             setCopiedMfsNumber(true);
                             window.setTimeout(() => setCopiedMfsNumber(false), 1500);
+                          } catch {
+                            setSubmitError('নম্বর কপি করা যায়নি। নম্বরটি নির্বাচন করে কপি করুন।');
                           }
                         }}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-bg text-ink hover:border-ink cursor-pointer"
@@ -869,15 +898,7 @@ export function CheckoutClient({
 
                     <Input
                       label={
-                        effectivePaymentMethod === 'nagad_manual'
-                          ? locale === 'bn'
-                            ? 'নগদ Transaction ID (TrxID) *'
-                            : 'Nagad Transaction ID (TrxID) *'
-                          : effectivePaymentMethod === 'rocket_manual'
-                          ? locale === 'bn'
-                            ? 'রকেট Transaction ID (TrxID) *'
-                            : 'Rocket Transaction ID (TrxID) *'
-                          : locale === 'bn'
+                        locale === 'bn'
                           ? 'বিকাশ Transaction ID (TrxID) *'
                           : 'bKash Transaction ID (TrxID) *'
                       }
@@ -1093,8 +1114,8 @@ export function CheckoutClient({
                       <div className="flex items-center justify-between text-[#B45309] font-medium">
                         <span>
                           {locale === 'bn'
-                            ? `অগ্রিম প্রদেয় (${effectivePaymentMethod === 'nagad_manual' ? 'নগদ' : effectivePaymentMethod === 'rocket_manual' ? 'রকেট' : 'বিকাশ'}):`
-                            : `Advance Payable (${effectivePaymentMethod === 'nagad_manual' ? 'Nagad' : effectivePaymentMethod === 'rocket_manual' ? 'Rocket' : 'bKash'}):`}
+                            ? 'অগ্রিম প্রদেয় (বিকাশ):'
+                            : 'Advance Payable (bKash):'}
                         </span>
                         <span className="font-bold tabular-nums">
                           {formatPoishaToBdt(
@@ -1165,7 +1186,7 @@ export function CheckoutClient({
                       <span className="font-semibold text-ink">
                         {effectivePaymentMethod !== 'cod'
                           ? locale === 'bn'
-                            ? `${effectivePaymentMethod === 'nagad_manual' ? 'নগদ' : effectivePaymentMethod === 'rocket_manual' ? 'রকেট' : 'বিকাশ'} TrxID ভেরিফিকেশন পেন্ডিং`
+                            ? 'বিকাশ TrxID ভেরিফিকেশন পেন্ডিং'
                             : 'Pending TrxID Verification'
                           : locale === 'bn'
                           ? 'ডেলিভারির সময় প্রদেয় (COD)'
@@ -1189,7 +1210,7 @@ export function CheckoutClient({
                   type="submit"
                   variant="primary"
                   size="lg"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || sessionStatus !== 'authenticated'}
                   className="w-full min-h-[46px] text-sm font-bold shadow-sm"
                   leftIcon={
                     <ShieldCheck className="w-4 h-4" aria-hidden="true" />
@@ -1219,7 +1240,7 @@ export function CheckoutClient({
                 type="submit"
                 variant="primary"
                 size="md"
-                disabled={isSubmitting}
+                disabled={isSubmitting || sessionStatus !== 'authenticated'}
                 className="min-h-[42px] px-4 font-bold"
                 leftIcon={<ShieldCheck className="w-4 h-4" aria-hidden="true" />}
               >

@@ -4,6 +4,8 @@
 import type { MetadataRoute } from 'next';
 import { getPublicStorefrontData } from '@/src/lib/db/repository';
 
+export const dynamic = 'force-dynamic';
+
 export default function manifest(): MetadataRoute.Manifest {
   const { siteSettings } = getPublicStorefrontData();
 

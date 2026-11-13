@@ -53,7 +53,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizeStyles: Record<ButtonSize, string> = {
-      sm: 'min-h-[38px] px-3 py-1.5 text-xs font-medium rounded-[var(--radius-sm)]',
+      sm: 'min-h-[44px] px-3 py-1.5 text-xs font-medium rounded-[var(--radius-sm)]',
       md: 'min-h-[44px] px-4 py-2.5 text-sm font-medium rounded-[var(--radius-md)]',
       lg: 'min-h-[48px] px-6 py-3 text-base font-semibold rounded-[var(--radius-md)]',
       icon: 'min-h-[44px] min-w-[44px] p-2.5 rounded-[var(--radius-md)]',
@@ -64,6 +64,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         type={type}
         disabled={disabled || isLoading}
+          aria-busy={isLoading || undefined}
         className={cn(
           'inline-flex items-center justify-center gap-2 transition-transform duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-50 disabled:pointer-events-none cursor-pointer select-none',
           variantStyles[variant],
@@ -166,6 +167,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, helperText, id, ...props }, ref) => {
     const generatedId = React.useId();
     const inputId = id ?? generatedId;
+    const messageId = `${inputId}-message`;
 
     return (
       <div className="w-full space-y-1.5">
@@ -185,15 +187,16 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             error ? 'border-danger' : 'border-border',
             className
           )}
-          aria-invalid={Boolean(error)}
           {...props}
+          aria-invalid={Boolean(error)}
+          aria-describedby={[props['aria-describedby'], error || helperText ? messageId : null].filter(Boolean).join(' ') || undefined}
         />
         {error ? (
-          <p className="text-xs font-medium text-danger" role="alert">
+          <p id={messageId} className="text-xs font-medium text-danger" role="alert">
             {error}
           </p>
         ) : helperText ? (
-          <p className="text-xs text-muted">{helperText}</p>
+          <p id={messageId} className="text-xs text-muted">{helperText}</p>
         ) : null}
       </div>
     );
@@ -217,6 +220,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, label, error, options, placeholder, id, ...props }, ref) => {
     const generatedId = React.useId();
     const selectId = id ?? generatedId;
+    const messageId = `${selectId}-message`;
 
     return (
       <div className="w-full space-y-1.5">
@@ -236,8 +240,9 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             error ? 'border-danger' : 'border-border',
             className
           )}
-          aria-invalid={Boolean(error)}
           {...props}
+          aria-invalid={Boolean(error)}
+          aria-describedby={[props['aria-describedby'], error ? messageId : null].filter(Boolean).join(' ') || undefined}
         >
           {placeholder && <option value="">{placeholder}</option>}
           {options.map((opt) => (
@@ -247,7 +252,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         {error && (
-          <p className="text-xs font-medium text-danger" role="alert">
+          <p id={messageId} className="text-xs font-medium text-danger" role="alert">
             {error}
           </p>
         )}

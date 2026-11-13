@@ -12,6 +12,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import {
   ShoppingBag,
   Heart,
@@ -68,12 +69,23 @@ export function StorefrontShell({
   siteSettings,
   categories,
   products = [],
-  searchQuery = '',
-  onSearchChange,
+  searchQuery: controlledQuery = '',
+  onSearchChange: controlledSearchChange,
   activeCategorySlug,
   onSelectCategory,
   children,
 }: StorefrontShellProps) {
+  const router = useRouter();
+  const [localQuery, setLocalQuery] = React.useState('');
+  const searchQuery = controlledSearchChange ? controlledQuery : localQuery;
+  const onSearchChange = controlledSearchChange ?? setLocalQuery;
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && searchQuery.trim()) {
+      event.preventDefault();
+      setIsSearchFocused(false);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
   const locale = useLocaleStore((s) => s.locale);
   const toggleLocale = useLocaleStore((s) => s.toggleLocale);
   const dict = useLocaleStore((s) => s.t());
@@ -430,6 +442,7 @@ export function StorefrontShell({
                 <input
                   ref={desktopSearchInputRef}
                   type="search"
+                  onKeyDown={handleSearchKeyDown}
                   value={searchQuery}
                   onFocus={() => setIsSearchFocused(true)}
                   onChange={(e) => {
@@ -745,6 +758,7 @@ export function StorefrontShell({
               />
               <input
                 type="search"
+                onKeyDown={handleSearchKeyDown}
                 value={searchQuery}
                 onFocus={() => setIsSearchFocused(true)}
                 onChange={(e) => {
