@@ -57,6 +57,7 @@ import {
   Store,
   Printer,
   Wallet,
+  Banknote,
   TrendingUp,
   Zap,
   Sliders,
@@ -153,6 +154,7 @@ import {
   VendorEscrowAndReturnPanel,
 } from './courier-and-escrow-panel';
 import { VendorControlPanel } from './vendor-control-panel';
+import { VendorPayoutRegisterPanel } from './vendor-payout-register-panel';
 import {
   FinanceProduct360AndExpensesPanel,
   MessagingAutomationAndSheetsPanel,
@@ -190,7 +192,8 @@ export type AdminTabKey =
   | 'phase5_readiness'
   | 'phase6_ops'
   | 'phase7_portal'
-  | 'vendor_control';
+  | 'vendor_control'
+  | 'vendor_payouts';
 
 type EnrichedOrderRow = Partial<OrderGridRowDTO> & {
   callAttempts: number;
@@ -2476,6 +2479,20 @@ ${itemsList}
           fullLabelBn: 'ভেন্ডর ডাইরেক্টরি, এসক্রো লেজার ও পেআউট',
           fullLabelEn: 'Vendor Directory, Escrow Ledger & Payouts',
           icon: <Wallet className="w-4 h-4 shrink-0" aria-hidden="true" />,
+        },
+        {
+          key: 'vendor_payouts',
+          labelBn: 'পেআউট রেজিস্টার',
+          labelEn: 'Payout Register',
+          fullLabelBn: 'ভেন্ডর পেআউট রেজিস্টার ও নিষ্পত্তি',
+          fullLabelEn: 'Vendor Payout Register & Settlement',
+          icon: <Banknote className="w-4 h-4 shrink-0" aria-hidden="true" />,
+          hidden: !isSuperAdmin,
+          badge:
+            snapshot.vendorEscrow?.payoutRequests?.filter(
+              (p) => p.status === 'requested' || p.status === 'approved'
+            ).length || undefined,
+          badgeStatus: 'warning',
         },
         {
           key: 'vendor_control',
@@ -5065,6 +5082,13 @@ ${itemsList}
         {/* ==================================================================
             TAB: VENDOR PANEL CONTROL & PERMISSION MATRIX (SUPER ADMIN)
            ================================================================== */}
+        {activeTab === 'vendor_payouts' && isSuperAdmin && (
+          <VendorPayoutRegisterPanel
+            locale={locale}
+            onNotify={(msg, tone) => setActionFeedback({ type: tone ?? 'success', text: msg })}
+          />
+        )}
+
         {activeTab === 'vendor_control' && isSuperAdmin && (
           <VendorControlPanel
             locale={locale}

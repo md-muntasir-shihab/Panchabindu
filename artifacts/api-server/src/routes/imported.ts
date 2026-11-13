@@ -28,6 +28,7 @@ import * as vendorPayouts from '../../imported/app/api/vendor/payouts/route';
 import * as vendorProfile from '../../imported/app/api/vendor/profile/route';
 import * as vendorOnboarding from '../../imported/app/api/vendor/onboarding/route';
 import * as adminVendors from '../../imported/app/api/admin/vendors/route';
+import * as adminVendorPayouts from '../../imported/app/api/admin/vendor-payouts/route';
 import * as webhook from '../../imported/app/api/webhooks/courier/route';
 import { pageData, manifest, sitemap, robots } from './page-data';
 
@@ -75,6 +76,7 @@ const routes: Array<[string, Record<string, unknown>]> = [
   ['/api/promo/validate', promo], ['/api/reviews', reviews],
   ['/api/storefront/inquiry', inquiry], ['/api/storefront', storefront],
   ['/api/admin/vendors', adminVendors],
+  ['/api/admin/vendor-payouts', adminVendorPayouts],
   ['/api/vendor/overview', vendor], ['/api/vendor/workspace', vendorWorkspace],
   ['/api/vendor/products', vendorProducts], ['/api/vendor/stock', vendorStock],
   ['/api/vendor/price-proposals', vendorPriceProposals], ['/api/vendor/payouts', vendorPayouts],

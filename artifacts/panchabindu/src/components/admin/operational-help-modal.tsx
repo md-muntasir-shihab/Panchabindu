@@ -330,6 +330,38 @@ export const OPERATIONAL_HELP_GUIDE: Record<AdminTabKey, OperationalHelpGuideIte
       '• Audit log records are immutable and append-only at the database level.',
     ],
   },
+  vendor_payouts: {
+    titleBn: 'ভেন্ডর পেআউট রেজিস্টার ও নিষ্পত্তি',
+    titleEn: 'Vendor Payout Register & Settlement',
+    purposeBn:
+      'কোন ভেন্ডরকে কত টাকা, কখন, কোন মাধ্যমে এবং কে পরিশোধ করেছে তার পূর্ণ হিসাব। বাকি পেআউট, এসক্রোতে আটকে থাকা টাকা ও চার্জসহ সব মিলিয়ে এক জায়গায়।',
+    purposeEn:
+      'The complete account of what each vendor was paid, when, through which channel, and by whom — including outstanding amounts, escrow still held and channel fees.',
+    workflowBn: [
+      '১. উপরের চারটি টাইলে মোট পরিশোধিত, বাকি, চার্জ ও এসক্রোতে আটকে থাকা টাকা দেখুন।',
+      '২. “ভেন্ডর অনুযায়ী হিসাব” টেবিলে যেকোনো ভেন্ডরে ক্লিক করে তালিকা ফিল্টার করুন।',
+      '৩. যেকোনো পেআউটে ক্লিক করলে নিচে টাকার হিসাব, কে অনুরোধ/অনুমোদন/পরিশোধ করেছে এবং পুরো টাইমলাইন খুলবে।',
+      '৪. অনুমোদনের পর TrxID দিয়ে “পরিশোধিত চিহ্নিত করুন”; বাতিল করলে হোল্ডকৃত টাকা ভেন্ডরের ব্যালেন্সে ফিরে যায়।',
+    ],
+    workflowEn: [
+      '1. Read disbursed, outstanding, fees and escrow-held in the four tiles at the top.',
+      '2. Click any vendor in the per-vendor table to filter the register to them.',
+      '3. Expand a payout to see the money breakdown, who requested/approved/paid it, and the full timeline.',
+      '4. After approval, mark it paid with a TrxID; rejecting releases the held funds back to the vendor.',
+    ],
+    rulesBn: [
+      '• টাকা হোল্ড হয় অনুরোধের সাথে সাথেই, তাই একই ব্যালেন্সে দুইবার অনুরোধ করা যায় না।',
+      '• মেকার-চেকার: নিজে তৈরি করা পেআউট নিজে অনুমোদন করা যায় না; জরুরি হলে কারণ লিখে ওভাররাইড করুন, যা অডিট লগে যায়।',
+      '• পরিশোধ মার্ক করার আগে অনুমোদন বাধ্যতামূলক এবং TrxID ছাড়া পরিশোধ সম্পন্ন করা যায় না।',
+      '• এই প্যানেল শুধু সুপার অ্যাডমিনের জন্য; ভেন্ডর শুধু নিজের পেআউট দেখতে পায়।',
+    ],
+    rulesEn: [
+      '• Funds are held the moment a payout is requested, so the same balance cannot be requested twice.',
+      '• Maker-checker: you cannot approve a payout you raised. An explicit, audited override reason is the only exception.',
+      '• Approval is required before marking paid, and a TrxID is mandatory to settle.',
+      '• Super admin only; a vendor sees only their own payouts.',
+    ],
+  },
   vendor_control: {
     titleBn: 'ভেন্ডর প্যানেল নিয়ন্ত্রণ ও অনুমতি ম্যাট্রিক্স',
     titleEn: 'Vendor Panel Control & Permission Matrix',

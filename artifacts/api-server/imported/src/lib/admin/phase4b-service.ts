@@ -1064,6 +1064,7 @@ export function generateOrderPrintSlips(
 
   writeErpState(erpState);
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
 
   return {
     success: true,
@@ -1180,6 +1181,7 @@ export function upsertDistrictDeliveryRateOverride(
   });
 
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
   return { success: true, record: updated };
 }
 
@@ -1285,6 +1287,7 @@ export function createPickupBatchAndManifest(
 
   writeErpState(erpState);
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
 
   return { success: true, batch };
 }
@@ -1346,6 +1349,7 @@ export function confirmBatchHandoverShipped(
 
   writeErpState(erpState);
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
 
   return { success: true, batch };
 }
@@ -1501,6 +1505,7 @@ export function recordCourierRemittanceSettlement(
 
   writeErpState(erpState);
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
 
   return {
     success: true,
@@ -2131,6 +2136,7 @@ export function processFourWayOrderReturn(
 
   writeErpState(erpState);
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
 
   return { success: true, resolution };
 }
@@ -2236,6 +2242,9 @@ export function requestVendorPayout(
   });
 
   writePhase4BStore(p4bStore);
+  // The audit entry lives in the admin store; persisting only the phase-4B
+  // document would drop the payout trail on the floor.
+  writeAdminStore(adminStore);
   return { success: true, payout };
 }
 
@@ -2250,6 +2259,14 @@ export function resolveVendorPayoutRequest(
     rejectionReasonBn?: string;
     paymentTrxId?: string;
     proofUrl?: string;
+    /**
+     * A super admin who raised the payout themselves may still settle it, but
+     * only by recording an explicit override reason. Without this, an
+     * admin-initiated payout (the console's own "initiate payout" flow) could
+     * never be marked paid: maker-checker would refuse every attempt forever.
+     */
+    emergencyOverride?: boolean;
+    emergencyReasonBn?: string;
   }
 ): {
   success: boolean;
@@ -2277,6 +2294,9 @@ export function resolveVendorPayoutRequest(
     const mc = checkMakerCheckerSeparation({
       makerUsername: payout.requestedByUsername,
       checkerCtx: ctx,
+      allowSuperAdminEmergencyOverride: true,
+      emergencyOverride: input.emergencyOverride,
+      emergencyReasonBn: input.emergencyReasonBn,
     });
     if (!mc.allowed) {
       return {
@@ -2362,10 +2382,14 @@ export function resolveVendorPayoutRequest(
     metadata: {
       decision: input.decision,
       paymentTrxId: payout.paymentTrxId,
+      selfApprovalOverrideReasonBn: input.emergencyOverride
+        ? input.emergencyReasonBn
+        : undefined,
     },
   });
 
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
   return { success: true, payout };
 }
 
@@ -2445,6 +2469,7 @@ export function submitVendorOnboarding15Q(
   });
 
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
   return { success: true, vendor: newVendor };
 }
 
@@ -2533,6 +2558,7 @@ export function auditAndCloseVendorContract(
   });
 
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
   return {
     canClose: true,
     closed: true,

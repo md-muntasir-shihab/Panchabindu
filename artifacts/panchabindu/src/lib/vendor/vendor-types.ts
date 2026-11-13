@@ -289,3 +289,82 @@ export interface AdminVendorControlSnapshot {
   };
   errorBn?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Admin → vendor payout register (/api/admin/vendor-payouts)
+// ---------------------------------------------------------------------------
+
+export type AdminPayoutStatus = 'requested' | 'approved' | 'rejected' | 'paid';
+
+export interface AdminVendorPayoutRowDTO {
+  payoutId: string;
+  vendorId: string;
+  vendorCode: string;
+  vendorNameBn: string;
+  status: AdminPayoutStatus;
+  requestedAmountPoisha: number;
+  estimatedFeePoisha: number;
+  netPayablePoisha: number;
+  payoutMethodBn: string;
+  payoutAccountMasked: string;
+  requestedByUsername: string;
+  requestedAt: string;
+  resolvedAt: string | null;
+  rejectionReasonBn: string | null;
+  paymentTrxId: string | null;
+  proofUrl: string | null;
+  paidByUsername: string | null;
+  approvedByUsername: string | null;
+  blocksCurrentUser: boolean;
+  timeline: Array<{
+    at: string;
+    eventBn: string;
+    eventEn: string;
+    actor: string | null;
+  }>;
+}
+
+export interface AdminVendorPayoutTotalsDTO {
+  requestedCount: number;
+  requestedPoisha: number;
+  approvedCount: number;
+  approvedPoisha: number;
+  paidCount: number;
+  paidPoisha: number;
+  rejectedCount: number;
+  rejectedPoisha: number;
+  totalDisbursedPoisha: number;
+  totalOutstandingPoisha: number;
+  estimatedFeePoisha: number;
+  escrowHeldPoisha: number;
+}
+
+export interface AdminVendorPayoutVendorRollupDTO {
+  vendorId: string;
+  vendorCode: string;
+  vendorNameBn: string;
+  requestedCount: number;
+  paidCount: number;
+  paidPoisha: number;
+  outstandingPoisha: number;
+  lastPaidAt: string | null;
+  balance: {
+    pendingPoisha: number;
+    lockedPoisha: number;
+    availablePoisha: number;
+    payoutHoldPoisha: number;
+    clawbackDebtPoisha: number;
+    withdrawablePoisha: number;
+  };
+}
+
+export interface AdminVendorPayoutRegisterDTO {
+  success: boolean;
+  rows: AdminVendorPayoutRowDTO[];
+  totals: AdminVendorPayoutTotalsDTO;
+  vendorRollups: AdminVendorPayoutVendorRollupDTO[];
+  methodTotals: Array<{ payoutMethodBn: string; count: number; paidPoisha: number }>;
+  minPayoutRequestPoisha: number;
+  generatedAt: string;
+  errorBn?: string;
+}

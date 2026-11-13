@@ -10,6 +10,11 @@ import { POST as postProposal } from '../../../app/api/vendor/price-proposals/ro
 import { POST as postPayout } from '../../../app/api/vendor/payouts/route';
 import { POST as postProfile } from '../../../app/api/vendor/profile/route';
 import { GET as getAdminVendors, POST as postAdminVendors } from '../../../app/api/admin/vendors/route';
+import {
+  GET as getAdminPayoutRegister,
+  POST as postAdminPayouts,
+} from '../../../app/api/admin/vendor-payouts/route';
+import { readAdminStore } from '@/src/lib/admin/phase4a-service';
 
 const ORIGIN = 'http://localhost';
 
@@ -365,4 +370,195 @@ test('admin can suspend a vendor and that vendor loses every mutation', async ()
       body: { operation: 'update_vendor', vendorId: target.vendorId, status: 'active' },
     })
   );
+});
+
+
+test('payout register reports who was paid what, and settlement is auditable', async () => {
+  const admin = adminSession();
+  const vendor = vendorSession();
+
+  // 403 for a vendor session, 401 without a session at all.
+  assert.equal((await getAdminPayoutRegister(vendorRequest('/api/admin/vendor-payouts'))).status, 401);
+  assert.equal(
+    (
+      await getAdminPayoutRegister(
+        vendorRequest('/api/admin/vendor-payouts', { token: vendor.token })
+      )
+    ).status,
+    403
+  );
+
+  const created = await postAdminPayouts(
+    vendorRequest('/api/admin/vendor-payouts', {
+      method: 'POST',
+      token: admin.token,
+      csrf: admin.csrf,
+      body: {
+        operation: 'create_payout',
+        vendorId: '00000000-0000-4000-8000-000000000901',
+        requestedAmountPoisha: 50000,
+      },
+    })
+  );
+  assert.equal(created.status, 201);
+  const createdBody = (await created.json()) as { payout: { payoutId: string } };
+  const payoutId = createdBody.payout.payoutId;
+
+  // A payout cannot be marked paid before it is approved.
+  const premature = await postAdminPayouts(
+    vendorRequest('/api/admin/vendor-payouts', {
+      method: 'POST',
+      token: admin.token,
+      csrf: admin.csrf,
+      body: { operation: 'resolve_payout', payoutId, decision: 'mark_paid', paymentTrxId: 'TRX-PRE' },
+    })
+  );
+  assert.equal(premature.status, 400);
+
+  // Self-approval stays blocked without an explicit override reason...
+  const blocked = await postAdminPayouts(
+    vendorRequest('/api/admin/vendor-payouts', {
+      method: 'POST',
+      token: admin.token,
+      csrf: admin.csrf,
+      body: { operation: 'resolve_payout', payoutId, decision: 'approve' },
+    })
+  );
+  assert.equal(blocked.status, 400);
+
+  // ...and succeeds with one. Without this the console's own "initiate payout"
+  // flow could never be settled by the single super admin who created it.
+  const override = 'একক সুপার অ্যাডমিন — জরুরি নিষ্পত্তি';
+  const approved = await postAdminPayouts(
+    vendorRequest('/api/admin/vendor-payouts', {
+      method: 'POST',
+      token: admin.token,
+      csrf: admin.csrf,
+      body: {
+        operation: 'resolve_payout',
+        payoutId,
+        decision: 'approve',
+        selfApprovalOverrideReasonBn: override,
+      },
+    })
+  );
+  assert.equal(approved.status, 200);
+
+  const paid = await postAdminPayouts(
+    vendorRequest('/api/admin/vendor-payouts', {
+      method: 'POST',
+      token: admin.token,
+      csrf: admin.csrf,
+      body: {
+        operation: 'resolve_payout',
+        payoutId,
+        decision: 'mark_paid',
+        paymentTrxId: 'BKASH-REGISTER-1',
+        selfApprovalOverrideReasonBn: override,
+      },
+    })
+  );
+  assert.equal(paid.status, 200);
+
+  // The audit trail must actually be persisted: these functions used to build
+  // the entry and then only write the phase-4B document.
+  const auditEntries = readAdminStore().auditLogs.filter(
+    (log) => log.targetId === payoutId && log.actionCode.startsWith('VENDOR_PAYOUT_')
+  );
+  assert.ok(auditEntries.length >= 3, 'request, approval and payment must all be audited');
+  assert.ok(
+    auditEntries.some(
+      (log) =>
+        log.actionCode === 'VENDOR_PAYOUT_MARK_PAID' &&
+        log.metadata.selfApprovalOverrideReasonBn === override
+    )
+  );
+
+  const registerRes = await getAdminPayoutRegister(
+    vendorRequest('/api/admin/vendor-payouts', { token: admin.token })
+  );
+  assert.equal(registerRes.status, 200);
+  const register = (await registerRes.json()) as {
+    rows: Array<{
+      payoutId: string;
+      status: string;
+      paidByUsername: string | null;
+      approvedByUsername: string | null;
+      payoutAccountMasked: string;
+      estimatedFeePoisha: number;
+      netPayablePoisha: number;
+      requestedAmountPoisha: number;
+      timeline: Array<{ eventEn: string }>;
+    }>;
+    totals: { totalDisbursedPoisha: number; paidCount: number };
+    vendorRollups: Array<{ vendorCode: string; paidPoisha: number }>;
+  };
+
+  const row = register.rows.find((item) => item.payoutId === payoutId)!;
+  assert.equal(row.status, 'paid');
+  const adminUsername = admin.actor.username;
+  assert.equal(row.approvedByUsername, adminUsername);
+  assert.equal(row.paidByUsername, adminUsername);
+  assert.equal(row.netPayablePoisha, row.requestedAmountPoisha - row.estimatedFeePoisha);
+  assert.ok(row.timeline.length >= 3);
+  // The register must never expose the full payout account number.
+  assert.match(row.payoutAccountMasked, /•/);
+  assert.ok(register.totals.totalDisbursedPoisha >= 50000);
+  const rollup = register.vendorRollups.find((item) => item.vendorCode === 'VND-001')!;
+  assert.ok(rollup.paidPoisha >= 50000);
+});
+
+test('rejecting a payout releases the held funds back to the vendor balance', async () => {
+  const admin = adminSession();
+
+  const created = await postAdminPayouts(
+    vendorRequest('/api/admin/vendor-payouts', {
+      method: 'POST',
+      token: admin.token,
+      csrf: admin.csrf,
+      body: {
+        operation: 'create_payout',
+        vendorId: '00000000-0000-4000-8000-000000000901',
+        requestedAmountPoisha: 60000,
+      },
+    })
+  );
+  assert.equal(created.status, 201);
+  const { payout } = (await created.json()) as { payout: { payoutId: string } };
+
+  const before = await getAdminPayoutRegister(
+    vendorRequest('/api/admin/vendor-payouts', { token: admin.token })
+  );
+  const beforeBody = (await before.json()) as {
+    vendorRollups: Array<{ vendorCode: string; balance: { withdrawablePoisha: number } }>;
+  };
+  const withdrawableBefore = beforeBody.vendorRollups.find((v) => v.vendorCode === 'VND-001')!
+    .balance.withdrawablePoisha;
+
+  const rejected = await postAdminPayouts(
+    vendorRequest('/api/admin/vendor-payouts', {
+      method: 'POST',
+      token: admin.token,
+      csrf: admin.csrf,
+      body: {
+        operation: 'resolve_payout',
+        payoutId: payout.payoutId,
+        decision: 'reject',
+        rejectionReasonBn: 'অ্যাকাউন্ট নম্বর যাচাই করা যায়নি',
+      },
+    })
+  );
+  assert.equal(rejected.status, 200);
+
+  const after = await getAdminPayoutRegister(
+    vendorRequest('/api/admin/vendor-payouts', { token: admin.token })
+  );
+  const afterBody = (await after.json()) as {
+    vendorRollups: Array<{ vendorCode: string; balance: { withdrawablePoisha: number } }>;
+  };
+  const withdrawableAfter = afterBody.vendorRollups.find((v) => v.vendorCode === 'VND-001')!
+    .balance.withdrawablePoisha;
+
+  // Rejection returns the held amount, so the vendor is whole again.
+  assert.equal(withdrawableAfter, withdrawableBefore + 60000);
 });
