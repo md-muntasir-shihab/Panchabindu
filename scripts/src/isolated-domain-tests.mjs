@@ -23,6 +23,7 @@ const suites = {
     'lib/admin/phase4b.test.ts',
     'lib/security/workspace-rbac-snapshot.test.ts',
     'lib/security/unit-test-isolation.test.ts',
+    'lib/vendor/vendor-routes.test.ts',
   ],
   payments: [
     'lib/advance-courier-mfs.test.ts',

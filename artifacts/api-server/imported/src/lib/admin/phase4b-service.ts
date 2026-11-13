@@ -344,6 +344,32 @@ interface Phase4BPersistentStore {
   payoutRequests: VendorPayoutRequestRecord[];
   returnResolutions: ReturnResolutionRecord[];
   printCountsByOrderNo?: Record<string, number>;
+  /** Admin-controlled per-vendor capability matrix (vendor panel switches). */
+  vendorControls?: Record<string, VendorControlEntry>;
+  /** Vendor-filed profile / payout-account / onboarding change requests. */
+  vendorRequests?: VendorRequestEntry[] | Record<string, VendorRequestEntry>;
+}
+
+export interface VendorControlEntry {
+  capabilities: Record<string, boolean | number> | object;
+  restrictionNoteBn?: string;
+  updatedAt: string;
+  updatedByUsername: string;
+}
+
+export interface VendorRequestEntry {
+  requestId: string;
+  kind: 'profile_update' | 'onboarding_update';
+  vendorId: string;
+  vendorCode: string;
+  vendorNameBn: string;
+  payload: Record<string, unknown>;
+  status: 'pending_review' | 'approved' | 'rejected';
+  requestedByUsername: string;
+  createdAt: string;
+  reviewedByUsername: string | null;
+  reviewedAt: string | null;
+  reviewNoteBn: string | null;
 }
 
 const PHASE4B_DATA_DIR = path.join(process.cwd(), '.data');
@@ -623,9 +649,15 @@ export function readPhase4BStore(): Phase4BPersistentStore {
     arrays: ['pickupBatches', 'courierRemittanceLedger', 'courierClaims', 'vendors', 'vendorLedger', 'payoutRequests', 'returnResolutions'],
     objects: ['printConfig', 'districtRateOverrides'],
     optionalObjects: ['printCountsByOrderNo'],
+    optionalArraysAndObjects: ['vendorControls', 'vendorRequests'],
   });
   if (parsed) {
-    return { ...parsed, printCountsByOrderNo: parsed.printCountsByOrderNo ?? {} };
+    return {
+      ...parsed,
+      printCountsByOrderNo: parsed.printCountsByOrderNo ?? {},
+      vendorControls: (parsed.vendorControls as Record<string, VendorControlEntry>) ?? {},
+      vendorRequests: (parsed.vendorRequests as VendorRequestEntry[]) ?? [],
+    };
   }
 
   const initial = getInitialPhase4BStore();

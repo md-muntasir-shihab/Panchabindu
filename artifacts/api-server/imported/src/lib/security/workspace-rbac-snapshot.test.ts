@@ -47,9 +47,14 @@ test('every workspace operation matches the committed seven-principal RBAC snaps
 
 test('every admin UI workspace mutation maps to a server operation', () => {
   const adminDir = new URL('../../../../../panchabindu/src/components/admin/', import.meta.url);
+  // Only files that actually mutate the workspace route are in scope. Panels
+  // that own a different, separately validated endpoint (for example the vendor
+  // control panel posting to /api/admin/vendors) carry their own operation
+  // vocabulary and are asserted by their own tests.
   const sources = fs.readdirSync(adminDir)
     .filter(file => file.endsWith('.tsx'))
-    .map(file => fs.readFileSync(new URL(file, adminDir), 'utf8'));
+    .map(file => fs.readFileSync(new URL(file, adminDir), 'utf8'))
+    .filter(source => source.includes('/api/admin/workspace'));
   const uiOperations = [...new Set(sources.flatMap(source =>
     [...source.matchAll(/operation:\s*['"]([^'"]+)['"]/g)].map(match => match[1])
   ))].sort();

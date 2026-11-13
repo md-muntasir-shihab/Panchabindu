@@ -15,6 +15,9 @@
 | [05-commerce-finance-trace.md](05-commerce-finance-trace.md) | Catalog → checkout → stock → payment → ledger → settlement → return → print end-to-end trace; financial invariant; prohibited-feature conflict |
 | [06-frontend-connection-plan.md](06-frontend-connection-plan.md) | বিদ্যমান screen/primitives reuse, page-to-backend mapping, file/folder allowlist, responsive/state coverage |
 | [07-roadmap-and-decisions.md](07-roadmap-and-decisions.md) | Phase B–J approval-gated roadmap, owner decision list, verification matrix, conflict register |
+| [08-local-test-evidence.md](08-local-test-evidence.md) | Local sandbox test evidence index |
+| [09-bd-geo-coverage.md](09-bd-geo-coverage.md) | জেলা / উপজেলা / মেট্রো থানা কভারেজ ও পুনরুৎপাদন |
+| [10-vendor-panel-and-control.md](10-vendor-panel-and-control.md) | ভেন্ডর প্যানেল, API contract, অনুমতি ম্যাট্রিক্স ও অ্যাডমিন নিয়ন্ত্রণ |
 
 ## Verification level legend
 

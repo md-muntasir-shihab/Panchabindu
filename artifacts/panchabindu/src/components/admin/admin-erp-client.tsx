@@ -152,6 +152,7 @@ import {
   Courier360AndRatesPanel,
   VendorEscrowAndReturnPanel,
 } from './courier-and-escrow-panel';
+import { VendorControlPanel } from './vendor-control-panel';
 import {
   FinanceProduct360AndExpensesPanel,
   MessagingAutomationAndSheetsPanel,
@@ -188,7 +189,8 @@ export type AdminTabKey =
   | 'users_and_rbac'
   | 'phase5_readiness'
   | 'phase6_ops'
-  | 'phase7_portal';
+  | 'phase7_portal'
+  | 'vendor_control';
 
 type EnrichedOrderRow = Partial<OrderGridRowDTO> & {
   callAttempts: number;
@@ -2460,6 +2462,14 @@ ${itemsList}
           labelBn: 'ভেন্ডর ডাইরেক্টরি, এসক্রো লেজার ও পেআউট',
           labelEn: 'Vendor Directory, Escrow Ledger & Payout Engine',
           icon: <Wallet className="w-4 h-4 shrink-0" aria-hidden="true" />,
+        },
+        {
+          key: 'vendor_control',
+          labelBn: 'ভেন্ডর প্যানেল নিয়ন্ত্রণ ও অনুমতি',
+          labelEn: 'Vendor Panel Control & Permissions',
+          icon: <Store className="w-4 h-4 shrink-0" aria-hidden="true" />,
+          hidden: !isSuperAdmin,
+          badge: snapshot.vendors?.length || undefined,
         },
       ],
     },
@@ -5013,6 +5023,16 @@ ${itemsList}
             products={snapshot.product360}
             orders={orders as unknown as OrderGridRowDTO[]}
             onRefreshWorkspace={fetchWorkspace}
+          />
+        )}
+
+        {/* ==================================================================
+            TAB: VENDOR PANEL CONTROL & PERMISSION MATRIX (SUPER ADMIN)
+           ================================================================== */}
+        {activeTab === 'vendor_control' && isSuperAdmin && (
+          <VendorControlPanel
+            locale={locale}
+            onNotify={(msg, tone) => setActionFeedback({ type: tone ?? 'success', text: msg })}
           />
         )}
 

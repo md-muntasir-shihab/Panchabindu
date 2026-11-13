@@ -330,6 +330,38 @@ export const OPERATIONAL_HELP_GUIDE: Record<AdminTabKey, OperationalHelpGuideIte
       '• Audit log records are immutable and append-only at the database level.',
     ],
   },
+  vendor_control: {
+    titleBn: 'ভেন্ডর প্যানেল নিয়ন্ত্রণ ও অনুমতি ম্যাট্রিক্স',
+    titleEn: 'Vendor Panel Control & Permission Matrix',
+    purposeBn:
+      'কনসাইনমেন্ট ভেন্ডর প্যানেলে ভেন্ডর কী করতে পারবে তা এখান থেকেই নিয়ন্ত্রণ করা হয় — পণ্য তৈরি/সম্পাদনা, চালান জমা, মূল্য প্রস্তাব, পেআউট অনুরোধ, প্রোফাইল পরিবর্তন এবং পণ্য সংখ্যার সীমা।',
+    purposeEn:
+      'This surface controls exactly what a consignment vendor may do in their own panel — creating/editing products, dispatching challans, filing price proposals, requesting payouts, editing their profile, and their product quota.',
+    workflowBn: [
+      '১. ডাইরেক্টরি ট্যাবে ভেন্ডর তৈরি করুন বা কমিশন ও এসক্রো হোল্ড দিন।',
+      '২. "ভেন্ডর কী পারবে" ট্যাবে প্রতিটি সুবিধা চালু/বন্ধ করুন ও ভেন্ডরকে দেখানোর নোট লিখুন।',
+      '৩. অনুরোধ ইনবক্সে ভেন্ডরের প্রোফাইল ও অনবোর্ডিং পরিবর্তন অনুমোদন বা প্রত্যাখ্যান করুন।',
+      '৪. অ্যাকাউন্ট স্ট্যাটাস "স্থগিত" করলে ভেন্ডর কোনো পরিবর্তনই করতে পারবে না।',
+    ],
+    workflowEn: [
+      '1. In the Directory tab, create a vendor or set their commission and escrow hold days.',
+      '2. In "Vendor permissions", switch each capability on/off and add a note the vendor will see.',
+      '3. In the Request inbox, approve or reject vendor profile and onboarding changes.',
+      '4. Setting the account status to Suspended blocks every vendor mutation immediately.',
+    ],
+    rulesBn: [
+      '• কোনো অনুমতি শুধু বাটনে নয়, সার্ভার-সাইডেও যাচাই হয় — বন্ধ থাকলে API অনুরোধ ব্যর্থ হবে।',
+      '• পণ্য ডিলিট, ক্যাটাগরি তৈরি ও স্টক অ্যাডজাস্টমেন্ট কেবল সুপার অ্যাডমিন করতে পারেন।',
+      '• ভেন্ডর কখনো প্ল্যাটফর্ম মার্জিন, নিট লাভ বা অন্যের ক্রয়মূল্য দেখতে পায় না।',
+      '• ক্রস-ভেন্ডর রিসোর্সে অনুরোধ করলে ৪০৪ পাওয়া যায়, ৪০৩ নয়।',
+    ],
+    rulesEn: [
+      '• Permissions are enforced server-side, not just hidden in the UI — a blocked API call fails.',
+      '• Product deletion, category management and stock adjustments remain super-admin only.',
+      '• A vendor never sees platform margin, net profit, or another vendor\'s cost.',
+      '• Cross-vendor resource access returns 404, never 403.',
+    ],
+  },
   control_center: {
     titleBn: 'কন্ট্রোল সেন্টার ও সিকিউরিটি (Control Center & Security)',
     titleEn: 'Super Admin Control Center, Credentials Vault & Scheduled Jobs',
