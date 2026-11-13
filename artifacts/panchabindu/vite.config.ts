@@ -70,6 +70,19 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    // Opt-in: when the API runs on another local port (plain `vite dev` outside
+    // the Replit path router), forward /api to it so the storefront still has
+    // data. Replit and Vercel route /api themselves and leave this unset.
+    ...(process.env.PANCHABINDU_API_ORIGIN
+      ? {
+          proxy: {
+            '/api': {
+              target: process.env.PANCHABINDU_API_ORIGIN,
+              changeOrigin: true,
+            },
+          },
+        }
+      : {}),
   },
   preview: {
     port,

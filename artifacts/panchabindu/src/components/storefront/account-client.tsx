@@ -41,7 +41,7 @@ import {
   BD_DISTRICTS,
   getDistrictById,
   getUpazilaById,
-  getUpazilasByDistrict,
+  getThanasByDistrict,
 } from '@/lib/geo/bd-geocode';
 import { formatPoishaToBdt } from '@/lib/money';
 import { formatLocaleNumber } from '@/lib/i18n/dictionaries';
@@ -987,7 +987,7 @@ export function AccountClient({
                     onChange={(e) => {
                       const dId = Number(e.target.value);
                       setAddrDistrictId(dId);
-                      const firstUpz = getUpazilasByDistrict(dId)[0];
+                      const firstUpz = getThanasByDistrict(dId)[0];
                       if (firstUpz) setAddrUpazilaId(firstUpz.id);
                     }}
                     className="w-full min-h-[42px] px-3 py-2 text-xs bg-surface text-ink border border-border rounded-[var(--radius-md)]"
@@ -1010,7 +1010,7 @@ export function AccountClient({
                     onChange={(e) => setAddrUpazilaId(Number(e.target.value))}
                     className="w-full min-h-[42px] px-3 py-2 text-xs bg-surface text-ink border border-border rounded-[var(--radius-md)]"
                   >
-                    {getUpazilasByDistrict(addrDistrictId).map((u) => (
+                    {getThanasByDistrict(addrDistrictId).map((u) => (
                       <option key={u.id} value={u.id}>
                         {locale === 'bn' ? u.name_bn : u.name_en}
                       </option>

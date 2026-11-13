@@ -9,7 +9,7 @@
     "test:shopping": "node ./src/migration-browser.mjs",
     "test:sandbox": "node --test ./src/sandbox-smoke.mjs",
     "sandbox:rotate-admin": "tsx --tsconfig ../artifacts/api-server/tsconfig.json ./src/rotate-local-admin.ts",
-    "test:domain": "tsx --tsconfig ../artifacts/api-server/tsconfig.json --test ../artifacts/api-server/imported/src/lib/money.test.ts ../artifacts/api-server/imported/src/lib/validators/validators.test.ts ../artifacts/api-server/imported/src/lib/db/runtime-persistence.test.ts ../artifacts/api-server/imported/src/lib/media/product-image-precheck.test.ts",
+    "test:domain": "tsx --tsconfig ../artifacts/api-server/tsconfig.json --test ../artifacts/api-server/imported/src/lib/money.test.ts ../artifacts/api-server/imported/src/lib/validators/validators.test.ts ../artifacts/api-server/imported/src/lib/geo/bd-geocode.test.ts ../artifacts/api-server/imported/src/lib/db/runtime-persistence.test.ts ../artifacts/api-server/imported/src/lib/media/product-image-precheck.test.ts",
     "test:security": "node ./src/isolated-domain-tests.mjs security",
     "test:payments": "node ./src/isolated-domain-tests.mjs payments",
     "test:quarantine": "node ./src/isolated-domain-tests.mjs quarantine",

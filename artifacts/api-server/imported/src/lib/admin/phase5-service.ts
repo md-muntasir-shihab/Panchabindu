@@ -3,7 +3,7 @@
 // Interactive Role/DTO Sanitization Inspector, & 9-Stage E2E Consignment Lifecycle Simulator
 
 import { readErpState } from '../db/repository';
-import { BD_DISTRICTS } from '../geo/bd-geocode';
+import { BD_DISTRICTS, BD_UPAZILAS, getThanasByDistrict } from '../geo/bd-geocode';
 import {
   calculateDeliveryCharge,
   computeVendorEscrowBalance,
@@ -617,7 +617,27 @@ export function runPhase5PreLaunchAudit(
     sampleProof: `Districts: ${districtRates.length}/64, Dhaka(1): ${districtRates[0]?.base1KgPoisha}p, Chattogram(2): ${districtRates[1]?.base1KgPoisha}p`,
   });
 
-  // 10. CHK-10: A4 3-Part & 4x6 Thermal Print Slip Customer Safety
+  // 9b. CHK-10: Bangladesh geo coverage (64 districts, 499 upazilas + metro thanas)
+  const coverageDistricts = BD_DISTRICTS.length;
+  const coverageThanas = BD_UPAZILAS.length;
+  const districtsWithThanas = BD_DISTRICTS.filter(
+    (d) => getThanasByDistrict(d.id).length > 0
+  ).length;
+  checks.push({
+    checkId: 'CHK-10',
+    category: 'logistics_print',
+    titleBn: `বাংলাদেশ জিও কভারেজ: ${coverageDistricts} জেলা, ${coverageThanas} উপজেলা/থানা`,
+    titleEn: `Bangladesh geo coverage: ${coverageDistricts} districts, ${coverageThanas} upazilas/thanas`,
+    passed: coverageDistricts === 64 && districtsWithThanas === 64 && coverageThanas >= 600,
+    severity: 'high',
+    invariantRule:
+      'BD_DISTRICTS.length === 64 && every district has >= 1 upazila/thana (499 official upazilas + 108 metro thanas)',
+    verifiedDetailBn:
+      'চেকআউট ও স্মার্ট অর্ডার এন্ট্রিতে প্রতিটি জেলার অন্তত একটি উপজেলা/থানা আছে, তাই সারা দেশের কাস্টমার ঠিকানা নির্বাচন করে অর্ডার করতে পারে।',
+    sampleProof: `Districts with destinations: ${districtsWithThanas}/64, destinations: ${coverageThanas}`,
+  });
+
+  // 10. CHK-11: A4 3-Part & 4x6 Thermal Print Slip Customer Safety
   const superCtx = getActorSecurityContext('usr-super-admin') ?? {
     userId: 'usr-super-admin',
     username: 'admin',
@@ -645,7 +665,7 @@ export function runPhase5PreLaunchAudit(
     !customerFacingPartsJson.includes('vendorCode');
 
   checks.push({
-    checkId: 'CHK-10',
+    checkId: 'CHK-11',
     category: 'logistics_print',
     titleBn:
       'এ৪ ৩-পার্ট ও ৪×৬ থার্মাল প্রিন্ট স্লিপ নিরাপত্তা (কাস্টমার কপিতে মার্জিন নেই)',
@@ -659,13 +679,13 @@ export function runPhase5PreLaunchAudit(
     sampleProof: `Slip Order: ${firstSlip?.orderNo ?? 'N/A'}, Courier: ${firstSlip?.customerAndCourierPart?.courierProvider ?? 'N/A'}`,
   });
 
-  // 11. CHK-11: Automation Engine Kill-Switch & Dry-Run Guard
+  // 11. CHK-12: Automation Engine Kill-Switch & Dry-Run Guard
   const rulesValid =
     p4c.automationRules.length > 0 &&
     typeof p4c.automationKillSwitchActive === 'boolean';
 
   checks.push({
-    checkId: 'CHK-11',
+    checkId: 'CHK-12',
     category: 'honesty_ops',
     titleBn: 'অটোমেশন ইঞ্জিন গ্লোবাল কিল-সুইচ ও ড্রাই-রান সেফটি গার্ড',
     titleEn: 'Automation Global Kill-Switch & Dry-Run Guard',
@@ -679,7 +699,7 @@ export function runPhase5PreLaunchAudit(
     sampleProof: `Rules: ${p4c.automationRules.length}, Kill-Switch: ${String(p4c.automationKillSwitchActive)}`,
   });
 
-  // 12. CHK-12: External Integration Honesty Check (No Fake Success State)
+  // 13. CHK-13: External Integration Honesty Check (No Fake Success State)
   const creds = getMaskedCredentialsList();
   const honestyValid =
     creds.length >= 7 &&
@@ -691,7 +711,7 @@ export function runPhase5PreLaunchAudit(
     );
 
   checks.push({
-    checkId: 'CHK-12',
+    checkId: 'CHK-13',
     category: 'honesty_ops',
     titleBn:
       'এক্সটার্নাল এপিআই অনেস্টি চেক (No Fake Success State — Free Fallback Active)',

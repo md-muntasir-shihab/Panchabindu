@@ -133,7 +133,7 @@ import {
   BD_DISTRICTS,
   getDistrictById,
   getDistrictDeliveryRates,
-  getUpazilasByDistrict,
+  getThanasByDistrict,
 } from '@/lib/geo/bd-geocode';
 import {
   calculateDeliveryCharge,
@@ -2342,7 +2342,7 @@ ${itemsList}
 
   const smartDistrict =
     getDistrictById(smartDistrictId) ?? getDistrictById(47)!;
-  const smartUpazilas = getUpazilasByDistrict(smartDistrict.id);
+  const smartUpazilas = getThanasByDistrict(smartDistrict.id);
   const smartRates = getDistrictDeliveryRates(
     smartDistrict.id,
     siteSettings.bdPostDefaultPerKgPoisha
@@ -4310,7 +4310,7 @@ ${itemsList}
                       onChange={(e) => {
                         const dId = Number(e.target.value);
                         setSmartDistrictId(dId);
-                        const firstU = getUpazilasByDistrict(dId)[0];
+                        const firstU = getThanasByDistrict(dId)[0];
                         if (firstU) setSmartUpazilaId(firstU.id);
                       }}
                       className="w-full min-h-[44px] px-3 py-2 text-sm bg-bg text-ink border border-border rounded-[var(--radius-md)]"
@@ -4341,6 +4341,11 @@ ${itemsList}
                         </option>
                       ))}
                     </select>
+                    <p className="text-[11px] text-muted">
+                      {locale === 'bn'
+                        ? `${smartUpazilas.length}টি উপজেলা/থানা — মেট্রো থানাও অন্তর্ভুক্ত`
+                        : `${smartUpazilas.length} upazila/thana options, metropolitan thanas included`}
+                    </p>
                   </div>
                 </div>
 
@@ -5396,7 +5401,7 @@ ${itemsList}
                     onChange={(e) => {
                       const newDistId = Number(e.target.value);
                       setEditDistrictId(newDistId);
-                      const upzList = getUpazilasByDistrict(newDistId);
+                      const upzList = getThanasByDistrict(newDistId);
                       if (upzList.length > 0) {
                         setEditUpazilaId(upzList[0].id);
                       }
@@ -5419,7 +5424,7 @@ ${itemsList}
                     onChange={(e) => setEditUpazilaId(Number(e.target.value))}
                     className="w-full px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink text-xs"
                   >
-                    {getUpazilasByDistrict(editDistrictId).map((u) => (
+                    {getThanasByDistrict(editDistrictId).map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.name_bn} ({u.name_en})
                       </option>

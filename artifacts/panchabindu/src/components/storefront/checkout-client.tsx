@@ -39,7 +39,7 @@ import type {
 import {
   BD_DISTRICTS,
   getDistrictById,
-  getUpazilasByDistrict,
+  getThanasByDistrict,
 } from '@/lib/geo/bd-geocode';
 import { formatPoishaToBdt as formatMoney } from '@/lib/money';
 import {
@@ -76,12 +76,23 @@ export function CheckoutClient({
   const [customerName, setCustomerName] = React.useState('');
   const [customerPhone, setCustomerPhone] = React.useState('');
   const [districtId, setDistrictId] = React.useState<number>(47); // Default Dhaka (47)
+  // With 500+ upazilas/thanas, typing filters the list instead of scrolling it.
+  const [thanaQuery, setThanaQuery] = React.useState('');
   const upazilasForDistrict = React.useMemo(
-    () => getUpazilasByDistrict(districtId),
+    () => getThanasByDistrict(districtId),
     [districtId]
   );
+  const visibleThanas = React.useMemo(() => {
+    const needle = thanaQuery.trim().toLowerCase();
+    if (!needle) return upazilasForDistrict;
+    return upazilasForDistrict.filter(
+      (u) =>
+        u.name_en.toLowerCase().includes(needle) ||
+        u.name_bn.includes(thanaQuery.trim())
+    );
+  }, [upazilasForDistrict, thanaQuery]);
   const [upazilaId, setUpazilaId] = React.useState<number>(
-    () => getUpazilasByDistrict(47)[0]?.id ?? 365
+    () => getThanasByDistrict(47)[0]?.id ?? 365
   );
   const [streetAddress, setStreetAddress] = React.useState('');
   const [landmark, setLandmark] = React.useState('');
@@ -133,7 +144,8 @@ export function CheckoutClient({
   // Keep upazilaId in sync when districtId changes
   const handleDistrictChange = (newDistrictId: number) => {
     setDistrictId(newDistrictId);
-    const list = getUpazilasByDistrict(newDistrictId);
+    setThanaQuery('');
+    const list = getThanasByDistrict(newDistrictId);
     if (list[0]) {
       setUpazilaId(list[0].id);
     }
@@ -526,21 +538,62 @@ export function CheckoutClient({
                       className="block text-xs font-medium text-ink"
                     >
                       {locale === 'bn'
-                        ? 'উপজেলা / থানা নির্বাচন করুন *'
-                        : 'Select Upazila / Thana *'}
+                        ? `উপজেলা / থানা নির্বাচন করুন (${upazilasForDistrict.length}টি) *`
+                        : `Select Upazila / Thana (${upazilasForDistrict.length}) *`}
                     </label>
+                    <Input
+                      id="checkout-thana-search"
+                      type="search"
+                      placeholder={
+                        locale === 'bn'
+                          ? 'থানার নাম লিখে খুঁজুন (যেমন: ধানমন্ডি)'
+                          : 'Type to search a thana (e.g. Dhanmondi)'
+                      }
+                      value={thanaQuery}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setThanaQuery(value);
+                        const needle = value.trim().toLowerCase();
+                        const matches = needle
+                          ? upazilasForDistrict.filter(
+                              (u) =>
+                                u.name_en.toLowerCase().includes(needle) ||
+                                u.name_bn.includes(value.trim())
+                            )
+                          : upazilasForDistrict;
+                        if (matches.length > 0 && !matches.some((u) => u.id === upazilaId)) {
+                          setUpazilaId(matches[0].id);
+                        }
+                      }}
+                      className="min-h-[40px]"
+                    />
                     <select
                       id="checkout-upazila"
                       value={upazilaId}
                       onChange={(e) => setUpazilaId(Number(e.target.value))}
                       className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-bg text-ink border border-border rounded-[var(--radius-md)] focus:outline-2 focus:outline-ink"
                     >
-                      {upazilasForDistrict.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {locale === 'bn' ? u.name_bn : u.name_en}
+                      {visibleThanas.length === 0 ? (
+                        <option value={upazilaId}>
+                          {locale === 'bn'
+                            ? 'এই নামে কোনো থানা পাওয়া যায়নি'
+                            : 'No thana matches that name'}
                         </option>
-                      ))}
+                      ) : (
+                        visibleThanas.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {locale === 'bn'
+                              ? `${u.name_bn}${u.is_metropolitan_thana ? ' (মেট্রো থানা)' : ''}`
+                              : `${u.name_en}${u.is_metropolitan_thana ? ' (Metro thana)' : ''}`}
+                          </option>
+                        ))
+                      )}
                     </select>
+                    <p className="text-[11px] text-muted">
+                      {locale === 'bn'
+                        ? 'উপজেলার বাইরের সিটি এলাকায় থাকলে মেট্রো থানাও নির্বাচন করতে পারবেন।'
+                        : 'Inside a city area you can also pick the metropolitan thana.'}
+                    </p>
                   </div>
                 </div>
 
