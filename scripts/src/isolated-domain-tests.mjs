@@ -9,6 +9,7 @@ const require = createRequire(import.meta.url);
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const imported = path.join(root, 'artifacts/api-server/imported');
 const suites = {
+  checkout: [path.join(root, 'scripts/src/checkout-quote.test.ts')],
   quarantine: [
     'lib/storefront/flash-quarantine.test.ts',
     'lib/storefront/storefront-config.test.ts',
@@ -31,7 +32,7 @@ const suites = {
   ],
 };
 const suite = process.argv[2];
-if (!Object.hasOwn(suites, suite)) throw new Error('Choose security, payments or quarantine');
+if (!Object.hasOwn(suites, suite)) throw new Error('Choose security, payments, quarantine or checkout');
 
 // One fresh working directory AND process per file: module-level store paths,
 // cached state, sessions and JSON writes cannot reach another suite or real .data.
@@ -46,7 +47,7 @@ for (const file of suites[suite]) {
     const result = spawnSync(process.execPath, [
       '--import', fileURLToPath(new URL('./unit-test-boundary.mjs', import.meta.url)),
       '--import', require.resolve('tsx/esm'),
-      '--test', path.join(imported, 'src', file),
+      '--test', path.resolve(imported, 'src', file),
     ], {
       cwd: fixture,
       // Deliberate allowlist: no inherited credentials, provider configuration,

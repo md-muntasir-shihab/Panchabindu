@@ -3,11 +3,23 @@ import { backendRoute } from '../../imported/src/lib/db/backend-route';
 import {
   getPublicStorefrontData, getPublicProductBySlug, getAuthenticatedCustomerOrders,
   getPublicOrderTrackingByToken,
+  getPublicCheckoutData,
 } from '../../imported/src/lib/db/repository';
+import { z } from 'zod';
 import { getStoreMetadata } from '../../imported/src/lib/storefront/store-metadata';
 import { buildVerifiedProductJsonLd, buildStorefrontSitemapEntries } from '../../imported/src/lib/storefront/phase6-storefront-engine';
 import { getStorefrontConfig } from '../../imported/src/lib/storefront/storefront-config';
 import { CUSTOMER_SESSION_COOKIE_NAME, verifyCustomerSessionToken } from '../../imported/src/lib/security/crypto-session';
+
+// The existing page-data `q` parameter carries page-specific checkout quote input.
+const checkoutQuerySchema = z.object({
+  districtId: z.number().int().positive(),
+  items: z.array(z.object({
+    productId: z.string().uuid(), variantId: z.string().uuid(),
+    quantity: z.number().int().min(1).max(100),
+  })).min(1).max(100),
+  promoCode: z.string().trim().max(64).optional(),
+});
 
 /** Replaces server-rendered page loaders without sending private repository state to the browser. */
 export const pageData = backendRoute(async (request: ApiRequest) => {
@@ -28,7 +40,25 @@ export const pageData = backendRoute(async (request: ApiRequest) => {
   else if (parts.length > 1 && !['product', 'category', 'legal', 'order-tracking'].includes(page)) page = 'not-found';
   switch (page) {
     case 'home': case 'account': case 'categories': break;
-    case 'checkout': case 'contact': case 'admin': props = common; break;
+    case 'checkout': {
+      let input: z.infer<typeof checkoutQuerySchema> | undefined;
+      const query = url.searchParams.get('q');
+      if (query !== null) {
+        try {
+          if (query.length > 30000) throw new Error('Query too long');
+          input = checkoutQuerySchema.parse(JSON.parse(query));
+        } catch {
+          return ApiResponse.json({ success: false, errorBn: 'চেকআউটের তথ্য সঠিক নয়।' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
+        }
+      }
+      try {
+        props = { ...common, checkout: getPublicCheckoutData(input) };
+      } catch {
+        return ApiResponse.json({ success: false, errorBn: 'কার্টের পণ্য, স্টক বা জেলা যাচাই করা যায়নি। কার্ট ও ঠিকানা দেখে আবার চেষ্টা করুন।' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
+      }
+      break;
+    }
+    case 'contact': case 'admin': props = common; break;
     case 'vendor': props = {}; break;
     case 'shop': case 'search':
       props = { ...props, mode: page, initialQuery: url.searchParams.get('q') || '', initialCategorySlug: url.searchParams.get('category') || null };

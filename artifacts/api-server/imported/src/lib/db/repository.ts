@@ -1312,6 +1312,91 @@ export function getPublicStorefrontData(): {
 
 export const getPublicStorefrontCatalog = getPublicStorefrontData;
 
+/** Public checkout data only. Never return pricing snapshots or internal product records. */
+export function getPublicCheckoutData(input?: {
+  districtId: number;
+  items: Array<{ productId: string; variantId: string; quantity: number }>;
+  promoCode?: string;
+}) {
+  const state = readErpState();
+  const paymentMethods = [
+    {
+      code: 'cod', kind: 'cash' as const,
+      nameBn: 'ক্যাশ অন ডেলিভারি', nameEn: 'Cash on Delivery',
+      descriptionBn: 'পণ্য হাতে পেয়ে ডেলিভারি ম্যানকে মূল্য পরিশোধ করুন',
+      descriptionEn: 'Pay cash upon receiving your parcel',
+      accountNumber: '', instructionBn: '', instructionEn: '',
+    },
+    {
+      code: 'bkash_manual', kind: 'manual' as const,
+      nameBn: 'বিকাশ (bKash)', nameEn: 'bKash Send Money',
+      descriptionBn: 'সেন্ড মানি করে TrxID দিয়ে সাবমিট করুন',
+      descriptionEn: 'Send Money & provide Transaction ID',
+      accountNumber: state.siteSettings.bkashManualNumber,
+      instructionBn: state.siteSettings.bkashInstructionBn,
+      instructionEn: state.siteSettings.bkashInstructionEn,
+    },
+  ];
+  if (!input) return { paymentMethods, quote: null };
+  const district = getDistrictById(input.districtId);
+  if (!district) throw new Error('জেলা নির্বাচন করুন।');
+  const quantities = new Map<string, number>();
+  const lines = input.items.map(item => {
+    const product = state.products.find(p => p.productId === item.productId && p.status === 'active');
+    const variant = product?.variants.find(v => v.variantId === item.variantId);
+    if (!product || !variant) throw new Error('কার্টের একটি পণ্য পাওয়া যায়নি।');
+    const quantity = (quantities.get(variant.variantId) ?? 0) + item.quantity;
+    quantities.set(variant.variantId, quantity);
+    if (quantity > Math.max(0, Math.min(variant.stockAvailable, variant.stockOnHand - variant.stockReserved))) {
+      throw new Error('কার্টের পণ্যের পর্যাপ্ত স্টক নেই।');
+    }
+    const snapshot = buildOrderItemPricingSnapshot({
+      unitSupplierCostPoisha: variant.supplierCostPoisha,
+      unitSupplierProfitPoisha: variant.supplierProfitPoisha,
+      unitPlatformMarginPoisha: variant.platformMarginPoisha,
+      quantity: item.quantity,
+      productCommissionOverrideBp: product.commissionOverrideBp,
+      globalDefaultCommissionBp: state.siteSettings.globalDefaultCommissionBp,
+      globalHoldDays: state.siteSettings.globalEscrowHoldDays,
+    });
+    return { product, variant, quantity: item.quantity, snapshot };
+  });
+  const snapshots = lines.map(line => line.snapshot);
+  const subtotalPoisha = snapshots.reduce((sum, snapshot) => sum + snapshot.lineSubtotalPoisha, 0);
+  const totalWeightGrams = lines.reduce((sum, line) => sum + line.variant.weightGrams * line.quantity, 0);
+  const rates = getDistrictDeliveryRates(district.id, state.siteSettings.bdPostDefaultPerKgPoisha);
+  const promo = state.promoCodes.find(rule => rule.code.toUpperCase() === input.promoCode?.trim().toUpperCase());
+  const evaluation = promo ? calculatePromoDiscount({
+    promo, items: snapshots, itemVendorIds: lines.map(line => line.product.vendorId),
+  }) : null;
+  const discountPoisha = evaluation?.valid ? evaluation.discountPoisha : 0;
+  const hasItemRequiringAdvance = lines.some(line => line.product.requiresAdvanceCourierCharge);
+  const depositPoisha = lines.reduce((sum, line) => sum + (line.product.requiresAdvanceCourierCharge
+    ? (line.product.customAdvanceDepositPoisha ?? 0) * line.quantity : 0), 0);
+  const deliveryQuotes = (['courier', 'post_office'] as const).map(method => {
+    const calc = calculateDeliveryCharge({
+      method, totalWeightGrams, orderSubtotalPoisha: subtotalPoisha,
+      freeDeliveryThresholdPoisha: state.siteSettings.freeDeliveryThresholdPoisha,
+      isGlobalFreeDelivery: state.siteSettings.globalFreeDelivery,
+      isAllItemsFreeDelivery: lines.every(line => line.product.isFreeDelivery),
+      courierBaseRate1KgPoisha: rates.base1KgPoisha,
+      courierExtraPerKgPoisha: rates.extraPerKgPoisha,
+      bdPostPerKgPoisha: rates.bdPostPerKgPoisha,
+    });
+    return {
+      method, finalChargePoisha: calc.finalChargePoisha,
+      isFreeDeliveryApplied: calc.isFreeDeliveryApplied,
+      totalPayablePoisha: subtotalPoisha - discountPoisha + calc.finalChargePoisha,
+      requiredAdvancePoisha: hasItemRequiringAdvance ? calc.finalChargePoisha + depositPoisha : 0,
+    };
+  });
+  return {
+    paymentMethods,
+    quote: { subtotalPoisha, discountPoisha, totalWeightGrams, isInsideDhaka: rates.isInsideDhaka,
+      hasItemRequiringAdvance, deliveryQuotes },
+  };
+}
+
 /**
  * Fetches a single product by slug for the Product Detail Page (PDP),
  * along with its verified reviews and related products.

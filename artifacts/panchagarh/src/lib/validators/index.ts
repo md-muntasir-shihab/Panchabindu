@@ -8,6 +8,7 @@
 
 import { z } from 'zod';
 import { BD_DISTRICTS, BD_UPAZILAS } from '../geo/bd-geocode';
+import type { PaymentMethod } from '../../types/database.types';
 
 const BENGALI_TO_ASCII_DIGIT: Record<string, string> = {
   '০': '0',
@@ -63,6 +64,27 @@ export const poishaSchema = z
   .number()
   .int('টাকার হিসাব পূর্ণসংখ্যা (পয়সা) হতে হবে')
   .nonnegative('টাকার পরিমাণ ঋণাত্মক হতে পারবে না');
+
+export const checkoutDataSchema = z.object({
+  paymentMethods: z.array(z.object({
+    code: z.string().min(1),
+    kind: z.enum(['cash', 'manual']),
+    nameBn: z.string(), nameEn: z.string(),
+    descriptionBn: z.string(), descriptionEn: z.string(),
+    accountNumber: z.string(), instructionBn: z.string(), instructionEn: z.string(),
+  })),
+  quote: z.object({
+    subtotalPoisha: poishaSchema, discountPoisha: poishaSchema,
+    totalWeightGrams: z.number().nonnegative(), isInsideDhaka: z.boolean(),
+    hasItemRequiringAdvance: z.boolean(),
+    deliveryQuotes: z.array(z.object({
+      method: z.enum(['courier', 'post_office']),
+      finalChargePoisha: poishaSchema, isFreeDeliveryApplied: z.boolean(),
+      totalPayablePoisha: poishaSchema, requiredAdvancePoisha: poishaSchema,
+    })).length(2),
+  }).nullable(),
+});
+export type CheckoutData = z.infer<typeof checkoutDataSchema>;
 
 export const basisPointsSchema = z
   .number()
@@ -227,9 +249,9 @@ export const createOrderInputSchema = z
       .enum(['storefront', 'facebook', 'whatsapp', 'instagram', 'phone_call', 'other'])
       .default('storefront'),
     deliveryMethod: z.enum(['courier', 'post_office', 'free']).default('courier'),
-    paymentMethod: z
-      .enum(['cod', 'bkash_manual', 'nagad_manual', 'rocket_manual'])
-      .default('cod'),
+    // Keep the legacy internal order snapshot type; allowed codes are checked by the server.
+    paymentMethod: z.string().trim().min(1).max(64).default('cod')
+      .transform(code => code as PaymentMethod),
     manualPaymentTrxId: z.string().trim().max(64).optional(),
     manualPaymentSenderPhone: z.string().trim().optional(),
     advancePaidPoisha: poishaSchema.default(0),

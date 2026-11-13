@@ -2,7 +2,6 @@
 import { localizedFetch as fetch } from '@/lib/i18n/localized-fetch';
 import { uiText } from '@/lib/i18n/ui-text';
 
-import { LocalizedText } from '@/components/ui/localized-text';
 
 
 // src/components/storefront/checkout-client.tsx
@@ -40,13 +39,14 @@ import type {
 import {
   BD_DISTRICTS,
   getDistrictById,
-  getDistrictDeliveryRates,
   getUpazilasByDistrict,
 } from '@/lib/geo/bd-geocode';
-import { calculateDeliveryCharge, formatPoishaToBdt } from '@/lib/money';
+import { formatPoishaToBdt as formatMoney } from '@/lib/money';
 import {
   evaluateAddressQuality,
   normalizeBdPhone,
+  checkoutDataSchema,
+  type CheckoutData,
 } from '@/lib/validators';
 import { formatLocaleNumber } from '@/lib/i18n/dictionaries';
 import { useLocaleStore } from '@/store/use-locale-store';
@@ -90,9 +90,7 @@ export function CheckoutClient({
   const [deliveryMethod, setDeliveryMethod] = React.useState<
     'courier' | 'post_office'
   >('courier');
-  const [paymentMethod, setPaymentMethod] = React.useState<
-    'cod' | 'bkash_manual'
-  >('cod');
+  const [paymentMethod, setPaymentMethod] = React.useState('');
   const [manualPaymentTrxId, setManualPaymentTrxId] = React.useState('');
   const [copiedMfsNumber, setCopiedMfsNumber] = React.useState(false);
 
@@ -101,7 +99,6 @@ export function CheckoutClient({
   const [appliedPromoCode, setAppliedPromoCode] = React.useState<string | null>(
     null
   );
-  const [promoDiscountPoisha, setPromoDiscountPoisha] = React.useState<number>(0);
   const [promoMessage, setPromoMessage] = React.useState<{
     type: 'success' | 'error';
     text: string;
@@ -142,75 +139,60 @@ export function CheckoutClient({
     }
   };
 
-  // Cart Calculations in Exact Integer Poisha
-  const subtotalPoisha = cartItems.reduce(
-    (sum, i) => sum + i.unitSalePricePoisha * i.quantity,
-    0
-  );
-  const totalWeightGrams = cartItems.reduce(
-    (sum, i) => sum + i.weightGrams * i.quantity,
-    0
-  );
-  const isAllItemsFreeDelivery =
-    cartItems.length > 0 && cartItems.every((i) => i.isFreeDeliveryProduct);
+  // Only identifiers and quantities go to the server; stored cart prices are not trusted.
+  const quoteQuery = JSON.stringify({
+    districtId,
+    items: cartItems.map(({ productId, variantId, quantity }) => ({ productId, variantId, quantity })),
+    ...(appliedPromoCode ? { promoCode: appliedPromoCode } : {}),
+  });
+  const [checkoutResult, setCheckoutResult] = React.useState<{ key: string; data: CheckoutData } | null>(null);
+  const [quoteError, setQuoteError] = React.useState<string | null>(null);
+  const [quoteRetry, setQuoteRetry] = React.useState(0);
+  const hasCartItems = cartItems.length > 0;
+  React.useEffect(() => {
+    if (!hasCartItems) return;
+    const controller = new AbortController();
+    setQuoteError(null);
+    fetch(`/api/page-data?${new URLSearchParams({ path: '/checkout', q: quoteQuery })}`, {
+      cache: 'no-store', signal: controller.signal,
+    }).then(async response => {
+      const body = await response.json();
+      if (!response.ok || !body.success) throw new Error(body.errorBn || 'হিসাব পাওয়া যায়নি।');
+      const data = checkoutDataSchema.parse(body.data?.props?.checkout);
+      if (!data.quote || !data.paymentMethods.length ||
+        !data.quote.deliveryQuotes.some(q => q.method === 'courier') ||
+        !data.quote.deliveryQuotes.some(q => q.method === 'post_office')) throw new Error('অসম্পূর্ণ চেকআউট তথ্য।');
+      if (!controller.signal.aborted) setCheckoutResult({ key: quoteQuery, data });
+    }).catch(() => {
+      if (!controller.signal.aborted) setQuoteError(locale === 'bn'
+        ? 'ডেলিভারি ও পেমেন্টের তথ্য পাওয়া যায়নি। আবার চেষ্টা করুন।'
+        : 'Delivery and payment information could not be loaded. Please retry.');
+    });
+    return () => controller.abort();
+  }, [quoteQuery, hasCartItems, quoteRetry, locale]);
 
+  const checkoutData = checkoutResult?.data;
+  const quote = checkoutData?.quote;
+  const quoteReady = checkoutResult?.key === quoteQuery && !quoteError;
+  const paymentMethods = checkoutData?.paymentMethods ?? [];
+  const hasItemRequiringAdvance = quote?.hasItemRequiringAdvance ?? false;
+  const selectedPayment = paymentMethods.find(method => method.code === paymentMethod &&
+    (!hasItemRequiringAdvance || method.kind !== 'cash')) ??
+    paymentMethods.find(method => !hasItemRequiringAdvance || method.kind !== 'cash');
+  const effectivePaymentMethod = selectedPayment?.code ?? '';
+  const isManualPayment = selectedPayment?.kind === 'manual';
+  const subtotalPoisha = quote?.subtotalPoisha ?? 0;
+  const promoDiscountPoisha = quote?.discountPoisha ?? 0;
   const selectedDistrict =
     getDistrictById(districtId) ?? getDistrictById(47)!;
-  const districtRates = getDistrictDeliveryRates(
-    selectedDistrict.id,
-    siteSettings.bdPostDefaultPerKgPoisha
-  );
-
-  const courierChargeCalc = calculateDeliveryCharge({
-    method: 'courier',
-    totalWeightGrams,
-    orderSubtotalPoisha: subtotalPoisha,
-    freeDeliveryThresholdPoisha: siteSettings.freeDeliveryThresholdPoisha,
-    isGlobalFreeDelivery: siteSettings.globalFreeDelivery,
-    isAllItemsFreeDelivery,
-    courierBaseRate1KgPoisha: districtRates.base1KgPoisha,
-    courierExtraPerKgPoisha: districtRates.extraPerKgPoisha,
-    bdPostPerKgPoisha: districtRates.bdPostPerKgPoisha,
-  });
-
-  const bdPostChargeCalc = calculateDeliveryCharge({
-    method: 'post_office',
-    totalWeightGrams,
-    orderSubtotalPoisha: subtotalPoisha,
-    freeDeliveryThresholdPoisha: siteSettings.freeDeliveryThresholdPoisha,
-    isGlobalFreeDelivery: siteSettings.globalFreeDelivery,
-    isAllItemsFreeDelivery,
-    courierBaseRate1KgPoisha: districtRates.base1KgPoisha,
-    courierExtraPerKgPoisha: districtRates.extraPerKgPoisha,
-    bdPostPerKgPoisha: districtRates.bdPostPerKgPoisha,
-  });
-
+  const courierChargeCalc = quote?.deliveryQuotes.find(q => q.method === 'courier');
+  const bdPostChargeCalc = quote?.deliveryQuotes.find(q => q.method === 'post_office');
   const activeDeliveryCalc =
     deliveryMethod === 'post_office' ? bdPostChargeCalc : courierChargeCalc;
-
-  const totalPayablePoisha = Math.max(
-    0,
-    subtotalPoisha - promoDiscountPoisha + activeDeliveryCalc.finalChargePoisha
-  );
-
-  // Advance Courier Charge Calculation (Per-product deposit + full delivery charge)
-  const hasItemRequiringAdvance = cartItems.some(
-    (i) => i.requiresAdvanceCourierCharge
-  );
-  const customDepositSumPoisha = cartItems.reduce((sum, i) => {
-    if (i.requiresAdvanceCourierCharge && i.customAdvanceDepositPoisha) {
-      return sum + i.customAdvanceDepositPoisha * i.quantity;
-    }
-    return sum;
-  }, 0);
-  const requiredAdvancePoisha = hasItemRequiringAdvance
-    ? activeDeliveryCalc.finalChargePoisha + customDepositSumPoisha
-    : 0;
-
-  const effectivePaymentMethod =
-    hasItemRequiringAdvance && paymentMethod === 'cod'
-      ? 'bkash_manual'
-      : paymentMethod;
+  const totalPayablePoisha = activeDeliveryCalc?.totalPayablePoisha ?? 0;
+  const requiredAdvancePoisha = activeDeliveryCalc?.requiredAdvancePoisha ?? 0;
+  const formatPoishaToBdt = (amount: number, language: typeof locale) =>
+    quoteReady ? formatMoney(amount, language) : '…';
 
   // Live Address Quality Evaluation
   const addressQuality = React.useMemo(
@@ -252,11 +234,9 @@ export function CheckoutClient({
 
       if (data.valid) {
         setAppliedPromoCode(data.code);
-        setPromoDiscountPoisha(data.discountPoisha);
         setPromoMessage({ type: 'success', text: data.reasonBn });
       } else {
         setAppliedPromoCode(null);
-        setPromoDiscountPoisha(0);
         setPromoMessage({ type: 'error', text: data.reasonBn });
       }
     } catch {
@@ -271,7 +251,6 @@ export function CheckoutClient({
 
   const handleRemovePromo = () => {
     setAppliedPromoCode(null);
-    setPromoDiscountPoisha(0);
     setPromoInput('');
     setPromoMessage(null);
   };
@@ -281,6 +260,10 @@ export function CheckoutClient({
     if (submittingRef.current) return;
     setSubmitError(null);
 
+    if (!quoteReady || !activeDeliveryCalc || !selectedPayment || isCheckingPromo) {
+      setSubmitError(locale === 'bn' ? 'সার্ভারের হিসাব আসা পর্যন্ত অপেক্ষা করুন।' : 'Please wait for the server quote.');
+      return;
+    }
     if (sessionStatus !== 'authenticated') {
       setSubmitError('অর্ডার নিশ্চিত করার আগে অ্যাকাউন্টে লগইন করুন।');
       return;
@@ -301,13 +284,13 @@ export function CheckoutClient({
       setSubmitError('বাড়ি, রোড ও এলাকার বিস্তারিত ঠিকানা লিখুন।');
       return;
     }
-    if (hasItemRequiringAdvance && effectivePaymentMethod === 'cod') {
+    if (hasItemRequiringAdvance && !isManualPayment) {
       setSubmitError(
         'এই অর্ডারে কুরিয়ার ডেলিভারি চার্জ অগ্রিম প্রযোজ্য। অনুগ্রহ করে বিকাশ নির্বাচন করুন।'
       );
       return;
     }
-    if (effectivePaymentMethod !== 'cod' && manualPaymentTrxId.trim().length < 4) {
+    if (isManualPayment && manualPaymentTrxId.trim().length < 5) {
       setSubmitError(
         'বিকাশ সেন্ড মানির সঠিক Transaction ID (TrxID) লিখুন।'
       );
@@ -318,7 +301,7 @@ export function CheckoutClient({
     setIsSubmitting(true);
     try {
       const advancePortion =
-        effectivePaymentMethod !== 'cod'
+        isManualPayment
           ? requiredAdvancePoisha > 0
             ? requiredAdvancePoisha
             : activeDeliveryCalc.finalChargePoisha
@@ -336,12 +319,10 @@ export function CheckoutClient({
           streetAddress: streetAddress.trim(),
           landmark: landmark.trim(),
           source: 'storefront',
-          deliveryMethod: activeDeliveryCalc.isFreeDeliveryApplied
-            ? 'free'
-            : deliveryMethod,
+          deliveryMethod,
           paymentMethod: effectivePaymentMethod,
           manualPaymentTrxId:
-            effectivePaymentMethod !== 'cod'
+            isManualPayment
               ? manualPaymentTrxId.trim().toUpperCase()
               : undefined,
           advancePaidPoisha: advancePortion,
@@ -428,6 +409,18 @@ export function CheckoutClient({
           <Badge status="info">{dict.common.codAvailable}</Badge>
         </div>
 
+        {hasCartItems && (!quoteReady || quoteError) && (
+          <Card className="space-y-3">
+            <p role={quoteError ? 'alert' : 'status'} className="text-sm">
+              {quoteError ?? (locale === 'bn' ? 'ডেলিভারি ও পেমেন্টের হিসাব আসছে…' : 'Loading delivery and payment information…')}
+            </p>
+            {quoteError && <Button type="button" variant="outline" onClick={() => {
+              setCheckoutResult(null);
+              setQuoteError(null);
+              setQuoteRetry(value => value + 1);
+            }}>{locale === 'bn' ? 'আবার চেষ্টা করুন' : 'Retry'}</Button>}
+          </Card>
+        )}
         {cartItems.length === 0 ? (
           <EmptyState
             icon={<ShoppingBag className="w-6 h-6" aria-hidden="true" />}
@@ -436,7 +429,7 @@ export function CheckoutClient({
             actionLabel={dict.common.continueShopping}
             onAction={() => navigate('/')}
           />
-        ) : (
+        ) : !activeDeliveryCalc || !courierChargeCalc || !bdPostChargeCalc ? null : (
           <form
             onSubmit={handleConfirmOrder}
             className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
@@ -665,7 +658,7 @@ export function CheckoutClient({
                           : 'Courier Home Delivery'}
                       </p>
                       <p className="text-xs text-muted mt-0.5">
-                        {districtRates.isInsideDhaka
+                        {quote?.isInsideDhaka
                           ? locale === 'bn'
                             ? 'ঢাকার ভেতরে ২৪-৪৮ ঘণ্টা'
                             : 'Inside Dhaka (24-48h)'
@@ -675,7 +668,7 @@ export function CheckoutClient({
                       </p>
                     </div>
                     <span className="text-sm font-bold text-ink tabular-nums">
-                      {courierChargeCalc.isFreeDeliveryApplied
+                      {quoteReady && courierChargeCalc.isFreeDeliveryApplied
                         ? dict.common.freeDelivery
                         : formatPoishaToBdt(
                             courierChargeCalc.finalChargePoisha,
@@ -706,7 +699,7 @@ export function CheckoutClient({
                       </p>
                     </div>
                     <span className="text-sm font-bold text-ink tabular-nums">
-                      {bdPostChargeCalc.isFreeDeliveryApplied
+                      {quoteReady && bdPostChargeCalc.isFreeDeliveryApplied
                         ? dict.common.freeDelivery
                         : formatPoishaToBdt(
                             bdPostChargeCalc.finalChargePoisha,
@@ -753,22 +746,22 @@ export function CheckoutClient({
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* COD */}
-                  <button
+                  {paymentMethods.map(method => method.kind === 'cash' ? <button
+                    key={method.code}
                     type="button"
                     disabled={hasItemRequiringAdvance}
-                    onClick={() => setPaymentMethod('cod')}
+                    onClick={() => setPaymentMethod(method.code)}
                     className={`p-3.5 text-left border rounded-[var(--radius-md)] transition-colors ${
                       hasItemRequiringAdvance
                         ? 'opacity-50 cursor-not-allowed border-border bg-surface'
-                        : effectivePaymentMethod === 'cod'
+                        : effectivePaymentMethod === method.code
                         ? 'border-ink bg-surface ring-1 ring-ink cursor-pointer'
                         : 'border-border bg-bg hover:border-ink cursor-pointer'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-bold text-ink">
-                        {dict.common.codAvailable}
+                        {locale === 'bn' ? method.nameBn : method.nameEn}
                       </p>
                       {hasItemRequiringAdvance && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-danger/10 text-danger font-medium">
@@ -781,60 +774,54 @@ export function CheckoutClient({
                         ? locale === 'bn'
                           ? 'অগ্রিম কুরিয়ার চার্জের জন্য প্রযোজ্য নয়'
                           : 'Not available when advance courier is required'
-                        : locale === 'bn'
-                        ? 'পণ্য হাতে পেয়ে ডেলিভারি ম্যানকে মূল্য পরিশোধ করুন'
-                        : 'Pay cash upon receiving your parcel'}
+                        : locale === 'bn' ? method.descriptionBn : method.descriptionEn}
                     </p>
-                  </button>
-
-                  {/* bKash */}
-                  <button
+                  </button> : <button
+                    key={method.code}
                     type="button"
-                    onClick={() => setPaymentMethod('bkash_manual')}
+                    onClick={() => setPaymentMethod(method.code)}
                     className={`p-3.5 text-left border rounded-[var(--radius-md)] cursor-pointer transition-colors ${
-                      effectivePaymentMethod === 'bkash_manual'
+                      effectivePaymentMethod === method.code
                         ? 'border-[#E2136E] bg-[#E2136E]/5 ring-1 ring-[#E2136E]'
                         : 'border-border bg-bg hover:border-[#E2136E]/60'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-bold text-[#E2136E]">
-                        {locale === 'bn' ? 'বিকাশ (bKash)' : 'bKash Send Money'}
+                        {locale === 'bn' ? method.nameBn : method.nameEn}
                       </p>
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#E2136E]/10 text-[#E2136E]">
-                        {siteSettings.bkashManualNumber}
+                        {method.accountNumber}
                       </span>
                     </div>
                     <p className="text-xs text-muted mt-0.5">
-                      {locale === 'bn'
-                        ? 'সেন্ড মানি করে TrxID দিয়ে সাবমিট করুন'
-                        : 'Send Money & provide Transaction ID'}
+                      {locale === 'bn' ? method.descriptionBn : method.descriptionEn}
                     </p>
-                  </button>
+                  </button>)}
 
                 </div>
 
                 {/* MFS Send Money Guidance Box */}
-                {effectivePaymentMethod !== 'cod' && (
+                {quoteReady && isManualPayment && selectedPayment && (
                   <div className="p-4 border border-border rounded-[var(--radius-md)] bg-surface space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 text-xs font-bold rounded-md bg-ink text-bg">
-                          <LocalizedText source={"বিকাশ (bKash)"} area="storefront" />{" "}</span>
+                          {locale === 'bn' ? selectedPayment.nameBn : selectedPayment.nameEn}</span>
                         <span className="text-xs text-muted">
                           {locale === 'bn'
                             ? 'পার্সোনাল সেন্ড মানি নম্বর:'
                             : 'Personal Send Money Number:'}
                         </span>
                         <span className="text-xs font-mono font-bold text-ink">
-                          {siteSettings.bkashManualNumber}
+                          {selectedPayment.accountNumber}
                         </span>
                       </div>
 
                       <button
                         type="button"
                         onClick={async () => {
-                          const targetNum = siteSettings.bkashManualNumber;
+                          const targetNum = selectedPayment.accountNumber;
                           try {
                             await navigator.clipboard.writeText(targetNum);
                             setCopiedMfsNumber(true);
@@ -865,37 +852,13 @@ export function CheckoutClient({
                     <div className="p-2.5 rounded-md bg-bg text-xs space-y-1 text-muted">
                       <p className="font-semibold text-ink">
                         {locale === 'bn'
-                          ? siteSettings.bkashInstructionBn
-                          : siteSettings.bkashInstructionEn}
+                          ? selectedPayment.instructionBn
+                          : selectedPayment.instructionEn}
                       </p>
                       <p className="text-[11px]">
                         {locale === 'bn'
-                          ? `প্রদেয় অগ্রিম কুরিয়ার চার্জ: ৳${(
-                              (requiredAdvancePoisha > 0
-                                ? requiredAdvancePoisha
-                                : activeDeliveryCalc.finalChargePoisha) / 100
-                            ).toFixed(0)} | বাকি ৳${(
-                              Math.max(
-                                0,
-                                totalPayablePoisha -
-                                  (requiredAdvancePoisha > 0
-                                    ? requiredAdvancePoisha
-                                    : activeDeliveryCalc.finalChargePoisha)
-                              ) / 100
-                            ).toFixed(0)} ডেলিভারির সময় প্রদেয় (COD)`
-                          : `Payable Advance: ৳${(
-                              (requiredAdvancePoisha > 0
-                                ? requiredAdvancePoisha
-                                : activeDeliveryCalc.finalChargePoisha) / 100
-                            ).toFixed(0)} | Remaining ৳${(
-                              Math.max(
-                                0,
-                                totalPayablePoisha -
-                                  (requiredAdvancePoisha > 0
-                                    ? requiredAdvancePoisha
-                                    : activeDeliveryCalc.finalChargePoisha)
-                              ) / 100
-                            ).toFixed(0)} on Delivery (COD)`}
+                        ? `প্রদেয় অগ্রিম কুরিয়ার চার্জ: ${formatPoishaToBdt(requiredAdvancePoisha || activeDeliveryCalc.finalChargePoisha, locale)} | বাকি ${formatPoishaToBdt(Math.max(0, totalPayablePoisha - (requiredAdvancePoisha || activeDeliveryCalc.finalChargePoisha)), locale)} ডেলিভারির সময় প্রদেয় (COD)`
+                        : `Payable Advance: ${formatPoishaToBdt(requiredAdvancePoisha || activeDeliveryCalc.finalChargePoisha, locale)} | Remaining ${formatPoishaToBdt(Math.max(0, totalPayablePoisha - (requiredAdvancePoisha || activeDeliveryCalc.finalChargePoisha)), locale)} on Delivery (COD)`}
                       </p>
                     </div>
 
@@ -1093,7 +1056,7 @@ export function CheckoutClient({
                       )
                     </span>
                     <span className="font-semibold text-ink tabular-nums">
-                      {activeDeliveryCalc.isFreeDeliveryApplied
+                      {quoteReady && activeDeliveryCalc.isFreeDeliveryApplied
                         ? dict.common.freeDelivery
                         : formatPoishaToBdt(
                             activeDeliveryCalc.finalChargePoisha,
@@ -1109,7 +1072,7 @@ export function CheckoutClient({
                     </span>
                   </div>
 
-                  {(hasItemRequiringAdvance || paymentMethod !== 'cod') && (
+                  {(hasItemRequiringAdvance || isManualPayment) && (
                     <div className="pt-2 border-t border-dashed border-border/80 space-y-1 text-xs">
                       <div className="flex items-center justify-between text-[#B45309] font-medium">
                         <span>
@@ -1184,7 +1147,7 @@ export function CheckoutClient({
                         {locale === 'bn' ? 'পেমেন্ট স্ট্যাটাস:' : 'Payment Status:'}
                       </span>
                       <span className="font-semibold text-ink">
-                        {effectivePaymentMethod !== 'cod'
+                        {isManualPayment
                           ? locale === 'bn'
                             ? 'বিকাশ TrxID ভেরিফিকেশন পেন্ডিং'
                             : 'Pending TrxID Verification'
@@ -1210,7 +1173,7 @@ export function CheckoutClient({
                   type="submit"
                   variant="primary"
                   size="lg"
-                  disabled={isSubmitting || sessionStatus !== 'authenticated'}
+                  disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus !== 'authenticated'}
                   className="w-full min-h-[46px] text-sm font-bold shadow-sm"
                   leftIcon={
                     <ShieldCheck className="w-4 h-4" aria-hidden="true" />
@@ -1240,7 +1203,7 @@ export function CheckoutClient({
                 type="submit"
                 variant="primary"
                 size="md"
-                disabled={isSubmitting || sessionStatus !== 'authenticated'}
+                disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus !== 'authenticated'}
                 className="min-h-[42px] px-4 font-bold"
                 leftIcon={<ShieldCheck className="w-4 h-4" aria-hidden="true" />}
               >
