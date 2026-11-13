@@ -1,3 +1,4 @@
+import { getStoreMetadata } from '@/src/lib/storefront/store-metadata';
 import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/order-tracking/[orderNo]/page.tsx
 // Server Component for Live Order Confirmation & Tracking (Phase 1 Hardened)
@@ -25,13 +26,7 @@ interface OrderTrackingPageProps {
   params: Promise<{ orderNo: string }>;
 }
 
-export function generateMetadata(): Metadata {
-  return {
-    title: 'অর্ডার ট্র্যাকিং | পঞ্চগড়',
-    robots: { index: false, follow: false },
-    description: 'আপনার অর্ডারের বর্তমান অবস্থান এবং ডেলিভারি স্ট্যাটাস দেখুন।',
-  };
-}
+export async function generateMetadata(): Promise<Metadata> { return getStoreMetadata('অর্ডার ট্র্যাকিং', true); }
 
 export default async function OrderTrackingPage({
   params,

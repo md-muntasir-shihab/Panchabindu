@@ -60,8 +60,8 @@ export function ContactClient({
 
   const storyTitle =
     locale === 'bn'
-      ? aboutSettings?.storyTitleBn || 'পঞ্চগড় (PANCHAGARH) কীভাবে কাজ করে?'
-      : aboutSettings?.storyTitleEn || 'How PANCHAGARH Works';
+      ? aboutSettings?.storyTitleBn || `${brandName} কীভাবে কাজ করে?`
+      : aboutSettings?.storyTitleEn || `How ${brandName} works`;
 
   const storyP1 =
     locale === 'bn'
@@ -141,14 +141,14 @@ export function ContactClient({
         <div className="space-y-2 border-b border-[#E4E2DC] pb-6">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-[#5A655D] hover:text-[#1B4332] transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-[#5A655D] hover:text-[var(--store-accent)] transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
             <span>{locale === 'bn' ? 'হোমে ফিরে যান' : 'Back to Home'}</span>
           </Link>
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold text-[#1B4332] uppercase tracking-wider">
+              <p className="text-xs font-semibold text-[var(--store-accent)] uppercase tracking-wider">
                 {locale === 'bn' ? 'আমাদের পরিচয় ও গ্রাহক সেবা' : 'About Us & Support'}
               </p>
               <h1 className="text-2xl sm:text-4xl font-bold text-[#162119] tracking-tight mt-1">
@@ -167,7 +167,7 @@ export function ContactClient({
           <div className="lg:col-span-7 space-y-8">
             {/* Story Card */}
             <div className="p-6 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-4">
-              <span className="text-xs font-semibold text-[#1B4332] tracking-wide">
+              <span className="text-xs font-semibold text-[var(--store-accent)] tracking-wide">
                 {locale === 'bn' ? 'আমাদের গল্প ও দর্শন' : 'Our Story & Heritage'}
               </span>
               <h2 className="text-xl sm:text-2xl font-bold text-[#162119] leading-snug">
@@ -181,35 +181,7 @@ export function ContactClient({
               </p>
 
               {/* Trust Pillars Inside Story */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
-                <div className="p-3.5 rounded-xl border border-[#E4E2DC] bg-[#FAF9F5]">
-                  <ShieldCheck className="w-4 h-4 text-[#1B4332]" />
-                  <p className="text-xs font-bold text-[#162119] mt-2">
-                    {locale === 'bn' ? '১০০% কিউসি ভেরিফাইড' : '100% QC Verified'}
-                  </p>
-                  <p className="text-[11px] text-[#5A655D] mt-0.5">
-                    {locale === 'bn' ? 'ছবি ও ভিডিও সহ যাচাই' : 'Inspected before dispatch'}
-                  </p>
-                </div>
-                <div className="p-3.5 rounded-xl border border-[#E4E2DC] bg-[#FAF9F5]">
-                  <Truck className="w-4 h-4 text-[#1B4332]" />
-                  <p className="text-xs font-bold text-[#162119] mt-2">
-                    {locale === 'bn' ? '৬৪ জেলায় ডেলিভারি' : 'Nationwide Courier'}
-                  </p>
-                  <p className="text-[11px] text-[#5A655D] mt-0.5">
-                    {locale === 'bn' ? 'পাঠাও, স্টেডফাস্ট ও ডাক' : 'Pathao & Steadfast'}
-                  </p>
-                </div>
-                <div className="p-3.5 rounded-xl border border-[#E4E2DC] bg-[#FAF9F5]">
-                  <RotateCcw className="w-4 h-4 text-[#1B4332]" />
-                  <p className="text-xs font-bold text-[#162119] mt-2">
-                    {locale === 'bn' ? '৭ দিনের সহজ রিটার্ন' : '7-Day Easy Return'}
-                  </p>
-                  <p className="text-[11px] text-[#5A655D] mt-0.5">
-                    {locale === 'bn' ? 'ঝামেলাহীন সমাধান' : 'Hassle-free guarantee'}
-                  </p>
-                </div>
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">{siteSettings.trustBadges.map(badge => <div key={badge.id} className="p-3.5 rounded-xl border border-[#E4E2DC] bg-[#FAF9F5]"><ShieldCheck className="w-4 h-4 text-[var(--store-accent)]" /><p className="text-xs font-bold mt-2">{locale === 'bn' ? badge.labelBn : badge.labelEn}</p><p className="text-[11px] text-[#5A655D] mt-1">{locale === 'bn' ? badge.descBn : badge.descEn}</p></div>)}</div>
             </div>
 
             {/* Direct Contact Channels Card */}
@@ -219,7 +191,7 @@ export function ContactClient({
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9]">
-                  <PhoneCall className="w-4 h-4 text-[#1B4332] shrink-0 mt-0.5" />
+                  <PhoneCall className="w-4 h-4 text-[var(--store-accent)] shrink-0 mt-0.5" />
                   <div>
                     <p className="font-semibold text-[#162119]">
                       {locale === 'bn' ? 'হেল্পলাইন ও কল সাপোর্ট' : 'Customer Helpline'}
@@ -234,7 +206,7 @@ export function ContactClient({
                 </div>
 
                 <div className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9]">
-                  <Mail className="w-4 h-4 text-[#1B4332] shrink-0 mt-0.5" />
+                  <Mail className="w-4 h-4 text-[var(--store-accent)] shrink-0 mt-0.5" />
                   <div>
                     <p className="font-semibold text-[#162119]">
                       {locale === 'bn' ? 'অফিসিয়াল ইমেইল' : 'Email Support'}
@@ -249,7 +221,7 @@ export function ContactClient({
                 </div>
 
                 <div className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9]">
-                  <MapPin className="w-4 h-4 text-[#1B4332] shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-[var(--store-accent)] shrink-0 mt-0.5" />
                   <div>
                     <p className="font-semibold text-[#162119]">
                       {locale === 'bn' ? 'সেন্ট্রাল ওয়্যারহাউস ও অফিস' : 'Central Warehouse Hub'}
@@ -261,7 +233,7 @@ export function ContactClient({
                 </div>
 
                 <div className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9]">
-                  <Clock className="w-4 h-4 text-[#1B4332] shrink-0 mt-0.5" />
+                  <Clock className="w-4 h-4 text-[var(--store-accent)] shrink-0 mt-0.5" />
                   <div>
                     <p className="font-semibold text-[#162119]">
                       {locale === 'bn' ? 'ডেলিভারি ট্র্যাকিং সাপোর্ট' : 'Delivery Tracking'}
@@ -281,7 +253,7 @@ export function ContactClient({
           <div className="lg:col-span-5">
             <div className="p-6 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-5">
               <div>
-                <p className="text-xs font-semibold text-[#1B4332]">
+                <p className="text-xs font-semibold text-[var(--store-accent)]">
                   {locale === 'bn' ? 'বার্তা পাঠান' : 'Send a Message'}
                 </p>
                 <h3 className="text-xl font-bold text-[#162119] mt-0.5">
@@ -324,7 +296,7 @@ export function ContactClient({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={locale === 'bn' ? 'যেমন: তানভীর আহমেদ' : 'e.g. Tanvir Ahmed'}
-                    className="w-full min-h-[42px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[#1B4332]"
+                    className="w-full min-h-[42px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[var(--store-accent)]"
                   />
                 </div>
 
@@ -338,7 +310,7 @@ export function ContactClient({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="017XXXXXXXX"
-                    className="w-full min-h-[42px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[#1B4332]"
+                    className="w-full min-h-[42px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[var(--store-accent)]"
                   />
                 </div>
 
@@ -351,7 +323,7 @@ export function ContactClient({
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder={locale === 'bn' ? 'যেমন: পণ্য সম্পর্কে জিজ্ঞাসা' : 'e.g. Product inquiry'}
-                    className="w-full min-h-[42px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[#1B4332]"
+                    className="w-full min-h-[42px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[var(--store-accent)]"
                   />
                 </div>
 
@@ -369,14 +341,14 @@ export function ContactClient({
                         ? 'আপনার বার্তা বিস্তারিত লিখুন...'
                         : 'Write your message details here...'
                     }
-                    className="w-full p-3.5 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[#1B4332]"
+                    className="w-full p-3.5 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[var(--store-accent)]"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full min-h-[46px] px-5 py-3 rounded-xl bg-[#1B4332] text-[#FAF9F5] hover:bg-[#143325] text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 disabled:opacity-50"
+                  className="w-full min-h-[46px] px-5 py-3 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" aria-hidden="true" />
                   <span>

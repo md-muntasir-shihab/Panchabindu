@@ -1,3 +1,4 @@
+import { getStoreMetadata } from '@/src/lib/storefront/store-metadata';
 import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/shop/page.tsx
 // Dedicated All Products Catalog Page (/shop) — Phase 6 (Master Prompt Section 9.3)
@@ -8,14 +9,7 @@ import { ShopCatalogClient } from '@/src/components/storefront/shop-catalog-clie
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'সকল পণ্য (All Products) | পঞ্চগড় — কনসাইনমেন্ট মার্কেটপ্লেস',
-  description:
-    'পঞ্চগড় কনসাইনমেন্ট মার্কেটপ্লেসের সকল কিউসি-যাচাইকৃত জামদানি, নকশিকাঁথা, খাঁটি মধু, চামড়াজাত পণ্য এবং কারুশিল্প দেখুন।',
-  alternates: {
-    canonical: '/shop',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> { return getStoreMetadata('সকল পণ্য', false); }
 
 interface ShopPageProps {
   searchParams: Promise<{ q?: string; category?: string }>;

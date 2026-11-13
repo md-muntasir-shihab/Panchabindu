@@ -1,4 +1,5 @@
 'use client';
+import { StorefrontContentPanel } from './storefront-content-panel';
 import { localizedField } from '@/src/lib/i18n/ui-text';
 
 import { LocalizedText } from '@/src/components/ui/localized-text';
@@ -1568,15 +1569,6 @@ export function SuperAdminControlCenterPanel({
   const [updatingInquiryId, setUpdatingInquiryId] = React.useState<string | null>(null);
 
   // Branding & Thresholds State
-  const [brandNameBn, setBrandNameBn] = React.useState(
-    siteSettings.brandNameBn
-  );
-  const [brandNameEn, setBrandNameEn] = React.useState(
-    siteSettings.brandNameEn
-  );
-  const [supportPhone, setSupportPhone] = React.useState(
-    siteSettings.supportPhone
-  );
   const [bkashManualNumber, setBkashManualNumber] = React.useState(
     siteSettings.bkashManualNumber
   );
@@ -1683,9 +1675,6 @@ export function SuperAdminControlCenterPanel({
         body: JSON.stringify({
           operation: 'update_branding_thresholds',
           patch: {
-            brandNameBn,
-            brandNameEn,
-            supportPhone,
             bkashManualNumber,
             freeDeliveryThresholdPoisha: takaToPoisha(
               Number(freeDeliveryTaka) || 0
@@ -1809,6 +1798,7 @@ export function SuperAdminControlCenterPanel({
 
   return (
     <section className="space-y-6">
+      <StorefrontContentPanel siteSettings={siteSettings} onRefresh={onRefreshWorkspace} />
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
         <div>
           <h1 className="text-xl font-bold text-ink">
@@ -1870,26 +1860,6 @@ export function SuperAdminControlCenterPanel({
           </div>
           <form onSubmit={handleSaveBranding} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-2">
-              <Input
-                label="ব্র্যান্ড নাম (বাংলা) *"
-                value={brandNameBn}
-                onChange={(e) => setBrandNameBn(e.target.value)}
-                required
-              />
-              <Input
-                label="Brand Name (English) *"
-                value={brandNameEn}
-                onChange={(e) => setBrandNameEn(e.target.value)}
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                label="সাপোর্ট ফোন *"
-                value={supportPhone}
-                onChange={(e) => setSupportPhone(e.target.value)}
-                required
-              />
               <Input
                 label="বিকাশ মার্চেন্ট নম্বর *"
                 value={bkashManualNumber}

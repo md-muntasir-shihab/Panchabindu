@@ -1,3 +1,4 @@
+import { getStoreMetadata } from '@/src/lib/storefront/store-metadata';
 import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/account/page.tsx
 // Server Component for Customer Wishlist & Order Tracking Lookup
@@ -8,11 +9,7 @@ import { AccountClient } from '@/src/components/storefront/account-client';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  robots: { index: false, follow: false },
-  title: 'পছন্দের তালিকা ও অর্ডার ট্র্যাকিং | বঙ্গকনসাইন',
-  description: 'আপনার সেভ করা পণ্য এবং অর্ডার ট্র্যাকিং।',
-};
+export async function generateMetadata(): Promise<Metadata> { return getStoreMetadata('অ্যাকাউন্ট ও অর্ডার', true); }
 
 export default async function AccountPage() {
   const { siteSettings, categories, products } = await withRuntimePersistence(() => getPublicStorefrontData());

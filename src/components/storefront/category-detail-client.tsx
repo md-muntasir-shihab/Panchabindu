@@ -116,13 +116,13 @@ export function CategoryDetailClient({
           aria-label={uiText("Breadcrumb", locale)}
           className="flex items-center gap-1.5 text-xs text-[#5A655D]"
         >
-          <Link href="/" className="hover:text-[#1B4332] transition-colors">
+          <Link href="/" className="hover:text-[var(--store-accent)] transition-colors">
             {dict.common.home}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-[#5A655D]" />
           <Link
             href="/categories"
-            className="hover:text-[#1B4332] transition-colors"
+            className="hover:text-[var(--store-accent)] transition-colors"
           >
             {locale === 'bn' ? 'ক্যাটাগরি' : 'Categories'}
           </Link>
@@ -135,7 +135,7 @@ export function CategoryDetailClient({
         {/* Category Header Card */}
         <div className="p-6 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <span className="text-xs font-semibold text-[#1B4332] uppercase tracking-wider">
+            <span className="text-xs font-semibold text-[var(--store-accent)] uppercase tracking-wider">
               {locale === 'bn' ? 'ক্যাটাগরি ভিত্তিক কালেকশন' : 'Category Collection'}
             </span>
             <h1 className="text-2xl sm:text-4xl font-bold text-[#162119] tracking-tight">
@@ -152,7 +152,7 @@ export function CategoryDetailClient({
             <p className="text-xs text-[#5A655D]">
               {locale === 'bn' ? 'মোট উপলব্ধ পণ্য' : 'Available Products'}
             </p>
-            <p className="text-2xl font-bold text-[#1B4332] tabular-nums mt-0.5">
+            <p className="text-2xl font-bold text-[var(--store-accent)] tabular-nums mt-0.5">
               {formatLocaleNumber(displayedProducts.length, locale)}<LocalizedText source={"টি"} area="storefront" />{" "}</p>
           </div>
         </div>
@@ -169,7 +169,7 @@ export function CategoryDetailClient({
                 </span>
                 <Link
                   href="/categories"
-                  className="text-[11px] font-semibold text-[#1B4332] hover:underline"
+                  className="text-[11px] font-semibold text-[var(--store-accent)] hover:underline"
                 >
                   {locale === 'bn' ? 'ডিরেক্টরি' : 'Directory'}
                 </Link>
@@ -185,8 +185,8 @@ export function CategoryDetailClient({
                       href={`/category/${c.slug}`}
                       className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-all ${
                         isCurrent
-                          ? 'bg-[#1B4332] text-[#FAF9F5] shadow-sm'
-                          : 'bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC]/80 hover:border-[#1B4332] hover:bg-white'
+                          ? 'bg-[var(--store-accent)] text-[#FAF9F5] shadow-sm'
+                          : 'bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC]/80 hover:border-[var(--store-accent)] hover:bg-white'
                       }`}
                     >
                       <span className="truncate">
@@ -214,7 +214,7 @@ export function CategoryDetailClient({
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="text-[11px] text-[#5A655D] hover:text-[#1B4332] hover:underline cursor-pointer"
+                  className="text-[11px] text-[#5A655D] hover:text-[var(--store-accent)] hover:underline cursor-pointer"
                 >
                   {locale === 'bn' ? 'রিসেট' : 'Reset'}
                 </button>
@@ -226,7 +226,7 @@ export function CategoryDetailClient({
                   type="checkbox"
                   checked={inStockOnly}
                   onChange={(e) => setInStockOnly(e.target.checked)}
-                  className="w-4 h-4 accent-[#1B4332]"
+                  className="w-4 h-4 accent-[var(--store-accent)]"
                 />
                 <span className="font-semibold text-[#162119]">
                   {locale === 'bn' ? 'শুধুমাত্র স্টকে থাকা পণ্য' : 'In-Stock Only'}
@@ -239,7 +239,7 @@ export function CategoryDetailClient({
                   <span className="font-semibold text-[#5A655D]">
                     {locale === 'bn' ? 'সর্বোচ্চ বাজেট' : 'Max Budget'}
                   </span>
-                  <span className="font-mono font-bold text-[#1B4332]">
+                  <span className="font-mono font-bold text-[var(--store-accent)]">
                     <LocalizedText source={"৳"} area="storefront" />{maxPriceBdt}
                   </span>
                 </div>
@@ -250,7 +250,7 @@ export function CategoryDetailClient({
                   step={100}
                   value={maxPriceBdt}
                   onChange={(e) => setMaxPriceBdt(Number(e.target.value))}
-                  className="w-full accent-[#1B4332]"
+                  className="w-full accent-[var(--store-accent)]"
                 />
                 <div className="flex justify-between text-[10px] text-[#5A655D] font-mono">
                   <span>৳৫০০</span>
@@ -287,7 +287,7 @@ export function CategoryDetailClient({
                       e.target.value as 'popular' | 'price_asc' | 'price_desc' | 'rating'
                     )
                   }
-                  className="min-h-[38px] px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#FAF9F5] border border-[#E4E2DC] text-[#162119] focus:outline-none focus:border-[#1B4332]"
+                  className="min-h-[38px] px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#FAF9F5] border border-[#E4E2DC] text-[#162119] focus:outline-none focus:border-[var(--store-accent)]"
                 >
                   <option value="popular">
                     {locale === 'bn' ? 'জনপ্রিয়তা অনুযায়ী' : 'Most Popular'}

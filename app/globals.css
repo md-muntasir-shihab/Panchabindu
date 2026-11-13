@@ -19,3 +19,7 @@
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
 }
+
+.storefront-theme { --color-primary: var(--store-accent); --color-info: var(--store-accent); }
+.storefront-theme a:focus-visible, .storefront-theme button:focus-visible { outline: 2px solid var(--store-accent); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) { .storefront-theme *, .storefront-theme *::before, .storefront-theme *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }

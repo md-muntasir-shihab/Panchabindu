@@ -1,3 +1,11 @@
+# Storefront decisions — November 13, 2026
+
+- Latest user authorization permits design refinement and direct Admin-control fixes, overriding earlier visual-freeze instructions.
+- Keep the existing heritage palette as the default; make the accessible accent configurable. Use explicit banner navigation, not forced autoplay.
+- Publish store content through the existing authenticated transactional workspace operation. Only a cleared Super Admin can save it; financial and provider settings are outside this content payload.
+- Brand uploads reuse validated raster processing and the managed public Storage bucket; Storage configuration is required. Existing relative/HTTPS image URLs remain usable. No live upload acceptance is claimed.
+- Functional UI translations, checkout/security rules and arbitrary executable HTML/CSS are not editable marketing content.
+
 # Current decisions — November 13, 2026
 
 - User granted edit permission after the backend audit and included Bangla/English defects. Proceed directly with code and tests; do not request that permission again. Add no code comments.

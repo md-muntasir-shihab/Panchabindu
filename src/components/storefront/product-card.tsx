@@ -40,7 +40,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const isOutOfStock = totalStock <= 0;
   const isLowStock = !isOutOfStock && totalStock <= product.lowStockThreshold;
 
-  const primaryImage = product.images[0] ?? 'https://picsum.photos/seed/fallback/800/1000';
+  const primaryImage = product.images[0] ?? '/assets/product-placeholder.svg';
   const secondaryImage = product.images[1] ?? primaryImage;
   const activeImage = isHovered ? secondaryImage : primaryImage;
 
@@ -89,13 +89,14 @@ export function ProductCard({ product }: ProductCardProps) {
     >
       <div>
         {/* 4:5 Frameless Portrait Image Canvas */}
-        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-[#F2EFE9] border border-[#E4E2DC]/70">
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[#F2EFE9] border border-[#E4E2DC]/70">
           <Link
             href={`/product/${product.slug}`}
             className="block w-full h-full relative"
             aria-label={displayName}
           >
             <Image
+              unoptimized
               src={activeImage}
               alt={displayName}
               fill
@@ -116,7 +117,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 {dict.common.lowStockRemaining(totalStock)}
               </span>
             ) : product.isFreeDelivery ? (
-              <span className="px-2.5 py-1 text-[11px] font-semibold bg-[#FAF9F5]/95 backdrop-blur-sm text-[#1B4332] rounded-md border border-[#E4E2DC]">
+              <span className="px-2.5 py-1 text-[11px] font-semibold bg-[#FAF9F5]/95 backdrop-blur-sm text-[var(--store-accent)] rounded-md border border-[#E4E2DC]">
                 {dict.common.freeDelivery}
               </span>
             ) : product.requiresAdvanceCourierCharge ? (
@@ -139,11 +140,11 @@ export function ProductCard({ product }: ProductCardProps) {
                 ? `Remove ${displayName} from wishlist`
                 : `Add ${displayName} to wishlist`
             }
-            className="absolute top-3 right-3 min-w-[40px] min-h-[40px] w-10 h-10 flex items-center justify-center rounded-full bg-[#FAF9F5]/90 backdrop-blur-sm text-[#162119] border border-[#E4E2DC]/80 hover:bg-white hover:border-[#1B4332] cursor-pointer z-10 transition-all active:scale-95"
+            className="absolute top-3 right-3 min-w-[40px] min-h-[40px] w-10 h-10 flex items-center justify-center rounded-full bg-[#FAF9F5]/90 backdrop-blur-sm text-[#162119] border border-[#E4E2DC]/80 hover:bg-white hover:border-[var(--store-accent)] cursor-pointer z-10 transition-all active:scale-95"
           >
             <Heart
               className={`w-4 h-4 transition-colors ${
-                isWishlisted ? 'fill-[#1B4332] text-[#1B4332]' : 'text-[#162119]'
+                isWishlisted ? 'fill-[var(--store-accent)] text-[var(--store-accent)]' : 'text-[#162119]'
               }`}
               aria-hidden="true"
             />
@@ -158,7 +159,7 @@ export function ProductCard({ product }: ProductCardProps) {
               className={`w-full min-h-[42px] px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm ${
                 isOutOfStock
                   ? 'bg-[#FAF9F5]/90 text-[#5A655D] border border-[#E4E2DC] cursor-not-allowed'
-                  : 'bg-[#1B4332] text-[#FAF9F5] hover:bg-[#143325] active:scale-[0.98]'
+                  : 'bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 active:scale-[0.98]'
               }`}
             >
               {justAdded ? (
@@ -184,7 +185,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Unboxed Metadata Line (Zero-Pill Discipline) */}
           <div className="flex items-center gap-1.5 text-[11px] text-[#5A655D]">
             <span className="inline-flex items-center gap-1 font-medium text-[#162119]">
-              <Star className="w-3.5 h-3.5 fill-[#1B4332] text-[#1B4332]" aria-hidden="true" />
+              <Star className="w-3.5 h-3.5 fill-[var(--store-accent)] text-[var(--store-accent)]" aria-hidden="true" />
               <span className="tabular-nums">
                 {locale === 'bn' ? toBanglaDigits(ratingValue) : ratingValue}
               </span>
@@ -205,7 +206,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Product Name */}
           <Link
             href={`/product/${product.slug}`}
-            className="block text-sm sm:text-[15px] font-semibold text-[#162119] group-hover:text-[#1B4332] line-clamp-2 leading-snug transition-colors"
+            className="block text-sm sm:text-[15px] font-semibold text-[#162119] group-hover:text-[var(--store-accent)] line-clamp-2 leading-snug transition-colors"
           >
             {displayName}
           </Link>
@@ -235,7 +236,7 @@ export function ProductCard({ product }: ProductCardProps) {
           className={`w-full min-h-[44px] px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             isOutOfStock
               ? 'bg-[#F2EFE9] text-[#5A655D] border border-[#E4E2DC] cursor-not-allowed'
-              : 'bg-[#1B4332] text-[#FAF9F5] active:scale-[0.98]'
+              : 'bg-[var(--store-accent)] text-[#FAF9F5] active:scale-[0.98]'
           }`}
         >
           {justAdded ? (

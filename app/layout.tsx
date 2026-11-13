@@ -1,3 +1,4 @@
+import { getStoreMetadata } from '@/src/lib/storefront/store-metadata';
 import type { Metadata } from 'next';
 import { Inter, Noto_Sans_Bengali } from 'next/font/google';
 import './globals.css';
@@ -15,23 +16,9 @@ const notoBengali = Noto_Sans_Bengali({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
-  title: 'BongoConsign — Multi-Vendor Consignment Store & ERP',
-  description:
-    'Bangladesh-first Multi-Vendor Consignment E-Commerce Storefront and Financial Escrow Admin ERP with 3-tier pricing, 4-way return ledger, and A4 3-part print engine.',
-  openGraph: {
-    title: 'BongoConsign — Multi-Vendor Consignment Store & ERP',
-    description:
-      'Bangladesh-first Multi-Vendor Consignment E-Commerce Storefront and Financial Escrow Admin ERP with 3-tier pricing, 4-way return ledger, and A4 3-part print engine.',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'BongoConsign — Multi-Vendor Consignment Store & ERP',
-    description:
-      'Bangladesh-first Multi-Vendor Consignment E-Commerce Storefront and Financial Escrow Admin ERP with 3-tier pricing, 4-way return ledger, and A4 3-part print engine.',
-  },
-};
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata(): Promise<Metadata> { return getStoreMetadata(); }
 
 export default function RootLayout({
   children,

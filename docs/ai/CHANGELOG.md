@@ -1,3 +1,7 @@
+# November 13, 2026 — Storefront design and Admin controls
+
+Refined responsive header, editorial hero, category/product presentation and footer. Added safe bilingual store-content editing, processed brand media upload, live section visibility/order, menu/SEO/favicon/manifest controls and shared service highlights. Removed stale hardcoded brand labels, fictional tracking shortcuts and unsupported advance-payment copy. Added permission, validation, persistence and metadata tests plus HTTP checks for saved branding and CSRF denial. Browser acceptance remains blocked; see `docs/audit/storefront-design-controls-2026-11-13.md`.
+
 # November 13, 2026 — Backend integrity and bilingual controls
 
 Implemented reviewed backend transaction/access/order/catalog/payment fixes, secure staged media, explicit CSV preview/import, copy-scoped print APIs, and 1,331 translation entries with vendor language controls. 164/164 isolated tests, TypeScript, lint (4 warnings), production build and 14 HTTP smoke checks pass. Added PostgreSQL schema/RLS/journal/restore evidence; migrations were not applied externally. Browser acceptance remains blocked. The runtime JSONB compatibility adapter is not a complete normalized domain cutover; customer SMS, live courier operations and policy acceptance remain open. Current report: `docs/audit/backend-bilingual-2026-11-13.md`.
