@@ -236,6 +236,10 @@ export function ProductDetailClient({
                 src={activeImageUrl}
                 alt={displayName}
                 referrerPolicy="no-referrer"
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = '/assets/authentic_handloom_hero.jpg';
+                }}
                 className="object-cover" loading="eager" fetchPriority="high" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
               <div className="absolute top-3.5 left-3.5 flex flex-col gap-1.5">
                 {isOutOfStock ? (
@@ -275,6 +279,10 @@ export function ProductDetailClient({
                       src={imgUrl}
                       alt={`${displayName} thumbnail ${idx + 1}`}
                       referrerPolicy="no-referrer"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = '/assets/authentic_handloom_hero.jpg';
+                      }}
                       className="object-cover" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
                   </button>
                 ))}
