@@ -1403,6 +1403,11 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
             window.sessionStorage.setItem('bg_admin_csrf_token', data.csrfToken);
           }
         }
+        setLoginUsername(gateUser.username);
+        setLoginPassword(gateNewPass);
+        setGateCurrentPass('');
+        setGateNewPass('');
+        setGateTotp('');
         setGateUser(null);
         await fetchWorkspace();
       }

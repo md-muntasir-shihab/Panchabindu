@@ -63,6 +63,12 @@ test('Phase 4A Case 1: Strict Login, First-Login Gate, and Super Admin User Crea
   assert.equal(gateCleared.success, true);
   assert.equal(gateCleared.user?.mustChangePassword, false);
   assert.equal(gateCleared.user?.totpEnrolled, true);
+  const rotatedLogin = authenticateAdminUser({
+    username: newUsername,
+    password: 'NewSecure#2026',
+    totpCode: getCurrentTotpCodeForUser(created.user.userId),
+  });
+  assert.equal(rotatedLogin.success, true);
 
   // 5. Workspace access now succeeds
   const allowedSnap = getAdminWorkspaceSnapshot(created.user.userId);
