@@ -80,7 +80,12 @@ export function StorefrontShell({
   onSelectCategory,
   children,
 }: StorefrontShellProps) {
-  const [, navigate] = useLocation();
+  const [pathname, navigate] = useLocation();
+  const floatingContactPosition = pathname === '/checkout'
+    ? 'bottom-[calc(10.5rem+env(safe-area-inset-bottom))] md:bottom-24 lg:bottom-6'
+    : pathname.startsWith('/product/')
+      ? 'bottom-[calc(10.5rem+env(safe-area-inset-bottom))] md:bottom-6'
+      : 'bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6';
   const [localQuery, setLocalQuery] = React.useState('');
   const searchQuery = controlledSearchChange ? controlledQuery : localQuery;
   const onSearchChange = controlledSearchChange ?? setLocalQuery;
@@ -262,7 +267,7 @@ export function StorefrontShell({
   }
 
   return (
-    <div style={{ '--store-accent': config.accentColor } as React.CSSProperties} className="min-h-screen flex flex-col storefront-theme bg-[#FAF9F5] text-[#162119] pb-20 md:pb-0">
+    <div style={{ '--store-accent': config.accentColor } as React.CSSProperties} className="min-h-[100dvh] flex flex-col min-w-0 storefront-theme bg-[#FAF9F5] text-[#162119] pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
       {siteSettings.delayBanner.enabled && <div className="bg-[var(--store-accent)] text-white px-4 py-2.5 text-xs"><div className="max-w-7xl mx-auto flex justify-center sm:justify-between items-center gap-5"><p className="leading-relaxed text-center sm:text-left">{text(siteSettings.delayBanner.messageBn, siteSettings.delayBanner.messageEn)}</p>{config.showSupportPhone && siteSettings.supportPhone && <a href={`tel:${siteSettings.supportPhone}`} className="hidden sm:inline-flex gap-2 shrink-0 items-center"><PhoneCall className="w-3.5 h-3.5" />{siteSettings.supportPhone}</a>}</div></div>}
 
       {/* 2. Sticky Minimalist Header */}
@@ -536,7 +541,7 @@ export function StorefrontShell({
                 type="button"
                 onClick={toggleLocale}
                 aria-label={uiText("Toggle language", locale)}
-                className="flex items-center text-xs font-semibold border border-[#E4E2DC] rounded-full p-0.5 bg-[#F2EFE9] h-9 transition-colors cursor-pointer"
+                className="flex items-center text-xs font-semibold border border-[#E4E2DC] rounded-full p-0.5 bg-[#F2EFE9] h-10 sm:h-9 shrink-0 transition-colors cursor-pointer"
               >
                 <span
                   className={`px-2.5 py-1 rounded-full transition-colors ${
@@ -596,7 +601,7 @@ export function StorefrontShell({
                 type="button"
                 onClick={() => setCartOpen(true)}
                 aria-label={dict.common.cart}
-                className="inline-flex items-center gap-2 h-9 px-3.5 rounded-full bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 font-semibold text-xs tabular-nums cursor-pointer active:scale-95 transition-all"
+                className="inline-flex items-center gap-2 h-10 sm:h-9 px-3 sm:px-3.5 rounded-full bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 font-semibold text-xs tabular-nums cursor-pointer active:scale-95 transition-all"
               >
                 <ShoppingBag className="w-4 h-4" aria-hidden="true" />
                 <span className="hidden sm:inline">{dict.common.cart}</span>
@@ -639,7 +644,7 @@ export function StorefrontShell({
                   type="button"
                   onClick={() => onSearchChange?.('')}
                   aria-label={uiText("Clear search", locale)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#5A655D] hover:text-[#162119] cursor-pointer"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-[#5A655D] hover:text-[#162119] cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
@@ -647,7 +652,7 @@ export function StorefrontShell({
             </div>
 
             {isSearchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-[#FAF9F5] border border-[#E4E2DC] rounded-2xl shadow-lg overflow-hidden max-h-[360px] overflow-y-auto p-3.5 space-y-3">
+              <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-[#FAF9F5] border border-[#E4E2DC] rounded-2xl shadow-lg overflow-hidden max-h-[min(360px,60dvh)] overflow-y-auto p-3.5 space-y-3">
                 {searchQuery.trim().length > 0 ? (
                   matchingProducts.length > 0 ? (
                     <div className="divide-y divide-[#E4E2DC]">
@@ -712,7 +717,7 @@ export function StorefrontShell({
       </header>
 
       {/* 3. Main Content */}
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 min-w-0">{children}</main>
 
       <footer className="border-t border-[#E4E2DC] bg-[#F2EFE9] mt-16 sm:mt-24">
         <div className="max-w-7xl mx-auto px-5 py-12 sm:py-16 grid grid-cols-1 md:grid-cols-12 gap-10">
@@ -722,7 +727,7 @@ export function StorefrontShell({
         </div>
         <div className="border-t border-[#E4E2DC] px-5 py-5"><div className="max-w-7xl mx-auto flex flex-wrap justify-between gap-3 text-xs text-[#5A655D]"><span>{text(config.copyrightBn, config.copyrightEn).replaceAll('{year}', String(new Date().getFullYear())).replaceAll('{brand}', brandName)}</span><span>{text(config.footerNoteBn, config.footerNoteEn)}</span></div></div>
       </footer>
-      {config.showWhatsApp && siteSettings.whatsappNumber && <a href={`https://wa.me/${siteSettings.whatsappNumber}`} target="_blank" rel="noopener noreferrer" aria-label={text('হোয়াটসঅ্যাপে যোগাযোগ', 'Contact on WhatsApp')} className="fixed bottom-24 md:bottom-6 right-5 z-30 rounded-full bg-[var(--store-accent)] text-white shadow-lg px-4 py-3 text-xs font-semibold">WhatsApp ↗</a>}
+      {config.showWhatsApp && siteSettings.whatsappNumber && <a href={`https://wa.me/${siteSettings.whatsappNumber}`} target="_blank" rel="noopener noreferrer" aria-label={text('হোয়াটসঅ্যাপে যোগাযোগ', 'Contact on WhatsApp')} className={`fixed ${floatingContactPosition} right-4 sm:right-5 z-30 min-h-[44px] inline-flex items-center rounded-full bg-[var(--store-accent)] text-white shadow-lg px-4 py-3 text-xs font-semibold`}>WhatsApp ↗</a>}
 
       {/* 5. Mobile Bottom Tab Bar (<= 768px) */}
       <nav
@@ -739,13 +744,13 @@ export function StorefrontShell({
             <span>{dict.common.home}</span>
           </Link>
 
-          <a
-            href="#unified-catalog"
+          <Link
+            href="/categories"
             className="flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-[#5A655D] hover:text-[#162119] active:scale-95 transition-transform"
           >
             <Grid className="w-4 h-4" aria-hidden="true" />
             <span>{dict.common.categories}</span>
-          </a>
+          </Link>
 
           <button
             type="button"
@@ -790,14 +795,9 @@ export function StorefrontShell({
               <Link
                 href="/checkout"
                 onClick={() => setCartOpen(false)}
-                className="block"
+                className="flex w-full min-h-[46px] items-center justify-center px-5 py-3 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 text-sm font-semibold transition-colors cursor-pointer"
               >
-                <button
-                  type="button"
-                  className="w-full min-h-[46px] px-5 py-3 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 text-sm font-semibold transition-colors cursor-pointer"
-                >
-                  {dict.cart.proceedToCheckout}
-                </button>
+                {dict.cart.proceedToCheckout}
               </Link>
             </div>
           ) : undefined
@@ -866,7 +866,7 @@ export function StorefrontShell({
                 const variantTitle =
                   locale === 'bn' ? item.variantTitleBn : item.variantTitleEn;
                 return (
-                  <li key={item.variantId} className="p-3.5 flex gap-3.5 bg-[#FAF9F5]">
+                  <li key={item.variantId} className="p-3 sm:p-3.5 flex gap-3 sm:gap-3.5 bg-[#FAF9F5] min-w-0">
                     {/* 4:5 Portrait Thumbnail */}
                     <div className="relative w-16 h-20 shrink-0 border border-[#E4E2DC] rounded-lg overflow-hidden bg-[#F2EFE9]">
                       {item.imageUrl && (
@@ -897,7 +897,7 @@ export function StorefrontShell({
                               updateQuantity(item.variantId, item.quantity - 1)
                             }
                             aria-label={uiText("Decrease quantity", locale)}
-                            className="p-1.5 text-[#162119] hover:bg-white rounded-l-lg cursor-pointer"
+                            className="w-10 h-10 flex items-center justify-center text-[#162119] hover:bg-white rounded-l-lg cursor-pointer"
                           >
                             <Minus className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
@@ -910,7 +910,7 @@ export function StorefrontShell({
                               updateQuantity(item.variantId, item.quantity + 1)
                             }
                             aria-label={uiText("Increase quantity", locale)}
-                            className="p-1.5 text-[#162119] hover:bg-white rounded-r-lg cursor-pointer"
+                            className="w-10 h-10 flex items-center justify-center text-[#162119] hover:bg-white rounded-r-lg cursor-pointer"
                           >
                             <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
@@ -919,8 +919,8 @@ export function StorefrontShell({
                         <button
                           type="button"
                           onClick={() => removeItem(item.variantId)}
-                          aria-label={`Remove ${itemName}`}
-                          className="p-1.5 text-[#5A655D] hover:text-[#B91C1C] cursor-pointer"
+                          aria-label={locale === 'bn' ? `${itemName} সরান` : `Remove ${itemName}`}
+                          className="w-10 h-10 flex items-center justify-center text-[#5A655D] hover:text-[#B91C1C] cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" aria-hidden="true" />
                         </button>
@@ -971,7 +971,7 @@ export function StorefrontShell({
               {locale === 'bn' ? 'প্রধান পেজসমূহ' : 'Main Pages'}
             </p>
 
-            <div className="grid grid-cols-2 gap-2">{config.navigation.filter(link => link.enabled).map(link => <Link key={link.id} href={link.href} onClick={() => setIsMenuOpen(false)} className="p-3 rounded-xl border border-[#E4E2DC] text-sm font-medium hover:bg-[#F2EFE9]">{text(link.labelBn, link.labelEn)}</Link>)}</div>
+            <div className="grid grid-cols-2 gap-2">{config.navigation.filter(link => link.enabled).map(link => <Link key={link.id} href={link.href} onClick={() => setIsMenuOpen(false)} className="p-3 min-h-[44px] min-w-0 break-words rounded-xl border border-[#E4E2DC] text-sm font-medium hover:bg-[#F2EFE9]">{text(link.labelBn, link.labelEn)}</Link>)}</div>
           </div>
 
           {/* Touch-Friendly Category Accordion */}
@@ -979,7 +979,8 @@ export function StorefrontShell({
             <button
               type="button"
               onClick={() => setIsCategoryAccordionOpen((prev) => !prev)}
-              className="w-full flex items-center justify-between px-1 py-1 text-xs font-semibold uppercase tracking-wider text-[#162119] cursor-pointer"
+              aria-expanded={isCategoryAccordionOpen}
+              className="w-full min-h-[44px] flex items-center justify-between px-1 py-1 text-xs font-semibold uppercase tracking-wider text-[#162119] cursor-pointer"
             >
               <span>
                 {dict.common.categories} ({formatLocaleNumber(categories.length, locale)})

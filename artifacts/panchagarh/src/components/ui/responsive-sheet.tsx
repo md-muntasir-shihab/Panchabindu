@@ -9,6 +9,7 @@ import { Drawer } from 'vaul';
 import { X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from './primitives';
+import { useLocaleStore } from '@/store/use-locale-store';
 
 export interface ResponsiveSheetProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function ResponsiveSheet({
 }: ResponsiveSheetProps) {
   const isMobile = useIsMobile();
   const descriptionId = React.useId();
+  const locale = useLocaleStore((s) => s.locale);
 
   return (
     <Drawer.Root
@@ -43,15 +45,15 @@ export function ResponsiveSheet({
           className={
             isMobile
               ? 'fixed inset-x-0 bottom-0 z-50 mt-20 flex max-h-[92dvh] flex-col rounded-t-[var(--radius-lg)] border-t border-border bg-bg text-ink focus:outline-none safe-bottom'
-              : 'fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col border-l border-border bg-bg text-ink focus:outline-none'
+              : 'fixed inset-y-0 right-0 z-50 flex w-full max-w-[min(42rem,100vw)] min-w-0 flex-col border-l border-border bg-bg text-ink focus:outline-none'
           }
         >
           {isMobile && (
             <div className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-[var(--radius-sm)] bg-border" />
           )}
 
-          <div className="flex items-center justify-between border-b border-border px-4 py-3.5 sm:px-6">
-            <div>
+          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5 sm:px-6">
+            <div className="min-w-0">
               <Drawer.Title className="text-base font-semibold text-ink">
                 {title}
               </Drawer.Title>
@@ -65,7 +67,8 @@ export function ResponsiveSheet({
               variant="ghost"
               size="icon"
               onClick={() => onOpenChange(false)}
-              aria-label="Close panel"
+              aria-label={locale === 'bn' ? 'প্যানেল বন্ধ করুন' : 'Close panel'}
+              className="touch-target shrink-0"
             >
               <X className="w-5 h-5" aria-hidden="true" />
             </Button>
@@ -74,7 +77,7 @@ export function ResponsiveSheet({
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">{children}</div>
 
           {footer && (
-            <div className="border-t border-border bg-surface/50 p-4 sm:px-6">
+            <div className="border-t border-border bg-surface/50 p-4 sm:px-6 safe-bottom">
               {footer}
             </div>
           )}

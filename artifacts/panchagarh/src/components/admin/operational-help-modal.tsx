@@ -367,6 +367,16 @@ export function OperationalHelpModal({
   locale,
   onClose,
 }: OperationalHelpModalProps) {
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+  React.useEffect(() => {
+    if (!tabKey) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCloseRef.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [tabKey]);
   if (!tabKey) return null;
   const guide = OPERATIONAL_HELP_GUIDE[tabKey];
   if (!guide) return null;
@@ -374,8 +384,8 @@ export function OperationalHelpModal({
   const isBn = locale === 'bn';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-surface border border-border rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div className="w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto bg-surface border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95">
         {/* Header Bar */}
         <div className="flex items-center justify-between p-4 bg-bg border-b border-border">
           <div className="flex items-center gap-2.5">

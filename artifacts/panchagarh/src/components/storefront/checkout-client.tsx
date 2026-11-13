@@ -435,7 +435,7 @@ export function CheckoutClient({
             className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
           >
             {/* Left Column: 3-Step Single-Page Accordion Sections */}
-            <div className="lg:col-span-7 space-y-6">
+            <div className="lg:col-span-7 space-y-6 min-w-0">
               {/* Step 1: Customer & Cascading 64-District -> Upazila Delivery Address */}
               <Card surface="bg" padding="md" className="space-y-4">
                 <div className="flex items-center justify-between border-b border-border pb-3">
@@ -879,7 +879,7 @@ export function CheckoutClient({
             </div>
 
             {/* Right Column: Order Summary, Promo Code, & Confirm CTA */}
-            <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-24">
+            <div className="lg:col-span-5 min-w-0 space-y-4 lg:sticky lg:top-24">
               <Card surface="surface" padding="md" className="space-y-4">
                 <h2 className="text-base font-bold text-ink border-b border-border pb-3">
                   {locale === 'bn'
@@ -1192,7 +1192,7 @@ export function CheckoutClient({
             </div>
 
             {/* Mobile Sticky Order Confirmation Bar (< 1024px) */}
-            <div className="lg:hidden fixed bottom-14 left-0 right-0 z-30 p-3 bg-surface/95 backdrop-blur border-t border-border shadow-lg flex items-center justify-between gap-3 safe-bottom">
+            <div className="lg:hidden fixed bottom-[calc(3.5rem+max(16px,env(safe-area-inset-bottom)))] md:bottom-0 left-0 right-0 z-30 p-3 bg-surface/95 backdrop-blur border-t border-border shadow-lg flex items-center justify-between gap-3 safe-bottom">
               <div>
                 <p className="text-[11px] text-muted">{dict.common.total}</p>
                 <p className="text-sm font-bold text-ink tabular-nums">

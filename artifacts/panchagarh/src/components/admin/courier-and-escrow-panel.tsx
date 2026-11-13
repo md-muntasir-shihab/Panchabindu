@@ -299,6 +299,14 @@ export function Courier360AndRatesPanel({
   const [viewingProofUrl, setViewingProofUrl] = React.useState<string | null>(
     null
   );
+  React.useEffect(() => {
+    if (!viewingProofUrl) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setViewingProofUrl(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [viewingProofUrl]);
 
   // Claim Form State
   const [claimOrderNo, setClaimOrderNo] = React.useState(
@@ -1617,7 +1625,7 @@ export function Courier360AndRatesPanel({
       {/* Payment Proof Viewer Modal */}
       {viewingProofUrl && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-[var(--radius-lg)] p-4 max-w-xl w-full space-y-4 shadow-xl">
+          <div className="bg-surface border border-border rounded-[var(--radius-lg)] p-4 max-w-xl w-full max-h-[calc(100dvh-2rem)] overflow-y-auto space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-border pb-2">
               <h3 className="font-bold text-ink text-sm flex items-center gap-2">
                 <FileCheck className="w-4 h-4" />
@@ -2658,7 +2666,7 @@ export function VendorEscrowAndReturnPanel({
               </select>
             </div>
 
-            <div className="relative min-w-[240px]">
+            <div className="relative w-full sm:w-auto sm:min-w-[240px]">
               <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted" />
               <input
                 type="text"

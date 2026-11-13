@@ -229,7 +229,7 @@ export function ProductDetailClient({
         {/* Main PDP 2-Column Editorial Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
           {/* Left: 4:5 Portrait Product Image Gallery */}
-          <div className="lg:col-span-6 space-y-3.5">
+          <div className="lg:col-span-6 min-w-0 space-y-3.5">
             <div className="relative aspect-[4/5] w-full border border-[#E4E2DC] rounded-2xl overflow-hidden bg-[#F2EFE9]">
               <img
                   
@@ -283,7 +283,7 @@ export function ProductDetailClient({
           </div>
 
           {/* Right: Editorial Details, Variant Selector, Pricing & Estimator */}
-          <div className="lg:col-span-6 space-y-7">
+          <div className="lg:col-span-6 min-w-0 space-y-7">
             <div className="space-y-3 border-b border-[#E4E2DC] pb-5">
               {/* Unboxed Metadata Row */}
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#5A655D]">
@@ -644,7 +644,7 @@ export function ProductDetailClient({
                   {product.specs.map((spec, i) => (
                     <div
                       key={i}
-                      className="grid grid-cols-3 p-3 bg-[#FAF9F5] items-center"
+                      className="grid grid-cols-3 gap-2 p-3 bg-[#FAF9F5] items-center [&>*]:min-w-0 [&>*]:break-words"
                     >
                       <span className="text-[#5A655D] font-medium">
                         {locale === 'bn' ? spec.labelBn : spec.labelEn}
@@ -654,7 +654,7 @@ export function ProductDetailClient({
                       </span>
                     </div>
                   ))}
-                  <div className="grid grid-cols-3 p-3 bg-[#FAF9F5] items-center">
+                  <div className="grid grid-cols-3 gap-2 p-3 bg-[#FAF9F5] items-center [&>*]:min-w-0 [&>*]:break-words">
                     <span className="text-[#5A655D] font-medium">
                       {locale === 'bn' ? 'ওজন' : 'Unit Weight'}
                     </span>
@@ -880,7 +880,7 @@ export function ProductDetailClient({
 
       {/* Single Mobile Sticky Purchase Bar (< 768px) */}
       {!isOutOfStock && (
-        <div className="md:hidden fixed bottom-14 left-0 right-0 z-30 p-3 bg-[#FAF9F5]/95 backdrop-blur border-t border-[#E4E2DC] flex items-center justify-between gap-3 safe-bottom">
+        <div className="md:hidden fixed bottom-[calc(3.5rem+max(16px,env(safe-area-inset-bottom)))] left-0 right-0 z-30 p-3 bg-[#FAF9F5]/95 backdrop-blur border-t border-[#E4E2DC] flex items-center justify-between gap-3 safe-bottom">
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-[#162119] truncate">{displayName}</p>
             <p className="text-sm font-bold text-[#162119] tabular-nums">

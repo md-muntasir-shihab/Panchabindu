@@ -536,7 +536,7 @@ function OrderStatusSolidButton({
 
         {/* Inline TrxID & Advance Courier Verification Popover */}
         {showVerifyPopover && (
-          <div className="absolute bottom-full left-0 mb-1.5 z-40 w-72 p-3 bg-surface border border-border shadow-xl rounded-[var(--radius-md)] text-xs text-ink space-y-2.5">
+          <div className="absolute bottom-full left-0 mb-1.5 z-40 w-72 max-w-[calc(100vw-2rem)] p-3 bg-surface border border-border shadow-xl rounded-[var(--radius-md)] text-xs text-ink space-y-2.5">
             <div className="flex items-center justify-between border-b border-border pb-1.5">
               <span className="font-bold flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -932,6 +932,14 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
   const [helpModalTab, setHelpModalTab] = React.useState<AdminTabKey | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
+  React.useEffect(() => {
+    if (!isMobileSidebarOpen) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMobileSidebarOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isMobileSidebarOpen]);
   const [actionFeedback, setActionFeedback] = React.useState<{
     type: 'success' | 'error';
     text: string;
@@ -2554,7 +2562,7 @@ ${itemsList}
     NAV_SECTIONS.flatMap((s) => s.items).find((i) => i.key === activeTab);
 
   return (
-    <div className="min-h-screen flex bg-bg text-ink pb-20 md:pb-0">
+    <div className="min-h-[100dvh] flex bg-bg text-ink pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
       {/* Mobile Drawer Overlay */}
       {isMobileSidebarOpen && (
         <div
@@ -2565,15 +2573,16 @@ ${itemsList}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') setIsMobileSidebarOpen(false);
           }}
-          className="fixed inset-0 z-50 bg-ink/40 md:hidden"
+          className="fixed inset-0 z-50 bg-ink/40 lg:hidden"
         />
       )}
 
       {/* Modern Admin ERP Side Navigation Panel */}
       <aside
-        className={`fixed md:sticky top-0 z-50 h-screen shrink-0 border-r border-border bg-surface transition-all duration-200 flex flex-col justify-between ${
-          isMobileSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'
-        } ${isSidebarCollapsed ? 'md:w-18' : 'md:w-64'}`}
+        aria-label={locale === 'bn' ? 'অ্যাডমিন নেভিগেশন' : 'Admin navigation'}
+        className={`fixed lg:sticky top-0 left-0 z-50 h-[100dvh] w-[min(16rem,85vw)] shrink-0 border-r border-border bg-surface transition-all duration-200 flex flex-col justify-between pb-[env(safe-area-inset-bottom)] ${
+          isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        } ${isSidebarCollapsed ? 'lg:w-18' : 'lg:w-64'}`}
       >
         <div className="flex flex-col flex-1 overflow-y-auto">
           {/* Sidebar Header Brand Zone */}
@@ -2597,8 +2606,9 @@ ${itemsList}
               <button
                 type="button"
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="hidden md:flex p-1.5 rounded-[var(--radius-sm)] border border-border bg-bg text-ink hover:border-ink cursor-pointer"
+                className="hidden lg:flex p-1.5 rounded-[var(--radius-sm)] border border-border bg-bg text-ink hover:border-ink cursor-pointer"
                 title={isSidebarCollapsed ? 'সাইডবার প্রসারিত করুন' : 'সাইডবার সংকুচিত করুন'}
+                aria-label={isSidebarCollapsed ? (locale === 'bn' ? 'সাইডবার প্রসারিত করুন' : 'Expand sidebar') : (locale === 'bn' ? 'সাইডবার সংকুচিত করুন' : 'Collapse sidebar')}
               >
                 {isSidebarCollapsed ? (
                   <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -2609,7 +2619,8 @@ ${itemsList}
               <button
                 type="button"
                 onClick={() => setIsMobileSidebarOpen(false)}
-                className="md:hidden p-1.5 rounded-[var(--radius-sm)] border border-border bg-bg text-ink cursor-pointer"
+                className="lg:hidden w-11 h-11 flex items-center justify-center rounded-[var(--radius-sm)] border border-border bg-bg text-ink cursor-pointer"
+                aria-label={locale === 'bn' ? 'মেনু বন্ধ করুন' : 'Close menu'}
               >
                 <ChevronLeft className="w-4 h-4" aria-hidden="true" />
               </button>
@@ -2660,7 +2671,8 @@ ${itemsList}
                             setIsMobileSidebarOpen(false);
                           }}
                           title={locale === 'bn' ? item.labelBn : item.labelEn}
-                          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[var(--radius-md)] transition-all cursor-pointer text-left ${
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`w-full min-h-[40px] flex items-center gap-2.5 px-2.5 py-2 rounded-[var(--radius-md)] transition-all cursor-pointer text-left ${
                             isActive
                               ? 'bg-ink text-bg font-bold shadow-xs'
                               : 'text-ink hover:bg-bg border border-transparent hover:border-border'
@@ -2701,15 +2713,9 @@ ${itemsList}
         <div className="p-2.5 border-t border-border bg-bg/50 space-y-1.5 shrink-0">
           {!isSidebarCollapsed ? (
             <div className="flex items-center gap-1.5">
-              <Link href="/" className="flex-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-center"
-                  leftIcon={<Store className="w-3.5 h-3.5" aria-hidden="true" />}
-                >
-                  {locale === 'bn' ? 'স্টোরফ্রন্ট' : 'Store'}
-                </Button>
+              <Link href="/" className="flex-1 inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-bg px-3 text-xs font-medium text-ink hover:border-ink">
+                <Store className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>{locale === 'bn' ? 'স্টোরফ্রন্ট' : 'Store'}</span>
               </Link>
               <Button
                 variant="outline"
@@ -2735,13 +2741,17 @@ ${itemsList}
       {/* Main Content Workspace Layout */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Sticky Top Bar for Workspace Status, Title & Quick Actions */}
-        <header className="sticky top-0 z-40 border-b border-border bg-bg/95 backdrop-blur-xs px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-40 border-b border-border bg-bg/95 backdrop-blur-xs px-3 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-4 min-w-0">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
-              onClick={() => setIsMobileSidebarOpen(true)}
-              className="md:hidden p-1.5 rounded-[var(--radius-sm)] border border-border bg-surface text-ink cursor-pointer"
+              onClick={() => {
+                setIsSidebarCollapsed(false);
+                setIsMobileSidebarOpen(true);
+              }}
+              className="lg:hidden w-10 h-10 shrink-0 flex items-center justify-center rounded-[var(--radius-sm)] border border-border bg-surface text-ink cursor-pointer"
               aria-label={uiText("Open Sidebar Menu", locale)}
+              aria-expanded={isMobileSidebarOpen}
             >
               <Menu className="w-4 h-4" aria-hidden="true" />
             </button>
@@ -2752,7 +2762,7 @@ ${itemsList}
               <button
                 type="button"
                 onClick={() => setHelpModalTab(activeTab)}
-                className="w-5 h-5 rounded-full border border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono font-bold text-xs flex items-center justify-center hover:bg-amber-500 hover:text-white transition-colors shrink-0 cursor-pointer"
+                className="w-7 h-7 sm:w-5 sm:h-5 rounded-full border border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono font-bold text-xs flex items-center justify-center hover:bg-amber-500 hover:text-white transition-colors shrink-0 cursor-pointer"
                 title={locale === 'bn' ? 'মডিউল কার্যপ্রণালী গাইড (!)' : 'Module Help Guide (!)'}
                 aria-label={uiText("Module Help Guide", locale)}
               >
@@ -2764,7 +2774,7 @@ ${itemsList}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Bilingual Toggle Button (EN / বাং) */}
             <button
               type="button"
@@ -2809,6 +2819,7 @@ ${itemsList}
               variant="outline"
               size="sm"
               onClick={() => void fetchWorkspace()}
+              aria-label={locale === 'bn' ? 'রিফ্রেশ' : 'Refresh'}
               leftIcon={<RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />}
             >
               <span className="hidden sm:inline">{locale === 'bn' ? 'রিফ্রেশ' : 'Refresh'}</span>
@@ -2817,6 +2828,7 @@ ${itemsList}
               variant="secondary"
               size="sm"
               onClick={handleLogout}
+              aria-label={locale === 'bn' ? 'লগআউট' : 'Logout'}
               leftIcon={<LogOut className="w-3.5 h-3.5" aria-hidden="true" />}
             >
               <span className="hidden sm:inline">{locale === 'bn' ? 'লগআউট' : 'Logout'}</span>
@@ -2825,7 +2837,7 @@ ${itemsList}
         </header>
 
         {/* Workspace Body */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <main className="flex-1 max-w-7xl w-full min-w-0 mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6">
         {/* Action Feedback Toast Banner */}
         {actionFeedback && (
           <div
@@ -5934,7 +5946,7 @@ ${itemsList}
             </div>
 
             {/* Sticky Bottom Save Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-3 bg-surface/95 backdrop-blur border-t border-border flex items-center justify-between z-50 shadow-lg">
+            <div className="fixed bottom-0 left-0 right-0 p-3 bg-surface/95 backdrop-blur border-t border-border flex flex-wrap items-center justify-between gap-2 z-50 shadow-lg safe-bottom">
               <div className="flex items-center gap-3 text-xs">
                 <span className="font-bold text-ink">
                   <LocalizedText source={"মোট:"} area="admin" />{' '}

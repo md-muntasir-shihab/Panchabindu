@@ -197,6 +197,19 @@ export function ProductManagementStudioPanel({
 
   // Category Editor Modal State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const anyStudioDialogOpen = isEditorOpen || Boolean(inspectProduct) || isCategoryModalOpen;
+  React.useEffect(() => {
+    if (!anyStudioDialogOpen) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      // Close the top-most dialog only (category modal, then inspector, then editor).
+      if (isCategoryModalOpen) setIsCategoryModalOpen(false);
+      else if (inspectProduct) setInspectProduct(null);
+      else setIsEditorOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [anyStudioDialogOpen, isCategoryModalOpen, inspectProduct]);
   const [categoryFormData, setCategoryFormData] = useState({
     id: '',
     nameBn: '',
@@ -1040,7 +1053,7 @@ export function ProductManagementStudioPanel({
       {/* PRODUCT ADD / EDIT DRAWER / MODAL */}
       {isEditorOpen && editingProduct && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-end">
-          <div className="w-full max-w-4xl h-full bg-surface border-l border-border p-6 overflow-y-auto space-y-6 animate-in slide-in-from-right">
+          <div className="w-full max-w-4xl h-[100dvh] bg-surface border-l border-border p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto space-y-6 animate-in slide-in-from-right">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <div>
                 <h2 className="text-base font-bold text-ink">
@@ -1566,7 +1579,7 @@ export function ProductManagementStudioPanel({
                   </div>
 
                   {editingProduct.specs.map((spec, sIdx) => (
-                    <div key={sIdx} className="grid grid-cols-4 gap-2">
+                    <div key={sIdx} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <input
                         type="text"
                         placeholder={uiText("লেবেল (যেমন: ফেব্রিক)", locale)}
@@ -1640,7 +1653,7 @@ export function ProductManagementStudioPanel({
       {/* 8-WAY CONNECTIVITY DETAILS INSPECTOR MODAL */}
       {inspectProduct && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-3xl bg-surface border border-border p-6 space-y-6 max-h-[90vh] overflow-y-auto animate-in fade-in">
+          <div className="w-full max-w-3xl bg-surface border border-border p-4 sm:p-6 space-y-6 max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in fade-in">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
@@ -1768,7 +1781,7 @@ export function ProductManagementStudioPanel({
       {/* CATEGORY ADD/EDIT MODAL */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-surface border border-border p-6 space-y-4">
+          <div className="w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto bg-surface border border-border p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="font-bold text-ink text-sm">
                 {categoryFormData.id ? 'ক্যাটাগরি এডিট করুন' : 'নতুন ক্যাটাগরি তৈরি করুন'}
