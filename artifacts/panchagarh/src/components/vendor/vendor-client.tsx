@@ -22,10 +22,22 @@ export function VendorClient() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [totp, setTotp] = useState('');
+  const [totpLoginEnabled, setTotpLoginEnabled] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [enrollment, setEnrollment] = useState<{ userId: string; uri: string; csrf: string; require2fa: boolean } | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/admin/auth', { cache: 'no-store' })
+      .then(response => response.json())
+      .then((data: { twoFactorLoginEnabled?: boolean }) => {
+        if (active) setTotpLoginEnabled(data.twoFactorLoginEnabled === true);
+      })
+      .catch(() => { if (active) setTotpLoginEnabled(true); });
+    return () => { active = false; };
+  }, []);
 
   async function refresh() {
     const response = await fetch('/api/vendor/overview', { cache: 'no-store' });
@@ -100,7 +112,7 @@ export function VendorClient() {
           <code className="block break-all rounded bg-bg p-2 text-xs">{enrollment.uri}</code>
           </>}
         {enrollment && <label className="block">{bn ? 'নতুন পাসওয়ার্ড' : 'New password'}<input type="password" autoComplete="new-password" minLength={8} className="mt-1 w-full rounded border border-border bg-bg p-3" value={newPassword} onChange={event => setNewPassword(event.target.value)} required /></label>}
-        {(!enrollment || enrollment.require2fa) && <label className="block">{bn ? 'অথেনটিকেটর কোড (2FA চালু থাকলে)' : 'Authenticator code (only if 2FA is enabled)'}<input inputMode="numeric" autoComplete="one-time-code" className="mt-1 w-full rounded border border-border bg-bg p-3" value={totp} onChange={event => setTotp(event.target.value)} required={Boolean(enrollment?.require2fa)} /></label>}
+        {totpLoginEnabled && (!enrollment || enrollment.require2fa) && <label className="block">{bn ? 'অথেনটিকেটর কোড' : 'Authenticator code'}<input inputMode="numeric" autoComplete="one-time-code" className="mt-1 w-full rounded border border-border bg-bg p-3" value={totp} onChange={event => setTotp(event.target.value)} required={Boolean(enrollment?.require2fa)} /></label>}
         {error && <p role="alert" className="text-danger">{uiText(error, locale)}</p>}
         <button disabled={busy} className="rounded bg-ink px-5 py-3 text-bg disabled:opacity-50">{busy ? (bn ? 'অপেক্ষা করুন…' : 'Please wait…') : (bn ? 'লগইন' : 'Log in')}</button>
       </form> : <>

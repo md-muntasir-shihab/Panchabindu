@@ -297,6 +297,9 @@ function buildDefaultRolePermissions(
 
 function getInitialAdminStore(): AdminPersistentStore {
   const require2faByDefault = !isLocalSandboxTwoFactorDisabled();
+  const adminUsername = isLocalSandboxTwoFactorDisabled()
+    ? process.env.PANCHAGARH_SANDBOX_ADMIN_USERNAME?.trim().toLowerCase() || 'admin'
+    : 'admin';
   const sandboxBootstrap = (role: 'ADMIN' | 'VENDOR', userId: string, testPassword: string) => {
     if (process.env.NODE_ENV === 'production') throw new Error('Sandbox identity cannot be seeded in production.');
     const password = process.env[`PANCHAGARH_SANDBOX_${role}_PASSWORD`];
@@ -355,8 +358,8 @@ function getInitialAdminStore(): AdminPersistentStore {
   const users: AdminUserAccount[] = [
     {
       userId: 'usr-super-admin',
-      username: 'admin',
-      internalEmailAlias: 'admin@internal.bongoconsign.local',
+      username: adminUsername,
+      internalEmailAlias: `${adminUsername}@internal.bongoconsign.local`,
       displayNameBn: 'মুনতাসির শিহাব (সুপার অ্যাডমিন)',
       displayNameEn: 'Muntasir Shihab (Super Admin)',
       roleSlug: 'super_admin',

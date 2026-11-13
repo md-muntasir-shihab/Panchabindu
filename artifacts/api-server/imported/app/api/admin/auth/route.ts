@@ -243,4 +243,18 @@ async function handlePOST(req: NextRequest) {
   }
 }
 
+async function handleGET() {
+  const localSandbox = process.env.NODE_ENV !== 'production' &&
+    process.env.PANCHAGARH_ENABLE_SANDBOX_AUTH === '1';
+  return NextResponse.json({
+    twoFactorLoginEnabled: !(
+      localSandbox && process.env.PANCHAGARH_SANDBOX_DISABLE_2FA === '1'
+    ),
+    defaultAdminUsername: localSandbox
+      ? process.env.PANCHAGARH_SANDBOX_ADMIN_USERNAME?.trim() || 'admin'
+      : 'admin',
+  });
+}
+
+export const GET = backendRoute(handleGET);
 export const POST = backendRoute(handlePOST, { commitAuthFailure: true });

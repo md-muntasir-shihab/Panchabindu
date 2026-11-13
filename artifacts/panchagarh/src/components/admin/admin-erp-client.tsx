@@ -894,9 +894,10 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
   const siteSettings = snapshot?.siteSettings ?? publicSettings;
 
   // Login Form State
-  const [loginUsername, setLoginUsername] = React.useState('admin');
+  const [loginUsername, setLoginUsername] = React.useState('panchagarh_owner');
   const [loginPassword, setLoginPassword] = React.useState('');
   const [loginTotp, setLoginTotp] = React.useState('');
+  const [loginTotpEnabled, setLoginTotpEnabled] = React.useState(false);
   const [loginLoading, setLoginLoading] = React.useState(false);
   const [loginError, setLoginError] = React.useState<string | null>(null);
 
@@ -910,6 +911,21 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
   const [gateTotpUri, setGateTotpUri] = React.useState<string | null>(null);
   const [gateError, setGateError] = React.useState<string | null>(null);
   const [gateSubmitting, setGateSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    let active = true;
+    fetch('/api/admin/auth', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data: { twoFactorLoginEnabled?: boolean; defaultAdminUsername?: string }) => {
+        if (!active) return;
+        setLoginTotpEnabled(data.twoFactorLoginEnabled === true);
+        if (data.defaultAdminUsername) setLoginUsername(data.defaultAdminUsername);
+      })
+      .catch(() => {
+        if (active) setLoginTotpEnabled(true);
+      });
+    return () => { active = false; };
+  }, []);
 
   // Workspace Navigation & Toast Banner State
   const [activeTab, setActiveTab] = React.useState<AdminTabKey>('today_screen');
@@ -2159,7 +2175,7 @@ ${itemsList}
                 onChange={(e) => setLoginPassword(e.target.value)}
                 required
               />
-              <div className="space-y-1.5">
+              {loginTotpEnabled && <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-ink">
                     {locale === 'bn'
@@ -2176,7 +2192,7 @@ ${itemsList}
                       : '6-Digit RFC 6238 TOTP'
                   }
                 />
-              </div>
+              </div>}
 
               {loginError && (
                 <div
