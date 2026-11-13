@@ -5,7 +5,7 @@ import { ApiRequest as NextRequest } from '@/src/lib/http';
 function localizedResponse(response: Response, request: unknown): Promise<Response> {
   if (!response.headers.get('content-type')?.includes('application/json')) return Promise.resolve(response);
   const locale = request instanceof Request && request.headers.get('accept-language')?.toLowerCase().startsWith('en') ? 'en' : 'bn';
-  return response.clone().json().then(body => {
+  return response.clone().json().then((body: any) => {
     const decorate = (value: unknown): void => {
       if (Array.isArray(value)) { value.forEach(decorate); return; }
       if (!value || typeof value !== 'object') return;
