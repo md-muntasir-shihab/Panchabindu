@@ -1,3 +1,7 @@
+# Current backend and language work — November 13, 2026
+
+User-approved backend integrity and bilingual edits are implemented and locally verified on `fix/backend-bilingual-integrity`. No execution phases were created. The PostgreSQL request adapter, access migrations, guarded financial/order changes, media intake/approval, CSV preview/import, print-copy APIs and bilingual copy are implemented locally. 164/164 tests, TypeScript, lint (4 warnings), production build and 14/14 HTTP smoke checks pass. Browser/responsive acceptance was blocked by the environment. GitHub reports no push permission. See `docs/audit/backend-bilingual-2026-11-13.md` for validation and precise remaining boundaries. No live migration, deployment, payment, payout, courier booking or external account connection was performed. Historical status below is retained as context.
+
 # Project state — 2026-11-11
 
 > 2026-11-12 update: The newest user instruction authorizes local-only work on phases 2–12 without further prompts and asks for a local command launcher plus test identities. Actual limited delivery/status and unresolved phase gates: `docs/ai/PHASE_2_TO_12_LOCAL_HANDOFF.md`. Prior Phase 2+ authorization wording below is historical; no production permission, SQL migration or deployment is implied.

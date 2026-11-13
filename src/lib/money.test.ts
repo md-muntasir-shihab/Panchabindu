@@ -118,7 +118,7 @@ test('Golden Case 4: Promo Discount Deducts Strictly from Platform Margin (Suppl
   assert.equal(res.newPlatformMarginPoisha, 25000); // Platform margin reduced from 500 BDT to 250 BDT
 });
 
-test('Golden Case 5: Escrow Maturity Date & Real-Time Bucket Promotion on Read', () => {
+test('holding maturity never releases money without an approved transfer', () => {
   const deliveredAt = '2026-11-01T10:00:00.000Z';
   const maturesAt = calculateMaturityTimestamp(deliveredAt, 7);
   assert.equal(maturesAt, '2026-11-08T10:00:00.000Z');
@@ -154,15 +154,20 @@ test('Golden Case 5: Escrow Maturity Date & Real-Time Bucket Promotion on Read',
   assert.equal(balBeforeMaturity.lockedPoisha, 150000);
   assert.equal(balBeforeMaturity.withdrawablePoisha, 0);
 
-  // Read 8 days after delivery (hold period finished, even before cron runs!): e2 promotes to available
   const balAfterMaturity = computeVendorEscrowBalance(
     'v1',
     entries,
     '2026-11-09T10:00:00.000Z'
   );
-  assert.equal(balAfterMaturity.lockedPoisha, 0);
-  assert.equal(balAfterMaturity.availablePoisha, 150000);
-  assert.equal(balAfterMaturity.withdrawablePoisha, 150000);
+  assert.equal(balAfterMaturity.lockedPoisha, 150000);
+  assert.equal(balAfterMaturity.availablePoisha, 0);
+  assert.equal(balAfterMaturity.withdrawablePoisha, 0);
+  const transferred = computeVendorEscrowBalance('v1', [...entries,
+    { ...entries[1], id: 'offset', entryType: 'MANUAL_ADJUSTMENT', amountPoisha: -150000 },
+    { ...entries[1], id: 'available', entryType: 'EARNING_MATURED', escrowBucket: 'available' },
+  ]);
+  assert.equal(transferred.lockedPoisha, 0);
+  assert.equal(transferred.availablePoisha, 150000);
 });
 
 test('Golden Case 6: Four-Way Return Engine & Post-Payout Clawback', () => {

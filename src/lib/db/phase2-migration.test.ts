@@ -127,7 +127,7 @@ describe('Phase 2 — Database Source of Truth, RLS Coverage & JSON-to-Supabase 
     const audit = verifySqlMigrationsAndRlsCoverage();
 
     assert.equal(audit.migrationsDirExists, true);
-    assert.equal(audit.diskMigrationFiles.length, 8);
+    assert.equal(audit.diskMigrationFiles.length, 10);
     assert.equal(
       audit.manifestMatchesDiskFiles,
       true,
@@ -140,7 +140,7 @@ describe('Phase 2 — Database Source of Truth, RLS Coverage & JSON-to-Supabase 
     );
     assert.equal(
       audit.totalTablesCreatedInSql,
-      55,
+      56,
       `Expected 55 total PostgreSQL tables across 0002..0008, got ${audit.totalTablesCreatedInSql}`
     );
     assert.equal(

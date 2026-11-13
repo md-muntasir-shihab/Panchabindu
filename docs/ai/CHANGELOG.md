@@ -1,3 +1,7 @@
+# November 13, 2026 — Backend integrity and bilingual controls
+
+Implemented reviewed backend transaction/access/order/catalog/payment fixes, secure staged media, explicit CSV preview/import, copy-scoped print APIs, and 1,331 translation entries with vendor language controls. 164/164 isolated tests, TypeScript, lint (4 warnings), production build and 14 HTTP smoke checks pass. Added PostgreSQL schema/RLS/journal/restore evidence; migrations were not applied externally. Browser acceptance remains blocked. The runtime JSONB compatibility adapter is not a complete normalized domain cutover; customer SMS, live courier operations and policy acceptance remain open. Current report: `docs/audit/backend-bilingual-2026-11-13.md`.
+
 # AI handoff changelog
 
 Phase 1 final local evidence: `f:\CODE\.panchagarh-audit\phase1-verification-MOSXmS\summary.json`: 121/121 Bun tests, TypeScript/build/lint exit 0 (lint 3 warnings), Node tooling 10/10; `smoke.json`: 6/6 standalone HTTP checks, server stopped. Earlier type/test/smoke failures retained and corrected, including canonical origin handling and repeated seed hashing on identity read. Source fingerprints match final verified copy; Phase 1 production acceptance remains PARTIAL/BLOCKED.

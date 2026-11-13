@@ -8,8 +8,9 @@
 //   - Sliding-Window Rate Limiter, CSRF/Origin Guard & Payload Size Validator
 
 import crypto from 'node:crypto';
-import fs from 'node:fs';
 import path from 'node:path';
+import { readLocalJsonStore, writeLocalJsonStore } from '../db/local-json-store';
+import { hasDurableRuntimeContext } from '../db/runtime-persistence';
 import * as OTPAuth from 'otpauth';
 import type { SystemRoleSlug } from '../../types/permissions';
 
@@ -348,6 +349,7 @@ export interface AdminSessionRecord {
 }
 
 interface PersistedSessionStore {
+  rateLimits?: Record<string, { timestamps: number[] }>;
   customerPrincipals: CustomerPrincipal[];
   adminSessions: AdminSessionRecord[];
   customerSessions: CustomerSessionRecord[];
@@ -362,10 +364,13 @@ const SESSION_STORE_PATH = path.join(
 
 function readSessionStore(): PersistedSessionStore {
   try {
-    if (fs.existsSync(SESSION_STORE_PATH)) {
-      const raw = fs.readFileSync(SESSION_STORE_PATH, 'utf8');
-      const parsed = JSON.parse(raw) as Partial<PersistedSessionStore>;
+    const parsed = readLocalJsonStore<PersistedSessionStore>(SESSION_STORE_PATH, {
+      arrays: ['customerPrincipals', 'adminSessions', 'customerSessions'],
+      objects: ['customerOtpChallenges'],
+    });
+    if (parsed) {
       return {
+        rateLimits: parsed.rateLimits ?? {},
         customerPrincipals: Array.isArray(parsed.customerPrincipals) ? parsed.customerPrincipals : [],
         adminSessions: Array.isArray(parsed.adminSessions)
           ? parsed.adminSessions
@@ -393,10 +398,6 @@ function readSessionStore(): PersistedSessionStore {
 
 function writeSessionStore(store: PersistedSessionStore): void {
   try {
-    const dir = path.dirname(SESSION_STORE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
     const nowIso = new Date().toISOString();
     // Prune expired sessions older than 24h to keep file small
     store.adminSessions = store.adminSessions
@@ -405,7 +406,7 @@ function writeSessionStore(store: PersistedSessionStore): void {
     store.customerSessions = store.customerSessions
       .filter((s) => s.expiresAt > nowIso && !s.revokedAt)
       .slice(0, 1000);
-    fs.writeFileSync(SESSION_STORE_PATH, JSON.stringify(store, null, 2), 'utf8');
+    writeLocalJsonStore(SESSION_STORE_PATH, store);
   } catch {
     throw new Error('Security session persistence failed.');
   }
@@ -511,6 +512,7 @@ export function createAdminSession(params: {
 export function verifyAdminSessionToken(
   token: string | undefined | null
 ): AdminSessionRecord | null {
+  if (process.env.NODE_ENV === 'production' && !hasDurableRuntimeContext()) return null;
   const sessionId = verifySignedSessionId(token, 'admin');
   if (!sessionId) return null;
 
@@ -618,6 +620,10 @@ export function requestCustomerPhoneOtp(
   expiresInSeconds?: number;
   retryAfterSeconds?: number;
 } {
+  if (process.env.NODE_ENV === 'production' && !isSmsOtpProviderConfigured()) return {
+    success: false, deliveryStatus: 'NOT_INTEGRATED', expiresInSeconds: 0, retryAfterSeconds: 0,
+    errorBn: 'ফোন নিশ্চিতকরণ সার্ভিস উপলব্ধ নয় (NOT_INTEGRATED)।',
+  };
   const nowMs = options?.allowSandboxInNonProd !== undefined && options.nowMs
     ? options.nowMs
     : Date.now();
@@ -707,6 +713,9 @@ export function verifyCustomerPhoneOtp(
   sessionToken?: string;
   session?: CustomerSessionRecord;
 } {
+  if (process.env.NODE_ENV === 'production' && !hasDurableRuntimeContext()) return {
+    success: false, errorBn: 'ফোন নিশ্চিতকরণ সার্ভিস উপলব্ধ নয় (NOT_INTEGRATED)।',
+  };
   const cleanOtp = (submittedOtp ?? '').trim();
   if (!/^\d{6}$/.test(cleanOtp)) {
     return {
@@ -813,6 +822,7 @@ export function verifyCustomerPhoneOtp(
 export function verifyCustomerSessionToken(
   token: string | undefined | null
 ): CustomerSessionRecord | null {
+  if (process.env.NODE_ENV === 'production' && !hasDurableRuntimeContext()) return null;
   const sessionId = verifySignedSessionId(token, 'customer');
   if (!sessionId) return null;
 
@@ -861,7 +871,9 @@ export function checkRateLimit(
   retryAfterSeconds: number;
 } {
   const cutoff = nowMs - windowMs;
-  const bucket = rateLimitBuckets.get(key) ?? { timestamps: [] };
+  const persistent = hasDurableRuntimeContext() ? readSessionStore() : null;
+  const rateKey = crypto.createHash('sha256').update(key).digest('hex');
+  const bucket = persistent?.rateLimits?.[rateKey] ?? rateLimitBuckets.get(key) ?? { timestamps: [] };
   bucket.timestamps = bucket.timestamps.filter((t) => t > cutoff);
 
   if (bucket.timestamps.length >= maxRequests) {
@@ -880,6 +892,12 @@ export function checkRateLimit(
 
   bucket.timestamps.push(nowMs);
   rateLimitBuckets.set(key, bucket);
+  if (persistent) {
+    persistent.rateLimits = Object.fromEntries(Object.entries(persistent.rateLimits ?? {})
+      .filter(([, value]) => value.timestamps.some(timestamp => timestamp > nowMs - 86_400_000)));
+    persistent.rateLimits[rateKey] = bucket;
+    writeSessionStore(persistent);
+  }
   return {
     allowed: true,
     remaining: Math.max(0, maxRequests - bucket.timestamps.length),

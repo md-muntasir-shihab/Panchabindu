@@ -441,17 +441,11 @@ function verifyMakerCheckerUsers(
   makerUsername: string,
   checkerUsername: string
 ): { allowed: boolean; errorBn?: string } {
-  const checkerCtx: ActorSecurityContext = {
-    userId: `usr-${checkerUsername}`,
-    username: checkerUsername,
-    roleSlug: 'super_admin',
-    vendorId: null,
-    mustChangePassword: false,
-    totpEnrolled: true,
-    require2fa: true,
-    maxDiscountBp: 5000,
-    maskCustomerPiiForVendor: false,
-  };
+  const account = readAdminStore().users.find(user => user.username === checkerUsername && user.isActive);
+  if (!account || account.mustChangePassword || !account.totpEnrolled || account.roleSlug !== 'super_admin') {
+    return { allowed: false, errorBn: 'আর্থিক অনুমোদনের জন্য সক্রিয় অনুমোদিত অ্যাডমিন প্রয়োজন।' };
+  }
+  const checkerCtx: ActorSecurityContext = { ...account };
   return checkMakerCheckerSeparation({
     makerUsername,
     checkerCtx,

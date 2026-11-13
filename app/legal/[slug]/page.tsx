@@ -1,3 +1,4 @@
+import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/legal/[slug]/page.tsx
 // Dedicated Admin-Editable Legal & Policy Pages (About, Privacy, Return Policy, Terms)
 
@@ -16,7 +17,7 @@ interface LegalPageProps {
 
 export default async function LegalPage({ params }: LegalPageProps) {
   const { slug } = await params;
-  const { siteSettings, categories } = getPublicStorefrontData();
+  const { siteSettings, categories } = await withRuntimePersistence(() => getPublicStorefrontData());
   const page = siteSettings.legalPages[slug];
 
   if (!page) {

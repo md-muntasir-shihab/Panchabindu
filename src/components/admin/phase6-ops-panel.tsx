@@ -1,4 +1,8 @@
 'use client';
+import { localizedField } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/admin/phase6-ops-panel.tsx
 // Phase 6 (Module S): Live Operations, Abandoned Cart Recovery & Customer 360 CRM,
@@ -339,8 +343,7 @@ export function Phase6LiveOpsPanel({
           disabled={isBusy}
         >
           <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-          ডেটা রিফ্রেশ করুন
-        </Button>
+          <LocalizedText source={"ডেটা রিফ্রেশ করুন"} area="admin" />{" "}</Button>
       </div>
 
       {/* Feedback Banner */}
@@ -366,8 +369,7 @@ export function Phase6LiveOpsPanel({
             onClick={() => setFeedback(null)}
             className="text-xs underline text-muted hover:text-ink cursor-pointer"
           >
-            বন্ধ করুন
-          </button>
+            <LocalizedText source={"বন্ধ করুন"} area="admin" />{" "}</button>
         </div>
       )}
 
@@ -375,58 +377,48 @@ export function Phase6LiveOpsPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-ink">
-            <span>পরিত্যক্ত কার্ট (Abandoned Carts)</span>
+            <span><LocalizedText source={"পরিত্যক্ত কার্ট (Abandoned Carts)"} area="admin" /></span>
             <Badge status={pendingCartsCount > 0 ? 'warning' : 'success'}>
-              {pendingCartsCount} অপেক্ষমাণ
-            </Badge>
+              {pendingCartsCount} {" "}<LocalizedText source={"অপেক্ষমাণ"} area="admin" />{" "}</Badge>
           </div>
           <p className="text-xl font-bold font-mono text-ink tabular-nums">
-            {formatLocaleNumber(overview.abandonedCarts.length, locale)} টি কার্ট
-          </p>
+            {formatLocaleNumber(overview.abandonedCarts.length, locale)} {" "}<LocalizedText source={"টি কার্ট"} area="admin" />{" "}</p>
           <p className="text-[11px] text-muted">
-            রিকভারড: {formatLocaleNumber(recoveredCartsCount, locale)} টি · ফ্রি wa.me / ১-ক্লিক অর্ডার
-          </p>
+            <LocalizedText source={"রিকভারড:"} area="admin" />{" "}{formatLocaleNumber(recoveredCartsCount, locale)} {" "}<LocalizedText source={"টি · ফ্রি wa.me / ১-ক্লিক অর্ডার"} area="admin" />{" "}</p>
         </div>
 
         <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-ink">
-            <span>কাস্টমার ৩৬০ ও ফ্রড প্রোফাইল</span>
-            <Badge status="info">CRM</Badge>
+            <span><LocalizedText source={"কাস্টমার ৩৬০ ও ফ্রড প্রোফাইল"} area="admin" /></span>
+            <Badge status="info"><LocalizedText source={"CRM"} area="admin" /></Badge>
           </div>
           <p className="text-xl font-bold font-mono text-ink tabular-nums">
-            {formatLocaleNumber(overview.customers360.length, locale)} জন গ্রাহক
-          </p>
+            {formatLocaleNumber(overview.customers360.length, locale)} {" "}<LocalizedText source={"জন গ্রাহক"} area="admin" />{" "}</p>
           <p className="text-[11px] text-muted">
-            ডেলিভারি সাকসেস রেট, রিপিট ব্যাজ ও রিস্ক স্কোর ট্র্যাকিং
-          </p>
+            <LocalizedText source={"ডেলিভারি সাকসেস রেট, রিপিট ব্যাজ ও রিস্ক স্কোর ট্র্যাকিং"} area="admin" />{" "}</p>
         </div>
 
         <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-ink">
-            <span>কুরিয়ার ওয়েবহুক ও সিএসভি সিঙ্ক</span>
-            <Badge status="success">HMAC SHA-256</Badge>
+            <span><LocalizedText source={"কুরিয়ার ওয়েবহুক ও সিএসভি সিঙ্ক"} area="admin" /></span>
+            <Badge status="success"><LocalizedText source={"HMAC SHA-256"} area="admin" /></Badge>
           </div>
           <p className="text-xl font-bold font-mono text-ink tabular-nums">
-            {formatLocaleNumber(overview.webhookEvents.length, locale)} টি ইভেন্ট
-          </p>
+            {formatLocaleNumber(overview.webhookEvents.length, locale)} {" "}<LocalizedText source={"টি ইভেন্ট"} area="admin" />{" "}</p>
           <p className="text-[11px] text-muted">
-            POST /api/webhooks/courier + বাল্ক সিএসভি রিকনসিলিয়েশন
-          </p>
+            <LocalizedText source={"POST /api/webhooks/courier + বাল্ক সিএসভি রিকনসিলিয়েশন"} area="admin" />{" "}</p>
         </div>
 
         <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-ink">
-            <span>রিভিউ ও ভেন্ডর স্কোরকার্ড</span>
+            <span><LocalizedText source={"রিভিউ ও ভেন্ডর স্কোরকার্ড"} area="admin" /></span>
             <Badge status={pendingReviewsCount > 0 ? 'warning' : 'success'}>
-              {pendingReviewsCount} পেন্ডিং রিভিউ
-            </Badge>
+              {pendingReviewsCount} {" "}<LocalizedText source={"পেন্ডিং রিভিউ"} area="admin" />{" "}</Badge>
           </div>
           <p className="text-xl font-bold font-mono text-ink tabular-nums">
-            {formatLocaleNumber(overview.vendorScorecards.length, locale)} জন ভেন্ডর
-          </p>
+            {formatLocaleNumber(overview.vendorScorecards.length, locale)} {" "}<LocalizedText source={"জন ভেন্ডর"} area="admin" />{" "}</p>
           <p className="text-[11px] text-muted">
-            ভেরিফায়েড পারচেজ রিভিউ ও ভেন্ডর SLA গ্রেডিং (A+..C)
-          </p>
+            <LocalizedText source={"ভেরিফায়েড পারচেজ রিভিউ ও ভেন্ডর SLA গ্রেডিং (A+..C)"} area="admin" />{" "}</p>
         </div>
       </div>
 
@@ -443,7 +435,7 @@ export function Phase6LiveOpsPanel({
         >
           <ShoppingCart className="w-4 h-4" />
           <span>
-            ১. পরিত্যক্ত কার্ট রিকভারি ও কাস্টমার সিআরএম ({overview.abandonedCarts.length})
+            <LocalizedText source={"১. পরিত্যক্ত কার্ট রিকভারি ও কাস্টমার সিআরএম ("} area="admin" />{overview.abandonedCarts.length})
           </span>
         </button>
 
@@ -457,7 +449,7 @@ export function Phase6LiveOpsPanel({
           }`}
         >
           <Webhook className="w-4 h-4" />
-          <span>২. কুরিয়ার ওয়েবহুক ও বাল্ক সিএসভি রিকনসিলিয়েশন</span>
+          <span><LocalizedText source={"২. কুরিয়ার ওয়েবহুক ও বাল্ক সিএসভি রিকনসিলিয়েশন"} area="admin" /></span>
         </button>
 
         <button
@@ -471,7 +463,7 @@ export function Phase6LiveOpsPanel({
         >
           <Award className="w-4 h-4" />
           <span>
-            ৩. রিভিউ মডারেশন ও ভেন্ডর স্কোরকার্ড ({overview.moderatedReviews.length})
+            <LocalizedText source={"৩. রিভিউ মডারেশন ও ভেন্ডর স্কোরকার্ড ("} area="admin" />{overview.moderatedReviews.length})
           </span>
         </button>
 
@@ -486,7 +478,7 @@ export function Phase6LiveOpsPanel({
         >
           <DatabaseBackup className="w-4 h-4" />
           <span>
-            ৪. ফুল সিস্টেম ব্যাকআপ স্ন্যাপশট ({overview.backupSnapshots.length})
+            <LocalizedText source={"৪. ফুল সিস্টেম ব্যাকআপ স্ন্যাপশট ("} area="admin" />{overview.backupSnapshots.length})
           </span>
         </button>
       </div>
@@ -501,12 +493,10 @@ export function Phase6LiveOpsPanel({
                 <h2 className="text-sm font-bold text-ink flex items-center gap-2">
                   <ShoppingCart className="w-4 h-4 text-ink" />
                   <span>
-                    চেকআউট পরিত্যক্ত কার্ট রিকভারি কিউ (Abandoned Carts Recovery Engine)
-                  </span>
+                    <LocalizedText source={"চেকআউট পরিত্যক্ত কার্ট রিকভারি কিউ (Abandoned Carts Recovery Engine)"} area="admin" />{" "}</span>
                 </h2>
                 <p className="text-xs text-muted mt-0.5">
-                  চেকআউট পেজে ফোন নম্বর দেওয়ার পর যারা অর্ডার সম্পন্ন করেননি তাদের ফ্রি `wa.me` / `sms:` রিমাইন্ডার পাঠান অথবা ১-ক্লিকে কনফার্মড অর্ডারে রূপান্তর করুন।
-                </p>
+                  <LocalizedText source={"চেকআউট পেজে ফোন নম্বর দেওয়ার পর যারা অর্ডার সম্পন্ন করেননি তাদের ফ্রি `wa.me` / `sms:` রিমাইন্ডার পাঠান অথবা ১-ক্লিকে কনফার্মড অর্ডারে রূপান্তর করুন।"} area="admin" />{" "}</p>
               </div>
             </div>
 
@@ -541,7 +531,7 @@ export function Phase6LiveOpsPanel({
                         <span className="font-mono">{cart.customerPhone}</span>
                       </p>
                       <p className="text-xs text-muted">
-                        জেলা: {cart.districtNameBn} — {cart.streetAddress}
+                        <LocalizedText source={"জেলা:"} area="admin" />{" "}{localizedField(cart, "districtNameBn", locale)} — {cart.streetAddress}
                       </p>
                     </div>
 
@@ -552,7 +542,7 @@ export function Phase6LiveOpsPanel({
                           className="flex items-center justify-between text-xs text-ink"
                         >
                           <span>
-                            {it.productNameBn} ({it.variantTitleBn}) ×{' '}
+                            {localizedField(it, "productNameBn", locale)} ({localizedField(it, "variantTitleBn", locale)}) ×{' '}
                             {it.quantity}
                           </span>
                           <span className="font-mono font-semibold tabular-nums">
@@ -566,10 +556,9 @@ export function Phase6LiveOpsPanel({
                     </div>
 
                     <p className="text-[11px] text-muted">
-                      রিমাইন্ডার পাঠানো হয়েছে:{' '}
+                      <LocalizedText source={"রিমাইন্ডার পাঠানো হয়েছে:"} area="admin" />{' '}
                       <strong className="text-ink">
-                        {cart.reminderSentCount} বার
-                      </strong>
+                        {cart.reminderSentCount} {" "}<LocalizedText source={"বার"} area="admin" />{" "}</strong>
                       {cart.lastReminderSentAt
                         ? ` · সর্বশেষ: ${new Date(cart.lastReminderSentAt).toLocaleString('bn-BD')}`
                         : ''}
@@ -588,7 +577,7 @@ export function Phase6LiveOpsPanel({
                         className="px-3 py-1.5 text-xs font-semibold border border-border bg-bg text-ink rounded-[var(--radius-sm)] hover:bg-surface inline-flex items-center gap-1.5"
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
-                        <span>wa.me রিকভারি</span>
+                        <span><LocalizedText source={"wa.me রিকভারি"} area="admin" /></span>
                       </a>
 
                       <a
@@ -599,7 +588,7 @@ export function Phase6LiveOpsPanel({
                         className="px-3 py-1.5 text-xs font-semibold border border-border bg-bg text-ink rounded-[var(--radius-sm)] hover:bg-surface inline-flex items-center gap-1.5"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        <span>SMS অ্যাপ</span>
+                        <span><LocalizedText source={"SMS অ্যাপ"} area="admin" /></span>
                       </a>
                     </div>
 
@@ -611,11 +600,10 @@ export function Phase6LiveOpsPanel({
                         onClick={() => void handleConvertCartToOrder(cart.cartId)}
                       >
                         <ArrowRight className="w-3.5 h-3.5 mr-1" />
-                        ১-ক্লিক অর্ডারে রূপান্তর
-                      </Button>
+                        <LocalizedText source={"১-ক্লিক অর্ডারে রূপান্তর"} area="admin" />{" "}</Button>
                     ) : (
                       <span className="text-xs font-mono font-semibold text-success">
-                        অর্ডার: {cart.recoveredOrderNo}
+                        <LocalizedText source={"অর্ডার:"} area="admin" />{" "}{cart.recoveredOrderNo}
                       </span>
                     )}
                   </div>
@@ -631,12 +619,10 @@ export function Phase6LiveOpsPanel({
                 <h2 className="text-sm font-bold text-ink flex items-center gap-2">
                   <Users className="w-4 h-4 text-ink" />
                   <span>
-                    কাস্টমার ৩৬০, ডেলিভারি সাকসেস রেট ও ফ্রড স্কোর ডিরেক্টরি (Customer 360 CRM)
-                  </span>
+                    <LocalizedText source={"কাস্টমার ৩৬০, ডেলিভারি সাকসেস রেট ও ফ্রড স্কোর ডিরেক্টরি (Customer 360 CRM)"} area="admin" />{" "}</span>
                 </h2>
                 <p className="text-xs text-muted mt-0.5">
-                  গ্রাহকের ফোন নম্বরভিত্তিক মোট অর্ডার, ডেলিভারি হার, রিটার্ন হিস্ট্রি, রিপিট কাস্টমার স্ট্যাটাস এবং ফ্রড রিস্ক স্কোর।
-                </p>
+                  <LocalizedText source={"গ্রাহকের ফোন নম্বরভিত্তিক মোট অর্ডার, ডেলিভারি হার, রিটার্ন হিস্ট্রি, রিপিট কাস্টমার স্ট্যাটাস এবং ফ্রড রিস্ক স্কোর।"} area="admin" />{" "}</p>
               </div>
             </div>
 
@@ -644,24 +630,19 @@ export function Phase6LiveOpsPanel({
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-border bg-surface text-muted">
-                    <th className="py-2.5 px-3 font-semibold">গ্রাহক ও ফোন</th>
-                    <th className="py-2.5 px-3 font-semibold">জেলা</th>
+                    <th className="py-2.5 px-3 font-semibold"><LocalizedText source={"গ্রাহক ও ফোন"} area="admin" /></th>
+                    <th className="py-2.5 px-3 font-semibold"><LocalizedText source={"জেলা"} area="admin" /></th>
                     <th className="py-2.5 px-3 font-semibold text-right">
-                      মোট অর্ডার
-                    </th>
+                      <LocalizedText source={"মোট অর্ডার"} area="admin" />{" "}</th>
                     <th className="py-2.5 px-3 font-semibold text-right">
-                      ডেলিভারড / রিটার্ন
-                    </th>
+                      <LocalizedText source={"ডেলিভারড / রিটার্ন"} area="admin" />{" "}</th>
                     <th className="py-2.5 px-3 font-semibold text-right">
-                      ডেলিভারি হার
-                    </th>
+                      <LocalizedText source={"ডেলিভারি হার"} area="admin" />{" "}</th>
                     <th className="py-2.5 px-3 font-semibold text-right">
-                      ফ্রড স্কোর
-                    </th>
+                      <LocalizedText source={"ফ্রড স্কোর"} area="admin" />{" "}</th>
                     <th className="py-2.5 px-3 font-semibold text-right">
-                      মোট ক্রয় (LTV)
-                    </th>
-                    <th className="py-2.5 px-3 font-semibold">স্ট্যাটাস</th>
+                      <LocalizedText source={"মোট ক্রয় (LTV)"} area="admin" />{" "}</th>
+                    <th className="py-2.5 px-3 font-semibold"><LocalizedText source={"স্ট্যাটাস"} area="admin" /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -676,7 +657,7 @@ export function Phase6LiveOpsPanel({
                         </div>
                       </td>
                       <td className="py-2.5 px-3 text-ink">
-                        {cust.districtNameBn}
+                        {localizedField(cust, "districtNameBn", locale)}
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono font-bold text-ink tabular-nums">
                         {cust.totalOrders}
@@ -711,11 +692,11 @@ export function Phase6LiveOpsPanel({
                       </td>
                       <td className="py-2.5 px-3">
                         {cust.isBlacklisted ? (
-                          <Badge status="danger">Blacklisted</Badge>
+                          <Badge status="danger"><LocalizedText source={"Blacklisted"} area="admin" /></Badge>
                         ) : cust.isRepeatCustomer ? (
-                          <Badge status="success">Repeat Customer</Badge>
+                          <Badge status="success"><LocalizedText source={"Repeat Customer"} area="admin" /></Badge>
                         ) : (
-                          <Badge status="neutral">Verified</Badge>
+                          <Badge status="neutral"><LocalizedText source={"Verified"} area="admin" /></Badge>
                         )}
                       </td>
                     </tr>
@@ -737,19 +718,16 @@ export function Phase6LiveOpsPanel({
                 <h2 className="text-sm font-bold text-ink flex items-center gap-2">
                   <Webhook className="w-4 h-4 text-ink" />
                   <span>
-                    লাইভ কুরিয়ার ওয়েবহুক রিসিভার ও সিমুলেটর (POST /api/webhooks/courier)
-                  </span>
+                    <LocalizedText source={"লাইভ কুরিয়ার ওয়েবহুক রিসিভার ও সিমুলেটর (POST /api/webhooks/courier)"} area="admin" />{" "}</span>
                 </h2>
                 <p className="text-xs text-muted mt-0.5">
-                  Steadfast, Pathao বা RedX থেকে ওয়েবহুক পেলোড এলে স্বয়ংক্রিয়ভাবে অর্ডার স্ট্যাটাস, কুরিয়ার লেজার এবং ভেন্ডর এসক্রো (`Pending → Locked`) আপডেট হয়।
-                </p>
+                  <LocalizedText source={"Steadfast, Pathao বা RedX থেকে ওয়েবহুক পেলোড এলে স্বয়ংক্রিয়ভাবে অর্ডার স্ট্যাটাস, কুরিয়ার লেজার এবং ভেন্ডর এসক্রো (`Pending → Locked`) আপডেট হয়।"} area="admin" />{" "}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-ink mb-1">
-                    কুরিয়ার প্রোভাইডার
-                  </label>
+                    <LocalizedText source={"কুরিয়ার প্রোভাইডার"} area="admin" />{" "}</label>
                   <select
                     value={whProvider}
                     onChange={(e) =>
@@ -757,17 +735,16 @@ export function Phase6LiveOpsPanel({
                     }
                     className="w-full h-10 px-3 text-xs border border-border rounded-[var(--radius-md)] bg-surface text-ink"
                   >
-                    <option value="steadfast">Steadfast Courier</option>
-                    <option value="pathao">Pathao Hermes</option>
-                    <option value="redx">RedX OpenAPI</option>
-                    <option value="bd_post">BD Post Office</option>
+                    <option value="steadfast"><LocalizedText source={"Steadfast Courier"} area="admin" /></option>
+                    <option value="pathao"><LocalizedText source={"Pathao Hermes"} area="admin" /></option>
+
+                    <option value="bd_post"><LocalizedText source={"BD Post Office"} area="admin" /></option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-ink mb-1">
-                    টার্গেট অর্ডার নম্বর
-                  </label>
+                    <LocalizedText source={"টার্গেট অর্ডার নম্বর"} area="admin" />{" "}</label>
                   <select
                     value={whOrderNo}
                     onChange={(e) => setWhOrderNo(e.target.value)}
@@ -783,8 +760,7 @@ export function Phase6LiveOpsPanel({
 
                 <div>
                   <label className="block text-xs font-semibold text-ink mb-1">
-                    ওয়েবহুক ইভেন্ট স্ট্যাটাস
-                  </label>
+                    <LocalizedText source={"ওয়েবহুক ইভেন্ট স্ট্যাটাস"} area="admin" />{" "}</label>
                   <select
                     value={whRawStatus}
                     onChange={(e) =>
@@ -799,20 +775,18 @@ export function Phase6LiveOpsPanel({
                     }
                     className="w-full h-10 px-3 text-xs border border-border rounded-[var(--radius-md)] bg-surface text-ink"
                   >
-                    <option value="delivered">delivered (ডেলিভারড)</option>
+                    <option value="delivered"><LocalizedText source={"delivered (ডেলিভারড)"} area="admin" /></option>
                     <option value="partial_delivered">
-                      partial_delivered (আংশিক ডেলিভারি)
-                    </option>
-                    <option value="in_transit">in_transit (ইন-ট্রানজিট)</option>
-                    <option value="returned">returned (রিটার্নড)</option>
+                      <LocalizedText source={"partial_delivered (আংশিক ডেলিভারি)"} area="admin" />{" "}</option>
+                    <option value="in_transit"><LocalizedText source={"in_transit (ইন-ট্রানজিট)"} area="admin" /></option>
+                    <option value="returned"><LocalizedText source={"returned (রিটার্নড)"} area="admin" /></option>
                   </select>
                 </div>
               </div>
 
               <div className="flex items-center justify-between pt-2">
                 <span className="text-[11px] font-mono text-muted">
-                  Header: x-webhook-signature (HMAC-SHA256 Verified)
-                </span>
+                  <LocalizedText source={"Header: x-webhook-signature (HMAC-SHA256 Verified)"} area="admin" />{" "}</span>
                 <Button
                   size="sm"
                   variant="primary"
@@ -820,14 +794,13 @@ export function Phase6LiveOpsPanel({
                   onClick={() => void handleSimulateWebhook()}
                 >
                   <Truck className="w-3.5 h-3.5 mr-1.5" />
-                  ওয়েবহুক ইভেন্ট ফায়ার করুন
-                </Button>
+                  <LocalizedText source={"ওয়েবহুক ইভেন্ট ফায়ার করুন"} area="admin" />{" "}</Button>
               </div>
 
               {/* Recent Webhook Events */}
               <div className="space-y-2 pt-3 border-t border-border">
                 <h3 className="text-xs font-bold text-ink">
-                  সাম্প্রতিক কুরিয়ার ওয়েবহুক লগ ({overview.webhookEvents.length})
+                  <LocalizedText source={"সাম্প্রতিক কুরিয়ার ওয়েবহুক লগ ("} area="admin" />{overview.webhookEvents.length})
                 </h3>
                 <div className="space-y-2 max-h-56 overflow-y-auto">
                   {overview.webhookEvents.map((ev) => (
@@ -864,19 +837,16 @@ export function Phase6LiveOpsPanel({
                 <h2 className="text-sm font-bold text-ink flex items-center gap-2">
                   <FileSpreadsheet className="w-4 h-4 text-ink" />
                   <span>
-                    বাল্ক কুরিয়ার রেমিট্যান্স সিএসভি রিকনসিলিয়েশন ও শর্ট-পেমেন্ট ডিটেক্টর
-                  </span>
+                    <LocalizedText source={"বাল্ক কুরিয়ার রেমিট্যান্স সিএসভি রিকনসিলিয়েশন ও শর্ট-পেমেন্ট ডিটেক্টর"} area="admin" />{" "}</span>
                 </h2>
                 <p className="text-xs text-muted mt-0.5">
-                  কুরিয়ারের পেমেন্ট শিট থেকে `order_no,consignment_id,remitted_bdt,courier_fee_bdt` পেস্ট করে এক ক্লিকে সব অর্ডারের সিওডি নিষ্পত্তি ও শর্ট-পেমেন্ট যাচাই করুন।
-                </p>
+                  <LocalizedText source={"কুরিয়ারের পেমেন্ট শিট থেকে `order_no,consignment_id,remitted_bdt,courier_fee_bdt` পেস্ট করে এক ক্লিকে সব অর্ডারের সিওডি নিষ্পত্তি ও শর্ট-পেমেন্ট যাচাই করুন।"} area="admin" />{" "}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-ink mb-1">
-                    কুরিয়ার প্রোভাইডার
-                  </label>
+                    <LocalizedText source={"কুরিয়ার প্রোভাইডার"} area="admin" />{" "}</label>
                   <select
                     value={csvProvider}
                     onChange={(e) =>
@@ -884,10 +854,10 @@ export function Phase6LiveOpsPanel({
                     }
                     className="w-full h-10 px-3 text-xs border border-border rounded-[var(--radius-md)] bg-surface text-ink"
                   >
-                    <option value="steadfast">Steadfast Courier</option>
-                    <option value="pathao">Pathao Hermes</option>
-                    <option value="redx">RedX OpenAPI</option>
-                    <option value="bd_post">BD Post Office</option>
+                    <option value="steadfast"><LocalizedText source={"Steadfast Courier"} area="admin" /></option>
+                    <option value="pathao"><LocalizedText source={"Pathao Hermes"} area="admin" /></option>
+
+                    <option value="bd_post"><LocalizedText source={"BD Post Office"} area="admin" /></option>
                   </select>
                 </div>
 
@@ -900,8 +870,7 @@ export function Phase6LiveOpsPanel({
 
               <div>
                 <label className="block text-xs font-semibold text-ink mb-1">
-                  রেমিট্যান্স সিএসভি রো সমূহ (order_no,consignment_id,remitted_bdt,courier_fee_bdt)
-                </label>
+                  <LocalizedText source={"রেমিট্যান্স সিএসভি রো সমূহ (order_no,consignment_id,remitted_bdt,courier_fee_bdt)"} area="admin" />{" "}</label>
                 <textarea
                   rows={4}
                   value={csvInputText}
@@ -918,8 +887,7 @@ export function Phase6LiveOpsPanel({
                   onClick={() => void handleReconcileCsv()}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-                  বাল্ক সিএসভি রিকনসাইল করুন
-                </Button>
+                  <LocalizedText source={"বাল্ক সিএসভি রিকনসাইল করুন"} area="admin" />{" "}</Button>
               </div>
 
               {csvReconResult && (
@@ -928,17 +896,17 @@ export function Phase6LiveOpsPanel({
                     {csvReconResult.summaryBn}
                   </p>
                   <p className="font-mono text-muted">
-                    Expected COD:{' '}
+                    <LocalizedText source={"Expected COD:"} area="admin" />{' '}
                     {formatPoishaToBdt(
                       csvReconResult.totalExpectedCodPoisha,
                       locale
                     )}{' '}
-                    | Remitted:{' '}
+                    <LocalizedText source={"| Remitted:"} area="admin" />{' '}
                     {formatPoishaToBdt(
                       csvReconResult.totalRemittedPoisha,
                       locale
                     )}{' '}
-                    | Short-Payment:{' '}
+                    <LocalizedText source={"| Short-Payment:"} area="admin" />{' '}
                     {formatPoishaToBdt(
                       csvReconResult.totalShortPaymentPoisha,
                       locale
@@ -954,11 +922,9 @@ export function Phase6LiveOpsPanel({
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
               <div>
                 <h3 className="text-sm font-bold text-ink">
-                  বাল্ক কুরিয়ার বুকিং সিএসভি এক্সপোর্ট (Steadfast / Pathao / RedX Bulk Upload Sheet)
-                </h3>
+                  <LocalizedText source={"বাল্ক কুরিয়ার বুকিং সিএসভি এক্সপোর্ট (Steadfast / Pathao / RedX Bulk Upload Sheet)"} area="admin" />{" "}</h3>
                 <p className="text-xs text-muted">
-                  এপিআই কী সংযুক্ত না থাকলেও এই সিএসভি ফাইলটি ডাউনলোড করে সরাসরি কুরিয়ার পোর্টালে বাল্ক আপলোড করা যাবে।
-                </p>
+                  <LocalizedText source={"এপিআই কী সংযুক্ত না থাকলেও এই সিএসভি ফাইলটি ডাউনলোড করে সরাসরি কুরিয়ার পোর্টালে বাল্ক আপলোড করা যাবে।"} area="admin" />{" "}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -979,8 +945,7 @@ export function Phase6LiveOpsPanel({
                   onClick={handleDownloadBookingCsv}
                 >
                   <Download className="w-3.5 h-3.5 mr-1.5" />
-                  .CSV ডাউনলোড করুন
-                </Button>
+                  <LocalizedText source={".CSV ডাউনলোড করুন"} area="admin" />{" "}</Button>
               </div>
             </div>
             <pre className="p-3 border border-border bg-surface rounded-[var(--radius-sm)] text-[11px] font-mono text-ink overflow-x-auto max-h-44">
@@ -999,12 +964,10 @@ export function Phase6LiveOpsPanel({
               <h2 className="text-sm font-bold text-ink flex items-center gap-2">
                 <Star className="w-4 h-4 text-ink" />
                 <span>
-                  ভেরিফায়েড পারচেজ প্রোডাক্ট রিভিউ মডারেশন কিউ (Customer Review Moderation)
-                </span>
+                  <LocalizedText source={"ভেরিফায়েড পারচেজ প্রোডাক্ট রিভিউ মডারেশন কিউ (Customer Review Moderation)"} area="admin" />{" "}</span>
               </h2>
               <p className="text-xs text-muted mt-0.5">
-                ডেলিভারিকৃত অর্ডারের বিপরীতে জমা হওয়া কাস্টমার রিভিউ যাচাই করে স্টোরফ্রন্টে প্রকাশের জন্য অনুমোদন বা প্রত্যাখ্যান করুন।
-              </p>
+                <LocalizedText source={"ডেলিভারিকৃত অর্ডারের বিপরীতে জমা হওয়া কাস্টমার রিভিউ যাচাই করে স্টোরফ্রন্টে প্রকাশের জন্য অনুমোদন বা প্রত্যাখ্যান করুন।"} area="admin" />{" "}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1016,7 +979,7 @@ export function Phase6LiveOpsPanel({
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-bold text-ink">
-                        {rev.productNameBn}{' '}
+                        {localizedField(rev, "productNameBn", locale)}{' '}
                         <span className="font-mono text-muted">
                           ({rev.publicSku})
                         </span>
@@ -1040,14 +1003,13 @@ export function Phase6LiveOpsPanel({
                       </span>
                       <span>·</span>
                       <span className="font-mono font-bold text-ink">
-                        রেটিং: {rev.rating} / 5
+                        <LocalizedText source={"রেটিং:"} area="admin" />{" "}{rev.rating} / 5
                       </span>
                       {rev.isVerifiedPurchase && (
                         <>
                           <span>·</span>
                           <span className="text-success font-semibold">
-                            Verified Purchase
-                          </span>
+                            <LocalizedText source={"Verified Purchase"} area="admin" />{" "}</span>
                         </>
                       )}
                     </div>
@@ -1059,7 +1021,7 @@ export function Phase6LiveOpsPanel({
 
                   <div className="flex items-center justify-between pt-2 border-t border-border">
                     <span className="text-[11px] text-muted">
-                      তারিখ:{' '}
+                      <LocalizedText source={"তারিখ:"} area="admin" />{' '}
                       {new Date(rev.createdAt).toLocaleDateString('bn-BD')}
                     </span>
                     <div className="flex items-center gap-2">
@@ -1075,8 +1037,7 @@ export function Phase6LiveOpsPanel({
                           void handleModerateReview(rev.reviewId, 'approved')
                         }
                       >
-                        অনুমোদন (Approve)
-                      </Button>
+                        <LocalizedText source={"অনুমোদন (Approve)"} area="admin" />{" "}</Button>
                       <Button
                         size="sm"
                         variant="secondary"
@@ -1085,8 +1046,7 @@ export function Phase6LiveOpsPanel({
                           void handleModerateReview(rev.reviewId, 'rejected')
                         }
                       >
-                        প্রত্যাখ্যান (Reject)
-                      </Button>
+                        <LocalizedText source={"প্রত্যাখ্যান (Reject)"} area="admin" />{" "}</Button>
                     </div>
                   </div>
                 </div>
@@ -1100,40 +1060,31 @@ export function Phase6LiveOpsPanel({
               <h2 className="text-sm font-bold text-ink flex items-center gap-2">
                 <Award className="w-4 h-4 text-ink" />
                 <span>
-                  কনসাইনমেন্ট ভেন্ডর পারফরম্যান্স ও কোয়ালিটি স্কোরকার্ড (Vendor SLA Scorecard)
-                </span>
+                  <LocalizedText source={"কনসাইনমেন্ট ভেন্ডর পারফরম্যান্স ও কোয়ালিটি স্কোরকার্ড (Vendor SLA Scorecard)"} area="admin" />{" "}</span>
               </h2>
               <p className="text-xs text-muted mt-0.5">
-                প্রতিটি ভেন্ডরের বিক্রিত ইউনিট, ডিফেক্ট রিটার্ন হার (Basis Points), গ্রস বিক্রয়, ভেন্ডর প্রাপ্য ও প্ল্যাটফর্ম মার্জিন অবদান।
-              </p>
+                <LocalizedText source={"প্রতিটি ভেন্ডরের বিক্রিত ইউনিট, ডিফেক্ট রিটার্ন হার (Basis Points), গ্রস বিক্রয়, ভেন্ডর প্রাপ্য ও প্ল্যাটফর্ম মার্জিন অবদান।"} area="admin" />{" "}</p>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-border bg-surface text-muted">
-                    <th className="py-2.5 px-3 font-semibold">ভেন্ডর</th>
+                    <th className="py-2.5 px-3 font-semibold"><LocalizedText source={"ভেন্ডর"} area="admin" /></th>
                     <th className="py-2.5 px-3 font-semibold text-right">
-                      পণ্য সংখ্যা
-                    </th>
+                      <LocalizedText source={"পণ্য সংখ্যা"} area="admin" />{" "}</th>
                     <th className="py-2.5 px-3 font-semibold text-right">
-                      বিক্রিত ইউনিট
-                    </th>
+                      <LocalizedText source={"বিক্রিত ইউনিট"} area="admin" />{" "}</th>
                     <th className="py-2.5 px-3 font-semibold text-right">
-                      রিটার্ন হার
-                    </th>
+                      <LocalizedText source={"রিটার্ন হার"} area="admin" />{" "}</th>
                     <th className="py-2.5 px-3 font-semibold text-right">
-                      গ্রস বিক্রয়
-                    </th>
+                      <LocalizedText source={"গ্রস বিক্রয়"} area="admin" />{" "}</th>
                     <th className="py-2.5 px-3 font-semibold text-right">
-                      ভেন্ডর নিট প্রাপ্য
-                    </th>
+                      <LocalizedText source={"ভেন্ডর নিট প্রাপ্য"} area="admin" />{" "}</th>
                     <th className="py-2.5 px-3 font-semibold text-right">
-                      প্ল্যাটফর্ম মার্জিন
-                    </th>
+                      <LocalizedText source={"প্ল্যাটফর্ম মার্জিন"} area="admin" />{" "}</th>
                     <th className="py-2.5 px-3 font-semibold text-center">
-                      SLA গ্রেড
-                    </th>
+                      <LocalizedText source={"SLA গ্রেড"} area="admin" />{" "}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -1141,12 +1092,12 @@ export function Phase6LiveOpsPanel({
                     <tr key={sc.vendorId} className="hover:bg-surface/60">
                       <td className="py-2.5 px-3">
                         <div className="font-bold text-ink">
-                          {sc.businessNameBn}{' '}
+                          {localizedField(sc, "businessNameBn", locale)}{' '}
                           <span className="font-mono text-muted">
                             ({sc.vendorCode})
                           </span>
                         </div>
-                        <div className="text-muted">মালিক: {sc.ownerNameBn}</div>
+                        <div className="text-muted"><LocalizedText source={"মালিক:"} area="admin" />{" "}{localizedField(sc, "ownerNameBn", locale)}</div>
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono text-ink tabular-nums">
                         {sc.activeProductsCount}
@@ -1179,7 +1130,7 @@ export function Phase6LiveOpsPanel({
                               : 'danger'
                           }
                         >
-                          Grade {sc.slaGrade}
+                          <LocalizedText source={"Grade"} area="admin" />{" "}{sc.slaGrade}
                         </Badge>
                       </td>
                     </tr>
@@ -1199,12 +1150,10 @@ export function Phase6LiveOpsPanel({
               <h2 className="text-sm font-bold text-ink flex items-center gap-2">
                 <DatabaseBackup className="w-4 h-4 text-ink" />
                 <span>
-                  ফুল সিস্টেম ডিজাস্টার রিকভারি স্ন্যাপশট ও SHA-256 ইন্টেগ্রিটি ভল্ট
-                </span>
+                  <LocalizedText source={"ফুল সিস্টেম ডিজাস্টার রিকভারি স্ন্যাপশট ও SHA-256 ইন্টেগ্রিটি ভল্ট"} area="admin" />{" "}</span>
               </h2>
               <p className="text-xs text-muted mt-0.5">
-                অর্ডার, ভেন্ডর এসক্রো লেজার, প্রোডাক্ট ভ্যারিয়েন্ট, এক্সপেন্স এবং অডিট লগের অপরিবর্তনীয় চেকসাম ব্যাকআপ তৈরি ও যাচাই করুন।
-              </p>
+                <LocalizedText source={"অর্ডার, ভেন্ডর এসক্রো লেজার, প্রোডাক্ট ভ্যারিয়েন্ট, এক্সপেন্স এবং অডিট লগের অপরিবর্তনীয় চেকসাম ব্যাকআপ তৈরি ও যাচাই করুন।"} area="admin" />{" "}</p>
             </div>
 
             <Button
@@ -1214,8 +1163,7 @@ export function Phase6LiveOpsPanel({
               onClick={() => void handleCreateSystemBackup()}
             >
               <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
-              নতুন SHA-256 ব্যাকআপ স্ন্যাপশট তৈরি করুন
-            </Button>
+              <LocalizedText source={"নতুন SHA-256 ব্যাকআপ স্ন্যাপশট তৈরি করুন"} area="admin" />{" "}</Button>
           </div>
 
           <div className="space-y-3">
@@ -1229,25 +1177,24 @@ export function Phase6LiveOpsPanel({
                     <span className="font-mono font-bold text-ink">
                       {snap.snapshotId}
                     </span>
-                    <Badge status="success">SHA-256 VERIFIED</Badge>
+                    <Badge status="success"><LocalizedText source={"SHA-256 VERIFIED"} area="admin" /></Badge>
                     <span className="text-muted">
-                      তৈরি করেছেন: @{snap.createdByUsername} ·{' '}
+                      <LocalizedText source={"তৈরি করেছেন: @"} area="admin" />{snap.createdByUsername} ·{' '}
                       {new Date(snap.createdAt).toLocaleString('bn-BD')}
                     </span>
                   </div>
                   <p className="font-mono text-[11px] text-muted break-all">
-                    SHA-256: {snap.sha256Checksum}
+                    <LocalizedText source={"SHA-256:"} area="admin" />{" "}{snap.sha256Checksum}
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4 font-mono text-xs text-ink tabular-nums">
-                  <span>Orders: {snap.totalOrdersCount}</span>
-                  <span>Products: {snap.totalProductsCount}</span>
-                  <span>Vendors: {snap.totalVendorsCount}</span>
-                  <span>Ledger: {snap.totalLedgerEntriesCount}</span>
+                  <span><LocalizedText source={"Orders:"} area="admin" />{" "}{snap.totalOrdersCount}</span>
+                  <span><LocalizedText source={"Products:"} area="admin" />{" "}{snap.totalProductsCount}</span>
+                  <span><LocalizedText source={"Vendors:"} area="admin" />{" "}{snap.totalVendorsCount}</span>
+                  <span><LocalizedText source={"Ledger:"} area="admin" />{" "}{snap.totalLedgerEntriesCount}</span>
                   <span>
-                    Size: {(snap.payloadSizeBytes / 1024).toFixed(1)} KB
-                  </span>
+                    <LocalizedText source={"Size:"} area="admin" />{" "}{(snap.payloadSizeBytes / 1024).toFixed(1)} {" "}<LocalizedText source={"KB"} area="admin" />{" "}</span>
                 </div>
               </div>
             ))}

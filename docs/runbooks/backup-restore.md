@@ -1,3 +1,7 @@
+# Current backup boundary — November 13, 2026
+
+The versioned runtime-document backup tool is `scripts/database/runtime-data.mjs`. Its checksum and separate-database restore are tested with isolated PostgreSQL. It does not back up Storage object bytes, external-provider state or the encryption key. A checksum is not a digital signature. Initialize/restore only to a reviewed empty database; do not overwrite posted history. Current commands and limitations: `docs/audit/backend-bilingual-2026-11-13.md`. Historical notes below are not evidence of a completed production restore or an active backup schedule.
+
 # BACKUP & DISASTER RECOVERY RUNBOOK
 ## পঞ্চগড় (PANCHAGARH) — Operational Data Protection & Restore Procedure
 

@@ -1,3 +1,12 @@
+# Current decisions — November 13, 2026
+
+- User granted edit permission after the backend audit and included Bangla/English defects. Proceed directly with code and tests; do not request that permission again. Add no code comments.
+- Preserve existing service contracts through a versioned PostgreSQL JSONB adapter. All HTTP changes commit together with compare-and-swap conflict detection; this is a compatibility boundary with global contention, not completed relational normalization or a production-readiness claim.
+- Full order editing cannot change verified payment, tracking or lifecycle state. Existing workflow commands enforce transitions. Supplier payable is preserved and discounts must fit platform margin.
+- Time passing alone does not move a supplier liability into the withdrawable bucket. Approved maturity transfers append a locked offset and available credit, preserving history. Actual settlement policy remains owner/accounting review.
+- Media is decoded/re-encoded before private staging; promotion requires explicit authorized approval. CSV imports require a fresh preview, create drafts with zero stock, and reject existing products/SKUs. Stock is received through QC.
+- Use existing four internal roles and separate customer principal. Live SMS/courier adapters, deployment and financial/legal policy remain unresolved; no paid provider or invented official API is activated.
+
 # Decisions and conflicts
 
 > 2026-11-12 superseding scope decision: User explicitly requests starting phases 2–12 locally without additional permission prompts. This overrides historical “Phase 2+ NOT AUTHORIZED” statements for local code work only. Production migrations/deployment, destructive work, live provider/financial actions still need their own backup/restore, review and approval. No shared default passwords: the synthetic launcher generates random private first-login credentials; customer retains sandbox OTP and no password. See `docs/ai/PHASE_2_TO_12_LOCAL_HANDOFF.md`.

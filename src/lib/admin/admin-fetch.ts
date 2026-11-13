@@ -3,6 +3,8 @@
 // internally to inject x-admin-session-token & x-csrf-token headers and handle logging,
 // without attempting to override or mutate 'window.fetch' (which has only a getter).
 
+import { localizedFetch } from '../i18n/localized-fetch';
+
 export interface AdminFetchOptions extends RequestInit {
   logRequest?: boolean;
 }
@@ -35,7 +37,8 @@ export async function adminFetch(
   } catch {
     // Let fetch handle invalid URLs without ever attaching credentials.
   }
-  if (requestUrl && requestUrl.origin === window.location.origin && requestUrl.pathname.startsWith('/api/admin/')) {
+  if (requestUrl && requestUrl.origin === window.location.origin &&
+      ['/api/admin/', '/api/media', '/api/catalog/import', '/api/print/'].some(prefix => requestUrl.pathname === prefix || requestUrl.pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`))) {
     try {
       const storedToken = window.sessionStorage.getItem('bg_admin_session_token');
       const storedCsrf = window.sessionStorage.getItem('bg_admin_csrf_token');
@@ -56,11 +59,11 @@ export async function adminFetch(
     if (typeof Request !== 'undefined' && input instanceof Request) {
       const reqHeaders = new Headers(input.headers);
       headers.forEach((v, k) => reqHeaders.set(k, v));
-      response = await globalThis.fetch(
-        new Request(input, { ...init, headers: reqHeaders })
+      response = await localizedFetch(
+        new Request(input, { ...init, headers: reqHeaders }), undefined, 'admin'
       );
     } else {
-      response = await globalThis.fetch(input, { ...init, headers });
+      response = await localizedFetch(input, { ...init, headers }, 'admin');
     }
 
     if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {

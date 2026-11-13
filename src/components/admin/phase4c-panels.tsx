@@ -1,4 +1,8 @@
 'use client';
+import { localizedField } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/admin/phase4c-panels.tsx
 // Phase 4C Admin ERP UI Panels:
@@ -332,8 +336,7 @@ export function FinanceProduct360AndExpensesPanel({
             onClick={() => setFeedback(null)}
             className="underline cursor-pointer text-ink"
           >
-            বন্ধ করুন
-          </button>
+            <LocalizedText source={"বন্ধ করুন"} area="admin" />{" "}</button>
         </div>
       )}
 
@@ -348,13 +351,13 @@ export function FinanceProduct360AndExpensesPanel({
             <div className="flex items-center justify-between border-b border-border pb-2">
               <h2 className="text-sm font-bold text-ink flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" aria-hidden="true" />
-                <span>মানি ম্যাপ: কোথায় কত টাকা আটকে আছে (Money Map)</span>
+                <span><LocalizedText source={"মানি ম্যাপ: কোথায় কত টাকা আটকে আছে (Money Map)"} area="admin" /></span>
               </h2>
-              <Badge status="info">Super Admin Only</Badge>
+              <Badge status="info"><LocalizedText source={"Super Admin Only"} area="admin" /></Badge>
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 border border-border rounded-[var(--radius-md)] bg-bg space-y-1">
-                <p className="text-muted">কুরিয়ার ইন-ট্রানজিট COD</p>
+                <p className="text-muted"><LocalizedText source={"কুরিয়ার ইন-ট্রানজিট COD"} area="admin" /></p>
                 <p className="text-base font-bold font-mono text-ink tabular-nums">
                   {formatPoishaToBdt(
                     moneyMapPnl.courierInTransitCodPoisha,
@@ -363,7 +366,7 @@ export function FinanceProduct360AndExpensesPanel({
                 </p>
               </div>
               <div className="p-3 border border-border rounded-[var(--radius-md)] bg-bg space-y-1">
-                <p className="text-muted">ডেলিভারড কিন্তু কুরিয়ারে বকেয়া</p>
+                <p className="text-muted"><LocalizedText source={"ডেলিভারড কিন্তু কুরিয়ারে বকেয়া"} area="admin" /></p>
                 <p className="text-base font-bold font-mono text-warning tabular-nums">
                   {formatPoishaToBdt(
                     moneyMapPnl.courierDeliveredUnsettledCodPoisha,
@@ -372,7 +375,7 @@ export function FinanceProduct360AndExpensesPanel({
                 </p>
               </div>
               <div className="p-3 border border-border rounded-[var(--radius-md)] bg-bg space-y-1">
-                <p className="text-muted">ভেন্ডর লকড + উত্তোলনযোগ্য</p>
+                <p className="text-muted"><LocalizedText source={"ভেন্ডর লকড + উত্তোলনযোগ্য"} area="admin" /></p>
                 <p className="text-base font-bold font-mono text-ink tabular-nums">
                   {formatPoishaToBdt(
                     moneyMapPnl.vendorLockedPoisha +
@@ -382,7 +385,7 @@ export function FinanceProduct360AndExpensesPanel({
                 </p>
               </div>
               <div className="p-3 border border-ink rounded-[var(--radius-md)] bg-surface space-y-1">
-                <p className="text-muted">আনুমানিক নিজস্ব তরল ক্যাশ</p>
+                <p className="text-muted"><LocalizedText source={"আনুমানিক নিজস্ব তরল ক্যাশ"} area="admin" /></p>
                 <p className="text-base font-bold font-mono text-success tabular-nums">
                   {formatPoishaToBdt(
                     moneyMapPnl.estimatedOwnLiquidCashPoisha,
@@ -400,15 +403,14 @@ export function FinanceProduct360AndExpensesPanel({
           >
             <div className="flex items-center justify-between border-b border-border pb-2">
               <h2 className="text-sm font-bold text-ink">
-                অটো নেট প্রফিট ব্রেকডাউন (Auto Net Profit Formula)
-              </h2>
+                <LocalizedText source={"অটো নেট প্রফিট ব্রেকডাউন (Auto Net Profit Formula)"} area="admin" />{" "}</h2>
               <Badge status={moneyMapPnl.isNetLoss ? 'danger' : 'success'}>
                 {moneyMapPnl.isNetLoss ? 'NET LOSS' : 'NET PROFIT'}
               </Badge>
             </div>
             <div className="space-y-1.5 text-xs font-mono">
               <div className="flex justify-between">
-                <span className="text-muted">(+) ডেলিভারড গ্রস সেলস:</span>
+                <span className="text-muted"><LocalizedText source={"(+) ডেলিভারড গ্রস সেলস:"} area="admin" /></span>
                 <span className="font-bold text-ink">
                   {formatPoishaToBdt(
                     moneyMapPnl.deliveredGrossSalesPoisha ?? 0,
@@ -417,7 +419,7 @@ export function FinanceProduct360AndExpensesPanel({
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted">(-) সাপ্লায়ার প্রদেয় (Payable):</span>
+                <span className="text-muted"><LocalizedText source={"(-) সাপ্লায়ার প্রদেয় (Payable):"} area="admin" /></span>
                 <span>
                   {formatPoishaToBdt(
                     moneyMapPnl.totalSupplierPayablePoisha ?? 0,
@@ -426,7 +428,7 @@ export function FinanceProduct360AndExpensesPanel({
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted">(-) প্রোমো ডিসকাউন্ট ভর্তুকি:</span>
+                <span className="text-muted"><LocalizedText source={"(-) প্রোমো ডিসকাউন্ট ভর্তুকি:"} area="admin" /></span>
                 <span>
                   {formatPoishaToBdt(
                     moneyMapPnl.totalPromoDiscountPoisha ?? 0,
@@ -435,15 +437,14 @@ export function FinanceProduct360AndExpensesPanel({
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted">(-) মার্কেটিং ও অ্যাড স্পেন্ড:</span>
+                <span className="text-muted"><LocalizedText source={"(-) মার্কেটিং ও অ্যাড স্পেন্ড:"} area="admin" /></span>
                 <span>
                   {formatPoishaToBdt(moneyMapPnl.totalAdSpendPoisha, locale)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">
-                  (-) প্যাকেজিং + কুরিয়ার রিটার্ন লস + ড্যামেজ:
-                </span>
+                  <LocalizedText source={"(-) প্যাকেজিং + কুরিয়ার রিটার্ন লস + ড্যামেজ:"} area="admin" />{" "}</span>
                 <span>
                   {formatPoishaToBdt(
                     (moneyMapPnl.totalPackagingCostPoisha ?? 0) +
@@ -455,7 +456,7 @@ export function FinanceProduct360AndExpensesPanel({
                 </span>
               </div>
               <div className="pt-2 border-t border-border flex justify-between text-sm font-bold">
-                <span className="text-ink">(=) চূড়ান্ত অটো নেট প্রফিট:</span>
+                <span className="text-ink"><LocalizedText source={"(=) চূড়ান্ত অটো নেট প্রফিট:"} area="admin" /></span>
                 <span
                   className={
                     moneyMapPnl.isNetLoss ? 'text-danger' : 'text-success'
@@ -482,20 +483,19 @@ export function FinanceProduct360AndExpensesPanel({
           >
             <div className="flex items-center justify-between border-b border-border pb-2">
               <h2 className="text-sm font-bold text-ink">
-                চ্যানেল ভিত্তিক ROAS এবং Cost Per Order (CPO)
-              </h2>
-              <Badge status="neutral">Marketing & Super Admin</Badge>
+                <LocalizedText source={"চ্যানেল ভিত্তিক ROAS এবং Cost Per Order (CPO)"} area="admin" />{" "}</h2>
+              <Badge status="neutral"><LocalizedText source={"Marketing & Super Admin"} area="admin" /></Badge>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-border text-muted">
-                    <th className="py-2 px-2">সোর্স চ্যানেল</th>
-                    <th className="py-2 px-2">অর্ডার সংখ্যা</th>
-                    <th className="py-2 px-2">রেভিনিউ</th>
-                    <th className="py-2 px-2">অ্যাড স্পেন্ড</th>
-                    <th className="py-2 px-2">CPO</th>
-                    <th className="py-2 px-2">ROAS</th>
+                    <th className="py-2 px-2"><LocalizedText source={"সোর্স চ্যানেল"} area="admin" /></th>
+                    <th className="py-2 px-2"><LocalizedText source={"অর্ডার সংখ্যা"} area="admin" /></th>
+                    <th className="py-2 px-2"><LocalizedText source={"রেভিনিউ"} area="admin" /></th>
+                    <th className="py-2 px-2"><LocalizedText source={"অ্যাড স্পেন্ড"} area="admin" /></th>
+                    <th className="py-2 px-2"><LocalizedText source={"CPO"} area="admin" /></th>
+                    <th className="py-2 px-2"><LocalizedText source={"ROAS"} area="admin" /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border font-mono">
@@ -525,7 +525,7 @@ export function FinanceProduct360AndExpensesPanel({
 
             <div className="pt-3 border-t border-border space-y-2">
               <h3 className="text-xs font-bold text-ink">
-                সাম্প্রতিক খরচ ও অ্যাড স্পেন্ড এন্ট্রি সমূহ ({expenses.length})
+                <LocalizedText source={"সাম্প্রতিক খরচ ও অ্যাড স্পেন্ড এন্ট্রি সমূহ ("} area="admin" />{expenses.length})
               </h3>
               <div className="max-h-40 overflow-y-auto divide-y divide-border border border-border rounded-[var(--radius-md)] text-xs">
                 {expenses.map((exp) => (
@@ -537,7 +537,7 @@ export function FinanceProduct360AndExpensesPanel({
                       <span className="font-mono font-bold text-ink">
                         [{exp.category}]
                       </span>{' '}
-                      <span>{exp.noteBn}</span>{' '}
+                      <span>{localizedField(exp, "noteBn", locale)}</span>{' '}
                       <span className="text-muted">({exp.campaignName})</span>
                     </div>
                     <span className="font-mono font-bold text-ink shrink-0">
@@ -553,14 +553,12 @@ export function FinanceProduct360AndExpensesPanel({
             {/* Add Expense / Ad Spend Card */}
             <Card surface="surface" padding="md" className="space-y-3">
               <h2 className="text-sm font-bold text-ink border-b border-border pb-2">
-                নতুন খরচ / অ্যাড স্পেন্ড যোগ করুন
-              </h2>
+                <LocalizedText source={"নতুন খরচ / অ্যাড স্পেন্ড যোগ করুন"} area="admin" />{" "}</h2>
               <form onSubmit={handleAddExpense} className="space-y-3 text-xs">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block font-medium text-ink mb-1">
-                      ক্যাটাগরি
-                    </label>
+                      <LocalizedText source={"ক্যাটাগরি"} area="admin" />{" "}</label>
                     <select
                       value={expCategory}
                       onChange={(e) =>
@@ -568,25 +566,22 @@ export function FinanceProduct360AndExpensesPanel({
                       }
                       className="w-full h-9 px-2 rounded-[var(--radius-md)] border border-border bg-bg text-ink"
                     >
-                      <option value="ad_spend">Ad Spend (বুস্টিং)</option>
+                      <option value="ad_spend"><LocalizedText source={"Ad Spend (বুস্টিং)"} area="admin" /></option>
                       {isSuperAdmin && (
                         <>
-                          <option value="packaging">Packaging (প্যাকেজিং)</option>
+                          <option value="packaging"><LocalizedText source={"Packaging (প্যাকেজিং)"} area="admin" /></option>
                           <option value="courier_return_loss">
-                            Courier Return Loss
-                          </option>
+                            <LocalizedText source={"Courier Return Loss"} area="admin" />{" "}</option>
                           <option value="damage_compensation">
-                            Damage Loss
-                          </option>
-                          <option value="office_ops">Office Operations</option>
+                            <LocalizedText source={"Damage Loss"} area="admin" />{" "}</option>
+                          <option value="office_ops"><LocalizedText source={"Office Operations"} area="admin" /></option>
                         </>
                       )}
                     </select>
                   </div>
                   <div>
                     <label className="block font-medium text-ink mb-1">
-                      চ্যানেল
-                    </label>
+                      <LocalizedText source={"চ্যানেল"} area="admin" />{" "}</label>
                     <select
                       value={expChannel}
                       onChange={(e) =>
@@ -594,11 +589,11 @@ export function FinanceProduct360AndExpensesPanel({
                       }
                       className="w-full h-9 px-2 rounded-[var(--radius-md)] border border-border bg-bg text-ink"
                     >
-                      <option value="facebook">Facebook</option>
-                      <option value="instagram">Instagram</option>
-                      <option value="whatsapp">WhatsApp</option>
-                      <option value="storefront">Storefront</option>
-                      <option value="general">General</option>
+                      <option value="facebook"><LocalizedText source={"Facebook"} area="admin" /></option>
+                      <option value="instagram"><LocalizedText source={"Instagram"} area="admin" /></option>
+                      <option value="whatsapp"><LocalizedText source={"WhatsApp"} area="admin" /></option>
+                      <option value="storefront"><LocalizedText source={"Storefront"} area="admin" /></option>
+                      <option value="general"><LocalizedText source={"General"} area="admin" /></option>
                     </select>
                   </div>
                 </div>
@@ -640,9 +635,9 @@ export function FinanceProduct360AndExpensesPanel({
                 <div className="flex items-center justify-between border-b border-border pb-2">
                   <h2 className="text-sm font-bold text-ink flex items-center gap-1.5">
                     <Tag className="w-4 h-4" aria-hidden="true" />
-                    <span>প্রোমো কোড ইঞ্জিন (মার্জিন থেকে কর্তন)</span>
+                    <span><LocalizedText source={"প্রোমো কোড ইঞ্জিন (মার্জিন থেকে কর্তন)"} area="admin" /></span>
                   </h2>
-                  <Badge status="info">{promoCodes.length} সক্রিয়</Badge>
+                  <Badge status="info">{promoCodes.length} {" "}<LocalizedText source={"সক্রিয়"} area="admin" /></Badge>
                 </div>
                 <form
                   onSubmit={handleUpsertPromo}
@@ -657,8 +652,7 @@ export function FinanceProduct360AndExpensesPanel({
                     />
                     <div>
                       <label className="block font-medium text-ink mb-1">
-                        ডিসকাউন্ট ধরন
-                      </label>
+                        <LocalizedText source={"ডিসকাউন্ট ধরন"} area="admin" />{" "}</label>
                       <select
                         value={promoType}
                         onChange={(e) =>
@@ -668,8 +662,8 @@ export function FinanceProduct360AndExpensesPanel({
                         }
                         className="w-full h-9 px-2 rounded-[var(--radius-md)] border border-border bg-bg text-ink"
                       >
-                        <option value="fixed_poisha">Fixed BDT (টাকা)</option>
-                        <option value="percentage_bp">Percentage (%)</option>
+                        <option value="fixed_poisha"><LocalizedText source={"Fixed BDT (টাকা)"} area="admin" /></option>
+                        <option value="percentage_bp"><LocalizedText source={"Percentage (%)"} area="admin" /></option>
                       </select>
                     </div>
                   </div>
@@ -700,8 +694,7 @@ export function FinanceProduct360AndExpensesPanel({
                     disabled={submittingPromo}
                     className="w-full"
                   >
-                    প্রোমো কোড সংরক্ষণ করুন
-                  </Button>
+                    <LocalizedText source={"প্রোমো কোড সংরক্ষণ করুন"} area="admin" />{" "}</Button>
                 </form>
               </Card>
             )}
@@ -719,24 +712,24 @@ export function FinanceProduct360AndExpensesPanel({
           <div className="flex items-center justify-between border-b border-border pb-2">
             <h2 className="text-sm font-bold text-ink flex items-center gap-2">
               <Package className="w-4 h-4" aria-hidden="true" />
-              <span>প্রোডাক্ট ৩৬০ ও ইনভেন্টরি কভারেজ (Product 360)</span>
+              <span><LocalizedText source={"প্রোডাক্ট ৩৬০ ও ইনভেন্টরি কভারেজ (Product 360)"} area="admin" /></span>
             </h2>
-            <Badge status="neutral">{product360.length} ভ্যারিয়েন্ট</Badge>
+            <Badge status="neutral">{product360.length} {" "}<LocalizedText source={"ভ্যারিয়েন্ট"} area="admin" /></Badge>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-border text-muted">
-                  <th className="py-2 px-2">পণ্য ও ভ্যারিয়েন্ট</th>
-                  <th className="py-2 px-2">On-Hand / Avail</th>
-                  <th className="py-2 px-2">৩০ দিনে বিক্রি</th>
-                  <th className="py-2 px-2">Days of Cover</th>
-                  <th className="py-2 px-2">বিক্রয় মূল্য</th>
+                  <th className="py-2 px-2"><LocalizedText source={"পণ্য ও ভ্যারিয়েন্ট"} area="admin" /></th>
+                  <th className="py-2 px-2"><LocalizedText source={"On-Hand / Avail"} area="admin" /></th>
+                  <th className="py-2 px-2"><LocalizedText source={"৩০ দিনে বিক্রি"} area="admin" /></th>
+                  <th className="py-2 px-2"><LocalizedText source={"Days of Cover"} area="admin" /></th>
+                  <th className="py-2 px-2"><LocalizedText source={"বিক্রয় মূল্য"} area="admin" /></th>
                   {(isSuperAdmin || isVendor) && (
-                    <th className="py-2 px-2">সাপ্লায়ার প্রদেয়</th>
+                    <th className="py-2 px-2"><LocalizedText source={"সাপ্লায়ার প্রদেয়"} area="admin" /></th>
                   )}
                   {isSuperAdmin && (
-                    <th className="py-2 px-2">প্ল্যাটফর্ম মার্জিন</th>
+                    <th className="py-2 px-2"><LocalizedText source={"প্ল্যাটফর্ম মার্জিন"} area="admin" /></th>
                   )}
                 </tr>
               </thead>
@@ -744,9 +737,9 @@ export function FinanceProduct360AndExpensesPanel({
                 {product360.map((v) => (
                   <tr key={v.variantId}>
                     <td className="py-2.5 px-2">
-                      <p className="font-bold text-ink">{v.productNameBn}</p>
+                      <p className="font-bold text-ink">{localizedField(v, "productNameBn", locale)}</p>
                       <p className="text-muted">
-                        {v.variantTitleBn} ·{' '}
+                        {localizedField(v, "variantTitleBn", locale)} ·{' '}
                         <span className="font-mono">{v.publicSku}</span>
                       </p>
                     </td>
@@ -756,15 +749,14 @@ export function FinanceProduct360AndExpensesPanel({
                       </span>{' '}
                       / <span className="text-success">{v.stockAvailable}</span>{' '}
                       {v.isLowStock && (
-                        <Badge status="danger">Low Stock</Badge>
+                        <Badge status="danger"><LocalizedText source={"Low Stock"} area="admin" /></Badge>
                       )}
                     </td>
                     <td className="py-2.5 px-2 font-mono">
-                      {v.soldLast30Days} টি (7d: {v.soldLast7Days})
+                      {v.soldLast30Days} {" "}<LocalizedText source={"টি (7d:"} area="admin" />{" "}{v.soldLast7Days})
                     </td>
                     <td className="py-2.5 px-2 font-mono">
-                      {v.daysOfCover} দিন
-                    </td>
+                      {v.daysOfCover} {" "}<LocalizedText source={"দিন"} area="admin" />{" "}</td>
                     <td className="py-2.5 px-2 font-mono font-bold text-ink">
                       {formatPoishaToBdt(v.salePricePoisha, locale)}
                     </td>
@@ -796,13 +788,11 @@ export function FinanceProduct360AndExpensesPanel({
             className="lg:col-span-4 space-y-3"
           >
             <h2 className="text-sm font-bold text-ink border-b border-border pb-2">
-              কনসাইনমেন্ট স্টক QC রিসিপ্ট (QC Proof Mandatory)
-            </h2>
+              <LocalizedText source={"কনসাইনমেন্ট স্টক QC রিসিপ্ট (QC Proof Mandatory)"} area="admin" />{" "}</h2>
             <form onSubmit={handleReceiveQcStock} className="space-y-3 text-xs">
               <div>
                 <label className="block font-medium text-ink mb-1">
-                  ভ্যারিয়েন্ট নির্বাচন করুন *
-                </label>
+                  <LocalizedText source={"ভ্যারিয়েন্ট নির্বাচন করুন *"} area="admin" />{" "}</label>
                 <select
                   value={qcVariantId}
                   onChange={(e) => setQcVariantId(e.target.value)}
@@ -810,7 +800,7 @@ export function FinanceProduct360AndExpensesPanel({
                 >
                   {product360.map((v) => (
                     <option key={v.variantId} value={v.variantId}>
-                      {v.productNameBn} — {v.variantTitleBn} (Stock:{' '}
+                      {localizedField(v, "productNameBn", locale)} — {localizedField(v, "variantTitleBn", locale)} {" "}<LocalizedText source={"(Stock:"} area="admin" />{' '}
                       {v.stockOnHand})
                     </option>
                   ))}
@@ -1131,8 +1121,7 @@ export function MessagingAutomationAndSheetsPanel({
             onClick={() => setFeedback(null)}
             className="underline cursor-pointer text-ink"
           >
-            বন্ধ করুন
-          </button>
+            <LocalizedText source={"বন্ধ করুন"} area="admin" />{" "}</button>
         </div>
       )}
 
@@ -1146,16 +1135,15 @@ export function MessagingAutomationAndSheetsPanel({
           <div className="flex items-center justify-between border-b border-border pb-2">
             <h2 className="text-sm font-bold text-ink flex items-center gap-2">
               <MessageSquare className="w-4 h-4" aria-hidden="true" />
-              <span>বাইলিঙ্গুয়াল মেসেজ টেমপ্লেট ও ১-ক্লিক ডিপ-লিংক জেনারেটর</span>
+              <span><LocalizedText source={"বাইলিঙ্গুয়াল মেসেজ টেমপ্লেট ও ১-ক্লিক ডিপ-লিংক জেনারেটর"} area="admin" /></span>
             </h2>
-            <Badge status="success">wa.me + sms: Free Active</Badge>
+            <Badge status="success"><LocalizedText source={"wa.me + sms: Free Active"} area="admin" /></Badge>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
             <div>
               <label className="block font-medium text-ink mb-1">
-                ইভেন্ট ট্রিগার
-              </label>
+                <LocalizedText source={"ইভেন্ট ট্রিগার"} area="admin" />{" "}</label>
               <select
                 value={selectedEventKey}
                 onChange={(e) =>
@@ -1165,15 +1153,14 @@ export function MessagingAutomationAndSheetsPanel({
               >
                 {messageTemplates.map((t) => (
                   <option key={t.eventKey} value={t.eventKey}>
-                    {t.eventLabelBn}
+                    {localizedField(t, "eventLabelBn", locale)}
                   </option>
                 ))}
               </select>
             </div>
             <div>
               <label className="block font-medium text-ink mb-1">
-                অর্ডার নম্বর
-              </label>
+                <LocalizedText source={"অর্ডার নম্বর"} area="admin" />{" "}</label>
               <select
                 value={previewOrderNo}
                 onChange={(e) => setPreviewOrderNo(e.target.value)}
@@ -1194,16 +1181,15 @@ export function MessagingAutomationAndSheetsPanel({
                 onClick={handleGenerateMessagePreview}
                 className="w-full"
               >
-                মেসেজ ও লিংক তৈরি করুন
-              </Button>
+                <LocalizedText source={"মেসেজ ও লিংক তৈরি করুন"} area="admin" />{" "}</Button>
             </div>
           </div>
 
           {previewResult && (
             <div className="p-3 border border-border rounded-[var(--radius-md)] bg-bg space-y-2.5 text-xs">
-              <p className="font-bold text-ink">জেনারেটেড বাংলা মেসেজ:</p>
+              <p className="font-bold text-ink"><LocalizedText source={"জেনারেটেড বাংলা মেসেজ:"} area="admin" /></p>
               <p className="p-2.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink">
-                {previewResult.renderedBn}
+                {localizedField(previewResult, "renderedBn", locale)}
               </p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <a
@@ -1213,24 +1199,23 @@ export function MessagingAutomationAndSheetsPanel({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-md)] border border-ink bg-ink text-bg font-bold"
                 >
                   <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>Open Free WhatsApp (wa.me)</span>
+                  <span><LocalizedText source={"Open Free WhatsApp (wa.me)"} area="admin" /></span>
                 </a>
                 <a
                   href={previewResult.smsDeepLink}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-md)] border border-border bg-surface text-ink font-bold"
                 >
-                  <span>Open Phone SMS (sms:)</span>
+                  <span><LocalizedText source={"Open Phone SMS (sms:)"} area="admin" /></span>
                 </a>
                 <Badge status="warning">
-                  Paid WhatsApp Cloud API: OFF (Per-Message Meta Cost Warning)
-                </Badge>
+                  <LocalizedText source={"Paid WhatsApp Cloud API: OFF (Per-Message Meta Cost Warning)"} area="admin" />{" "}</Badge>
               </div>
             </div>
           )}
 
           <div className="space-y-1.5 text-xs">
             <p className="font-bold text-ink">
-              সাম্প্রতিক মেসেজ ডিসপ্যাচ লগ ({messageLogs.length})
+              <LocalizedText source={"সাম্প্রতিক মেসেজ ডিসপ্যাচ লগ ("} area="admin" />{messageLogs.length})
             </p>
             <div className="max-h-36 overflow-y-auto divide-y divide-border border border-border rounded-[var(--radius-md)]">
               {messageLogs.slice(0, 6).map((m) => (
@@ -1290,20 +1275,18 @@ export function MessagingAutomationAndSheetsPanel({
                 size="sm"
                 onClick={() => void handleUpsertBlacklist('add')}
               >
-                ব্ল্যাকলিস্টে যুক্ত করুন
-              </Button>
+                <LocalizedText source={"ব্ল্যাকলিস্টে যুক্ত করুন"} area="admin" />{" "}</Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => void handleUpsertBlacklist('remove')}
               >
-                ব্ল্যাকলিস্ট থেকে সরান
-              </Button>
+                <LocalizedText source={"ব্ল্যাকলিস্ট থেকে সরান"} area="admin" />{" "}</Button>
             </div>
 
             <div className="pt-2 border-t border-border space-y-1.5">
-              <p className="font-bold text-ink">বর্তমানে ব্ল্যাকলিস্টেড নম্বরসমূহ:</p>
+              <p className="font-bold text-ink"><LocalizedText source={"বর্তমানে ব্ল্যাকলিস্টেড নম্বরসমূহ:"} area="admin" /></p>
               <div className="divide-y divide-border border border-border rounded-[var(--radius-md)] max-h-40 overflow-y-auto">
                 {Object.entries(blacklistedPhones).map(([phone, info]) => (
                   <div
@@ -1316,7 +1299,7 @@ export function MessagingAutomationAndSheetsPanel({
                         {typeof info === 'string' ? info : info.reasonBn}
                       </p>
                     </div>
-                    <Badge status="danger">BLOCKED</Badge>
+                    <Badge status="danger"><LocalizedText source={"BLOCKED"} area="admin" /></Badge>
                   </div>
                 ))}
               </div>
@@ -1364,7 +1347,7 @@ export function MessagingAutomationAndSheetsPanel({
                 className="p-3 border border-border rounded-[var(--radius-md)] bg-bg space-y-2"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-bold text-ink">{rule.nameBn}</p>
+                  <p className="font-bold text-ink">{localizedField(rule, "nameBn", locale)}</p>
                   <div className="flex items-center gap-1.5">
                     <Badge status={rule.isEnabled ? 'success' : 'neutral'}>
                       {rule.isEnabled ? 'Enabled' : 'Disabled (Default)'}
@@ -1375,8 +1358,8 @@ export function MessagingAutomationAndSheetsPanel({
                   </div>
                 </div>
                 <p className="text-muted">
-                  <strong>শর্ত:</strong> {rule.conditionSummaryBn} →{' '}
-                  <strong>অ্যাকশন:</strong> {rule.actionSummaryBn}
+                  <strong><LocalizedText source={"শর্ত:"} area="admin" /></strong> {localizedField(rule, "conditionSummaryBn", locale)} →{' '}
+                  <strong><LocalizedText source={"অ্যাকশন:"} area="admin" /></strong> {localizedField(rule, "actionSummaryBn", locale)}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   <Button
@@ -1412,8 +1395,7 @@ export function MessagingAutomationAndSheetsPanel({
                     onClick={() => void handleSimulateAutomation(rule.ruleId)}
                     leftIcon={<Play className="w-3.5 h-3.5" aria-hidden="true" />}
                   >
-                    টেস্ট সিমুলেশন চালান
-                  </Button>
+                    <LocalizedText source={"টেস্ট সিমুলেশন চালান"} area="admin" />{" "}</Button>
                 </div>
               </div>
             ))}
@@ -1422,7 +1404,7 @@ export function MessagingAutomationAndSheetsPanel({
           {automationLogs.length > 0 && (
             <div className="pt-2 border-t border-border space-y-1.5 text-xs">
               <p className="font-bold text-ink">
-                অটোমেশন এক্সিকিউশন লগ ({automationLogs.length})
+                <LocalizedText source={"অটোমেশন এক্সিকিউশন লগ ("} area="admin" />{automationLogs.length})
               </p>
               <div className="max-h-36 overflow-y-auto divide-y divide-border border border-border rounded-[var(--radius-md)]">
                 {automationLogs.slice(0, 5).map((log) => (
@@ -1430,7 +1412,7 @@ export function MessagingAutomationAndSheetsPanel({
                     <span className="font-mono font-bold text-ink">
                       [{log.mode}]
                     </span>{' '}
-                    <span>{log.outcomeSummaryBn}</span>
+                    <span>{localizedField(log, "outcomeSummaryBn", locale)}</span>
                   </div>
                 ))}
               </div>
@@ -1453,19 +1435,14 @@ export function MessagingAutomationAndSheetsPanel({
                   : 'Google Sheets 8-Tab One-Way Mirror Sync (Module J)'}
               </span>
             </h2>
-            <Badge status="warning">One-Way Mirror Only</Badge>
+            <Badge status="warning"><LocalizedText source={"One-Way Mirror Only"} area="admin" /></Badge>
           </div>
 
           <div className="p-3 border border-border rounded-[var(--radius-md)] bg-bg text-xs space-y-1.5">
             <p className="font-bold text-ink">
-              গুরুত্বপূর্ণ সতর্কতা (One-Way Mirror Policy):
-            </p>
+              <LocalizedText source={"গুরুত্বপূর্ণ সতর্কতা (One-Way Mirror Policy):"} area="admin" />{" "}</p>
             <p className="text-muted">
-              এই গুগল শিট ইন্টিগ্রেশনটি শুধুমাত্র <strong>One-Way Mirror</strong> (Orders,
-              Order Items, Inventory, Vendor Ledger, Payouts, Expenses, Ad Spend,
-              Customers)। গুগল শিটে কোনো সংখ্যা বা স্ট্যাটাস এডিট করলে তা কখনোই মূল
-              ইআরপি ডাটাবেসে ফেরত যাবে না।
-            </p>
+              <LocalizedText source={"এই গুগল শিট ইন্টিগ্রেশনটি শুধুমাত্র"} area="admin" />{" "}<strong><LocalizedText source={"One-Way Mirror"} area="admin" /></strong> {" "}<LocalizedText source={"(Orders, Order Items, Inventory, Vendor Ledger, Payouts, Expenses, Ad Spend, Customers)। গুগল শিটে কোনো সংখ্যা বা স্ট্যাটাস এডিট করলে তা কখনোই মূল ইআরপি ডাটাবেসে ফেরত যাবে না।"} area="admin" />{" "}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -1485,8 +1462,7 @@ export function MessagingAutomationAndSheetsPanel({
               disabled={syncingSheets}
               onClick={() => void handleTriggerSheetsSync('full_resync')}
             >
-              Full Resync (সম্পূর্ণ ৮-ট্যাব রিবিল্ড)
-            </Button>
+              <LocalizedText source={"Full Resync (সম্পূর্ণ ৮-ট্যাব রিবিল্ড)"} area="admin" />{" "}</Button>
             <Button
               type="button"
               variant="outline"
@@ -1516,7 +1492,7 @@ export function MessagingAutomationAndSheetsPanel({
 
           <div className="space-y-1.5 text-xs">
             <p className="font-bold text-ink">
-              সাম্প্রতিক শিট সিঙ্ক জব ({sheetsSyncHistory.length})
+              <LocalizedText source={"সাম্প্রতিক শিট সিঙ্ক জব ("} area="admin" />{sheetsSyncHistory.length})
             </p>
             {sheetsSyncHistory.slice(0, 3).map((job) => (
               <div
@@ -1526,7 +1502,7 @@ export function MessagingAutomationAndSheetsPanel({
                 <div>
                   <p className="font-bold text-ink">{job.summaryBn}</p>
                   <p className="text-muted font-mono">
-                    Mode: {job.mode} · Rows: {job.rowsExportedCount}
+                    <LocalizedText source={"Mode:"} area="admin" />{" "}{job.mode} {" "}<LocalizedText source={"· Rows:"} area="admin" />{" "}{job.rowsExportedCount}
                   </p>
                 </div>
                 <Badge status={job.webhookConnected ? 'success' : 'warning'}>
@@ -1872,8 +1848,7 @@ export function SuperAdminControlCenterPanel({
             onClick={() => setFeedback(null)}
             className="underline cursor-pointer text-ink"
           >
-            বন্ধ করুন
-          </button>
+            <LocalizedText source={"বন্ধ করুন"} area="admin" />{" "}</button>
         </div>
       )}
 
@@ -1887,7 +1862,7 @@ export function SuperAdminControlCenterPanel({
           <div className="flex items-center justify-between border-b border-border pb-2">
             <h2 className="text-sm font-bold text-ink flex items-center gap-2">
               <Settings className="w-4 h-4" aria-hidden="true" />
-              <span>ডায়নামিক ব্র্যান্ডিং ও থ্রেশহোল্ড কনফিগারেশন</span>
+              <span><LocalizedText source={"ডায়নামিক ব্র্যান্ডিং ও থ্রেশহোল্ড কনফিগারেশন"} area="admin" /></span>
             </h2>
             <Badge status={maintenanceMode ? 'danger' : 'success'}>
               {maintenanceMode ? 'Maintenance ON' : 'Storefront Live'}
@@ -1943,8 +1918,7 @@ export function SuperAdminControlCenterPanel({
                 onChange={(e) => setMaintenanceMode(e.target.checked)}
               />
               <span className="font-bold text-ink">
-                মেইনটেন্যান্স মোড সক্রিয় করুন (Storefront Maintenance Banner)
-              </span>
+                <LocalizedText source={"মেইনটেন্যান্স মোড সক্রিয় করুন (Storefront Maintenance Banner)"} area="admin" />{" "}</span>
             </label>
             <Button
               type="submit"
@@ -1969,16 +1943,15 @@ export function SuperAdminControlCenterPanel({
           <div className="flex items-center justify-between border-b border-border pb-2">
             <h2 className="text-sm font-bold text-ink flex items-center gap-2">
               <KeyRound className="w-4 h-4" aria-hidden="true" />
-              <span>মাস্কড ইন্টিগ্রেশন ক্রেডেনশিয়াল ভল্ট (Server-Side Masked)</span>
+              <span><LocalizedText source={"মাস্কড ইন্টিগ্রেশন ক্রেডেনশিয়াল ভল্ট (Server-Side Masked)"} area="admin" /></span>
             </h2>
-            <Badge status="info">Zero Raw Key Exposure</Badge>
+            <Badge status="info"><LocalizedText source={"Zero Raw Key Exposure"} area="admin" /></Badge>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs items-end">
             <div className="sm:col-span-5">
               <label className="block font-medium text-ink mb-1">
-                ইন্টিগ্রেশন কী নির্বাচন করুন
-              </label>
+                <LocalizedText source={"ইন্টিগ্রেশন কী নির্বাচন করুন"} area="admin" />{" "}</label>
               <select
                 value={selectedCredKey}
                 onChange={(e) =>
@@ -2012,8 +1985,7 @@ export function SuperAdminControlCenterPanel({
                 disabled={savingCred}
                 onClick={() => void handleSaveOrRevokeCredential('save')}
               >
-                Save
-              </Button>
+                <LocalizedText source={"Save"} area="admin" />{" "}</Button>
               <Button
                 type="button"
                 variant="outline"
@@ -2021,8 +1993,7 @@ export function SuperAdminControlCenterPanel({
                 disabled={savingCred}
                 onClick={() => void handleSaveOrRevokeCredential('revoke')}
               >
-                Revoke
-              </Button>
+                <LocalizedText source={"Revoke"} area="admin" />{" "}</Button>
             </div>
           </div>
 
@@ -2035,19 +2006,19 @@ export function SuperAdminControlCenterPanel({
                 <div className="space-y-0.5">
                   <p className="font-bold text-ink flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-                    <span>{cred.labelBn}</span>
+                    <span>{localizedField(cred, "labelBn", locale)}</span>
                     <span className="font-mono text-muted">
                       ({cred.keyName})
                     </span>
                   </p>
-                  <p className="text-muted">{cred.setupGuideBn}</p>
+                  <p className="text-muted">{localizedField(cred, "setupGuideBn", locale)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-ink bg-surface px-2 py-0.5 border border-border rounded-[var(--radius-sm)]">
                     {cred.maskedPreview}
                   </span>
                   <Badge status={cred.isConfigured ? 'success' : 'warning'}>
-                    {cred.statusBadgeBn}
+                    {localizedField(cred, "statusBadgeBn", locale)}
                   </Badge>
                 </div>
               </div>
@@ -2060,9 +2031,8 @@ export function SuperAdminControlCenterPanel({
       <Card surface="surface" padding="md" className="space-y-4">
         <div className="flex items-center justify-between border-b border-border pb-2">
           <h2 className="text-sm font-bold text-ink">
-            শিডিউলড ব্যাকগ্রাউন্ড জবস ড্যাশবোর্ড (Scheduled Jobs &amp; Manual Run Now)
-          </h2>
-          <Badge status="success">{scheduledJobs.length} ক্রন জবস</Badge>
+            <LocalizedText source={"শিডিউলড ব্যাকগ্রাউন্ড জবস ড্যাশবোর্ড (Scheduled Jobs & Manual Run Now)"} area="admin" />{" "}</h2>
+          <Badge status="success">{scheduledJobs.length} {" "}<LocalizedText source={"ক্রন জবস"} area="admin" /></Badge>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
           {scheduledJobs.map((job) => (
@@ -2072,14 +2042,14 @@ export function SuperAdminControlCenterPanel({
             >
               <div className="space-y-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-bold text-ink">{job.nameBn}</p>
+                  <p className="font-bold text-ink">{localizedField(job, "nameBn", locale)}</p>
                   <Badge
                     status={job.lastStatus === 'success' ? 'success' : 'info'}
                   >
                     {job.scheduleCron}
                   </Badge>
                 </div>
-                <p className="text-muted">{job.lastOutputBn}</p>
+                <p className="text-muted">{localizedField(job, "lastOutputBn", locale)}</p>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-border">
                 <span className="font-mono text-[11px] text-muted">
@@ -2096,8 +2066,7 @@ export function SuperAdminControlCenterPanel({
                     <Play className="w-3.5 h-3.5" aria-hidden="true" />
                   }
                 >
-                  Run Now
-                </Button>
+                  <LocalizedText source={"Run Now"} area="admin" />{" "}</Button>
               </div>
             </div>
           ))}
@@ -2110,16 +2079,14 @@ export function SuperAdminControlCenterPanel({
           <div>
             <h2 className="text-sm font-bold text-ink flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-emerald-600" aria-hidden="true" />
-              <span>গ্রাহক ইনকোয়ারি ও ইনবক্স (Customer Inquiry Messages Inbox)</span>
+              <span><LocalizedText source={"গ্রাহক ইনকোয়ারি ও ইনবক্স (Customer Inquiry Messages Inbox)"} area="admin" /></span>
             </h2>
             <p className="text-xs text-muted mt-0.5">
-              স্টোরফ্রন্ট কন্টাক্ট ফর্ম থেকে কাস্টমারদের পাঠানো সকল বার্তা ও মেসেজ
-            </p>
+              <LocalizedText source={"স্টোরফ্রন্ট কন্টাক্ট ফর্ম থেকে কাস্টমারদের পাঠানো সকল বার্তা ও মেসেজ"} area="admin" />{" "}</p>
           </div>
           <div className="flex items-center gap-1.5">
             <Badge status="info">
-              {inquiries.filter((i) => i.status === 'unread').length} টি অপঠিত বার্তা
-            </Badge>
+              {inquiries.filter((i) => i.status === 'unread').length} {" "}<LocalizedText source={"টি অপঠিত বার্তা"} area="admin" />{" "}</Badge>
             <div className="flex border border-border rounded-[var(--radius-md)] overflow-hidden text-xs">
               {(['ALL', 'unread', 'replied', 'resolved'] as const).map((f) => (
                 <button
@@ -2147,8 +2114,7 @@ export function SuperAdminControlCenterPanel({
 
         {inquiries.length === 0 ? (
           <div className="p-6 text-center text-xs text-muted border border-dashed border-border rounded-[var(--radius-md)] bg-bg">
-            এখনো কোনো কাস্টমার ইনকোয়ারি মেসেজ আসেনি।
-          </div>
+            <LocalizedText source={"এখনো কোনো কাস্টমার ইনকোয়ারি মেসেজ আসেনি।"} area="admin" />{" "}</div>
         ) : (
           <div className="space-y-3">
             {inquiries
@@ -2203,22 +2169,21 @@ export function SuperAdminControlCenterPanel({
                           rel="noopener noreferrer"
                           className="px-2.5 py-1 rounded-[var(--radius-sm)] bg-emerald-700 text-white font-semibold text-[11px] hover:bg-emerald-800 transition-colors inline-flex items-center gap-1"
                         >
-                          <span>WhatsApp</span>
+                          <span><LocalizedText source={"WhatsApp"} area="admin" /></span>
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
                     </div>
 
                     <div className="pt-2.5 space-y-1.5 text-xs">
-                      <p className="font-bold text-ink">বিষয়: {inq.subject}</p>
+                      <p className="font-bold text-ink"><LocalizedText source={"বিষয়:"} area="admin" />{" "}{inq.subject}</p>
                       <p className="p-3 border border-border rounded-[var(--radius-sm)] bg-surface text-ink leading-relaxed whitespace-pre-wrap">
                         {inq.message}
                       </p>
 
                       <div className="flex items-center justify-between gap-2 pt-1">
                         <span className="text-[11px] text-muted">
-                          স্ট্যাটাস পরিবর্তন করুন:
-                        </span>
+                          <LocalizedText source={"স্ট্যাটাস পরিবর্তন করুন:"} area="admin" />{" "}</span>
                         <div className="flex items-center gap-1.5">
                           <Button
                             type="button"
@@ -2227,8 +2192,7 @@ export function SuperAdminControlCenterPanel({
                             disabled={updatingInquiryId === inq.id}
                             onClick={() => void handleUpdateInquiryStatus(inq.id, 'unread')}
                           >
-                            অপঠিত
-                          </Button>
+                            <LocalizedText source={"অপঠিত"} area="admin" />{" "}</Button>
                           <Button
                             type="button"
                             variant="outline"
@@ -2236,8 +2200,7 @@ export function SuperAdminControlCenterPanel({
                             disabled={updatingInquiryId === inq.id}
                             onClick={() => void handleUpdateInquiryStatus(inq.id, 'replied')}
                           >
-                            রিপ্লাই দেওয়া হয়েছে
-                          </Button>
+                            <LocalizedText source={"রিপ্লাই দেওয়া হয়েছে"} area="admin" />{" "}</Button>
                           <Button
                             type="button"
                             variant="primary"
@@ -2245,8 +2208,7 @@ export function SuperAdminControlCenterPanel({
                             disabled={updatingInquiryId === inq.id}
                             onClick={() => void handleUpdateInquiryStatus(inq.id, 'resolved')}
                           >
-                            সমাধান
-                          </Button>
+                            <LocalizedText source={"সমাধান"} area="admin" />{" "}</Button>
                         </div>
                       </div>
                     </div>
@@ -2262,11 +2224,10 @@ export function SuperAdminControlCenterPanel({
         <div className="border-b border-border pb-2">
           <h2 className="text-sm font-bold text-ink flex items-center gap-2">
             <Settings className="w-4 h-4 text-amber-600" aria-hidden="true" />
-            <span>কন্টাক্ট ও আমাদের পরিচিতি পেজ কনটেন্ট এডিটর (Page Content Editor)</span>
+            <span><LocalizedText source={"কন্টাক্ট ও আমাদের পরিচিতি পেজ কনটেন্ট এডিটর (Page Content Editor)"} area="admin" /></span>
           </h2>
           <p className="text-xs text-muted mt-0.5">
-            স্টোরফ্রন্টের &quot;যোগাযোগ ও পরিচিতি&quot; পেজের সকল টেক্সট, হেডলাইন, ঠিকানা ও হেল্পলাইন আওয়ার্স সরাসরি সম্পাদনা করুন
-          </p>
+            <LocalizedText source={"স্টোরফ্রন্টের \"যোগাযোগ ও পরিচিতি\" পেজের সকল টেক্সট, হেডলাইন, ঠিকানা ও হেল্পলাইন আওয়ার্স সরাসরি সম্পাদনা করুন"} area="admin" />{" "}</p>
         </div>
 
         <form onSubmit={handleSaveAboutPage} className="space-y-4 text-xs">
@@ -2318,8 +2279,7 @@ export function SuperAdminControlCenterPanel({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block font-medium text-ink mb-1">
-                আমাদের গল্প প্যারাগ্রাফ ১ (বাংলা) *
-              </label>
+                <LocalizedText source={"আমাদের গল্প প্যারাগ্রাফ ১ (বাংলা) *"} area="admin" />{" "}</label>
               <textarea
                 rows={3}
                 value={storyP1Bn}
@@ -2330,8 +2290,7 @@ export function SuperAdminControlCenterPanel({
             </div>
             <div>
               <label className="block font-medium text-ink mb-1">
-                Our Story Paragraph 1 (English) *
-              </label>
+                <LocalizedText source={"Our Story Paragraph 1 (English) *"} area="admin" />{" "}</label>
               <textarea
                 rows={3}
                 value={storyP1En}
@@ -2345,8 +2304,7 @@ export function SuperAdminControlCenterPanel({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block font-medium text-ink mb-1">
-                আমাদের গল্প প্যারাগ্রাফ ২ (বাংলা) *
-              </label>
+                <LocalizedText source={"আমাদের গল্প প্যারাগ্রাফ ২ (বাংলা) *"} area="admin" />{" "}</label>
               <textarea
                 rows={3}
                 value={storyP2Bn}
@@ -2357,8 +2315,7 @@ export function SuperAdminControlCenterPanel({
             </div>
             <div>
               <label className="block font-medium text-ink mb-1">
-                Our Story Paragraph 2 (English) *
-              </label>
+                <LocalizedText source={"Our Story Paragraph 2 (English) *"} area="admin" />{" "}</label>
               <textarea
                 rows={3}
                 value={storyP2En}

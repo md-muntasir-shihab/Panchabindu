@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/promo/validate/route.ts
 // Server-Side Promo Code Validation Endpoint (Zod Validated)
 // Never leaks vendor identity or platform margin to the browser.
@@ -19,7 +20,7 @@ const PromoValidateRequestSchema = z.object({
     .min(1, 'কার্টে অন্তত ১টি পণ্য থাকতে হবে।'),
 });
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     if (!verifyOriginAndCsrf(req).ok) return NextResponse.json({ valid: false }, { status: 403 });
     if (!checkRateLimit(`promo:${getClientIpFromRequest(req)}`, 20, 60_000).allowed) return NextResponse.json({ valid: false }, { status: 429 });
@@ -52,3 +53,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = backendRoute(handlePOST);

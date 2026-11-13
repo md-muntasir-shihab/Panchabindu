@@ -1,3 +1,4 @@
+import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/manifest.ts
 // PWA Web App Manifest driven by Site Settings (01_FRONTEND_MASTER_PROMPT Section 12)
 
@@ -6,8 +7,8 @@ import { getPublicStorefrontData } from '@/src/lib/db/repository';
 
 export const dynamic = 'force-dynamic';
 
-export default function manifest(): MetadataRoute.Manifest {
-  const { siteSettings } = getPublicStorefrontData();
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const { siteSettings } = await withRuntimePersistence(() => getPublicStorefrontData());
 
   return {
     name: `${siteSettings.brandNameBn} — ${siteSettings.brandNameEn}`,

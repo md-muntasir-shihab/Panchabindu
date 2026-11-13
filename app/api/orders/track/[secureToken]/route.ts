@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/orders/track/[secureToken]/route.ts
 // Public Order Tracking API Endpoint (Phase 1 Hardened — Section 4.5 & 21.1)
 // Enforces:
@@ -16,7 +17,7 @@ function createRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export async function GET(
+async function handleGET(
   req: NextRequest,
   { params }: { params: Promise<{ secureToken: string }> }
 ) {
@@ -103,3 +104,5 @@ export async function GET(
     request_id: requestId,
   });
 }
+
+export const GET = backendRoute(handleGET);

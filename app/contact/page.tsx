@@ -1,3 +1,4 @@
+import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/contact/page.tsx
 // Dedicated Contact & About Section Page (আমাদের পরিচিতি ও যোগাযোগ)
 // Features:
@@ -19,8 +20,8 @@ export const metadata: Metadata = {
     'পঞ্চগড় (PANCHAGARH) মাল্টি-ভেন্ডর কনসাইনমেন্ট কমার্স প্ল্যাটফর্মের পরিচিতি, সেবা এবং সরাসরি কাস্টমার সাপোর্ট যোগাযোগ।',
 };
 
-export default function ContactPage() {
-  const { siteSettings, categories } = getPublicStorefrontData();
+export default async function ContactPage() {
+  const { siteSettings, categories } = await withRuntimePersistence(() => getPublicStorefrontData());
 
   return (
     <ContactClient

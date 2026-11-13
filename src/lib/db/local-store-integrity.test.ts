@@ -22,7 +22,9 @@ function inChild(code: string): void {
       ...Object.fromEntries(names.filter((name) => process.env[name]).map((name) => [name, process.env[name]])),
       NODE_ENV: 'test', CREDENTIALS_ENCRYPTION_KEY: crypto.randomBytes(32).toString('hex'),
     };
-    const result = spawnSync(process.execPath, ['-e', code], {
+    const loader = fileURLToPath(new URL('../../../scripts/tooling/register-typescript.mjs', import.meta.url));
+    const args = process.execPath.toLowerCase().includes('bun') ? ['-e', code] : ['--import', loader, '-e', code];
+    const result = spawnSync(process.execPath, args, {
       cwd: directory, env, encoding: 'utf8', timeout: 30_000,
     });
     assert.equal(result.error, undefined);
@@ -155,6 +157,10 @@ test('admin order price edits preserve contracted payable, reconcile margin and 
     const service = await import(${moduleUrl('../admin/phase4a-service.ts')});
     const state = repository.readErpState();
     const order = state.orders[0];
+    order.status = 'pending_confirmation';
+    order.paymentStatus = 'unpaid';
+    order.advancePaidPoisha = 0;
+    order.codCollectablePoisha = order.totalPayablePoisha;
     const line = state.orderLines.find((entry) => entry.orderId === order.id);
     const product = state.products.find((entry) => entry.productId === line.productId);
     const variant = product.variants.find((entry) => entry.variantId === line.variantId);
@@ -169,7 +175,7 @@ test('admin order price edits preserve contracted payable, reconcile margin and 
       items: [{ variantId: line.variantId, quantity: 1, unitSalePricePoisha: 239000 }],
     };
     const result = service.updateFullOrderDetails(actor, payload);
-    assert.equal(result.success, true);
+    assert.equal(result.success, true, JSON.stringify(result));
     const updated = repository.readErpState().orderLines.find((entry) => entry.orderId === order.id);
     assert.equal(updated.snapSupplierPayablePoisha, line.snapSupplierPayablePoisha);
     assert.equal(updated.snapSupplierCostPoisha, line.snapSupplierCostPoisha);

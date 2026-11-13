@@ -1,3 +1,4 @@
+import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/shop/page.tsx
 // Dedicated All Products Catalog Page (/shop) — Phase 6 (Master Prompt Section 9.3)
 
@@ -22,7 +23,7 @@ interface ShopPageProps {
 
 export default async function ShopPage({ searchParams }: ShopPageProps) {
   const params = await searchParams;
-  const { siteSettings, categories, products } = getPublicStorefrontCatalog();
+  const { siteSettings, categories, products } = await withRuntimePersistence(() => getPublicStorefrontCatalog());
 
   return (
     <ShopCatalogClient

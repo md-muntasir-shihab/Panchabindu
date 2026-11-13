@@ -1,3 +1,4 @@
+import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/product/[slug]/page.tsx
 // Server Component for Product Detail Page (PDP)
 // Enforces server-side field hiding & generates dynamic SEO metadata
@@ -18,7 +19,7 @@ export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const { product, siteSettings } = getPublicProductBySlug(slug);
+  const { product, siteSettings } = await withRuntimePersistence(() => getPublicProductBySlug(slug));
 
   if (!product) {
     return {
@@ -49,7 +50,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     leadTimeDays,
     reviews,
     relatedProducts,
-  } = getPublicProductBySlug(slug);
+  } = await withRuntimePersistence(() => getPublicProductBySlug(slug));
 
   if (!product) {
     notFound();

@@ -1,3 +1,9 @@
+# Current authorization — November 13, 2026
+
+The user approved the audited backend edits and Bangla/English fixes. Implement and test the approved repository changes directly, without inventing execution phases or adding code comments. Historical phase gates below do not override this instruction. Production migration, deployment, real financial/provider operations and external account connections were not authorized.
+
+The request handlers and server reads use `withRuntimePersistence`. PostgreSQL mode is an explicit transactional JSONB compatibility adapter, not a completed migration of every domain into the existing relational tables. Local JSON remains development/test only. Never bypass production persistence guards to pass a build. Run `npm run test:node` for isolated synthetic checks. Current delivery and remaining limitations: `docs/audit/backend-bilingual-2026-11-13.md`.
+
 # Panchagarh agent rules
 
 Before code changes consult `docs/00_CUSTOM_INSTRUCTION.md`, `docs/01_FRONTEND_MASTER_PROMPT.md`, `docs/02_BACKEND_MASTER_PROMPT.md`, and `docs/schema.md`. At session start read `docs/ai/PROJECT_STATE.md`, `docs/ai/PHASE_STATUS.md`, and `docs/ai/DECISIONS.md`; reconcile conflicts with the latest explicit user instructions. The complete v3 specification A–P was supplied in the conversation, not confirmed as a standalone local file. See `docs/audit/v3-requirements-matrix.md` and `docs/audit/v3-phase-1-security-identity.md`. On November 11, 2026 the user explicitly approved “Phase 1”: local Security & Identity hardening and isolated tests only. Phase 2+, migrations, deployment and production access remain unauthorized.

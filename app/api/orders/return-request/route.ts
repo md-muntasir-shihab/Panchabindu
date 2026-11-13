@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/orders/return-request/route.ts
 // Policy-Aware Customer Return Request API (Phase 6 — Master Prompt Section 9.3 & 9.5)
 // Enforces:
@@ -30,7 +31,7 @@ const returnRequestSchema = z.object({
   detailsBn: z.string().trim().min(5).max(500),
 });
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const csrfCheck = verifyOriginAndCsrf(req);
     if (!csrfCheck.ok) {
@@ -109,3 +110,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = backendRoute(handlePOST);

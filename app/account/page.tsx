@@ -1,3 +1,4 @@
+import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/account/page.tsx
 // Server Component for Customer Wishlist & Order Tracking Lookup
 
@@ -13,8 +14,8 @@ export const metadata: Metadata = {
   description: 'আপনার সেভ করা পণ্য এবং অর্ডার ট্র্যাকিং।',
 };
 
-export default function AccountPage() {
-  const { siteSettings, categories, products } = getPublicStorefrontData();
+export default async function AccountPage() {
+  const { siteSettings, categories, products } = await withRuntimePersistence(() => getPublicStorefrontData());
 
   return (
     <AccountClient

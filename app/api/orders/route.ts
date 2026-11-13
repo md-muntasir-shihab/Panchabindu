@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/orders/route.ts
 // Server-Side Order Creation & Public Tracking Endpoint
 // Enforces:
@@ -24,9 +25,10 @@ import {
   buildAndPersistOrderFulfillmentGroups,
   computeOrthogonalOrderState,
   runWithAtomicStockLock,
+  reconcileOrderReservationRecords,
 } from '@/src/lib/inventory/phase3-inventory-order-engine';
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   if (!checkRateLimit(`tracking:${getClientIpFromRequest(req)}`, 30, 60_000).allowed) return NextResponse.json({ success: false }, { status: 429 });
   const { searchParams } = new URL(req.url);
   const token =
@@ -54,7 +56,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ order: tracking.order });
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     if (!verifyOriginAndCsrf(req).ok) {
       return NextResponse.json({ success: false, errorBn: 'অনুরোধ অনুমোদিত নয়।' }, { status: 403 });
@@ -109,6 +111,7 @@ export async function POST(req: NextRequest) {
 
     // Initialize Multi-Vendor Fulfillment Groups (VFG) & 5-Dimension Orthogonal State
     buildAndPersistOrderFulfillmentGroups(result.order.orderNo);
+    reconcileOrderReservationRecords(result.order.orderNo, `customer:${session.customerId}`);
     computeOrthogonalOrderState(result.order.orderNo);
 
     return NextResponse.json({
@@ -125,3 +128,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const GET = backendRoute(handleGET);
+export const POST = backendRoute(handlePOST);

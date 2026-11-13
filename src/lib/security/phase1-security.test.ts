@@ -390,6 +390,7 @@ test('Phase 1 Security 4.3 & 4.7: Manual bKash Financial Safety, Over-Balance Gu
     orderNo: orderRes.order!.orderNo,
     trxId: validTrx,
     decision: 'approved',
+    reviewNoteBn: 'Synthetic merchant record checked: reference and amount match.',
   });
   assert.equal(approveRes.success, true);
 

@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/cart/abandoned/route.ts
 // Server-Side Abandoned Cart Snapshot Capture Route (Triggered when customer enters BD phone on checkout)
 
@@ -21,7 +22,7 @@ const abandonedCartSchema = z.object({
     .min(1),
 });
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     if (!verifyOriginAndCsrf(req).ok) return NextResponse.json({ saved: false }, { status: 403 });
     const session = verifyCustomerSessionToken(req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value);
@@ -41,3 +42,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ saved: false }, { status: 500 });
   }
 }
+
+export const POST = backendRoute(handlePOST);

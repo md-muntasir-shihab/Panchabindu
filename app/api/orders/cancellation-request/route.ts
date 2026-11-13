@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/orders/cancellation-request/route.ts
 // Public Customer Order Cancellation Request API (Section 9.4 & 21.1)
 // Enforces:
@@ -26,7 +27,7 @@ const cancellationSchema = z.object({
   reasonBn: z.string().trim().min(3, 'অর্ডার বাতিলের কারণ উল্লেখ করুন।'),
 });
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const requestId = createRequestId();
   try {
     if (!verifyOriginAndCsrf(req).ok) {
@@ -144,3 +145,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = backendRoute(handlePOST);

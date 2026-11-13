@@ -1,4 +1,9 @@
 'use client';
+import { localizedField } from '@/src/lib/i18n/ui-text';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/admin/print-engine-panel.tsx
 // Module B & O: Streamlined Responsive A4 3-Part & 4x6 Thermal Print Engine
@@ -340,8 +345,7 @@ export function PrintEnginePanel({
               </span>
             </h1>
             <p className="text-xs text-muted">
-              A4 ৩-ভাগ ইনভয়েস ও ৪x৬ থার্মাল কুরিয়ার স্টিকার এক ক্লিকে প্রিন্ট করুন।
-            </p>
+              <LocalizedText source={"A4 ৩-ভাগ ইনভয়েস ও ৪x৬ থার্মাল কুরিয়ার স্টিকার এক ক্লিকে প্রিন্ট করুন।"} area="admin" />{" "}</p>
           </div>
 
           {/* Sub-Tab Navigation Switcher */}
@@ -356,7 +360,7 @@ export function PrintEnginePanel({
               }`}
             >
               <Package className="w-3.5 h-3.5" />
-              <span>প্রিন্ট কিউ ({availableOrderNos.length})</span>
+              <span><LocalizedText source={"প্রিন্ট কিউ ("} area="admin" />{availableOrderNos.length})</span>
             </button>
 
             {!isVendor && (
@@ -370,7 +374,7 @@ export function PrintEnginePanel({
                 }`}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>টেম্পলেট সেটিংস</span>
+                <span><LocalizedText source={"টেম্পলেট সেটিংস"} area="admin" /></span>
               </button>
             )}
 
@@ -384,7 +388,7 @@ export function PrintEnginePanel({
               }`}
             >
               <History className="w-3.5 h-3.5" />
-              <span>প্রিন্ট ইতিহাস</span>
+              <span><LocalizedText source={"প্রিন্ট ইতিহাস"} area="admin" /></span>
             </button>
           </div>
         </div>
@@ -420,7 +424,7 @@ export function PrintEnginePanel({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="অর্ডার, নাম, ফোন বা ট্র্যাকিং কোড..."
+                    placeholder={uiText("অর্ডার, নাম, ফোন বা ট্র্যাকিং কোড...", locale)}
                     className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-surface border border-border rounded-[var(--radius-sm)] text-ink placeholder:text-muted"
                   />
                 </div>
@@ -433,11 +437,11 @@ export function PrintEnginePanel({
                     onChange={(e) => setSortOption(e.target.value as PrintSortOption)}
                     className="w-full py-1.5 text-xs bg-transparent text-ink border-0 focus:ring-0 cursor-pointer font-medium"
                   >
-                    <option value="newest">নতুন অর্ডার আগে (Newest)</option>
-                    <option value="oldest">পুরাতন অর্ডার আগে (Oldest)</option>
-                    <option value="cod_desc">সর্বোচ্চ সিওডি বিল আগে (Highest COD)</option>
-                    <option value="district">জেলা অনুযায়ী (District A-Z)</option>
-                    <option value="order_no">অর্ডার নম্বর অনুযায়ী (Order No)</option>
+                    <option value="newest"><LocalizedText source={"নতুন অর্ডার আগে (Newest)"} area="admin" /></option>
+                    <option value="oldest"><LocalizedText source={"পুরাতন অর্ডার আগে (Oldest)"} area="admin" /></option>
+                    <option value="cod_desc"><LocalizedText source={"সর্বোচ্চ সিওডি বিল আগে (Highest COD)"} area="admin" /></option>
+                    <option value="district"><LocalizedText source={"জেলা অনুযায়ী (District A-Z)"} area="admin" /></option>
+                    <option value="order_no"><LocalizedText source={"অর্ডার নম্বর অনুযায়ী (Order No)"} area="admin" /></option>
                   </select>
                 </div>
 
@@ -449,12 +453,12 @@ export function PrintEnginePanel({
                     onChange={(e) => setCourierFilter(e.target.value)}
                     className="w-full py-1.5 text-xs bg-transparent text-ink border-0 focus:ring-0 cursor-pointer font-medium"
                   >
-                    <option value="ALL">সব কুরিয়ার (All Couriers)</option>
-                    <option value="steadfast">Steadfast Courier</option>
-                    <option value="pathao">Pathao Courier</option>
-                    <option value="redx">RedX Delivery</option>
-                    <option value="bd_post">BD Post (ডাক বিভাগ)</option>
-                    <option value="manual">ম্যানুয়াল কুরিয়ার</option>
+                    <option value="ALL"><LocalizedText source={"সব কুরিয়ার (All Couriers)"} area="admin" /></option>
+                    <option value="steadfast"><LocalizedText source={"Steadfast Courier"} area="admin" /></option>
+                    <option value="pathao"><LocalizedText source={"Pathao Courier"} area="admin" /></option>
+
+                    <option value="bd_post"><LocalizedText source={"BD Post (ডাক বিভাগ)"} area="admin" /></option>
+                    <option value="manual"><LocalizedText source={"ম্যানুয়াল কুরিয়ার"} area="admin" /></option>
                   </select>
                 </div>
 
@@ -468,8 +472,8 @@ export function PrintEnginePanel({
                     }
                     className="w-full py-1.5 text-xs bg-transparent text-ink font-bold border-0 focus:ring-0 cursor-pointer"
                   >
-                    <option value="a4_3part">A4 ৩-ভাগ ইনভয়েস (Invoice + Sticker)</option>
-                    <option value="thermal_4x6">৪x৬ থার্মাল কুরিয়ার স্টিকার (Thermal)</option>
+                    <option value="a4_3part"><LocalizedText source={"A4 ৩-ভাগ ইনভয়েস (Invoice + Sticker)"} area="admin" /></option>
+                    <option value="thermal_4x6"><LocalizedText source={"৪x৬ থার্মাল কুরিয়ার স্টিকার (Thermal)"} area="admin" /></option>
                   </select>
                 </div>
               </div>
@@ -482,18 +486,16 @@ export function PrintEnginePanel({
                     onClick={handleSelectAll}
                     className="px-2.5 py-1 rounded bg-surface border border-border text-ink hover:bg-bg font-semibold cursor-pointer"
                   >
-                    সব সিলেক্ট ({filteredAndSortedSlips.length})
+                    <LocalizedText source={"সব সিলেক্ট ("} area="admin" />{filteredAndSortedSlips.length})
                   </button>
                   <button
                     type="button"
                     onClick={handleDeselectAll}
                     className="px-2.5 py-1 rounded bg-surface border border-border text-muted hover:text-ink font-semibold cursor-pointer"
                   >
-                    আনসেলেক্ট
-                  </button>
+                    <LocalizedText source={"আনসেলেক্ট"} area="admin" />{" "}</button>
                   <span className="font-mono text-ink font-bold bg-surface px-2 py-0.5 rounded border border-border">
-                    {selectedOrderNos.length}টি সিলেক্টেড
-                  </span>
+                    {selectedOrderNos.length}<LocalizedText source={"টি সিলেক্টেড"} area="admin" />{" "}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -567,14 +569,13 @@ export function PrintEnginePanel({
                       </p>
                       <p className="text-muted text-[11px] truncate">
                         <MapPin className="w-3 h-3 inline mr-1" />
-                        {p12.districtNameBn} — {p12.upazilaNameBn}
+                        {localizedField(p12, "districtNameBn", locale)} — {localizedField(p12, "upazilaNameBn", locale)}
                       </p>
                       <div className="flex items-center justify-between pt-1 font-mono text-[11px]">
                         <span className="text-muted">
-                          পণ্য: {p12.items.length}টি
-                        </span>
+                          <LocalizedText source={"পণ্য:"} area="admin" />{" "}{p12.items.length}<LocalizedText source={"টি"} area="admin" />{" "}</span>
                         <span className="font-bold text-ink">
-                          COD: {formatPoishaToBdt(p12.codCollectablePoisha, locale)}
+                          <LocalizedText source={"COD:"} area="admin" />{" "}{formatPoishaToBdt(p12.codCollectablePoisha, locale)}
                         </span>
                       </div>
                     </div>
@@ -601,10 +602,9 @@ export function PrintEnginePanel({
                     <div className="flex items-center justify-between border-b border-border pb-2">
                       <div>
                         <p className="text-[10px] font-mono uppercase text-muted">
-                          4x6 THERMAL COURIER STICKER
-                        </p>
+                          <LocalizedText source={"4x6 THERMAL COURIER STICKER"} area="admin" />{" "}</p>
                         <p className="text-xs font-bold text-ink">
-                          প্রেরক: {p12.senderBrandNameBn} ({p12.senderSupportPhone})
+                          <LocalizedText source={"প্রেরক:"} area="admin" />{" "}{localizedField(p12, "senderBrandNameBn", locale)} ({p12.senderSupportPhone})
                         </p>
                       </div>
                       <Badge status="info">{p12.courierProvider.toUpperCase()}</Badge>
@@ -617,17 +617,17 @@ export function PrintEnginePanel({
 
                     <div className="p-2 border border-border rounded-[var(--radius-sm)] space-y-1 text-xs">
                       <p className="font-bold text-sm text-ink">
-                        প্রাপক: {p12.customerName}
+                        <LocalizedText source={"প্রাপক:"} area="admin" />{" "}{p12.customerName}
                       </p>
                       <p className="font-mono font-bold text-ink">
-                        মোবাইল: {p12.customerPhone}
+                        <LocalizedText source={"মোবাইল:"} area="admin" />{" "}{p12.customerPhone}
                       </p>
                       <p className="text-ink">
-                        {p12.upazilaNameBn}, {p12.districtNameBn} — {p12.streetAddress}
+                        {localizedField(p12, "upazilaNameBn", locale)}, {localizedField(p12, "districtNameBn", locale)} — {p12.streetAddress}
                       </p>
                       {p12.landmark && (
                         <p className="text-muted text-[11px]">
-                          ল্যান্ডমার্ক: {p12.landmark}
+                          <LocalizedText source={"ল্যান্ডমার্ক:"} area="admin" />{" "}{p12.landmark}
                         </p>
                       )}
                     </div>
@@ -635,16 +635,15 @@ export function PrintEnginePanel({
                     {/* Large COD Box */}
                     <div className="p-2.5 border-2 border-ink bg-surface text-center">
                       <p className="text-[10px] font-bold uppercase text-muted">
-                        ডেলিভারির সময় প্রদেয় (COD COLLECTABLE)
-                      </p>
+                        <LocalizedText source={"ডেলিভারির সময় প্রদেয় (COD COLLECTABLE)"} area="admin" />{" "}</p>
                       <p className="text-2xl font-bold font-mono tabular-nums text-ink">
                         {formatPoishaToBdt(p12.codCollectablePoisha, locale)}
                       </p>
                     </div>
 
                     <div className="text-[10px] font-mono text-muted flex justify-between pt-1 border-t border-border">
-                      <span>Order: {p12.orderNo}</span>
-                      <span>CNS: {p12.consignmentId}</span>
+                      <span><LocalizedText source={"Order:"} area="admin" />{" "}{p12.orderNo}</span>
+                      <span><LocalizedText source={"CNS:"} area="admin" />{" "}{p12.consignmentId}</span>
                     </div>
                   </div>
                 );
@@ -663,22 +662,20 @@ export function PrintEnginePanel({
                     <div className="flex items-start justify-between border-b border-border pb-1.5 gap-2">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-[var(--radius-sm)] border border-ink bg-ink text-bg flex items-center justify-center font-bold text-sm shrink-0">
-                          প
-                        </div>
+                          <LocalizedText source={"প"} area="admin" />{" "}</div>
                         <div>
                           <div className="flex items-center gap-1.5">
                             <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-surface border border-border rounded text-ink">
-                              PART 1 · {printConfig.part1TitleBn}
+                              <LocalizedText source={"PART 1 ·"} area="admin" />{" "}{localizedField(printConfig, "part1TitleBn", locale)}
                             </span>
                             <span className="text-[9px] font-mono text-muted">
-                              A4 Official Copy
-                            </span>
+                              <LocalizedText source={"A4 Official Copy"} area="admin" />{" "}</span>
                           </div>
                           <h2 className="text-xs sm:text-sm font-bold text-ink leading-tight mt-0.5">
-                            {p12.senderBrandNameBn} ({p12.senderBrandNameEn})
+                            {localizedField(p12, "senderBrandNameBn", locale)} ({p12.senderBrandNameEn})
                           </h2>
                           <p className="text-[9.5px] text-muted leading-tight">
-                            হেল্পলাইন: {p12.senderSupportPhone} · ইস্যু তারিখ:{' '}
+                            <LocalizedText source={"হেল্পলাইন:"} area="admin" />{" "}{p12.senderSupportPhone} {" "}<LocalizedText source={"· ইস্যু তারিখ:"} area="admin" />{' '}
                             {new Date(p12.createdAt).toLocaleDateString('bn-BD')}
                           </p>
                         </div>
@@ -686,13 +683,13 @@ export function PrintEnginePanel({
 
                       <div className="text-right font-mono tabular-nums space-y-0.5">
                         <p className="text-xs font-bold text-ink bg-surface px-2 py-0.5 border border-border rounded">
-                          ইনভয়েস: {p12.orderNo}
+                          <LocalizedText source={"ইনভয়েস:"} area="admin" />{" "}{p12.orderNo}
                         </p>
                         <p className="text-[9.5px] text-ink font-semibold">
-                          পেমেন্ট: {p12.paymentMethod.toUpperCase()} ({p12.paymentStatus})
+                          <LocalizedText source={"পেমেন্ট:"} area="admin" />{" "}{p12.paymentMethod.toUpperCase()} ({p12.paymentStatus})
                         </p>
                         <p className="text-[9px] text-muted">
-                          কুরিয়ার: {p12.courierProvider.toUpperCase()} · {p12.trackingCode}
+                          <LocalizedText source={"কুরিয়ার:"} area="admin" />{" "}{p12.courierProvider.toUpperCase()} · {p12.trackingCode}
                         </p>
                       </div>
                     </div>
@@ -701,21 +698,20 @@ export function PrintEnginePanel({
                       {/* Customer Address Box */}
                       <div className="sm:col-span-4 border border-border rounded-[var(--radius-sm)] p-2 bg-surface/50 space-y-0.5">
                         <p className="text-[9px] font-mono uppercase text-muted font-bold">
-                          গ্রাহকের বিবরণ (BILL & SHIP TO)
-                        </p>
+                          <LocalizedText source={"গ্রাহকের বিবরণ (BILL & SHIP TO)"} area="admin" />{" "}</p>
                         <p className="font-bold text-ink text-[11px]">
                           {p12.customerName}
                         </p>
                         <p className="font-mono font-bold text-ink text-[10.5px]">
-                          মোবাইল: {p12.customerPhone}
+                          <LocalizedText source={"মোবাইল:"} area="admin" />{" "}{p12.customerPhone}
                         </p>
                         <p className="text-ink text-[10px] leading-snug">
-                          {p12.upazilaNameBn}, {p12.districtNameBn} —{' '}
+                          {localizedField(p12, "upazilaNameBn", locale)}, {localizedField(p12, "districtNameBn", locale)} —{' '}
                           {p12.streetAddress}
                         </p>
                         {p12.landmark && (
                           <p className="text-muted text-[9.5px]">
-                            ল্যান্ডমার্ক: {p12.landmark}
+                            <LocalizedText source={"ল্যান্ডমার্ক:"} area="admin" />{" "}{p12.landmark}
                           </p>
                         )}
                       </div>
@@ -726,10 +722,10 @@ export function PrintEnginePanel({
                           <thead>
                             <tr className="border-b border-border bg-surface text-ink font-bold">
                               <th className="py-1 px-1.5">#</th>
-                              <th className="py-1 px-1.5">পণ্যের বিবরণ ও ভ্যারিয়েন্ট (Public SKU)</th>
-                              <th className="py-1 px-1.5 text-center">পরিমাণ</th>
-                              <th className="py-1 px-1.5 text-right">একক মূল্য</th>
-                              <th className="py-1 px-1.5 text-right">মোট মূল্য</th>
+                              <th className="py-1 px-1.5"><LocalizedText source={"পণ্যের বিবরণ ও ভ্যারিয়েন্ট (Public SKU)"} area="admin" /></th>
+                              <th className="py-1 px-1.5 text-center"><LocalizedText source={"পরিমাণ"} area="admin" /></th>
+                              <th className="py-1 px-1.5 text-right"><LocalizedText source={"একক মূল্য"} area="admin" /></th>
+                              <th className="py-1 px-1.5 text-right"><LocalizedText source={"মোট মূল্য"} area="admin" /></th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border">
@@ -752,13 +748,13 @@ export function PrintEnginePanel({
                                     </div>
                                     <div className="leading-tight">
                                       <span className="font-semibold text-ink">
-                                        {item.productNameBn}
+                                        {localizedField(item, "productNameBn", locale)}
                                       </span>{' '}
                                       <span className="text-muted text-[9px]">
-                                        ({item.variantTitleBn})
+                                        ({localizedField(item, "variantTitleBn", locale)})
                                       </span>
                                       <div className="font-mono text-[8.5px] text-muted">
-                                        SKU: {item.publicSku}
+                                        <LocalizedText source={"SKU:"} area="admin" />{" "}{item.publicSku}
                                       </div>
                                     </div>
                                   </div>
@@ -786,23 +782,22 @@ export function PrintEnginePanel({
                         {/* Customer Bill Breakdown Strip */}
                         <div className="mt-1.5 pt-1 border-t border-border flex flex-wrap items-center justify-between gap-1 text-[9.5px]">
                           <span className="text-muted text-[9px] max-w-[52%] leading-tight">
-                            * {printConfig.footerNoteBn}
+                            * {localizedField(printConfig, "footerNoteBn", locale)}
                           </span>
                           <div className="font-mono tabular-nums flex flex-wrap items-center gap-2 bg-surface px-2 py-1 rounded border border-border">
                             <span>
-                              সাবটোটাল:{' '}
+                              <LocalizedText source={"সাবটোটাল:"} area="admin" />{' '}
                               <strong>
                                 {formatPoishaToBdt(p12.subtotalPoisha, locale)}
                               </strong>
                             </span>
                             {p12.discountPoisha > 0 && (
                               <span>
-                                ছাড়: -
-                                {formatPoishaToBdt(p12.discountPoisha, locale)}
+                                <LocalizedText source={"ছাড়: -"} area="admin" />{" "}{formatPoishaToBdt(p12.discountPoisha, locale)}
                               </span>
                             )}
                             <span>
-                              ডেলিভারি:{' '}
+                              <LocalizedText source={"ডেলিভারি:"} area="admin" />{' '}
                               {formatPoishaToBdt(
                                 p12.deliveryChargePoisha,
                                 locale
@@ -810,15 +805,14 @@ export function PrintEnginePanel({
                             </span>
                             {p12.advancePaidPoisha > 0 && (
                               <span>
-                                অগ্রিম: -
-                                {formatPoishaToBdt(
+                                <LocalizedText source={"অগ্রিম: -"} area="admin" />{" "}{formatPoishaToBdt(
                                   p12.advancePaidPoisha,
                                   locale
                                 )}
                               </span>
                             )}
                             <span className="font-bold text-ink border-l border-border pl-2">
-                              ডেলিভারিতে প্রদেয় (COD):{' '}
+                              <LocalizedText source={"ডেলিভারিতে প্রদেয় (COD):"} area="admin" />{' '}
                               {formatPoishaToBdt(
                                 p12.codCollectablePoisha,
                                 locale
@@ -834,7 +828,7 @@ export function PrintEnginePanel({
                   <div className="flex items-center gap-2 text-[8.5px] font-mono text-muted py-0">
                     <Scissors className="w-3 h-3 shrink-0" aria-hidden="true" />
                     <div className="flex-1 border-t border-dashed border-ink" />
-                    <span>✂ CUT HERE (PART 1 CUSTOMER COPY / PART 2 COURIER BOX LABEL)</span>
+                    <span><LocalizedText source={"✂ CUT HERE (PART 1 CUSTOMER COPY / PART 2 COURIER BOX LABEL)"} area="admin" /></span>
                     <div className="flex-1 border-t border-dashed border-ink" />
                   </div>
 
@@ -845,10 +839,10 @@ export function PrintEnginePanel({
                     <div className="flex items-center justify-between border-b border-border pb-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-surface border border-border rounded text-ink">
-                          PART 2 · {printConfig.part2TitleBn}
+                          <LocalizedText source={"PART 2 ·"} area="admin" />{" "}{localizedField(printConfig, "part2TitleBn", locale)}
                         </span>
                         <span className="text-[10px] font-bold text-ink">
-                          প্রেরক: {p12.senderBrandNameBn} (হেল্পলাইন:{' '}
+                          <LocalizedText source={"প্রেরক:"} area="admin" />{" "}{localizedField(p12, "senderBrandNameBn", locale)} {" "}<LocalizedText source={"(হেল্পলাইন:"} area="admin" />{' '}
                           {p12.senderSupportPhone})
                         </span>
                       </div>
@@ -863,21 +857,20 @@ export function PrintEnginePanel({
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                       <div className="sm:col-span-5 text-[10.5px] space-y-0.5 border-r border-border pr-2">
                         <p className="text-[8.5px] font-mono uppercase text-muted font-bold">
-                          ডেলিভারি ঠিকানা (DELIVER TO)
-                        </p>
+                          <LocalizedText source={"ডেলিভারি ঠিকানা (DELIVER TO)"} area="admin" />{" "}</p>
                         <p className="font-bold text-ink text-xs">
-                          প্রাপক: {p12.customerName}
+                          <LocalizedText source={"প্রাপক:"} area="admin" />{" "}{p12.customerName}
                         </p>
                         <p className="font-mono font-bold text-ink text-[11px]">
-                          ফোন: {p12.customerPhone}
+                          <LocalizedText source={"ফোন:"} area="admin" />{" "}{p12.customerPhone}
                         </p>
                         <p className="text-ink text-[10px] leading-snug font-medium">
-                          {p12.upazilaNameBn}, {p12.districtNameBn} —{' '}
+                          {localizedField(p12, "upazilaNameBn", locale)}, {localizedField(p12, "districtNameBn", locale)} —{' '}
                           {p12.streetAddress}
                         </p>
                         {p12.landmark && (
                           <p className="text-muted text-[9.5px]">
-                            ল্যান্ডমার্ক: {p12.landmark}
+                            <LocalizedText source={"ল্যান্ডমার্ক:"} area="admin" />{" "}{p12.landmark}
                           </p>
                         )}
                       </div>
@@ -891,15 +884,13 @@ export function PrintEnginePanel({
 
                       <div className="sm:col-span-3 border-2 border-ink bg-surface p-1.5 text-center rounded-[var(--radius-sm)]">
                         <p className="text-[8.5px] font-bold uppercase text-muted">
-                          ডেলিভারির সময় প্রদেয় (COD)
-                        </p>
+                          <LocalizedText source={"ডেলিভারির সময় প্রদেয় (COD)"} area="admin" />{" "}</p>
                         <p className="text-base sm:text-lg font-bold font-mono tabular-nums text-ink leading-tight">
                           {formatPoishaToBdt(p12.codCollectablePoisha, locale)}
                         </p>
                         <p className="text-[8.5px] font-mono text-muted">
-                          Order: {p12.orderNo} · পিস:{' '}
-                          {p12.items.reduce((acc, i) => acc + i.quantity, 0)}টি
-                        </p>
+                          <LocalizedText source={"Order:"} area="admin" />{" "}{p12.orderNo} {" "}<LocalizedText source={"· পিস:"} area="admin" />{' '}
+                          {p12.items.reduce((acc, i) => acc + i.quantity, 0)}<LocalizedText source={"টি"} area="admin" />{" "}</p>
                       </div>
                     </div>
                   </div>
@@ -909,8 +900,7 @@ export function PrintEnginePanel({
                     <Scissors className="w-3 h-3 shrink-0" aria-hidden="true" />
                     <div className="flex-1 border-t border-dashed border-ink" />
                     <span>
-                      ✂ CUT HERE — PART 3 ADMIN, ACCOUNTS & WAREHOUSE MASTER RECORD (অ্যাডমিন ও হিসাব সংরক্ষণ কপি)
-                    </span>
+                      <LocalizedText source={"✂ CUT HERE — PART 3 ADMIN, ACCOUNTS & WAREHOUSE MASTER RECORD (অ্যাডমিন ও হিসাব সংরক্ষণ কপি)"} area="admin" />{" "}</span>
                     <div className="flex-1 border-t border-dashed border-ink" />
                   </div>
 
@@ -924,34 +914,33 @@ export function PrintEnginePanel({
                       <div>
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-ink text-bg rounded">
-                            PART 3 · {printConfig.part3TitleBn}
+                            <LocalizedText source={"PART 3 ·"} area="admin" />{" "}{localizedField(printConfig, "part3TitleBn", locale)}
                           </span>
                           <span className="text-[9.5px] font-mono font-bold text-ink">
-                            অর্ডার: {p3.orderNo}
+                            <LocalizedText source={"অর্ডার:"} area="admin" />{" "}{p3.orderNo}
                           </span>
                           <span className="text-[9px] font-mono text-muted">
-                            · এসক্রো রুল: {p3.estimatedMaturityDaysLabelBn}
+                            <LocalizedText source={"· এসক্রো রুল:"} area="admin" />{" "}{localizedField(p3, "estimatedMaturityDaysLabelBn", locale)}
                           </span>
                         </div>
                         <p className="text-[9px] text-muted mt-0.5 font-mono">
-                          গ্রাহক: {p3.customerName ?? p12.customerName} (
-                          {p3.customerPhone ?? p12.customerPhone}) · সোর্স:{' '}
-                          {(p3.orderSource ?? 'storefront').toUpperCase()} · কল স্ট্যাটাস:{' '}
-                          {p3.callStatus ?? 'confirmed_yes'} (চেষ্টা:{' '}
-                          {formatLocaleNumber(p3.callAttempts ?? 1, locale)}) · ঝুঁকি:{' '}
-                          {p3.fraudRiskTierBn ?? 'নিরাপদ'} (স্কোর:{' '}
+                          <LocalizedText source={"গ্রাহক:"} area="admin" />{" "}{p3.customerName ?? p12.customerName} (
+                          {p3.customerPhone ?? p12.customerPhone}<LocalizedText source={") · সোর্স:"} area="admin" />{' '}
+                          {(p3.orderSource ?? 'storefront').toUpperCase()} {" "}<LocalizedText source={"· কল স্ট্যাটাস:"} area="admin" />{' '}
+                          {p3.callStatus ?? 'confirmed_yes'} {" "}<LocalizedText source={"(চেষ্টা:"} area="admin" />{' '}
+                          {formatLocaleNumber(p3.callAttempts ?? 1, locale)}<LocalizedText source={") · ঝুঁকি:"} area="admin" />{' '}
+                          {p3.fraudRiskTierBn ?? 'নিরাপদ'} {" "}<LocalizedText source={"(স্কোর:"} area="admin" />{' '}
                           {formatLocaleNumber(p3.addressQualityScore ?? 85, locale)}%)
                         </p>
                       </div>
 
                       <div className="flex items-center gap-1.5 font-mono text-[9px]">
                         <span className="px-1.5 py-0.5 rounded border border-border bg-bg text-ink font-bold">
-                          প্রিন্ট: {formatLocaleNumber(p3.printCount, locale)} বার
-                        </span>
+                          <LocalizedText source={"প্রিন্ট:"} area="admin" />{" "}{formatLocaleNumber(p3.printCount, locale)} {" "}<LocalizedText source={"বার"} area="admin" />{" "}</span>
                         {p3.isReprintWarning && (
                           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-warning bg-bg text-warning font-bold">
                             <AlertTriangle className="w-2.5 h-2.5" />
-                            <span>ডুপ্লিকেট প্রিন্ট সতর্কতা</span>
+                            <span><LocalizedText source={"ডুপ্লিকেট প্রিন্ট সতর্কতা"} area="admin" /></span>
                           </span>
                         )}
                       </div>
@@ -963,35 +952,29 @@ export function PrintEnginePanel({
                         <thead>
                           <tr className="border-b border-ink/40 bg-bg text-ink font-bold">
                             <th className="py-1 px-1">#</th>
-                            <th className="py-1 px-1">সাপ্লায়ার ও লট (Supplier & Lot)</th>
+                            <th className="py-1 px-1"><LocalizedText source={"সাপ্লায়ার ও লট (Supplier & Lot)"} area="admin" /></th>
                             <th className="py-1 px-1">
-                              পণ্য, ভ্যারিয়েন্ট, Public ও Internal SKU (Bin)
-                            </th>
-                            <th className="py-1 px-1 text-center">পরিমাণ</th>
+                              <LocalizedText source={"পণ্য, ভ্যারিয়েন্ট, Public ও Internal SKU (Bin)"} area="admin" />{" "}</th>
+                            <th className="py-1 px-1 text-center"><LocalizedText source={"পরিমাণ"} area="admin" /></th>
                             {(isSuperAdmin || isVendor) && (
                               <>
                                 <th className="py-1 px-1 text-right">
-                                  একক কেনা (Cost)
-                                </th>
+                                  <LocalizedText source={"একক কেনা (Cost)"} area="admin" />{" "}</th>
                                 <th className="py-1 px-1 text-right">
-                                  সাপ্লায়ার লাভ (Profit)
-                                </th>
+                                  <LocalizedText source={"সাপ্লায়ার লাভ (Profit)"} area="admin" />{" "}</th>
                                 <th className="py-1 px-1 text-right">
-                                  সাপ্লায়ার প্রদেয় (Payable)
-                                </th>
+                                  <LocalizedText source={"সাপ্লায়ার প্রদেয় (Payable)"} area="admin" />{" "}</th>
                               </>
                             )}
                             {isSuperAdmin && (
                               <>
                                 <th className="py-1 px-1 text-right">
-                                  কমিশন ও গ্রস মার্জিন
-                                </th>
+                                  <LocalizedText source={"কমিশন ও গ্রস মার্জিন"} area="admin" />{" "}</th>
                                 <th className="py-1 px-1 text-right">
-                                  প্রোমো ছাড় ও নিট মার্জিন
-                                </th>
+                                  <LocalizedText source={"প্রোমো ছাড় ও নিট মার্জিন"} area="admin" />{" "}</th>
                               </>
                             )}
-                            <th className="py-1 px-1 text-right">খুচরা বিক্রয় (Sale)</th>
+                            <th className="py-1 px-1 text-right"><LocalizedText source={"খুচরা বিক্রয় (Sale)"} area="admin" /></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border bg-bg/70">
@@ -1016,24 +999,21 @@ export function PrintEnginePanel({
                               </td>
                               <td className="py-1 px-1">
                                 <div className="font-semibold text-ink">
-                                  {line.productNameBn}{' '}
+                                  {localizedField(line, "productNameBn", locale)}{' '}
                                   <span className="text-muted font-normal">
-                                    ({line.variantTitleBn})
+                                    ({localizedField(line, "variantTitleBn", locale)})
                                   </span>
                                 </div>
                                 <div className="font-mono text-[8px] text-muted">
-                                  Public: <strong className="text-ink">{line.publicSku}</strong> ·
-                                  Vendor SKU:{' '}
+                                  <LocalizedText source={"Public:"} area="admin" />{" "}<strong className="text-ink">{line.publicSku}</strong> {" "}<LocalizedText source={"· Vendor SKU:"} area="admin" />{' '}
                                   <strong className="text-ink">
                                     {line.internalVendorSku}
                                   </strong>{' '}
                                   · {line.warehouseBinCode ?? 'BIN-A1'} ·{' '}
-                                  {line.weightGrams ?? 450}g
-                                </div>
+                                  {line.weightGrams ?? 450}<LocalizedText source={"g"} area="admin" />{" "}</div>
                               </td>
                               <td className="py-1 px-1 text-center font-mono font-bold text-ink">
-                                {formatLocaleNumber(line.quantity, locale)}টি
-                              </td>
+                                {formatLocaleNumber(line.quantity, locale)}<LocalizedText source={"টি"} area="admin" />{" "}</td>
                               {(isSuperAdmin || isVendor) && (
                                 <>
                                   <td className="py-1 px-1 text-right font-mono">
@@ -1044,7 +1024,7 @@ export function PrintEnginePanel({
                                       )}
                                     </div>
                                     <div className="text-[7.5px] text-muted">
-                                      মোট:{' '}
+                                      <LocalizedText source={"মোট:"} area="admin" />{' '}
                                       {formatPoishaToBdt(
                                         line.lineSupplierCostTotalPoisha ??
                                           (line.snapSupplierCostPoisha ?? 0) *
@@ -1062,7 +1042,7 @@ export function PrintEnginePanel({
                                       )}
                                     </div>
                                     <div className="text-[7.5px] text-muted">
-                                      মোট:{' '}
+                                      <LocalizedText source={"মোট:"} area="admin" />{' '}
                                       {formatPoishaToBdt(
                                         line.lineSupplierProfitTotalPoisha ?? 0,
                                         locale
@@ -1079,7 +1059,7 @@ export function PrintEnginePanel({
                                       )}
                                     </div>
                                     <div className="text-[7.5px] font-normal text-muted">
-                                      একক:{' '}
+                                      <LocalizedText source={"একক:"} area="admin" />{' '}
                                       {formatPoishaToBdt(
                                         line.snapSupplierPayablePoisha ?? 0,
                                         locale
@@ -1100,7 +1080,7 @@ export function PrintEnginePanel({
                                       )}
                                     </div>
                                     <div className="text-[7.5px] text-muted">
-                                      {((line.commissionBp ?? 0) / 100).toFixed(1)}% (একক:{' '}
+                                      {((line.commissionBp ?? 0) / 100).toFixed(1)}<LocalizedText source={"% (একক:"} area="admin" />{' '}
                                       {formatPoishaToBdt(
                                         line.snapPlatformMarginPoisha ?? 0,
                                         locale
@@ -1118,8 +1098,7 @@ export function PrintEnginePanel({
                                       )}
                                     </div>
                                     <div className="text-[7.5px] text-muted">
-                                      ছাড়: -
-                                      {formatPoishaToBdt(
+                                      <LocalizedText source={"ছাড়: -"} area="admin" />{" "}{formatPoishaToBdt(
                                         line.allocatedPromoDiscountPoisha ?? 0,
                                         locale
                                       )}
@@ -1135,7 +1114,7 @@ export function PrintEnginePanel({
                                   )}
                                 </div>
                                 <div className="text-[7.5px] font-normal text-muted">
-                                  একক:{' '}
+                                  <LocalizedText source={"একক:"} area="admin" />{' '}
                                   {formatPoishaToBdt(
                                     line.unitSalePricePoisha ?? 0,
                                     locale
@@ -1154,8 +1133,7 @@ export function PrintEnginePanel({
                         {/* Left: Per-Vendor Escrow Payable Breakdown */}
                         <div className="sm:col-span-5 border border-border rounded-[var(--radius-sm)] p-1.5 bg-bg space-y-1">
                           <p className="font-bold text-ink uppercase text-[8px] border-b border-border pb-0.5">
-                            সাপ্লায়ার-ভিত্তিক প্রদেয় ও পেআউট বিভাজন (SUPPLIER ESCROW SPLIT)
-                          </p>
+                            <LocalizedText source={"সাপ্লায়ার-ভিত্তিক প্রদেয় ও পেআউট বিভাজন (SUPPLIER ESCROW SPLIT)"} area="admin" />{" "}</p>
                           {p3.accountingSummary.vendorSplitBreakdown.map(
                             (vs) => (
                               <div
@@ -1164,28 +1142,27 @@ export function PrintEnginePanel({
                               >
                                 <div className="leading-tight">
                                   <span className="font-bold text-ink">
-                                    {vs.vendorCode} · {vs.vendorNameBn}
+                                    {vs.vendorCode} · {localizedField(vs, "vendorNameBn", locale)}
                                   </span>
                                   <div className="text-[7.5px] text-muted">
-                                    {vs.payoutMethodBn} ({vs.payoutAccountNo}) ·{' '}
-                                    {vs.totalUnits} পিস
-                                  </div>
+                                    {localizedField(vs, "payoutMethodBn", locale)} ({vs.payoutAccountNo}) ·{' '}
+                                    {vs.totalUnits} {" "}<LocalizedText source={"পিস"} area="admin" />{" "}</div>
                                 </div>
                                 <div className="text-right leading-tight">
                                   <span className="font-bold text-ink">
-                                    প্রদেয়:{' '}
+                                    <LocalizedText source={"প্রদেয়:"} area="admin" />{' '}
                                     {formatPoishaToBdt(
                                       vs.supplierPayablePoisha,
                                       locale
                                     )}
                                   </span>
                                   <div className="text-[7.5px] text-muted">
-                                    কেনা:{' '}
+                                    <LocalizedText source={"কেনা:"} area="admin" />{' '}
                                     {formatPoishaToBdt(
                                       vs.supplierCostPoisha,
                                       locale
                                     )}{' '}
-                                    | লাভ:{' '}
+                                    <LocalizedText source={"| লাভ:"} area="admin" />{' '}
                                     {formatPoishaToBdt(
                                       vs.supplierProfitPoisha,
                                       locale
@@ -1200,11 +1177,10 @@ export function PrintEnginePanel({
                         {/* Right: Order-Level P&L, Delivery, bKash & Net Profit Ledger */}
                         <div className="sm:col-span-7 border border-border rounded-[var(--radius-sm)] p-1.5 bg-bg">
                           <p className="font-bold text-ink uppercase text-[8px] border-b border-border pb-0.5 mb-1">
-                            পূর্ণাঙ্গ অর্ডার হিসাব-নিকাশ ও নিট প্ল্যাটফর্ম লাভ (ORDER P&L & LEDGER SUMMARY)
-                          </p>
+                            <LocalizedText source={"পূর্ণাঙ্গ অর্ডার হিসাব-নিকাশ ও নিট প্ল্যাটফর্ম লাভ (ORDER P&L & LEDGER SUMMARY)"} area="admin" />{" "}</p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-0.5 leading-snug">
                             <div className="flex justify-between">
-                              <span className="text-muted">পণ্যের মোট বিক্রয়:</span>
+                              <span className="text-muted"><LocalizedText source={"পণ্যের মোট বিক্রয়:"} area="admin" /></span>
                               <span className="font-bold text-ink">
                                 {formatPoishaToBdt(
                                   p3.accountingSummary
@@ -1215,7 +1191,7 @@ export function PrintEnginePanel({
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted">
-                                প্রোমো ছাড় ({p3.accountingSummary.promoCode ?? 'N/A'}):
+                                <LocalizedText source={"প্রোমো ছাড় ("} area="admin" />{p3.accountingSummary.promoCode ?? 'N/A'}):
                               </span>
                               <span className="text-danger">
                                 -
@@ -1226,7 +1202,7 @@ export function PrintEnginePanel({
                               </span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted">ডেলিভারি (গ্রাহক/প্রকৃত):</span>
+                              <span className="text-muted"><LocalizedText source={"ডেলিভারি (গ্রাহক/প্রকৃত):"} area="admin" /></span>
                               <span>
                                 {formatPoishaToBdt(
                                   p3.accountingSummary
@@ -1242,7 +1218,7 @@ export function PrintEnginePanel({
                               </span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted">মোট সাপ্লায়ার কেনা দাম:</span>
+                              <span className="text-muted"><LocalizedText source={"মোট সাপ্লায়ার কেনা দাম:"} area="admin" /></span>
                               <span>
                                 {formatPoishaToBdt(
                                   p3.accountingSummary.totalSupplierCostPoisha,
@@ -1251,7 +1227,7 @@ export function PrintEnginePanel({
                               </span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted">মোট সাপ্লায়ার লাভ:</span>
+                              <span className="text-muted"><LocalizedText source={"মোট সাপ্লায়ার লাভ:"} area="admin" /></span>
                               <span>
                                 +
                                 {formatPoishaToBdt(
@@ -1262,7 +1238,7 @@ export function PrintEnginePanel({
                               </span>
                             </div>
                             <div className="flex justify-between font-bold text-ink">
-                              <span>সাপ্লায়ার প্রদেয় (Escrow):</span>
+                              <span><LocalizedText source={"সাপ্লায়ার প্রদেয় (Escrow):"} area="admin" /></span>
                               <span>
                                 {formatPoishaToBdt(
                                   p3.accountingSummary
@@ -1273,7 +1249,7 @@ export function PrintEnginePanel({
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted">
-                                অগ্রিম ({p3.manualPaymentTrxId ?? 'COD'}):
+                                <LocalizedText source={"অগ্রিম ("} area="admin" />{p3.manualPaymentTrxId ?? 'COD'}):
                               </span>
                               <span>
                                 {formatPoishaToBdt(
@@ -1283,7 +1259,7 @@ export function PrintEnginePanel({
                               </span>
                             </div>
                             <div className="flex justify-between font-bold text-ink">
-                              <span>কুরিয়ার সিওডি প্রাপ্য:</span>
+                              <span><LocalizedText source={"কুরিয়ার সিওডি প্রাপ্য:"} area="admin" /></span>
                               <span>
                                 {formatPoishaToBdt(
                                   p3.accountingSummary.codCollectablePoisha,
@@ -1292,7 +1268,7 @@ export function PrintEnginePanel({
                               </span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted">প্যাকিং ও ভ্যাট (৫%):</span>
+                              <span className="text-muted"><LocalizedText source={"প্যাকিং ও ভ্যাট (৫%):"} area="admin" /></span>
                               <span>
                                 -
                                 {formatPoishaToBdt(
@@ -1307,15 +1283,13 @@ export function PrintEnginePanel({
                           </div>
                           <div className="mt-1 pt-1 border-t border-border flex flex-wrap items-center justify-between gap-2">
                             <span className="text-[8px] text-muted">
-                              হিসাব সূত্র: গ্রস মার্জিন (
-                              {formatPoishaToBdt(
+                              <LocalizedText source={"হিসাব সূত্র: গ্রস মার্জিন ("} area="admin" />{" "}{formatPoishaToBdt(
                                 p3.accountingSummary.grossPlatformMarginPoisha,
                                 locale
                               )}
-                              ) - ছাড় - ডেলিভারি ভর্তুকি - প্যাকিং - ৫% ভ্যাট
-                            </span>
+                              <LocalizedText source={") - ছাড় - ডেলিভারি ভর্তুকি - প্যাকিং - ৫% ভ্যাট"} area="admin" />{" "}</span>
                             <span className="text-[9.5px] font-bold text-success bg-surface px-2 py-0.5 rounded border border-border">
-                              নিট প্ল্যাটফর্ম লাভ (Net Profit):{' '}
+                              <LocalizedText source={"নিট প্ল্যাটফর্ম লাভ (Net Profit):"} area="admin" />{' '}
                               {formatPoishaToBdt(
                                 p3.accountingSummary
                                   .netPlatformRetainedProfitPoisha,
@@ -1343,21 +1317,18 @@ export function PrintEnginePanel({
                         </div>
                         {p3.internalStaffNote && (
                           <p className="font-mono text-[8px] text-ink bg-bg px-1.5 py-0.5 rounded border border-border">
-                            স্টাফ নোট: {p3.internalStaffNote}
+                            <LocalizedText source={"স্টাফ নোট:"} area="admin" />{" "}{p3.internalStaffNote}
                           </p>
                         )}
                       </div>
 
                       <div className="sm:col-span-5 grid grid-cols-3 gap-1.5 text-center font-mono text-[8px] pt-2">
                         <div className="border-t border-ink pt-0.5 text-muted">
-                          প্যাকিং অফিসার
-                        </div>
+                          <LocalizedText source={"প্যাকিং অফিসার"} area="admin" />{" "}</div>
                         <div className="border-t border-ink pt-0.5 text-muted">
-                          কিউসি যাচাইকারী
-                        </div>
+                          <LocalizedText source={"কিউসি যাচাইকারী"} area="admin" />{" "}</div>
                         <div className="border-t border-ink pt-0.5 text-muted">
-                          অ্যাডমিন / হিসাব রক্ষণ
-                        </div>
+                          <LocalizedText source={"অ্যাডমিন / হিসাব রক্ষণ"} area="admin" />{" "}</div>
                       </div>
                     </div>
                   </div>
@@ -1376,11 +1347,10 @@ export function PrintEnginePanel({
           <div className="border-b border-border pb-2">
             <h2 className="text-base font-bold text-ink flex items-center gap-2">
               <Sliders className="w-4 h-4 text-ink" />
-              <span>প্রিন্ট টেমপ্লেট ও লেবেল কনফিগারেশন (Module O)</span>
+              <span><LocalizedText source={"প্রিন্ট টেমপ্লেট ও লেবেল কনফিগারেশন (Module O)"} area="admin" /></span>
             </h2>
             <p className="text-xs text-muted">
-              ইনভয়েসের প্রতিটি অংশের শিরোনাম, পেপার সাইজ এবং গ্রাহক ফুট নোট নিয়ন্ত্রণ করুন।
-            </p>
+              <LocalizedText source={"ইনভয়েসের প্রতিটি অংশের শিরোনাম, পেপার সাইজ এবং গ্রাহক ফুট নোট নিয়ন্ত্রণ করুন।"} area="admin" />{" "}</p>
           </div>
 
           <form onSubmit={handleSaveTemplateConfig} className="space-y-4">
@@ -1451,8 +1421,7 @@ export function PrintEnginePanel({
 
             <div className="flex justify-end pt-2 border-t border-border">
               <Button type="submit" variant="primary" size="md">
-                সেটিংস সেভ করুন
-              </Button>
+                <LocalizedText source={"সেটিংস সেভ করুন"} area="admin" />{" "}</Button>
             </div>
           </form>
         </Card>
@@ -1467,13 +1436,12 @@ export function PrintEnginePanel({
             <div>
               <h2 className="text-base font-bold text-ink flex items-center gap-2">
                 <History className="w-4 h-4 text-ink" />
-                <span>প্রিন্ট ইতিহাস ও সামারি (Print Audit Log)</span>
+                <span><LocalizedText source={"প্রিন্ট ইতিহাস ও সামারি (Print Audit Log)"} area="admin" /></span>
               </h2>
               <p className="text-xs text-muted">
-                সর্বশেষ কতটি ইনভয়েস ও কুরিয়ার স্টিকার প্রিন্ট করা হয়েছে তার তালিকা।
-              </p>
+                <LocalizedText source={"সর্বশেষ কতটি ইনভয়েস ও কুরিয়ার স্টিকার প্রিন্ট করা হয়েছে তার তালিকা।"} area="admin" />{" "}</p>
             </div>
-            <Badge status="neutral">মোট রেকর্ড: {slips.length}</Badge>
+            <Badge status="neutral"><LocalizedText source={"মোট রেকর্ড:"} area="admin" />{" "}{slips.length}</Badge>
           </div>
 
           <div className="divide-y divide-border">
@@ -1490,21 +1458,20 @@ export function PrintEnginePanel({
                     <div className="flex items-center gap-2 font-mono font-bold text-ink">
                       <span>{p12.orderNo}</span>
                       <Badge status={p3.isReprintWarning ? 'warning' : 'neutral'}>
-                        {p3.printCount} বার প্রিন্ট হয়েছে
-                      </Badge>
+                        {p3.printCount} {" "}<LocalizedText source={"বার প্রিন্ট হয়েছে"} area="admin" />{" "}</Badge>
                     </div>
                     <p className="text-muted">
-                      গ্রাহক: {p12.customerName} ({p12.customerPhone}) —{' '}
-                      {p12.districtNameBn}
+                      <LocalizedText source={"গ্রাহক:"} area="admin" />{" "}{p12.customerName} ({p12.customerPhone}) —{' '}
+                      {localizedField(p12, "districtNameBn", locale)}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-3 font-mono text-[11px] self-start sm:self-auto">
                     <span>
-                      কুরিয়ার: {p12.courierProvider.toUpperCase()} ({p12.trackingCode})
+                      <LocalizedText source={"কুরিয়ার:"} area="admin" />{" "}{p12.courierProvider.toUpperCase()} ({p12.trackingCode})
                     </span>
                     <span className="font-bold text-ink">
-                      COD: {formatPoishaToBdt(p12.codCollectablePoisha, locale)}
+                      <LocalizedText source={"COD:"} area="admin" />{" "}{formatPoishaToBdt(p12.codCollectablePoisha, locale)}
                     </span>
                     <button
                       type="button"
@@ -1514,8 +1481,7 @@ export function PrintEnginePanel({
                       }}
                       className="px-2 py-1 rounded bg-surface border border-border text-ink hover:bg-bg font-semibold cursor-pointer"
                     >
-                      পুনরায় প্রিন্ট করুন
-                    </button>
+                      <LocalizedText source={"পুনরায় প্রিন্ট করুন"} area="admin" />{" "}</button>
                   </div>
                 </div>
               );

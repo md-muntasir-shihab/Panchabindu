@@ -1,4 +1,9 @@
 'use client';
+import { localizedField } from '@/src/lib/i18n/ui-text';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/admin/courier-and-escrow-panel.tsx
 // Phase 4B UI Panels:
@@ -449,8 +454,7 @@ export function Courier360AndRatesPanel({
             onClick={() => setFeedback(null)}
             className="underline cursor-pointer text-ink"
           >
-            বন্ধ করুন
-          </button>
+            <LocalizedText source={"বন্ধ করুন"} area="admin" />{" "}</button>
         </div>
       )}
 
@@ -609,11 +613,11 @@ export function Courier360AndRatesPanel({
                     <div className="flex items-center gap-2">
                       <Truck className="w-4 h-4 text-ink" aria-hidden="true" />
                       <h2 className="text-sm font-bold text-ink">
-                        {c.providerLabelBn}
+                        {localizedField(c, "providerLabelBn", locale)}
                       </h2>
                     </div>
                     <Badge status={c.apiConnected ? 'success' : 'warning'}>
-                      {c.connectionStatusBadgeBn}
+                      {localizedField(c, "connectionStatusBadgeBn", locale)}
                     </Badge>
                   </div>
 
@@ -623,33 +627,29 @@ export function Courier360AndRatesPanel({
                       <CalendarClock className="w-4 h-4 text-ink" />
                       <div>
                         <p className="text-[10px] text-muted">
-                          পরবর্তী আনুমানিক পেআউট শিডিউল:
-                        </p>
+                          <LocalizedText source={"পরবর্তী আনুমানিক পেআউট শিডিউল:"} area="admin" />{" "}</p>
                         <p className="font-bold text-ink">
-                          {schedule.dateLabelBn} ({schedule.timeLabelBn})
+                          {localizedField(schedule, "dateLabelBn", locale)} ({localizedField(schedule, "timeLabelBn", locale)})
                         </p>
                       </div>
                     </div>
                     <Badge status="info">
-                      আর {schedule.daysRemaining} দিন বাকি
-                    </Badge>
+                      <LocalizedText source={"আর"} area="admin" />{" "}{schedule.daysRemaining} {" "}<LocalizedText source={"দিন বাকি"} area="admin" />{" "}</Badge>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     <div className="p-2.5 border border-border rounded-[var(--radius-sm)] bg-surface">
-                      <p className="text-muted text-[11px]">ইন-ট্রানজিট COD</p>
+                      <p className="text-muted text-[11px]"><LocalizedText source={"ইন-ট্রানজিট COD"} area="admin" /></p>
                       <p className="font-mono font-bold text-ink">
                         {formatPoishaToBdt(c.inTransitCodPoisha, locale)}
                       </p>
                       <p className="text-[10px] text-muted">
-                        {formatLocaleNumber(c.inTransitCount, locale)} টি পার্সেল
-                      </p>
+                        {formatLocaleNumber(c.inTransitCount, locale)} {" "}<LocalizedText source={"টি পার্সেল"} area="admin" />{" "}</p>
                     </div>
 
                     <div className="p-2.5 border border-border rounded-[var(--radius-sm)] bg-surface">
                       <p className="text-muted text-[11px]">
-                        ডেলিভারড (অনিষ্পন্ন)
-                      </p>
+                        <LocalizedText source={"ডেলিভারড (অনিষ্পন্ন)"} area="admin" />{" "}</p>
                       <p className="font-mono font-bold text-warning">
                         {formatPoishaToBdt(
                           c.deliveredUnsettledCodPoisha,
@@ -658,24 +658,21 @@ export function Courier360AndRatesPanel({
                       </p>
                       <p className="text-[10px] text-muted">
                         {formatLocaleNumber(c.deliveredUnsettledCount, locale)}{' '}
-                        টি বাকি
-                      </p>
+                        <LocalizedText source={"টি বাকি"} area="admin" />{" "}</p>
                     </div>
 
                     <div className="p-2.5 border border-border rounded-[var(--radius-sm)] bg-surface">
-                      <p className="text-muted text-[11px]">প্রাপ্ত রেমিট্যান্স</p>
+                      <p className="text-muted text-[11px]"><LocalizedText source={"প্রাপ্ত রেমিট্যান্স"} area="admin" /></p>
                       <p className="font-mono font-bold text-success">
                         {formatPoishaToBdt(c.settledRemittedPoisha, locale)}
                       </p>
                       <p className="text-[10px] text-muted">
-                        {formatLocaleNumber(c.settledCount, locale)} টি সেটেলড
-                      </p>
+                        {formatLocaleNumber(c.settledCount, locale)} {" "}<LocalizedText source={"টি সেটেলড"} area="admin" />{" "}</p>
                     </div>
 
                     <div className="p-2.5 border border-border rounded-[var(--radius-sm)] bg-surface">
                       <p className="text-muted text-[11px]">
-                        শর্ট-পেমেন্ট ও ক্লেইম
-                      </p>
+                        <LocalizedText source={"শর্ট-পেমেন্ট ও ক্লেইম"} area="admin" />{" "}</p>
                       <p className="font-mono font-bold text-danger">
                         {formatPoishaToBdt(
                           c.shortPaymentTotalPoisha + c.openClaimsPoisha,
@@ -683,27 +680,25 @@ export function Courier360AndRatesPanel({
                         )}
                       </p>
                       <p className="text-[10px] text-muted">
-                        ক্লেইম: {formatLocaleNumber(c.openClaimsCount, locale)}{' '}
-                        টি
-                      </p>
+                        <LocalizedText source={"ক্লেইম:"} area="admin" />{" "}{formatLocaleNumber(c.openClaimsCount, locale)}{' '}
+                        <LocalizedText source={"টি"} area="admin" />{" "}</p>
                     </div>
                   </div>
 
                   {/* Aging Buckets (0-3 / 4-7 / 8-14 / 15+ Days) */}
                   <div className="pt-2 border-t border-border text-[11px] space-y-1">
                     <div className="flex items-center justify-between text-muted">
-                      <span>অনিষ্পন্ন বকেয়া বয়স (Aging Buckets):</span>
+                      <span><LocalizedText source={"অনিষ্পন্ন বকেয়া বয়স (Aging Buckets):"} area="admin" /></span>
                       {c.oldestUnsettledOrderNo && (
                         <span className="font-mono text-ink">
-                          সবচেয়ে পুরনো: {c.oldestUnsettledOrderNo} (
+                          <LocalizedText source={"সবচেয়ে পুরনো:"} area="admin" />{" "}{c.oldestUnsettledOrderNo} (
                           {formatLocaleNumber(c.oldestUnsettledDays, locale)}{' '}
-                          দিন)
-                        </span>
+                          <LocalizedText source={"দিন)"} area="admin" />{" "}</span>
                       )}
                     </div>
                     <div className="grid grid-cols-4 gap-1.5 font-mono text-center">
                       <div className="p-1.5 border border-border rounded-[var(--radius-sm)] bg-bg">
-                        <div className="text-muted text-[10px]">০-৩ দিন</div>
+                        <div className="text-muted text-[10px]"><LocalizedText source={"০-৩ দিন"} area="admin" /></div>
                         <div className="font-bold text-ink">
                           {formatPoishaToBdt(
                             c.agingBuckets.days0to3Poisha,
@@ -712,7 +707,7 @@ export function Courier360AndRatesPanel({
                         </div>
                       </div>
                       <div className="p-1.5 border border-border rounded-[var(--radius-sm)] bg-bg">
-                        <div className="text-muted text-[10px]">৪-৭ দিন</div>
+                        <div className="text-muted text-[10px]"><LocalizedText source={"৪-৭ দিন"} area="admin" /></div>
                         <div className="font-bold text-ink">
                           {formatPoishaToBdt(
                             c.agingBuckets.days4to7Poisha,
@@ -721,7 +716,7 @@ export function Courier360AndRatesPanel({
                         </div>
                       </div>
                       <div className="p-1.5 border border-border rounded-[var(--radius-sm)] bg-bg">
-                        <div className="text-muted text-[10px]">৮-১৪ দিন</div>
+                        <div className="text-muted text-[10px]"><LocalizedText source={"৮-১৪ দিন"} area="admin" /></div>
                         <div className="font-bold text-warning">
                           {formatPoishaToBdt(
                             c.agingBuckets.days8to14Poisha,
@@ -730,7 +725,7 @@ export function Courier360AndRatesPanel({
                         </div>
                       </div>
                       <div className="p-1.5 border border-border rounded-[var(--radius-sm)] bg-bg">
-                        <div className="text-muted text-[10px]">১৫+ দিন</div>
+                        <div className="text-muted text-[10px]"><LocalizedText source={"১৫+ দিন"} area="admin" /></div>
                         <div className="font-bold text-danger">
                           {formatPoishaToBdt(
                             c.agingBuckets.days15PlusPoisha,
@@ -756,15 +751,13 @@ export function Courier360AndRatesPanel({
             <div>
               <h2 className="text-base font-bold text-ink flex items-center gap-2">
                 <PackageCheck className="w-4 h-4 text-ink" />
-                <span>কুরিয়ারওয়ারি বিস্তারিত পার্সেল ও পাওনা তালিকা</span>
+                <span><LocalizedText source={"কুরিয়ারওয়ারি বিস্তারিত পার্সেল ও পাওনা তালিকা"} area="admin" /></span>
               </h2>
               <p className="text-xs text-muted">
-                প্রতিটি কুরিয়ারে থাকা পার্সেল, গ্রাহকের ঠিকানা, ট্র্যাকিং কোড এবং প্রত্যাশিত সিওডি ও পেআউটের দিন দেখুন।
-              </p>
+                <LocalizedText source={"প্রতিটি কুরিয়ারে থাকা পার্সেল, গ্রাহকের ঠিকানা, ট্র্যাকিং কোড এবং প্রত্যাশিত সিওডি ও পেআউটের দিন দেখুন।"} area="admin" />{" "}</p>
             </div>
             <div className="font-mono text-xs text-muted">
-              দেখাচ্ছে: <strong>{filteredParcels.length}</strong> / {orders.length} টি
-            </div>
+              <LocalizedText source={"দেখাচ্ছে:"} area="admin" />{" "}<strong>{filteredParcels.length}</strong> / {orders.length} {" "}<LocalizedText source={"টি"} area="admin" />{" "}</div>
           </div>
 
           {/* Search & Filter Controls Bar */}
@@ -775,40 +768,39 @@ export function Courier360AndRatesPanel({
                 type="text"
                 value={parcelSearchQuery}
                 onChange={(e) => setParcelSearchQuery(e.target.value)}
-                placeholder="অর্ডার নং, ফোন বা গ্রাহকের নাম দিয়ে খুঁজুন..."
+                placeholder={uiText("অর্ডার নং, ফোন বা গ্রাহকের নাম দিয়ে খুঁজুন...", locale)}
                 className="w-full pl-8 pr-3 py-1.5 bg-bg border border-border rounded-[var(--radius-md)] text-xs text-ink placeholder:text-muted"
               />
             </div>
 
             <div>
               <select
-                aria-label="Filter by courier"
+                aria-label={uiText("Filter by courier", locale)}
                 value={parcelCourierFilter}
                 onChange={(e) => setParcelCourierFilter(e.target.value)}
                 className="w-full px-3 py-1.5 bg-bg text-ink border border-border rounded-[var(--radius-md)] text-xs"
               >
-                <option value="all">সকল কুরিয়ার (Steadfast, Pathao, RedX...)</option>
-                <option value="steadfast">Steadfast Courier</option>
-                <option value="pathao">Pathao Courier</option>
-                <option value="redx">RedX Logistics</option>
-                <option value="bd_post">BD Post (ডাক বিভাগ)</option>
+                <option value="all"><LocalizedText source={"সকল কুরিয়ার (Steadfast, Pathao, RedX...)"} area="admin" /></option>
+                <option value="steadfast"><LocalizedText source={"Steadfast Courier"} area="admin" /></option>
+                <option value="pathao"><LocalizedText source={"Pathao Courier"} area="admin" /></option>
+
+                <option value="bd_post"><LocalizedText source={"BD Post (ডাক বিভাগ)"} area="admin" /></option>
               </select>
             </div>
 
             <div>
               <select
-                aria-label="Filter by parcel status"
+                aria-label={uiText("Filter by parcel status", locale)}
                 value={parcelStatusFilter}
                 onChange={(e) => setParcelStatusFilter(e.target.value)}
                 className="w-full px-3 py-1.5 bg-bg text-ink border border-border rounded-[var(--radius-md)] text-xs font-medium"
               >
-                <option value="all">সকল অবস্থা (All Statuses)</option>
-                <option value="in_transit">ইন-ট্রানজিট (Packed/Shipped)</option>
+                <option value="all"><LocalizedText source={"সকল অবস্থা (All Statuses)"} area="admin" /></option>
+                <option value="in_transit"><LocalizedText source={"ইন-ট্রানজিট (Packed/Shipped)"} area="admin" /></option>
                 <option value="delivered_unsettled">
-                  ডেলিভারড (অনিষ্পন্ন সিওডি)
-                </option>
-                <option value="remitted">রেমিট্যান্স প্রাপ্ত (Settled)</option>
-                <option value="returned">রিটার্ন প্রক্রিয়ায়</option>
+                  <LocalizedText source={"ডেলিভারড (অনিষ্পন্ন সিওডি)"} area="admin" />{" "}</option>
+                <option value="remitted"><LocalizedText source={"রেমিট্যান্স প্রাপ্ত (Settled)"} area="admin" /></option>
+                <option value="returned"><LocalizedText source={"রিটার্ন প্রক্রিয়ায়"} area="admin" /></option>
               </select>
             </div>
           </div>
@@ -816,8 +808,7 @@ export function Courier360AndRatesPanel({
           {/* Parcels List Table */}
           {filteredParcels.length === 0 ? (
             <div className="p-8 text-center border border-dashed border-border rounded-[var(--radius-md)] text-muted text-xs">
-              কোনো পার্সেল পাওয়া যায়নি। ফিল্টার পরিবর্তন করে চেষ্টা করুন।
-            </div>
+              <LocalizedText source={"কোনো পার্সেল পাওয়া যায়নি। ফিল্টার পরিবর্তন করে চেষ্টা করুন।"} area="admin" />{" "}</div>
           ) : (
             <div className="space-y-3">
               {filteredParcels.map((ord) => {
@@ -867,7 +858,7 @@ export function Courier360AndRatesPanel({
                           className="px-2.5 py-1 rounded-[var(--radius-sm)] border border-border bg-surface hover:bg-bg text-ink inline-flex items-center gap-1 font-medium transition-colors"
                         >
                           <ExternalLink className="w-3 h-3 text-ink" />
-                          <span>কুরিয়ার ট্র্যাকিং</span>
+                          <span><LocalizedText source={"কুরিয়ার ট্র্যাকিং"} area="admin" /></span>
                         </a>
 
                         <button
@@ -876,7 +867,7 @@ export function Courier360AndRatesPanel({
                           className="px-2.5 py-1 rounded-[var(--radius-sm)] bg-emerald-600 hover:bg-emerald-700 text-white font-bold inline-flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <CreditCard className="w-3 h-3" />
-                          <span>রেমিট্যান্স এন্ট্রি</span>
+                          <span><LocalizedText source={"রেমিট্যান্স এন্ট্রি"} area="admin" /></span>
                         </button>
 
                         <button
@@ -885,7 +876,7 @@ export function Courier360AndRatesPanel({
                           className="px-2.5 py-1 rounded-[var(--radius-sm)] border border-rose-300 dark:border-rose-800 bg-rose-500/10 text-rose-700 dark:text-rose-400 font-medium hover:bg-rose-500/20 inline-flex items-center gap-1 cursor-pointer"
                         >
                           <AlertTriangle className="w-3 h-3" />
-                          <span>ক্লেইম দাখিল</span>
+                          <span><LocalizedText source={"ক্লেইম দাখিল"} area="admin" /></span>
                         </button>
                       </div>
                     </div>
@@ -897,13 +888,13 @@ export function Courier360AndRatesPanel({
                           {ord.customerPhone}
                         </p>
                         <p className="text-muted text-[11px]">
-                          {ord.districtNameBn}, {ord.streetAddress}
+                          {localizedField(ord, "districtNameBn", locale)}, {ord.streetAddress}
                         </p>
                       </div>
 
                       <div className="space-y-1">
                         <p className="text-muted text-[11px]">
-                          কুরিয়ার ট্র্যাকিং কোড:{' '}
+                          <LocalizedText source={"কুরিয়ার ট্র্যাকিং কোড:"} area="admin" />{' '}
                           <strong className="font-mono text-ink">
                             {ord.trackingCode ||
                               ord.consignmentId ||
@@ -913,26 +904,26 @@ export function Courier360AndRatesPanel({
                         <div className="flex items-center gap-1 text-[11px] text-muted">
                           <CalendarClock className="w-3.5 h-3.5 text-ink" />
                           <span>
-                            পেআউট শিডিউল: <strong>{schedule.dateLabelBn}</strong>
+                            <LocalizedText source={"পেআউট শিডিউল:"} area="admin" />{" "}<strong>{localizedField(schedule, "dateLabelBn", locale)}</strong>
                           </span>
                         </div>
                       </div>
 
                       <div className="p-2 rounded bg-surface border border-border text-right space-y-0.5">
                         <div className="flex justify-between text-muted text-[11px]">
-                          <span>প্রস্থানীয় COD:</span>
+                          <span><LocalizedText source={"প্রস্থানীয় COD:"} area="admin" /></span>
                           <span className="font-mono font-bold text-ink">
                             {formatPoishaToBdt(ord.codCollectablePoisha ?? 0, locale)}
                           </span>
                         </div>
                         <div className="flex justify-between text-muted text-[11px]">
-                          <span>অগ্রিম জমা:</span>
+                          <span><LocalizedText source={"অগ্রিম জমা:"} area="admin" /></span>
                           <span className="font-mono text-emerald-700 dark:text-emerald-400">
                             {formatPoishaToBdt(ord.advancePaidPoisha ?? 0, locale)}
                           </span>
                         </div>
                         <div className="flex justify-between font-bold text-xs pt-1 border-t border-border">
-                          <span>প্রাপ্য নিট:</span>
+                          <span><LocalizedText source={"প্রাপ্য নিট:"} area="admin" /></span>
                           <span className="font-mono text-success">
                             {formatPoishaToBdt(
                               Math.max(0, (ord.codCollectablePoisha ?? 0) - 6000),
@@ -958,11 +949,10 @@ export function Courier360AndRatesPanel({
           <div className="border-b border-border pb-2">
             <h2 className="text-base font-bold text-ink flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
-              <span>কুরিয়ার সিওডি রেমিট্যান্স এন্ট্রি ও পেমেন্ট প্রুফ ফর্ম</span>
+              <span><LocalizedText source={"কুরিয়ার সিওডি রেমিট্যান্স এন্ট্রি ও পেমেন্ট প্রুফ ফর্ম"} area="admin" /></span>
             </h2>
             <p className="text-xs text-muted">
-              কুরিয়ার কোম্পানি থেকে ব্যাংকে বা বিকাশ/নগদে টাকা আসার পর এখানে এন্ট্রি দিন। সিস্টেম স্বয়ংক্রিয়ভাবে শর্ট-পেমেন্ট বা ঘাটতি চেক করবে।
-            </p>
+              <LocalizedText source={"কুরিয়ার কোম্পানি থেকে ব্যাংকে বা বিকাশ/নগদে টাকা আসার পর এখানে এন্ট্রি দিন। সিস্টেম স্বয়ংক্রিয়ভাবে শর্ট-পেমেন্ট বা ঘাটতি চেক করবে।"} area="admin" />{" "}</p>
           </div>
 
           <form
@@ -1023,20 +1013,19 @@ export function Courier360AndRatesPanel({
               />
               <div className="space-y-1.5">
                 <label className="block font-medium text-ink">
-                  কুরিয়ার কোম্পানি নির্বাচন *
-                </label>
+                  <LocalizedText source={"কুরিয়ার কোম্পানি নির্বাচন *"} area="admin" />{" "}</label>
                 <select
-                  aria-label="Remittance courier"
+                  aria-label={uiText("Remittance courier", locale)}
                   value={remCourier}
                   onChange={(e) =>
                     setRemCourier(e.target.value as CourierProvider)
                   }
                   className="w-full min-h-[42px] px-3 py-1.5 bg-bg text-ink border border-border rounded-[var(--radius-md)]"
                 >
-                  <option value="steadfast">Steadfast Courier</option>
-                  <option value="pathao">Pathao Courier</option>
-                  <option value="redx">RedX Logistics</option>
-                  <option value="bd_post">BD Post (বাংলাদেশ ডাক বিভাগ)</option>
+                  <option value="steadfast"><LocalizedText source={"Steadfast Courier"} area="admin" /></option>
+                  <option value="pathao"><LocalizedText source={"Pathao Courier"} area="admin" /></option>
+
+                  <option value="bd_post"><LocalizedText source={"BD Post (বাংলাদেশ ডাক বিভাগ)"} area="admin" /></option>
                 </select>
               </div>
             </div>
@@ -1044,10 +1033,9 @@ export function Courier360AndRatesPanel({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <label className="block font-medium text-ink">
-                  অর্ডার নম্বর নির্বাচন *
-                </label>
+                  <LocalizedText source={"অর্ডার নম্বর নির্বাচন *"} area="admin" />{" "}</label>
                 <select
-                  aria-label="Order for remittance"
+                  aria-label={uiText("Order for remittance", locale)}
                   value={remOrderNo}
                   onChange={(e) => {
                     const selectedNo = e.target.value;
@@ -1097,25 +1085,20 @@ export function Courier360AndRatesPanel({
 
               <div className="space-y-1.5">
                 <label className="block font-medium text-ink">
-                  পেমেন্ট গ্রহণ মাধ্যম
-                </label>
+                  <LocalizedText source={"পেমেন্ট গ্রহণ মাধ্যম"} area="admin" />{" "}</label>
                 <select
                   value={remPaymentMethod}
                   onChange={(e) => setRemPaymentMethod(e.target.value)}
                   className="w-full min-h-[42px] px-3 py-1.5 bg-bg text-ink border border-border rounded-[var(--radius-md)]"
                 >
                   <option value="Bank Transfer (ব্যাংক ট্রান্সফার)">
-                    ব্যাংক ট্রান্সফার (City/EBL/Dutch Bangla)
-                  </option>
+                    <LocalizedText source={"ব্যাংক ট্রান্সফার (City/EBL/Dutch Bangla)"} area="admin" />{" "}</option>
                   <option value="bKash Merchant (বিকাশ)">
-                    বিকাশ মার্চেন্ট (bKash)
-                  </option>
+                    <LocalizedText source={"বিকাশ মার্চেন্ট (bKash)"} area="admin" />{" "}</option>
                   <option value="Nagad Merchant (নগদ)">
-                    নগদ মার্চেন্ট (Nagad)
-                  </option>
+                    <LocalizedText source={"নগদ মার্চেন্ট (Nagad)"} area="admin" />{" "}</option>
                   <option value="Cheque / Cash (চেক/ক্যাশ)">
-                    চেক বা নগদ ক্যাশ
-                  </option>
+                    <LocalizedText source={"চেক বা নগদ ক্যাশ"} area="admin" />{" "}</option>
                 </select>
               </div>
 
@@ -1135,15 +1118,14 @@ export function Courier360AndRatesPanel({
                 placeholder="https://... image or pdf link"
               />
               <p className="text-[10px] text-muted">
-                কুরিয়ার থেকে প্রাপ্ত ব্যাংক স্টেটমেন্ট বা মেসেজের স্ক্রিনশট লিংক দিন যা ভল্টে সংরক্ষিত থাকবে।
-              </p>
+                <LocalizedText source={"কুরিয়ার থেকে প্রাপ্ত ব্যাংক স্টেটমেন্ট বা মেসেজের স্ক্রিনশট লিংক দিন যা ভল্টে সংরক্ষিত থাকবে।"} area="admin" />{" "}</p>
             </div>
 
             <Input
               label="অতিরিক্ত দ্রষ্টব্য / স্টাফ নোট"
               value={remNotes}
               onChange={(e) => setRemNotes(e.target.value)}
-              placeholder="যেমন: স্টেটমেন্ট ট্রানজেকশন আইডিসহ ভেরিফাইড"
+              placeholder={uiText("যেমন: স্টেটমেন্ট ট্রানজেকশন আইডিসহ ভেরিফাইড", locale)}
             />
 
             {/* Live Short-Payment Auto-Detector Banner */}
@@ -1160,14 +1142,11 @@ export function Courier360AndRatesPanel({
                     <div className="flex items-center gap-1.5">
                       <AlertTriangle className="w-4 h-4" />
                       <span>
-                        ⚠️ টাকা কম পাওয়া গেছে! (ঘাটতি: ৳{diff.toFixed(2)})
+                        <LocalizedText source={"⚠️ টাকা কম পাওয়া গেছে! (ঘাটতি: ৳"} area="admin" />{diff.toFixed(2)})
                       </span>
                     </div>
                     <p className="text-[11px] font-normal">
-                      কুরিয়ারের দেওয়ার কথা ছিল ৳{expectedNet} (COD ৳{expected} -
-                      ফি ৳{fee}), কিন্তু পাওয়া গেছে ৳{received}। সিস্টেম এটি
-                      শর্ট-পেমেন্ট হিসেবে ফ্ল্যাগ করবে।
-                    </p>
+                      <LocalizedText source={"কুরিয়ারের দেওয়ার কথা ছিল ৳"} area="admin" />{expectedNet} {" "}<LocalizedText source={"(COD ৳"} area="admin" />{expected} {" "}<LocalizedText source={"- ফি ৳"} area="admin" />{fee}<LocalizedText source={"), কিন্তু পাওয়া গেছে ৳"} area="admin" />{received}<LocalizedText source={"। সিস্টেম এটি শর্ট-পেমেন্ট হিসেবে ফ্ল্যাগ করবে।"} area="admin" />{" "}</p>
                   </div>
                 );
               }
@@ -1175,7 +1154,7 @@ export function Courier360AndRatesPanel({
               return (
                 <div className="p-3 border border-emerald-300 dark:border-emerald-800 rounded-[var(--radius-md)] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>✓ রেমিট্যান্সের পরিমাণ হুবহু মিলেছে!</span>
+                  <span><LocalizedText source={"✓ রেমিট্যান্সের পরিমাণ হুবহু মিলেছে!"} area="admin" /></span>
                 </div>
               );
             })()}
@@ -1186,8 +1165,7 @@ export function Courier360AndRatesPanel({
               size="md"
               className="w-full"
             >
-              রেমিট্যান্স রিসিভড মার্ক, পেমেন্ট প্রুফ সেভ ও লেজার আপডেট করুন
-            </Button>
+              <LocalizedText source={"রেমিট্যান্স রিসিভড মার্ক, পেমেন্ট প্রুফ সেভ ও লেজার আপডেট করুন"} area="admin" />{" "}</Button>
           </form>
         </Card>
       )}
@@ -1201,26 +1179,25 @@ export function Courier360AndRatesPanel({
             <div>
               <h2 className="text-base font-bold text-ink flex items-center gap-2">
                 <FileCheck className="w-4 h-4" />
-                <span>কুরিয়ার রেমিট্যান্স ইতিহাস ও প্রমাণপত্র ভল্ট</span>
+                <span><LocalizedText source={"কুরিয়ার রেমিট্যান্স ইতিহাস ও প্রমাণপত্র ভল্ট"} area="admin" /></span>
               </h2>
               <p className="text-xs text-muted">
-                অপরিবর্তনীয় (Immutable Append-Only) রেমিট্যান্স রেজিস্টার ও ব্যাংক স্টেটমেন্ট ফাইল।
-              </p>
+                <LocalizedText source={"অপরিবর্তনীয় (Immutable Append-Only) রেমিট্যান্স রেজিস্টার ও ব্যাংক স্টেটমেন্ট ফাইল।"} area="admin" />{" "}</p>
             </div>
-            <Badge status="info">IMMUTABLE LEDGER</Badge>
+            <Badge status="info"><LocalizedText source={"IMMUTABLE LEDGER"} area="admin" /></Badge>
           </div>
 
           <div className="border border-border rounded-[var(--radius-md)] overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-border bg-surface text-muted">
-                  <th className="p-2.5">রেফারেন্স ও অর্ডার</th>
-                  <th className="p-2.5">পেমেন্ট মাধ্যম & TrxID</th>
-                  <th className="p-2.5 text-right">প্রত্যাশিত COD</th>
-                  <th className="p-2.5 text-right">কুরিয়ার ফি</th>
-                  <th className="p-2.5 text-right">প্রাপ্ত নিট টাকা</th>
-                  <th className="p-2.5 text-right">শর্ট-পেমেন্ট</th>
-                  <th className="p-2.5 text-center">পেমেন্ট প্রুফ</th>
+                  <th className="p-2.5"><LocalizedText source={"রেফারেন্স ও অর্ডার"} area="admin" /></th>
+                  <th className="p-2.5"><LocalizedText source={"পেমেন্ট মাধ্যম & TrxID"} area="admin" /></th>
+                  <th className="p-2.5 text-right"><LocalizedText source={"প্রত্যাশিত COD"} area="admin" /></th>
+                  <th className="p-2.5 text-right"><LocalizedText source={"কুরিয়ার ফি"} area="admin" /></th>
+                  <th className="p-2.5 text-right"><LocalizedText source={"প্রাপ্ত নিট টাকা"} area="admin" /></th>
+                  <th className="p-2.5 text-right"><LocalizedText source={"শর্ট-পেমেন্ট"} area="admin" /></th>
+                  <th className="p-2.5 text-center"><LocalizedText source={"পেমেন্ট প্রুফ"} area="admin" /></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border font-mono">
@@ -1234,11 +1211,9 @@ export function Courier360AndRatesPanel({
                     </td>
                     <td className="p-2.5">
                       <div className="font-semibold text-ink">
-                        Bank / bKash
-                      </div>
+                        <LocalizedText source={"Bank / bKash"} area="admin" />{" "}</div>
                       <div className="text-[11px] text-muted">
-                        Trx: TRX-STF-998811
-                      </div>
+                        <LocalizedText source={"Trx: TRX-STF-998811"} area="admin" />{" "}</div>
                     </td>
                     <td className="p-2.5 text-right">
                       {formatPoishaToBdt(r.expectedCodPoisha, locale)}
@@ -1252,10 +1227,10 @@ export function Courier360AndRatesPanel({
                     <td className="p-2.5 text-right">
                       {r.isShortPaymentFlagged ? (
                         <Badge status="danger">
-                          ঘাটতি: {formatPoishaToBdt(r.shortPaymentPoisha, locale)}
+                          <LocalizedText source={"ঘাটতি:"} area="admin" />{" "}{formatPoishaToBdt(r.shortPaymentPoisha, locale)}
                         </Badge>
                       ) : (
-                        <Badge status="success">সঠিক</Badge>
+                        <Badge status="success"><LocalizedText source={"সঠিক"} area="admin" /></Badge>
                       )}
                     </td>
                     <td className="p-2.5 text-center">
@@ -1269,7 +1244,7 @@ export function Courier360AndRatesPanel({
                         className="px-2 py-1 rounded-[var(--radius-sm)] border border-border bg-bg hover:bg-surface text-ink inline-flex items-center gap-1 text-[11px] cursor-pointer"
                       >
                         <Eye className="w-3 h-3" />
-                        <span>প্রমাণপত্র দেখুন</span>
+                        <span><LocalizedText source={"প্রমাণপত্র দেখুন"} area="admin" /></span>
                       </button>
                     </td>
                   </tr>
@@ -1289,30 +1264,27 @@ export function Courier360AndRatesPanel({
             <Card surface="bg" padding="md" className="lg:col-span-5 space-y-4">
               <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-border pb-2">
                 <PackageCheck className="w-4 h-4" aria-hidden="true" />
-                <span>পিকআপ ব্যাচ ও হ্যান্ডওভার ম্যানিফেস্ট জেনারেটর</span>
+                <span><LocalizedText source={"পিকআপ ব্যাচ ও হ্যান্ডওভার ম্যানিফেস্ট জেনারেটর"} area="admin" /></span>
               </h2>
               <p className="text-xs text-muted">
-                প্যাকড অর্ডারগুলোকে কুরিয়ার অনুযায়ী একত্রিত করে বারকোডসহ ম্যানিফেস্ট তৈরি করুন এবং রাইডারের স্বাক্ষর নিয়ে এক ক্লিকে সব অর্ডার <strong>Shipped</strong> মার্ক করুন।
-              </p>
+                <LocalizedText source={"প্যাকড অর্ডারগুলোকে কুরিয়ার অনুযায়ী একত্রিত করে বারকোডসহ ম্যানিফেস্ট তৈরি করুন এবং রাইডারের স্বাক্ষর নিয়ে এক ক্লিকে সব অর্ডার"} area="admin" />{" "}<strong><LocalizedText source={"Shipped"} area="admin" /></strong> {" "}<LocalizedText source={"মার্ক করুন।"} area="admin" />{" "}</p>
               <div className="space-y-3 text-xs">
                 <div className="space-y-1.5">
                   <label className="block font-medium text-ink">
-                    কুরিয়ার নির্বাচন করুন
-                  </label>
+                    <LocalizedText source={"কুরিয়ার নির্বাচন করুন"} area="admin" />{" "}</label>
                   <select
-                    aria-label="Select courier for pickup batch"
+                    aria-label={uiText("Select courier for pickup batch", locale)}
                     value={batchCourier}
                     onChange={(e) =>
                       setBatchCourier(e.target.value as CourierProvider)
                     }
                     className="w-full min-h-[40px] px-3 py-1.5 bg-bg text-ink border border-border rounded-[var(--radius-md)]"
                   >
-                    <option value="steadfast">Steadfast Courier</option>
-                    <option value="pathao">Pathao Courier</option>
-                    <option value="redx">RedX Logistics</option>
+                    <option value="steadfast"><LocalizedText source={"Steadfast Courier"} area="admin" /></option>
+                    <option value="pathao"><LocalizedText source={"Pathao Courier"} area="admin" /></option>
+
                     <option value="bd_post">
-                      বাংলাদেশ ডাক বিভাগ (BD Post)
-                    </option>
+                      <LocalizedText source={"বাংলাদেশ ডাক বিভাগ (BD Post)"} area="admin" />{" "}</option>
                   </select>
                 </div>
 
@@ -1349,8 +1321,7 @@ export function Courier360AndRatesPanel({
                     }
                   }}
                 >
-                  পিকআপ ব্যাচ ও হ্যান্ডওভার ম্যানিফেস্ট জেনারেট করুন
-                </Button>
+                  <LocalizedText source={"পিকআপ ব্যাচ ও হ্যান্ডওভার ম্যানিফেস্ট জেনারেট করুন"} area="admin" />{" "}</Button>
               </div>
             </Card>
 
@@ -1362,7 +1333,7 @@ export function Courier360AndRatesPanel({
             >
               <div className="flex items-center justify-between border-b border-border pb-2">
                 <h2 className="text-base font-bold text-ink">
-                  হ্যান্ডওভার ম্যানিফেস্ট শীট ({pickupBatches.length})
+                  <LocalizedText source={"হ্যান্ডওভার ম্যানিফেস্ট শীট ("} area="admin" />{pickupBatches.length})
                 </h2>
                 <Button
                   variant="outline"
@@ -1372,14 +1343,12 @@ export function Courier360AndRatesPanel({
                     <Printer className="w-3.5 h-3.5" aria-hidden="true" />
                   }
                 >
-                  ম্যানিফেস্ট প্রিন্ট
-                </Button>
+                  <LocalizedText source={"ম্যানিফেস্ট প্রিন্ট"} area="admin" />{" "}</Button>
               </div>
 
               {pickupBatches.length === 0 ? (
                 <p className="text-xs text-muted py-4">
-                  এখনো কোনো পিকআপ ব্যাচ তৈরি করা হয়নি। বাম পাশের বাটনে ক্লিক করে ব্যাচ তৈরি করুন।
-                </p>
+                  <LocalizedText source={"এখনো কোনো পিকআপ ব্যাচ তৈরি করা হয়নি। বাম পাশের বাটনে ক্লিক করে ব্যাচ তৈরি করুন।"} area="admin" />{" "}</p>
               ) : (
                 <div className="space-y-3 text-xs">
                   {pickupBatches.map((batch) => (
@@ -1393,11 +1362,11 @@ export function Courier360AndRatesPanel({
                             {batch.batchCode} · {batch.courierProvider.toUpperCase()}
                           </p>
                           <p className="text-muted">
-                            মোট পার্সেল:{' '}
+                            <LocalizedText source={"মোট পার্সেল:"} area="admin" />{' '}
                             <strong>
                               {formatLocaleNumber(batch.totalParcels, locale)}
                             </strong>{' '}
-                            টি · মোট সিওডি:{' '}
+                            <LocalizedText source={"টি · মোট সিওডি:"} area="admin" />{' '}
                             <strong className="font-mono">
                               {formatPoishaToBdt(batch.totalCodPoisha, locale)}
                             </strong>
@@ -1410,7 +1379,7 @@ export function Courier360AndRatesPanel({
                       </div>
 
                       <div className="font-mono text-[11px] text-muted">
-                        অর্ডারসমূহ: {batch.orderNos.join(', ')}
+                        <LocalizedText source={"অর্ডারসমূহ:"} area="admin" />{" "}{batch.orderNos.join(', ')}
                       </div>
 
                       {batch.status === 'ready_for_handover' ? (
@@ -1450,18 +1419,16 @@ export function Courier360AndRatesPanel({
                               }
                             }}
                           >
-                            সই নিশ্চিত ও সব Shipped মার্ক করুন
-                          </Button>
+                            <LocalizedText source={"সই নিশ্চিত ও সব Shipped মার্ক করুন"} area="admin" />{" "}</Button>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between pt-2 border-t border-border text-[11px]">
                           <Badge status="success">
-                            হস্তান্তরিত (Shipped) — রাইডার: {batch.riderName} (
+                            <LocalizedText source={"হস্তান্তরিত (Shipped) — রাইডার:"} area="admin" />{" "}{batch.riderName} (
                             {batch.riderPhone})
                           </Badge>
                           <span className="text-muted">
-                            {brandNameBn} ওয়্যারহাউস স্বাক্ষরিত
-                          </span>
+                            {brandNameBn} {" "}<LocalizedText source={"ওয়্যারহাউস স্বাক্ষরিত"} area="admin" />{" "}</span>
                         </div>
                       )}
                     </div>
@@ -1475,7 +1442,7 @@ export function Courier360AndRatesPanel({
           <Card surface="bg" padding="md" className="space-y-4">
             <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-border pb-2">
               <AlertTriangle className="w-4 h-4 text-warning" />
-              <span>কুরিয়ার ড্যামেজ ও লস্ট পার্সেল ক্লেইম ম্যানেজার</span>
+              <span><LocalizedText source={"কুরিয়ার ড্যামেজ ও লস্ট পার্সেল ক্লেইম ম্যানেজার"} area="admin" /></span>
             </h2>
 
             <form
@@ -1489,7 +1456,7 @@ export function Courier360AndRatesPanel({
               className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs items-end"
             >
               <div className="space-y-1.5">
-                <label className="block font-medium text-ink">অর্ডার নম্বর</label>
+                <label className="block font-medium text-ink"><LocalizedText source={"অর্ডার নম্বর"} area="admin" /></label>
                 <select
                   value={claimOrderNo}
                   onChange={(e) => setClaimOrderNo(e.target.value)}
@@ -1519,8 +1486,7 @@ export function Courier360AndRatesPanel({
               />
 
               <Button type="submit" variant="primary" size="md">
-                ক্লেইম ফাইল করুন
-              </Button>
+                <LocalizedText source={"ক্লেইম ফাইল করুন"} area="admin" />{" "}</Button>
             </form>
 
             <div className="divide-y divide-border border border-border rounded-[var(--radius-md)] text-xs">
@@ -1537,7 +1503,7 @@ export function Courier360AndRatesPanel({
                   </div>
                   <div className="flex items-center gap-2 font-mono">
                     <span className="font-bold text-danger">
-                      দাবি: {formatPoishaToBdt(clm.claimAmountPoisha, locale)}
+                      <LocalizedText source={"দাবি:"} area="admin" />{" "}{formatPoishaToBdt(clm.claimAmountPoisha, locale)}
                     </span>
                     <Badge status="warning">{clm.status}</Badge>
                   </div>
@@ -1555,11 +1521,9 @@ export function Courier360AndRatesPanel({
         <Card surface="bg" padding="md" className="space-y-4">
           <div className="border-b border-border pb-2">
             <h2 className="text-base font-bold text-ink">
-              ৬৪ জেলার ডেলিভারি রেট টেবিল ও ফ্রি ডেলিভারি ওভাররাইড (Module C)
-            </h2>
+              <LocalizedText source={"৬৪ জেলার ডেলিভারি রেট টেবিল ও ফ্রি ডেলিভারি ওভাররাইড (Module C)"} area="admin" />{" "}</h2>
             <p className="text-xs text-muted">
-              যেকোনো জেলার কুরিয়ার হোম ডেলিভারি (প্রথম ১ কেজি ও অতিরিক্ত প্রতি কেজি) এবং বাংলাদেশ ডাক বিভাগের (BD Post per-kg) রেট পরিবর্তন করুন।
-            </p>
+              <LocalizedText source={"যেকোনো জেলার কুরিয়ার হোম ডেলিভারি (প্রথম ১ কেজি ও অতিরিক্ত প্রতি কেজি) এবং বাংলাদেশ ডাক বিভাগের (BD Post per-kg) রেট পরিবর্তন করুন।"} area="admin" />{" "}</p>
           </div>
 
           <form
@@ -1592,9 +1556,9 @@ export function Courier360AndRatesPanel({
             className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end text-xs"
           >
             <div className="space-y-1.5">
-              <label className="block font-medium text-ink">জেলা নির্বাচন</label>
+              <label className="block font-medium text-ink"><LocalizedText source={"জেলা নির্বাচন"} area="admin" /></label>
               <select
-                aria-label="Select district to edit rate"
+                aria-label={uiText("Select district to edit rate", locale)}
                 value={selectedDistrictId}
                 onChange={(e) =>
                   handleDistrictSelectionChange(Number(e.target.value))
@@ -1603,7 +1567,7 @@ export function Courier360AndRatesPanel({
               >
                 {districtRates.map((d) => (
                   <option key={d.districtId} value={d.districtId}>
-                    {d.districtNameBn} ({d.districtNameEn})
+                    {localizedField(d, "districtNameBn", locale)} ({d.districtNameEn})
                   </option>
                 ))}
               </select>
@@ -1641,11 +1605,10 @@ export function Courier360AndRatesPanel({
                   onChange={(e) => setRateFreeDist(e.target.checked)}
                   className="accent-ink"
                 />
-                <span>এই জেলায় ফ্রি ডেলিভারি</span>
+                <span><LocalizedText source={"এই জেলায় ফ্রি ডেলিভারি"} area="admin" /></span>
               </label>
               <Button type="submit" variant="primary" size="sm">
-                রেট সংরক্ষণ করুন
-              </Button>
+                <LocalizedText source={"রেট সংরক্ষণ করুন"} area="admin" />{" "}</Button>
             </div>
           </form>
         </Card>
@@ -1658,15 +1621,14 @@ export function Courier360AndRatesPanel({
             <div className="flex items-center justify-between border-b border-border pb-2">
               <h3 className="font-bold text-ink text-sm flex items-center gap-2">
                 <FileCheck className="w-4 h-4" />
-                <span>পেমেন্ট প্রুফ ও ব্যাংক স্টেটমেন্ট ফাইল</span>
+                <span><LocalizedText source={"পেমেন্ট প্রুফ ও ব্যাংক স্টেটমেন্ট ফাইল"} area="admin" /></span>
               </h3>
               <button
                 type="button"
                 onClick={() => setViewingProofUrl(null)}
                 className="text-muted hover:text-ink font-bold text-xs cursor-pointer"
               >
-                ✕ বন্ধ করুন
-              </button>
+                <LocalizedText source={"✕ বন্ধ করুন"} area="admin" />{" "}</button>
             </div>
             <div className="aspect-video bg-bg rounded-[var(--radius-md)] overflow-hidden border border-border flex items-center justify-center">
               {/* eslint-disable-next-html-element-for-img */}
@@ -1687,7 +1649,7 @@ export function Courier360AndRatesPanel({
                 className="px-3 py-1 bg-ink text-surface font-semibold rounded-[var(--radius-sm)] flex items-center gap-1"
               >
                 <ExternalLink className="w-3 h-3" />
-                <span>ফুল ভিউতে খুলুন</span>
+                <span><LocalizedText source={"ফুল ভিউতে খুলুন"} area="admin" /></span>
               </a>
             </div>
           </div>
@@ -1979,8 +1941,7 @@ export function VendorEscrowAndReturnPanel({
             </h1>
           </div>
           <p className="text-xs text-muted mt-1">
-            ১৮-দফা কনসাইনমেন্ট নীতিমালা: প্রোফাইল টাইপ অনুযায়ী ভেন্ডর প্রোফাইল, প্রোডাক্ট ও মার্জিন ডসিয়ার, কুরিয়ার ডিসপ্যাচ লগ এবং ক্যাশ-আউট/সেন্ড মানি চার্জ বিবরণী।
-          </p>
+            <LocalizedText source={"১৮-দফা কনসাইনমেন্ট নীতিমালা: প্রোফাইল টাইপ অনুযায়ী ভেন্ডর প্রোফাইল, প্রোডাক্ট ও মার্জিন ডসিয়ার, কুরিয়ার ডিসপ্যাচ লগ এবং ক্যাশ-আউট/সেন্ড মানি চার্জ বিবরণী।"} area="admin" />{" "}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -2021,8 +1982,7 @@ export function VendorEscrowAndReturnPanel({
               }}
               leftIcon={<ShieldAlert className="w-3.5 h-3.5" aria-hidden="true" />}
             >
-              চুক্তি সমাপ্তি অডিট
-            </Button>
+              <LocalizedText source={"চুক্তি সমাপ্তি অডিট"} area="admin" />{" "}</Button>
           )}
           <Button
             variant="secondary"
@@ -2030,8 +1990,7 @@ export function VendorEscrowAndReturnPanel({
             onClick={() => window.print()}
             leftIcon={<Printer className="w-4 h-4" aria-hidden="true" />}
           >
-            স্টেটমেন্ট প্রিন্ট (PDF)
-          </Button>
+            <LocalizedText source={"স্টেটমেন্ট প্রিন্ট (PDF)"} area="admin" />{" "}</Button>
         </div>
       </div>
 
@@ -2053,8 +2012,7 @@ export function VendorEscrowAndReturnPanel({
             onClick={() => setFeedback(null)}
             className="underline cursor-pointer text-ink hover:opacity-80"
           >
-            বন্ধ করুন
-          </button>
+            <LocalizedText source={"বন্ধ করুন"} area="admin" />{" "}</button>
         </div>
       )}
 
@@ -2064,11 +2022,10 @@ export function VendorEscrowAndReturnPanel({
           <div>
             <h2 className="text-sm font-bold text-ink flex items-center gap-2">
               <User className="w-4 h-4 text-ink" aria-hidden="true" />
-              <span>প্রোফাইল টাইপ অনুযায়ী ভেন্ডর ডিরেক্টরি (Vendor Profiles by Type)</span>
+              <span><LocalizedText source={"প্রোফাইল টাইপ অনুযায়ী ভেন্ডর ডিরেক্টরি (Vendor Profiles by Type)"} area="admin" /></span>
             </h2>
             <p className="text-[11px] text-muted mt-0.5">
-              যেকোনো ভেন্ডর কার্ডে ক্লিক করলে তাদের সম্পূর্ণ প্রোডাক্ট গ্যালারি, তারিখের মার্জিন, কুরিয়ার ডিসপ্যাচ এবং ক্যাশ-আউট/সেন্ড মানি চার্জের ডিটেইলস দেখতে পাবেন।
-            </p>
+              <LocalizedText source={"যেকোনো ভেন্ডর কার্ডে ক্লিক করলে তাদের সম্পূর্ণ প্রোডাক্ট গ্যালারি, তারিখের মার্জিন, কুরিয়ার ডিসপ্যাচ এবং ক্যাশ-আউট/সেন্ড মানি চার্জের ডিটেইলস দেখতে পাবেন।"} area="admin" />{" "}</p>
           </div>
 
           {/* Profile Type Filter Tabs */}
@@ -2115,7 +2072,7 @@ export function VendorEscrowAndReturnPanel({
                       : 'bg-bg text-ink border-border hover:border-ink'
                   }`}
                 >
-                  {tab.labelBn}
+                  {localizedField(tab, "labelBn", locale)}
                 </button>
               ))}
             </div>
@@ -2171,16 +2128,16 @@ export function VendorEscrowAndReturnPanel({
                         </Badge>
                       </div>
                       <h3 className="text-sm font-bold text-ink mt-1.5">
-                        {v.profile.businessNameBn}
+                        {localizedField(v.profile, "businessNameBn", locale)}
                       </h3>
                       <p className="text-[11px] text-muted">
-                        মালিক: <strong className="text-ink">{v.profile.ownerNameBn}</strong> ·{' '}
+                        <LocalizedText source={"মালিক:"} area="admin" />{" "}<strong className="text-ink">{localizedField(v.profile, "ownerNameBn", locale)}</strong> ·{' '}
                         <span className="font-mono">{v.profile.contactPhone}</span>
                       </p>
                     </div>
 
                     <div className="text-right font-mono">
-                      <span className="text-[10px] text-muted block">কমিশন রেট</span>
+                      <span className="text-[10px] text-muted block"><LocalizedText source={"কমিশন রেট"} area="admin" /></span>
                       <span className="text-xs font-bold text-ink">
                         {((v.profile.defaultCommissionBp ?? 1500) / 100).toFixed(1)}%
                       </span>
@@ -2190,19 +2147,19 @@ export function VendorEscrowAndReturnPanel({
                   {/* Quick Metrics Strip */}
                   <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border text-[11px] font-mono">
                     <div className="p-2 rounded-[var(--radius-sm)] bg-surface border border-border">
-                      <span className="text-[10px] text-muted block font-sans">প্রোডাক্ট</span>
+                      <span className="text-[10px] text-muted block font-sans"><LocalizedText source={"প্রোডাক্ট"} area="admin" /></span>
                       <strong className="text-ink">
-                        {formatLocaleNumber(vendorProducts.length, locale)} টি ({totalUnitsAvailable})
+                        {formatLocaleNumber(vendorProducts.length, locale)} {" "}<LocalizedText source={"টি ("} area="admin" />{totalUnitsAvailable})
                       </strong>
                     </div>
                     <div className="p-2 rounded-[var(--radius-sm)] bg-surface border border-border">
-                      <span className="text-[10px] text-muted block font-sans">উত্তোলনযোগ্য</span>
+                      <span className="text-[10px] text-muted block font-sans"><LocalizedText source={"উত্তোলনযোগ্য"} area="admin" /></span>
                       <strong className="text-success">
                         {formatPoishaToBdt(v.balance.withdrawablePoisha, locale)}
                       </strong>
                     </div>
                     <div className="p-2 rounded-[var(--radius-sm)] bg-surface border border-border">
-                      <span className="text-[10px] text-muted block font-sans">ক্যাশ-আউট ফি</span>
+                      <span className="text-[10px] text-muted block font-sans"><LocalizedText source={"ক্যাশ-আউট ফি"} area="admin" /></span>
                       <strong className="text-danger">
                         {formatPoishaToBdt(estCashoutFee, locale)}
                       </strong>
@@ -2211,11 +2168,10 @@ export function VendorEscrowAndReturnPanel({
 
                   <div className="flex items-center justify-between text-[11px] text-muted pt-1">
                     <span>
-                      মেথড: <strong className="text-ink">{v.profile.payoutMethodBn}</strong> ({v.profile.payoutAccountNo})
+                      <LocalizedText source={"মেথড:"} area="admin" />{" "}<strong className="text-ink">{localizedField(v.profile, "payoutMethodBn", locale)}</strong> ({v.profile.payoutAccountNo})
                     </span>
                     <span className="font-mono">
-                      হোল্ড: {v.profile.escrowHoldDaysOverride ?? 7} দিন
-                    </span>
+                      <LocalizedText source={"হোল্ড:"} area="admin" />{" "}{v.profile.escrowHoldDaysOverride ?? 7} {" "}<LocalizedText source={"দিন"} area="admin" />{" "}</span>
                   </div>
                 </div>
 
@@ -2232,8 +2188,7 @@ export function VendorEscrowAndReturnPanel({
                     }}
                     leftIcon={<Eye className="w-3.5 h-3.5" aria-hidden="true" />}
                   >
-                    প্রোফাইল ও প্রোডাক্ট দেখুন
-                  </Button>
+                    <LocalizedText source={"প্রোফাইল ও প্রোডাক্ট দেখুন"} area="admin" />{" "}</Button>
                   {!isSelected && (
                     <Button
                       type="button"
@@ -2241,8 +2196,7 @@ export function VendorEscrowAndReturnPanel({
                       size="sm"
                       onClick={() => setSelectedVendorId(v.profile.vendorId)}
                     >
-                      লেজার নির্বাচন
-                    </Button>
+                      <LocalizedText source={"লেজার নির্বাচন"} area="admin" />{" "}</Button>
                   )}
                 </div>
               </div>
@@ -2257,8 +2211,8 @@ export function VendorEscrowAndReturnPanel({
           {/* 1. Pending Escrow */}
           <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] space-y-2">
             <div className="flex items-center justify-between text-xs text-ink font-semibold">
-              <span>১. পেন্ডিং এসক্রো</span>
-              <Badge status="warning">ইন-ট্রানজিট</Badge>
+              <span><LocalizedText source={"১. পেন্ডিং এসক্রো"} area="admin" /></span>
+              <Badge status="warning"><LocalizedText source={"ইন-ট্রানজিট"} area="admin" /></Badge>
             </div>
             <p className="text-xl font-bold font-mono tabular-nums text-ink">
               {formatPoishaToBdt(activeVendorSummary.balance.pendingPoisha, locale)}
@@ -2281,14 +2235,14 @@ export function VendorEscrowAndReturnPanel({
                 }}
               />
             </div>
-            <p className="text-[11px] text-muted">Confirmed/Packed/Shipped অর্ডার</p>
+            <p className="text-[11px] text-muted"><LocalizedText source={"Confirmed/Packed/Shipped অর্ডার"} area="admin" /></p>
           </div>
 
           {/* 2. Locked Escrow */}
           <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] space-y-2">
             <div className="flex items-center justify-between text-xs text-ink font-semibold">
-              <span>২. লকড (হোল্ড পিরিয়ড)</span>
-              <Badge status="info">কাউন্টডাউন</Badge>
+              <span><LocalizedText source={"২. লকড (হোল্ড পিরিয়ড)"} area="admin" /></span>
+              <Badge status="info"><LocalizedText source={"কাউন্টডাউন"} area="admin" /></Badge>
             </div>
             <p className="text-xl font-bold font-mono tabular-nums text-ink">
               {formatPoishaToBdt(activeVendorSummary.balance.lockedPoisha, locale)}
@@ -2312,15 +2266,14 @@ export function VendorEscrowAndReturnPanel({
               />
             </div>
             <p className="text-[11px] text-muted">
-              ডেলিভারড — {activeVendorSummary.profile.escrowHoldDaysOverride ?? 7} দিনের ম্যাচুরিটি চলছে
-            </p>
+              <LocalizedText source={"ডেলিভারড —"} area="admin" />{" "}{activeVendorSummary.profile.escrowHoldDaysOverride ?? 7} {" "}<LocalizedText source={"দিনের ম্যাচুরিটি চলছে"} area="admin" />{" "}</p>
           </div>
 
           {/* 3. Withdrawable / Available Escrow */}
           <div className="p-4 border-2 border-ink bg-bg rounded-[var(--radius-md)] space-y-2">
             <div className="flex items-center justify-between text-xs text-ink font-bold">
-              <span>৩. উত্তোলনযোগ্য (Available)</span>
-              <Badge status="success">পেআউট যোগ্য</Badge>
+              <span><LocalizedText source={"৩. উত্তোলনযোগ্য (Available)"} area="admin" /></span>
+              <Badge status="success"><LocalizedText source={"পেআউট যোগ্য"} area="admin" /></Badge>
             </div>
             <p className="text-2xl font-bold font-mono tabular-nums text-success">
               {formatPoishaToBdt(
@@ -2347,15 +2300,14 @@ export function VendorEscrowAndReturnPanel({
               />
             </div>
             <p className="text-[11px] text-ink font-medium">
-              হোল্ড পিরিয়ড শেষ — রিকোয়েস্ট পাঠান
-            </p>
+              <LocalizedText source={"হোল্ড পিরিয়ড শেষ — রিকোয়েস্ট পাঠান"} area="admin" />{" "}</p>
           </div>
 
           {/* 4. Payout Hold */}
           <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] space-y-2">
             <div className="flex items-center justify-between text-xs text-ink font-semibold">
-              <span>৪. পেআউট হোল্ড</span>
-              <Badge status="neutral">রিকোয়েস্টেড</Badge>
+              <span><LocalizedText source={"৪. পেআউট হোল্ড"} area="admin" /></span>
+              <Badge status="neutral"><LocalizedText source={"রিকোয়েস্টেড"} area="admin" /></Badge>
             </div>
             <p className="text-xl font-bold font-mono tabular-nums text-ink">
               {formatPoishaToBdt(
@@ -2374,14 +2326,14 @@ export function VendorEscrowAndReturnPanel({
                 }}
               />
             </div>
-            <p className="text-[11px] text-muted">ডাবল-রিকোয়েস্ট সেফটি হোল্ড</p>
+            <p className="text-[11px] text-muted"><LocalizedText source={"ডাবল-রিকোয়েস্ট সেফটি হোল্ড"} area="admin" /></p>
           </div>
 
           {/* 5. Clawback Debt */}
           <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] space-y-2">
             <div className="flex items-center justify-between text-xs text-ink font-semibold">
-              <span>৫. নেগেটিভ ক্লব্যাক</span>
-              <Badge status="danger">দায়</Badge>
+              <span><LocalizedText source={"৫. নেগেটিভ ক্লব্যাক"} area="admin" /></span>
+              <Badge status="danger"><LocalizedText source={"দায়"} area="admin" /></Badge>
             </div>
             <p className="text-xl font-bold font-mono tabular-nums text-danger">
               {formatPoishaToBdt(
@@ -2400,7 +2352,7 @@ export function VendorEscrowAndReturnPanel({
                 }}
               />
             </div>
-            <p className="text-[11px] text-muted">পরবর্তী পেআউট থেকে সমন্বয় হবে</p>
+            <p className="text-[11px] text-muted"><LocalizedText source={"পরবর্তী পেআউট থেকে সমন্বয় হবে"} area="admin" /></p>
           </div>
         </div>
       )}
@@ -2480,7 +2432,7 @@ export function VendorEscrowAndReturnPanel({
                 </div>
                 <div>
                   <h4 className="font-bold text-ink">
-                    সর্বনিম্ন পেআউট থ্রেশহোল্ড (Min Payout Limit):{' '}
+                    <LocalizedText source={"সর্বনিম্ন পেআউট থ্রেশহোল্ড (Min Payout Limit):"} area="admin" />{' '}
                     {formatPoishaToBdt(minPayoutPoisha, locale)}
                   </h4>
                   <p className="text-muted text-[11px] mt-0.5">
@@ -2503,8 +2455,7 @@ export function VendorEscrowAndReturnPanel({
                   }}
                   leftIcon={<Percent className="w-3.5 h-3.5" />}
                 >
-                  ক্যাশ-আউট ও সেন্ড মানি চার্জ দেখুন
-                </Button>
+                  <LocalizedText source={"ক্যাশ-আউট ও সেন্ড মানি চার্জ দেখুন"} area="admin" />{" "}</Button>
                 {activeVendorSummary.balance.withdrawablePoisha >=
                   minPayoutPoisha && (
                   <Button
@@ -2518,8 +2469,7 @@ export function VendorEscrowAndReturnPanel({
                     }}
                     leftIcon={<Wallet className="w-3.5 h-3.5" />}
                   >
-                    এখনই পেআউট রিকোয়েস্ট দিন
-                  </Button>
+                    <LocalizedText source={"এখনই পেআউট রিকোয়েস্ট দিন"} area="admin" />{" "}</Button>
                 )}
               </div>
             </div>
@@ -2529,8 +2479,7 @@ export function VendorEscrowAndReturnPanel({
           {showOnboarding15Q && isSuperAdmin && (
             <Card surface="surface" padding="md" className="space-y-4">
               <h2 className="text-base font-bold text-ink border-b border-border pb-2">
-                ১৫-প্রশ্নের কনসাইনমেন্ট সাপ্লায়ার অনবোর্ডিং ফর্ম (Module E — ১৮-দফা চুক্তি)
-              </h2>
+                <LocalizedText source={"১৫-প্রশ্নের কনসাইনমেন্ট সাপ্লায়ার অনবোর্ডিং ফর্ম (Module E — ১৮-দফা চুক্তি)"} area="admin" />{" "}</h2>
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -2634,8 +2583,7 @@ export function VendorEscrowAndReturnPanel({
 
                 <div className="flex justify-end">
                   <Button type="submit" variant="primary" size="md">
-                    ১৫টি প্রশ্ন যাচাই ও ভেন্ডর অ্যাকাউন্ট চালু করুন
-                  </Button>
+                    <LocalizedText source={"১৫টি প্রশ্ন যাচাই ও ভেন্ডর অ্যাকাউন্ট চালু করুন"} area="admin" />{" "}</Button>
                 </div>
               </form>
             </Card>
@@ -2646,31 +2594,28 @@ export function VendorEscrowAndReturnPanel({
             <div className="p-4 border border-border rounded-[var(--radius-md)] bg-surface space-y-2">
               <div className="flex items-center gap-2 font-bold text-ink">
                 <CalendarClock className="w-4 h-4 text-warning" />
-                <span>ধাপ ১: পেন্ডিং এসক্রো</span>
+                <span><LocalizedText source={"ধাপ ১: পেন্ডিং এসক্রো"} area="admin" /></span>
               </div>
               <p className="text-muted leading-relaxed">
-                অর্ডার নিশ্চিত বা প্যাকিং হওয়ামাত্র আনুমানিক ভেন্ডর পেঅ্যাবল অর্থ পেন্ডিং বাকেটে জমা হয়। কুরিয়ারে ডেলিভারি না হওয়া পর্যন্ত এই টাকা লকড বাকেটে স্থানান্তরিত হয় না।
-              </p>
+                <LocalizedText source={"অর্ডার নিশ্চিত বা প্যাকিং হওয়ামাত্র আনুমানিক ভেন্ডর পেঅ্যাবল অর্থ পেন্ডিং বাকেটে জমা হয়। কুরিয়ারে ডেলিভারি না হওয়া পর্যন্ত এই টাকা লকড বাকেটে স্থানান্তরিত হয় না।"} area="admin" />{" "}</p>
             </div>
 
             <div className="p-4 border border-border rounded-[var(--radius-md)] bg-surface space-y-2">
               <div className="flex items-center gap-2 font-bold text-ink">
                 <AlertTriangle className="w-4 h-4 text-info" />
-                <span>ধাপ ২: লকড (হোল্ড পিরিয়ড)</span>
+                <span><LocalizedText source={"ধাপ ২: লকড (হোল্ড পিরিয়ড)"} area="admin" /></span>
               </div>
               <p className="text-muted leading-relaxed">
-                পণ্য সফলভাবে কাস্টমারের কাছে কুরিয়ার কর্তৃক ডেলিভারড হলে অর্থ লকড বাকেটে যায়। নির্দিষ্ট ৭ দিনের হোল্ড পিরিয়ড পার হলে এটি অটোমেটিক ম্যাচিউরড হয়।
-              </p>
+                <LocalizedText source={"পণ্য সফলভাবে কাস্টমারের কাছে কুরিয়ার কর্তৃক ডেলিভারড হলে অর্থ লকড বাকেটে যায়। নির্দিষ্ট ৭ দিনের হোল্ড পিরিয়ড পার হলে এটি অটোমেটিক ম্যাচিউরড হয়।"} area="admin" />{" "}</p>
             </div>
 
             <div className="p-4 border border-border rounded-[var(--radius-md)] bg-surface space-y-2">
               <div className="flex items-center gap-2 font-bold text-ink">
                 <CheckCircle2 className="w-4 h-4 text-success" />
-                <span>ধাপ ৩: উত্তোলনযোগ্য (Available)</span>
+                <span><LocalizedText source={"ধাপ ৩: উত্তোলনযোগ্য (Available)"} area="admin" /></span>
               </div>
               <p className="text-muted leading-relaxed">
-                হোল্ড পিরিয়ড শেষে টাকা সরাসরি উত্তোলনযোগ্য বাকেটে স্থানান্তরিত হয়। ন্যূনতম ৳১,০০০ বা তার বেশি হলে ভেন্ডর যেকোনো সময় পেআউট রিকোয়েস্ট পাঠাতে পারেন।
-              </p>
+                <LocalizedText source={"হোল্ড পিরিয়ড শেষে টাকা সরাসরি উত্তোলনযোগ্য বাকেটে স্থানান্তরিত হয়। ন্যূনতম ৳১,০০০ বা তার বেশি হলে ভেন্ডর যেকোনো সময় পেআউট রিকোয়েস্ট পাঠাতে পারেন।"} area="admin" />{" "}</p>
             </div>
           </div>
         </div>
@@ -2683,15 +2628,14 @@ export function VendorEscrowAndReturnPanel({
             <div className="flex items-center gap-2">
               <FileSpreadsheet className="w-4 h-4 text-ink" aria-hidden="true" />
               <h2 className="text-base font-bold text-ink">
-                {brandNameBn} — অফিশিয়াল ভেন্ডর লেজার স্টেটমেন্ট (
-                {activeVendorSummary?.profile.businessNameBn})
+                {brandNameBn} {" "}<LocalizedText source={"— অফিশিয়াল ভেন্ডর লেজার স্টেটমেন্ট ("} area="admin" />{" "}{localizedField(activeVendorSummary?.profile, "businessNameBn", locale)})
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <Badge status="info">APPEND-ONLY · IMMUTABLE</Badge>
+              <Badge status="info"><LocalizedText source={"APPEND-ONLY · IMMUTABLE"} area="admin" /></Badge>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
                 <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Real-Time Maturity Active</span>
+                <span><LocalizedText source={"Real-Time Maturity Active"} area="admin" /></span>
               </span>
             </div>
           </div>
@@ -2699,18 +2643,18 @@ export function VendorEscrowAndReturnPanel({
           {/* Ledger Filter & Search Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-surface p-3 border border-border rounded-[var(--radius-md)] text-xs">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-muted">ফিল্টার:</span>
+              <span className="font-bold text-muted"><LocalizedText source={"ফিল্টার:"} area="admin" /></span>
               <select
                 value={ledgerTypeFilter}
                 onChange={(e) => setLedgerTypeFilter(e.target.value)}
                 className="p-1.5 border border-border rounded-[var(--radius-sm)] bg-bg text-ink font-medium focus:outline-none focus:ring-1 focus:ring-ink cursor-pointer"
               >
-                <option value="all">সব এন্ট্রি ({ledgerEntries.length})</option>
-                <option value="pending">পেন্ডিং বাকেট (Pending)</option>
-                <option value="locked">লকড বাকেট (Hold Period)</option>
-                <option value="available">উত্তোলনযোগ্য বাকেট (Available)</option>
-                <option value="payout">পেআউট ট্রানজেকশন</option>
-                <option value="return">রিটার্ন ও এডজাস্টমেন্ট</option>
+                <option value="all"><LocalizedText source={"সব এন্ট্রি ("} area="admin" />{ledgerEntries.length})</option>
+                <option value="pending"><LocalizedText source={"পেন্ডিং বাকেট (Pending)"} area="admin" /></option>
+                <option value="locked"><LocalizedText source={"লকড বাকেট (Hold Period)"} area="admin" /></option>
+                <option value="available"><LocalizedText source={"উত্তোলনযোগ্য বাকেট (Available)"} area="admin" /></option>
+                <option value="payout"><LocalizedText source={"পেআউট ট্রানজেকশন"} area="admin" /></option>
+                <option value="return"><LocalizedText source={"রিটার্ন ও এডজাস্টমেন্ট"} area="admin" /></option>
               </select>
             </div>
 
@@ -2718,7 +2662,7 @@ export function VendorEscrowAndReturnPanel({
               <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted" />
               <input
                 type="text"
-                placeholder="অর্ডার নম্বর বা এন্ট্রি খুঁজুন..."
+                placeholder={uiText("অর্ডার নম্বর বা এন্ট্রি খুঁজুন...", locale)}
                 value={ledgerSearch}
                 onChange={(e) => setLedgerSearch(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 border border-border rounded-[var(--radius-sm)] bg-bg text-ink text-xs focus:outline-none focus:ring-1 focus:ring-ink"
@@ -2731,20 +2675,19 @@ export function VendorEscrowAndReturnPanel({
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-border bg-surface text-muted">
-                  <th className="p-3">তারিখ ও এন্ট্রি আইডি</th>
-                  <th className="p-3">অর্ডার নম্বর</th>
-                  <th className="p-3">এন্ট্রি টাইপ (Immutable)</th>
-                  <th className="p-3">এসক্রো বাকেট ও ম্যাচুরিটি</th>
-                  <th className="p-3">বিবরণ</th>
-                  <th className="p-3 text-right">পরিমাণ (Poisha Exact)</th>
+                  <th className="p-3"><LocalizedText source={"তারিখ ও এন্ট্রি আইডি"} area="admin" /></th>
+                  <th className="p-3"><LocalizedText source={"অর্ডার নম্বর"} area="admin" /></th>
+                  <th className="p-3"><LocalizedText source={"এন্ট্রি টাইপ (Immutable)"} area="admin" /></th>
+                  <th className="p-3"><LocalizedText source={"এসক্রো বাকেট ও ম্যাচুরিটি"} area="admin" /></th>
+                  <th className="p-3"><LocalizedText source={"বিবরণ"} area="admin" /></th>
+                  <th className="p-3 text-right"><LocalizedText source={"পরিমাণ (Poisha Exact)"} area="admin" /></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredLedger.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-muted text-xs">
-                      কোনো লেজার এন্ট্রি পাওয়া যায়নি।
-                    </td>
+                      <LocalizedText source={"কোনো লেজার এন্ট্রি পাওয়া যায়নি।"} area="admin" />{" "}</td>
                   </tr>
                 ) : (
                   filteredLedger.map((entry) => (
@@ -2779,13 +2722,13 @@ export function VendorEscrowAndReturnPanel({
                         </div>
                         {entry.maturesAt && (
                           <div className="text-muted">
-                            ম্যাচুরিটি:{' '}
+                            <LocalizedText source={"ম্যাচুরিটি:"} area="admin" />{' '}
                             {new Date(entry.maturesAt).toLocaleDateString('bn-BD')}
                           </div>
                         )}
                       </td>
                       <td className="p-3 text-ink max-w-md leading-relaxed">
-                        {entry.descriptionBn}
+                        {localizedField(entry, "descriptionBn", locale)}
                       </td>
                       <td
                         className={`p-3 text-right font-mono font-bold tabular-nums text-sm ${
@@ -2809,7 +2752,7 @@ export function VendorEscrowAndReturnPanel({
           <Card surface="bg" padding="md" className="lg:col-span-7 space-y-4">
             <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-border pb-2">
               <RotateCcw className="w-4 h-4" aria-hidden="true" />
-              <span>চার-মুখী ড্যামেজ ও রিটার্ন ইঞ্জিন (Four-Way Return Engine)</span>
+              <span><LocalizedText source={"চার-মুখী ড্যামেজ ও রিটার্ন ইঞ্জিন (Four-Way Return Engine)"} area="admin" /></span>
             </h2>
 
             {!isVendor ? (
@@ -2849,7 +2792,7 @@ export function VendorEscrowAndReturnPanel({
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="block font-medium text-ink">অর্ডার নম্বর *</label>
+                    <label className="block font-medium text-ink"><LocalizedText source={"অর্ডার নম্বর *"} area="admin" /></label>
                     <select
                       aria-label="Order for 4-way return"
                       value={retOrderNo}
@@ -2866,8 +2809,7 @@ export function VendorEscrowAndReturnPanel({
 
                   <div className="space-y-1.5">
                     <label className="block font-medium text-ink">
-                      রিটার্ন / ক্ষতির দায় (Fault Classification) *
-                    </label>
+                      <LocalizedText source={"রিটার্ন / ক্ষতির দায় (Fault Classification) *"} area="admin" />{" "}</label>
                     <select
                       aria-label="Return fault classification"
                       value={retFaultType}
@@ -2877,17 +2819,13 @@ export function VendorEscrowAndReturnPanel({
                       className="w-full min-h-[42px] px-3 py-1.5 bg-bg text-ink border border-border rounded-[var(--radius-md)] focus:outline-none focus:ring-1 focus:ring-ink"
                     >
                       <option value="WAREHOUSE_PACKAGING_FAULT">
-                        ১. গুদাম/প্যাকেজিং ভুল (ভেন্ডর পূর্ণ পাওনা পাবে, ক্ষতি প্ল্যাটফর্মের)
-                      </option>
+                        <LocalizedText source={"১. গুদাম/প্যাকেজিং ভুল (ভেন্ডর পূর্ণ পাওনা পাবে, ক্ষতি প্ল্যাটফর্মের)"} area="admin" />{" "}</option>
                       <option value="SUPPLIER_DEFECT">
-                        ২. সাপ্লায়ারের উৎপাদন ত্রুটি (প্রমাণসহ ভেন্ডর লেজার থেকে কর্তন/ক্লব্যাক)
-                      </option>
+                        <LocalizedText source={"২. সাপ্লায়ারের উৎপাদন ত্রুটি (প্রমাণসহ ভেন্ডর লেজার থেকে কর্তন/ক্লব্যাক)"} area="admin" />{" "}</option>
                       <option value="CUSTOMER_INTACT_RETURN">
-                        ৩. গ্রাহক অক্ষত রিটার্ন (কিউসি শেষে মূল স্টকে যোগ ও আর্নিং রিভার্সাল)
-                      </option>
+                        <LocalizedText source={"৩. গ্রাহক অক্ষত রিটার্ন (কিউসি শেষে মূল স্টকে যোগ ও আর্নিং রিভার্সাল)"} area="admin" />{" "}</option>
                       <option value="COURIER_NEGLIGENCE">
-                        ৪. কুরিয়ারের অবহেলা (ভেন্ডর দায়ী নয়, কুরিয়ার ক্লেইম ট্র্যাকারে যুক্ত)
-                      </option>
+                        <LocalizedText source={"৪. কুরিয়ারের অবহেলা (ভেন্ডর দায়ী নয়, কুরিয়ার ক্লেইম ট্র্যাকারে যুক্ত)"} area="admin" />{" "}</option>
                     </select>
                   </div>
                 </div>
@@ -2915,31 +2853,27 @@ export function VendorEscrowAndReturnPanel({
                     className="accent-ink"
                   />
                   <span className="font-semibold text-ink">
-                    ভেন্ডরকে ইতিমধ্যে পেআউট দেওয়া হয়ে গেছে (Post-Payout Negative Clawback তৈরি হবে)
-                  </span>
+                    <LocalizedText source={"ভেন্ডরকে ইতিমধ্যে পেআউট দেওয়া হয়ে গেছে (Post-Payout Negative Clawback তৈরি হবে)"} area="admin" />{" "}</span>
                 </label>
 
                 <Button type="submit" variant="primary" size="md" className="w-full">
-                  ৪-মুখী রিটার্ন ও লেজার সমন্বয় নিশ্চিত করুন
-                </Button>
+                  <LocalizedText source={"৪-মুখী রিটার্ন ও লেজার সমন্বয় নিশ্চিত করুন"} area="admin" />{" "}</Button>
               </form>
             ) : (
               <p className="text-xs text-muted">
-                ভেন্ডর অ্যাকাউন্ট থেকে চার-মুখী রিটার্ন এনট্রি পরিবর্তনের অনুমতি নেই। কোনো অসঙ্গতি দেখলে অ্যাডমিনের সাথে যোগাযোগ করুন।
-              </p>
+                <LocalizedText source={"ভেন্ডর অ্যাকাউন্ট থেকে চার-মুখী রিটার্ন এনট্রি পরিবর্তনের অনুমতি নেই। কোনো অসঙ্গতি দেখলে অ্যাডমিনের সাথে যোগাযোগ করুন।"} area="admin" />{" "}</p>
             )}
           </Card>
 
           {/* Right: Return Resolution History Log */}
           <Card surface="bg" padding="md" className="lg:col-span-5 space-y-4">
             <h3 className="text-sm font-bold text-ink border-b border-border pb-2">
-              সাম্প্রতিক রিটার্ন রেজোলিউশন লগ ({returnResolutions.length})
+              <LocalizedText source={"সাম্প্রতিক রিটার্ন রেজোলিউশন লগ ("} area="admin" />{returnResolutions.length})
             </h3>
 
             {returnResolutions.length === 0 ? (
               <p className="text-xs text-muted py-6 text-center border border-dashed border-border rounded-[var(--radius-md)]">
-                কোনো রিটার্ন রেকর্ড নেই।
-              </p>
+                <LocalizedText source={"কোনো রিটার্ন রেকর্ড নেই।"} area="admin" />{" "}</p>
             ) : (
               <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
                 {returnResolutions.map((r) => (
@@ -2956,13 +2890,13 @@ export function VendorEscrowAndReturnPanel({
 
                     <div className="flex items-center justify-between text-[11px] font-mono text-muted">
                       <span>
-                        ভেন্ডর ডেবিট:{' '}
+                        <LocalizedText source={"ভেন্ডর ডেবিট:"} area="admin" />{' '}
                         <strong className="text-danger">
                           {formatPoishaToBdt(r.vendorDebitPoisha, locale)}
                         </strong>
                       </span>
                       <span>
-                        রিস্টক: <strong className="text-ink">{r.restockQuantity} টি</strong>
+                        <LocalizedText source={"রিস্টক:"} area="admin" />{" "}<strong className="text-ink">{r.restockQuantity} {" "}<LocalizedText source={"টি"} area="admin" /></strong>
                       </span>
                     </div>
 
@@ -2974,7 +2908,7 @@ export function VendorEscrowAndReturnPanel({
                         className="inline-flex items-center gap-1 text-[10px] text-info hover:underline font-mono"
                       >
                         <ExternalLink className="w-3 h-3" />
-                        <span>প্রমাণ লিঙ্ক (Proof)</span>
+                        <span><LocalizedText source={"প্রমাণ লিঙ্ক (Proof)"} area="admin" /></span>
                       </a>
                     )}
                   </div>
@@ -2993,7 +2927,7 @@ export function VendorEscrowAndReturnPanel({
             <h2 className="text-base font-bold text-ink flex items-center justify-between border-b border-border pb-2">
               <span className="flex items-center gap-2">
                 <Wallet className="w-4 h-4" aria-hidden="true" />
-                <span>পেআউট রিকোয়েস্ট পাঠান</span>
+                <span><LocalizedText source={"পেআউট রিকোয়েস্ট পাঠান"} area="admin" /></span>
               </span>
               <Button
                 type="button"
@@ -3006,8 +2940,7 @@ export function VendorEscrowAndReturnPanel({
                 }}
                 leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
               >
-                Initiate Payout
-              </Button>
+                <LocalizedText source={"Initiate Payout"} area="admin" />{" "}</Button>
             </h2>
 
             {activeVendorSummary ? (
@@ -3022,8 +2955,7 @@ export function VendorEscrowAndReturnPanel({
               >
                 <div className="p-3.5 border border-border bg-surface rounded-[var(--radius-md)] space-y-1">
                   <span className="text-[11px] font-bold text-muted">
-                    সর্বোচ্চ উত্তোলনযোগ্য ব্যালেন্স (Withdrawable):
-                  </span>
+                    <LocalizedText source={"সর্বোচ্চ উত্তোলনযোগ্য ব্যালেন্স (Withdrawable):"} area="admin" />{" "}</span>
                   <p className="text-xl font-bold font-mono text-success">
                     {formatPoishaToBdt(
                       activeVendorSummary.balance.withdrawablePoisha,
@@ -3053,28 +2985,25 @@ export function VendorEscrowAndReturnPanel({
                   }}
                   leftIcon={<Wallet className="w-4 h-4" aria-hidden="true" />}
                 >
-                  Initiate Payout (উইজার্ড ওপেন করুন)
-                </Button>
+                  <LocalizedText source={"Initiate Payout (উইজার্ড ওপেন করুন)"} area="admin" />{" "}</Button>
               </form>
             ) : (
-              <p className="text-xs text-muted">কোনো ভেন্ডর নির্বাচন করা হয়নি।</p>
+              <p className="text-xs text-muted"><LocalizedText source={"কোনো ভেন্ডর নির্বাচন করা হয়নি।"} area="admin" /></p>
             )}
           </Card>
 
           {/* Right: Payout Requests Management List */}
           <Card surface="bg" padding="md" className="lg:col-span-7 space-y-4">
             <h2 className="text-base font-bold text-ink flex items-center justify-between border-b border-border pb-2">
-              <span>পেআউট রিকোয়েস্ট ও অনুমোদন কিউ</span>
+              <span><LocalizedText source={"পেআউট রিকোয়েস্ট ও অনুমোদন কিউ"} area="admin" /></span>
               <span className="text-xs font-mono text-muted font-normal">
-                মোট: {payoutRequests.length} টি
-              </span>
+                <LocalizedText source={"মোট:"} area="admin" />{" "}{payoutRequests.length} {" "}<LocalizedText source={"টি"} area="admin" />{" "}</span>
             </h2>
 
             <div className="divide-y divide-border border border-border rounded-[var(--radius-md)] text-xs">
               {payoutRequests.length === 0 ? (
                 <p className="p-8 text-center text-muted">
-                  কোনো পেআউট রিকোয়েস্ট নেই।
-                </p>
+                  <LocalizedText source={"কোনো পেআউট রিকোয়েস্ট নেই।"} area="admin" />{" "}</p>
               ) : (
                 payoutRequests.map((p) => {
                   const estCharge = Math.round((p.requestedAmountPoisha * 185) / 10000);
@@ -3091,7 +3020,7 @@ export function VendorEscrowAndReturnPanel({
                             {p.payoutId}
                           </span>
                           <span className="text-muted font-medium ml-2">
-                            · <strong>{p.vendorNameBn}</strong> ({p.vendorCode})
+                            · <strong>{localizedField(p, "vendorNameBn", locale)}</strong> ({p.vendorCode})
                           </span>
                         </div>
                         <div className="flex items-center gap-2 font-mono">
@@ -3114,7 +3043,7 @@ export function VendorEscrowAndReturnPanel({
 
                       <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted bg-bg p-2.5 rounded-[var(--radius-sm)] border border-border">
                         <span>
-                          মাধ্যম: <strong className="text-ink">{p.payoutMethodBn}</strong> (
+                          <LocalizedText source={"মাধ্যম:"} area="admin" />{" "}<strong className="text-ink">{localizedField(p, "payoutMethodBn", locale)}</strong> (
                           {p.payoutAccountNo})
                           {p.paymentTrxId ? ` · TrxID: ${p.paymentTrxId}` : ''}
                           {p.rejectionReasonBn
@@ -3122,11 +3051,11 @@ export function VendorEscrowAndReturnPanel({
                             : ''}
                         </span>
                         <span className="font-mono">
-                          ক্যাশ-আউট চার্জ (১.৮৫%):{' '}
+                          <LocalizedText source={"ক্যাশ-আউট চার্জ (১.৮৫%):"} area="admin" />{' '}
                           <strong className="text-danger">
                             -{formatPoishaToBdt(estCharge, locale)}
                           </strong>{' '}
-                          · নিট প্রদেয়:{' '}
+                          <LocalizedText source={"· নিট প্রদেয়:"} area="admin" />{' '}
                           <strong className="text-success">
                             {formatPoishaToBdt(estNet, locale)}
                           </strong>
@@ -3142,7 +3071,7 @@ export function VendorEscrowAndReturnPanel({
                                 type="text"
                                 value={adminPaidTrxId}
                                 onChange={(e) => setAdminPaidTrxId(e.target.value)}
-                                placeholder="বিকাশ/ব্যাংক TrxID..."
+                                placeholder={uiText("বিকাশ/ব্যাংক TrxID...", locale)}
                                 className="flex-1 min-h-[36px] px-3 py-1 text-xs border border-border rounded-[var(--radius-sm)] bg-bg font-mono focus:outline-none focus:ring-1 focus:ring-ink"
                               />
                               <Button
@@ -3170,8 +3099,7 @@ export function VendorEscrowAndReturnPanel({
                                   }
                                 }}
                               >
-                                Paid মার্ক
-                              </Button>
+                                <LocalizedText source={"Paid মার্ক"} area="admin" />{" "}</Button>
                             </div>
 
                             <div className="flex items-center gap-1.5">
@@ -3181,7 +3109,7 @@ export function VendorEscrowAndReturnPanel({
                                 onChange={(e) =>
                                   setAdminRejectReason(e.target.value)
                                 }
-                                placeholder="বাতিলের কারণ..."
+                                placeholder={uiText("বাতিলের কারণ...", locale)}
                                 className="flex-1 min-h-[36px] px-3 py-1 text-xs border border-border rounded-[var(--radius-sm)] bg-bg focus:outline-none focus:ring-1 focus:ring-ink"
                               />
                               <Button
@@ -3211,8 +3139,7 @@ export function VendorEscrowAndReturnPanel({
                                   }
                                 }}
                               >
-                                Reject
-                              </Button>
+                                <LocalizedText source={"Reject"} area="admin" />{" "}</Button>
                             </div>
                           </div>
                         )}
@@ -3255,8 +3182,7 @@ export function VendorEscrowAndReturnPanel({
                   onClick={() => setInitiateError(null)}
                   className="underline cursor-pointer"
                 >
-                  বন্ধ করুন
-                </button>
+                  <LocalizedText source={"বন্ধ করুন"} area="admin" />{" "}</button>
               </div>
             )}
 
@@ -3266,30 +3192,29 @@ export function VendorEscrowAndReturnPanel({
                 <div className="p-3.5 bg-surface border border-border rounded-[var(--radius-md)] space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-ink text-sm">
-                      {activeVendorSummary.profile.businessNameBn} (
+                      {localizedField(activeVendorSummary.profile, "businessNameBn", locale)} (
                       {activeVendorSummary.profile.vendorCode})
                     </span>
                     <Badge status="info">
-                      হোল্ড: {activeVendorSummary.profile.escrowHoldDaysOverride ?? 7} দিন
-                    </Badge>
+                      <LocalizedText source={"হোল্ড:"} area="admin" />{" "}{activeVendorSummary.profile.escrowHoldDaysOverride ?? 7} {" "}<LocalizedText source={"দিন"} area="admin" />{" "}</Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-muted text-[11px]">
                     <div>
-                      মালিক:{' '}
+                      <LocalizedText source={"মালিক:"} area="admin" />{' '}
                       <strong className="text-ink">
-                        {activeVendorSummary.profile.ownerNameBn}
+                        {localizedField(activeVendorSummary.profile, "ownerNameBn", locale)}
                       </strong>
                     </div>
                     <div>
-                      মোবাইল:{' '}
+                      <LocalizedText source={"মোবাইল:"} area="admin" />{' '}
                       <strong className="font-mono text-ink">
                         {activeVendorSummary.profile.contactPhone}
                       </strong>
                     </div>
                     <div className="col-span-2">
-                      পেআউট মেথড:{' '}
+                      <LocalizedText source={"পেআউট মেথড:"} area="admin" />{' '}
                       <strong className="text-ink">
-                        {activeVendorSummary.profile.payoutMethodBn} (
+                        {localizedField(activeVendorSummary.profile, "payoutMethodBn", locale)} (
                         {activeVendorSummary.profile.payoutAccountNo})
                       </strong>
                     </div>
@@ -3298,8 +3223,7 @@ export function VendorEscrowAndReturnPanel({
 
                 <div className="p-3.5 border border-border bg-bg rounded-[var(--radius-md)] space-y-1">
                   <span className="text-[11px] font-bold text-muted">
-                    সর্বোচ্চ উত্তোলনযোগ্য (Withdrawable Available):
-                  </span>
+                    <LocalizedText source={"সর্বোচ্চ উত্তোলনযোগ্য (Withdrawable Available):"} area="admin" />{" "}</span>
                   <p className="text-2xl font-bold font-mono text-success">
                     {formatPoishaToBdt(
                       activeVendorSummary.balance.withdrawablePoisha,
@@ -3307,14 +3231,13 @@ export function VendorEscrowAndReturnPanel({
                     )}
                   </p>
                   <p className="text-[11px] text-muted">
-                    সর্বনিম্ন পেআউট সীমা: {formatPoishaToBdt(minPayoutPoisha, locale)}
+                    <LocalizedText source={"সর্বনিম্ন পেআউট সীমা:"} area="admin" />{" "}{formatPoishaToBdt(minPayoutPoisha, locale)}
                   </p>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="block font-semibold text-ink">
-                    উত্তোলনের পরিমাণ (৳ Taka) *
-                  </label>
+                    <LocalizedText source={"উত্তোলনের পরিমাণ (৳ Taka) *"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     value={payoutAmountTaka}
@@ -3334,8 +3257,7 @@ export function VendorEscrowAndReturnPanel({
                     size="sm"
                     onClick={() => setShowInitiateModal(false)}
                   >
-                    বাতিল
-                  </Button>
+                    <LocalizedText source={"বাতিল"} area="admin" />{" "}</Button>
                   <Button
                     type="button"
                     variant="primary"
@@ -3366,8 +3288,7 @@ export function VendorEscrowAndReturnPanel({
                     }}
                     rightIcon={<ArrowUpRight className="w-4 h-4" />}
                   >
-                    পরবর্তী: ব্যালেন্স সামারি দেখুন
-                  </Button>
+                    <LocalizedText source={"পরবর্তী: ব্যালেন্স সামারি দেখুন"} area="admin" />{" "}</Button>
                 </div>
               </div>
             )}
@@ -3395,7 +3316,7 @@ export function VendorEscrowAndReturnPanel({
                   <div className="space-y-4">
                     <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] space-y-2.5">
                       <h4 className="font-bold text-ink text-xs border-b border-border pb-2 flex items-center justify-between">
-                        <span>নেট এসক্রো ব্যালেন্স ও চার্জ সামারি</span>
+                        <span><LocalizedText source={"নেট এসক্রো ব্যালেন্স ও চার্জ সামারি"} area="admin" /></span>
                         <span className="text-[11px] font-mono text-muted">
                           {activeVendorSummary.profile.vendorCode}
                         </span>
@@ -3403,7 +3324,7 @@ export function VendorEscrowAndReturnPanel({
 
                       <div className="space-y-2 font-mono text-[11px]">
                         <div className="flex justify-between items-center text-success">
-                          <span>বর্তমান উত্তোলনযোগ্য (Available Balance):</span>
+                          <span><LocalizedText source={"বর্তমান উত্তোলনযোগ্য (Available Balance):"} area="admin" /></span>
                           <span className="font-bold">
                             {formatPoishaToBdt(
                               activeVendorSummary.balance.withdrawablePoisha,
@@ -3413,33 +3334,33 @@ export function VendorEscrowAndReturnPanel({
                         </div>
 
                         <div className="flex justify-between items-center text-danger font-bold border-b border-border pb-1.5">
-                          <span>(-) প্রস্তাবিত পেআউট অ্যামাউন্ট (Requested):</span>
+                          <span><LocalizedText source={"(-) প্রস্তাবিত পেআউট অ্যামাউন্ট (Requested):"} area="admin" /></span>
                           <span>- {formatPoishaToBdt(reqPoisha, locale)}</span>
                         </div>
 
                         <div className="flex justify-between items-center text-muted">
-                          <span>আনুমানিক ক্যাশ-আউট চার্জ (১.৮৫%):</span>
+                          <span><LocalizedText source={"আনুমানিক ক্যাশ-আউট চার্জ (১.৮৫%):"} area="admin" /></span>
                           <span>
                             - {formatPoishaToBdt(estCashoutFeePoisha, locale)}
                           </span>
                         </div>
 
                         <div className="flex justify-between items-center text-success font-bold border-b border-border pb-1.5">
-                          <span>ভেন্ডরের একাউন্টে নিট প্রাপ্তি:</span>
+                          <span><LocalizedText source={"ভেন্ডরের একাউন্টে নিট প্রাপ্তি:"} area="admin" /></span>
                           <span>
                             {formatPoishaToBdt(estNetReceivePoisha, locale)}
                           </span>
                         </div>
 
                         <div className="flex justify-between items-center text-ink font-bold">
-                          <span>(=) পেআউট পরবর্তী অবশিষ্ট উপলব্ধ:</span>
+                          <span><LocalizedText source={"(=) পেআউট পরবর্তী অবশিষ্ট উপলব্ধ:"} area="admin" /></span>
                           <span>
                             {formatPoishaToBdt(remainingAvailable, locale)}
                           </span>
                         </div>
 
                         <div className="flex justify-between items-center text-info">
-                          <span>(+) লকড বাকেট (Hold Period Escrow):</span>
+                          <span><LocalizedText source={"(+) লকড বাকেট (Hold Period Escrow):"} area="admin" /></span>
                           <span>
                             +{' '}
                             {formatPoishaToBdt(
@@ -3450,7 +3371,7 @@ export function VendorEscrowAndReturnPanel({
                         </div>
 
                         <div className="flex justify-between items-center text-warning">
-                          <span>(+) পেন্ডিং বাকেট (In-Transit Escrow):</span>
+                          <span><LocalizedText source={"(+) পেন্ডিং বাকেট (In-Transit Escrow):"} area="admin" /></span>
                           <span>
                             +{' '}
                             {formatPoishaToBdt(
@@ -3462,7 +3383,7 @@ export function VendorEscrowAndReturnPanel({
 
                         {activeVendorSummary.balance.clawbackDebtPoisha > 0 && (
                           <div className="flex justify-between items-center text-danger">
-                            <span>(-) নেগেটিভ ক্লব্যাক দায় (Clawback Debt):</span>
+                            <span><LocalizedText source={"(-) নেগেটিভ ক্লব্যাক দায় (Clawback Debt):"} area="admin" /></span>
                             <span>
                               -{' '}
                               {formatPoishaToBdt(
@@ -3475,8 +3396,7 @@ export function VendorEscrowAndReturnPanel({
 
                         <div className="p-2.5 border-t border-ink bg-bg rounded-[var(--radius-sm)] flex justify-between items-center font-sans text-xs mt-2">
                           <span className="font-bold text-ink">
-                            পেআউট পরবর্তী মোট নেট এসক্রো:
-                          </span>
+                            <LocalizedText source={"পেআউট পরবর্তী মোট নেট এসক্রো:"} area="admin" />{" "}</span>
                           <span className="font-mono font-bold text-sm text-ink">
                             {formatPoishaToBdt(
                               netTotalEscrowAfterPayout,
@@ -3488,9 +3408,8 @@ export function VendorEscrowAndReturnPanel({
                     </div>
 
                     <p className="text-[11px] text-muted leading-relaxed bg-surface p-2.5 border border-border rounded-[var(--radius-sm)]">
-                      <strong>ডাবল-রিকোয়েস্ট সেফটি:</strong> নিশ্চিত করার সাথে সাথে সমপরিমাণ টাকা{' '}
-                      <strong>PAYOUT_HOLD</strong> বাকেটে যুক্ত হবে এবং অ্যাডমিন অনুমোদন কিউতে চলে যাবে।
-                    </p>
+                      <strong><LocalizedText source={"ডাবল-রিকোয়েস্ট সেফটি:"} area="admin" /></strong> {" "}<LocalizedText source={"নিশ্চিত করার সাথে সাথে সমপরিমাণ টাকা"} area="admin" />{' '}
+                      <strong><LocalizedText source={"PAYOUT_HOLD"} area="admin" /></strong> {" "}<LocalizedText source={"বাকেটে যুক্ত হবে এবং অ্যাডমিন অনুমোদন কিউতে চলে যাবে।"} area="admin" />{" "}</p>
 
                     <div className="flex items-center justify-between pt-2 border-t border-border">
                       <Button
@@ -3499,8 +3418,7 @@ export function VendorEscrowAndReturnPanel({
                         size="sm"
                         onClick={() => setInitiateStep(1)}
                       >
-                        ← ব্যাকে যান
-                      </Button>
+                        <LocalizedText source={"← ব্যাকে যান"} area="admin" />{" "}</Button>
 
                       <Button
                         type="button"
@@ -3542,8 +3460,7 @@ export function VendorEscrowAndReturnPanel({
                           }
                         }}
                       >
-                        অনুমোদনের জন্য কনফার্ম করুন
-                      </Button>
+                        <LocalizedText source={"অনুমোদনের জন্য কনফার্ম করুন"} area="admin" />{" "}</Button>
                     </div>
                   </div>
                 );
@@ -3570,10 +3487,10 @@ export function VendorEscrowAndReturnPanel({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-bold text-ink">
-                    {inspectedVendor.profile.businessNameBn}
+                    {localizedField(inspectedVendor.profile, "businessNameBn", locale)}
                   </h3>
                   <p className="text-[11px] text-muted">
-                    মালিক: <strong className="text-ink">{inspectedVendor.profile.ownerNameBn}</strong> · ফোন:{' '}
+                    <LocalizedText source={"মালিক:"} area="admin" />{" "}<strong className="text-ink">{localizedField(inspectedVendor.profile, "ownerNameBn", locale)}</strong> {" "}<LocalizedText source={"· ফোন:"} area="admin" />{' '}
                     <span className="font-mono text-ink">{inspectedVendor.profile.contactPhone}</span>
                   </p>
                 </div>
@@ -3591,8 +3508,7 @@ export function VendorEscrowAndReturnPanel({
                     {inspectedVendor.profile.status}
                   </Badge>
                   <span className="text-[11px] font-mono text-muted">
-                    হোল্ড: {inspectedVendor.profile.escrowHoldDaysOverride ?? 7} দিন
-                  </span>
+                    <LocalizedText source={"হোল্ড:"} area="admin" />{" "}{inspectedVendor.profile.escrowHoldDaysOverride ?? 7} {" "}<LocalizedText source={"দিন"} area="admin" />{" "}</span>
                 </div>
               </div>
             </div>
@@ -3609,7 +3525,7 @@ export function VendorEscrowAndReturnPanel({
                 }`}
               >
                 <User className="w-3.5 h-3.5" />
-                <span>ওভারভিউ</span>
+                <span><LocalizedText source={"ওভারভিউ"} area="admin" /></span>
               </button>
 
               <button
@@ -3622,7 +3538,7 @@ export function VendorEscrowAndReturnPanel({
                 }`}
               >
                 <Box className="w-3.5 h-3.5" />
-                <span>প্রোডাক্ট ও স্টক ({inspectedProducts.length})</span>
+                <span><LocalizedText source={"প্রোডাক্ট ও স্টক ("} area="admin" />{inspectedProducts.length})</span>
               </button>
 
               <button
@@ -3635,7 +3551,7 @@ export function VendorEscrowAndReturnPanel({
                 }`}
               >
                 <Percent className="w-3.5 h-3.5" />
-                <span>কবে কত টাকা মার্জিন ({inspectedLedger.length})</span>
+                <span><LocalizedText source={"কবে কত টাকা মার্জিন ("} area="admin" />{inspectedLedger.length})</span>
               </button>
 
               <button
@@ -3648,7 +3564,7 @@ export function VendorEscrowAndReturnPanel({
                 }`}
               >
                 <Truck className="w-3.5 h-3.5" />
-                <span>কুরিয়ার ডিসপ্যাচ লগ ({inspectedOrders.length})</span>
+                <span><LocalizedText source={"কুরিয়ার ডিসপ্যাচ লগ ("} area="admin" />{inspectedOrders.length})</span>
               </button>
 
               <button
@@ -3661,7 +3577,7 @@ export function VendorEscrowAndReturnPanel({
                 }`}
               >
                 <Wallet className="w-3.5 h-3.5" />
-                <span>ক্যাশ-আউট ও সেন্ড মানি চার্জ ({inspectedPayouts.length})</span>
+                <span><LocalizedText source={"ক্যাশ-আউট ও সেন্ড মানি চার্জ ("} area="admin" />{inspectedPayouts.length})</span>
               </button>
             </div>
 
@@ -3670,7 +3586,7 @@ export function VendorEscrowAndReturnPanel({
               <div className="space-y-4 text-xs">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   <div className="p-3 border border-border bg-surface rounded-[var(--radius-md)] space-y-1">
-                    <span className="text-muted text-[11px]">পেন্ডিং (In-Transit):</span>
+                    <span className="text-muted text-[11px]"><LocalizedText source={"পেন্ডিং (In-Transit):"} area="admin" /></span>
                     <p className="text-base font-bold font-mono text-warning">
                       {formatPoishaToBdt(
                         inspectedVendor.balance.pendingPoisha,
@@ -3680,7 +3596,7 @@ export function VendorEscrowAndReturnPanel({
                   </div>
 
                   <div className="p-3 border border-border bg-surface rounded-[var(--radius-md)] space-y-1">
-                    <span className="text-muted text-[11px]">লকড (Hold Period):</span>
+                    <span className="text-muted text-[11px]"><LocalizedText source={"লকড (Hold Period):"} area="admin" /></span>
                     <p className="text-base font-bold font-mono text-info">
                       {formatPoishaToBdt(
                         inspectedVendor.balance.lockedPoisha,
@@ -3691,8 +3607,7 @@ export function VendorEscrowAndReturnPanel({
 
                   <div className="p-3 border-2 border-ink bg-bg rounded-[var(--radius-md)] space-y-1">
                     <span className="text-ink text-[11px] font-bold">
-                      উত্তোলনযোগ্য (Available):
-                    </span>
+                      <LocalizedText source={"উত্তোলনযোগ্য (Available):"} area="admin" />{" "}</span>
                     <p className="text-lg font-bold font-mono text-success">
                       {formatPoishaToBdt(
                         inspectedVendor.balance.withdrawablePoisha,
@@ -3702,7 +3617,7 @@ export function VendorEscrowAndReturnPanel({
                   </div>
 
                   <div className="p-3 border border-border bg-surface rounded-[var(--radius-md)] space-y-1">
-                    <span className="text-muted text-[11px]">পেআউট হোল্ড:</span>
+                    <span className="text-muted text-[11px]"><LocalizedText source={"পেআউট হোল্ড:"} area="admin" /></span>
                     <p className="text-base font-bold font-mono text-ink">
                       {formatPoishaToBdt(
                         inspectedVendor.balance.payoutHoldPoisha,
@@ -3712,7 +3627,7 @@ export function VendorEscrowAndReturnPanel({
                   </div>
 
                   <div className="p-3 border border-border bg-surface rounded-[var(--radius-md)] space-y-1">
-                    <span className="text-muted text-[11px]">নেগেটিভ ক্লব্যাক:</span>
+                    <span className="text-muted text-[11px]"><LocalizedText source={"নেগেটিভ ক্লব্যাক:"} area="admin" /></span>
                     <p className="text-base font-bold font-mono text-danger">
                       {formatPoishaToBdt(
                         inspectedVendor.balance.clawbackDebtPoisha,
@@ -3725,23 +3640,22 @@ export function VendorEscrowAndReturnPanel({
                 {/* Account Details Box */}
                 <div className="p-3.5 border border-border rounded-[var(--radius-md)] bg-surface space-y-2">
                   <h4 className="font-bold text-ink border-b border-border pb-1.5">
-                    অফিশিয়াল অ্যাকাউন্ট ও পেআউট বিবরণ
-                  </h4>
+                    <LocalizedText source={"অফিশিয়াল অ্যাকাউন্ট ও পেআউট বিবরণ"} area="admin" />{" "}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-muted text-[11px]">
                     <div>
-                      পেআউট মেথড:{' '}
+                      <LocalizedText source={"পেআউট মেথড:"} area="admin" />{' '}
                       <strong className="text-ink">
-                        {inspectedVendor.profile.payoutMethodBn}
+                        {localizedField(inspectedVendor.profile, "payoutMethodBn", locale)}
                       </strong>
                     </div>
                     <div>
-                      অ্যাকাউন্ট নম্বর:{' '}
+                      <LocalizedText source={"অ্যাকাউন্ট নম্বর:"} area="admin" />{' '}
                       <strong className="font-mono text-ink">
                         {inspectedVendor.profile.payoutAccountNo}
                       </strong>
                     </div>
                     <div>
-                      নিবন্ধন তারিখ:{' '}
+                      <LocalizedText source={"নিবন্ধন তারিখ:"} area="admin" />{' '}
                       <strong className="font-mono text-ink">
                         {new Date(
                           inspectedVendor.profile.createdAt
@@ -3749,7 +3663,7 @@ export function VendorEscrowAndReturnPanel({
                       </strong>
                     </div>
                     <div>
-                      ডিফল্ট কমিশন:{' '}
+                      <LocalizedText source={"ডিফল্ট কমিশন:"} area="admin" />{' '}
                       <strong className="font-mono text-ink">
                         {(
                           (inspectedVendor.profile.defaultCommissionBp ?? 1500) /
@@ -3767,8 +3681,7 @@ export function VendorEscrowAndReturnPanel({
                     .length > 0 && (
                     <div className="p-3.5 border border-border rounded-[var(--radius-md)] bg-surface space-y-2">
                       <h4 className="font-bold text-ink border-b border-border pb-1.5">
-                        অনবোর্ডিং চুক্তি অডিট উত্তরসমূহ (15-Question Answers)
-                      </h4>
+                        <LocalizedText source={"অনবোর্ডিং চুক্তি অডিট উত্তরসমূহ (15-Question Answers)"} area="admin" />{" "}</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                         {Object.entries(
                           inspectedVendor.profile.onboardingAnswers15
@@ -3798,7 +3711,7 @@ export function VendorEscrowAndReturnPanel({
                   <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted" />
                   <input
                     type="text"
-                    placeholder="প্রোডাক্টের নাম বা SKU খুঁজুন..."
+                    placeholder={uiText("প্রোডাক্টের নাম বা SKU খুঁজুন...", locale)}
                     value={dossierSearch}
                     onChange={(e) => setDossierSearch(e.target.value)}
                     className="w-full pl-8 pr-3 py-1.5 border border-border rounded-[var(--radius-sm)] bg-bg text-ink text-xs focus:outline-none focus:ring-1 focus:ring-ink"
@@ -3808,7 +3721,7 @@ export function VendorEscrowAndReturnPanel({
                 {filteredInspectedProducts.length === 0 ? (
                   <div className="py-12 text-center text-muted border border-dashed border-border rounded-[var(--radius-md)]">
                     <Box className="w-8 h-8 mx-auto mb-2 text-muted/40" />
-                    <p>কোনো প্রোডাক্ট পাওয়া যায়নি।</p>
+                    <p><LocalizedText source={"কোনো প্রোডাক্ট পাওয়া যায়নি।"} area="admin" /></p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[55vh] overflow-y-auto pr-1">
@@ -3833,11 +3746,11 @@ export function VendorEscrowAndReturnPanel({
                             />
                             <div className="space-y-1 min-w-0 flex-1">
                               <h4 className="font-bold text-ink truncate text-xs">
-                                {p.productNameBn} ({p.variantTitleBn})
+                                {localizedField(p, "productNameBn", locale)} ({localizedField(p, "variantTitleBn", locale)})
                               </h4>
                               <div className="flex items-center gap-2 font-mono text-[10px] text-muted flex-wrap">
                                 <span>
-                                  SKU:{' '}
+                                  <LocalizedText source={"SKU:"} area="admin" />{' '}
                                   <strong className="text-ink">
                                     {p.publicSku}
                                   </strong>
@@ -3850,11 +3763,10 @@ export function VendorEscrowAndReturnPanel({
                                       : 'success'
                                   }
                                 >
-                                  উপলব্ধ: {p.stockAvailable} টি
-                                </Badge>
+                                  <LocalizedText source={"উপলব্ধ:"} area="admin" />{" "}{p.stockAvailable} {" "}<LocalizedText source={"টি"} area="admin" />{" "}</Badge>
                               </div>
                               <p className="text-[10px] font-mono text-muted">
-                                গুদামে: {p.stockOnHand} · রিজার্ভড: {p.stockReserved} · কুরিয়ারে: {p.stockInTransit}
+                                <LocalizedText source={"গুদামে:"} area="admin" />{" "}{p.stockOnHand} {" "}<LocalizedText source={"· রিজার্ভড:"} area="admin" />{" "}{p.stockReserved} {" "}<LocalizedText source={"· কুরিয়ারে:"} area="admin" />{" "}{p.stockInTransit}
                               </p>
                             </div>
                           </div>
@@ -3862,7 +3774,7 @@ export function VendorEscrowAndReturnPanel({
                           {/* 3-Tier Consignment Pricing & Margin Breakdown */}
                           <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-border text-[11px] font-mono bg-bg p-2 rounded-[var(--radius-sm)]">
                             <div>
-                              কেনা দাম (Cost):{' '}
+                              <LocalizedText source={"কেনা দাম (Cost):"} area="admin" />{' '}
                               <strong className="text-ink">
                                 {formatPoishaToBdt(
                                   p.supplierCostPoisha ?? 0,
@@ -3871,7 +3783,7 @@ export function VendorEscrowAndReturnPanel({
                               </strong>
                             </div>
                             <div>
-                              সাপ্লায়ার লাভ:{' '}
+                              <LocalizedText source={"সাপ্লায়ার লাভ:"} area="admin" />{' '}
                               <strong className="text-ink">
                                 {formatPoishaToBdt(
                                   supplierProfitPoisha,
@@ -3880,7 +3792,7 @@ export function VendorEscrowAndReturnPanel({
                               </strong>
                             </div>
                             <div>
-                              ভেন্ডর মোট পাওনা:{' '}
+                              <LocalizedText source={"ভেন্ডর মোট পাওনা:"} area="admin" />{' '}
                               <strong className="text-success">
                                 {formatPoishaToBdt(
                                   p.supplierPayablePoisha ?? 0,
@@ -3889,7 +3801,7 @@ export function VendorEscrowAndReturnPanel({
                               </strong>
                             </div>
                             <div>
-                              প্ল্যাটফর্ম মার্জিন:{' '}
+                              <LocalizedText source={"প্ল্যাটফর্ম মার্জিন:"} area="admin" />{' '}
                               <strong className="text-info">
                                 {formatPoishaToBdt(
                                   p.platformMarginPoisha ?? 0,
@@ -3898,7 +3810,7 @@ export function VendorEscrowAndReturnPanel({
                               </strong>
                             </div>
                             <div className="col-span-2 pt-1 border-t border-border flex items-center justify-between">
-                              <span>গ্রাহক বিক্রয় মূল্য (Sale Price):</span>
+                              <span><LocalizedText source={"গ্রাহক বিক্রয় মূল্য (Sale Price):"} area="admin" /></span>
                               <strong className="text-ink text-xs">
                                 {formatPoishaToBdt(p.salePricePoisha, locale)}
                               </strong>
@@ -3919,8 +3831,7 @@ export function VendorEscrowAndReturnPanel({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 font-mono">
                   <div className="p-3 border border-border rounded-[var(--radius-sm)] bg-surface">
                     <span className="text-[10px] text-muted block font-sans">
-                      মোট অর্জিত ভেন্ডর পেঅ্যাবল
-                    </span>
+                      <LocalizedText source={"মোট অর্জিত ভেন্ডর পেঅ্যাবল"} area="admin" />{" "}</span>
                     <strong className="text-sm text-success">
                       {formatPoishaToBdt(
                         inspectedLedger
@@ -3932,8 +3843,7 @@ export function VendorEscrowAndReturnPanel({
                   </div>
                   <div className="p-3 border border-border rounded-[var(--radius-sm)] bg-surface">
                     <span className="text-[10px] text-muted block font-sans">
-                      মোট পরিশোধিত পেআউট
-                    </span>
+                      <LocalizedText source={"মোট পরিশোধিত পেআউট"} area="admin" />{" "}</span>
                     <strong className="text-sm text-ink">
                       {formatPoishaToBdt(
                         inspectedPayouts
@@ -3945,8 +3855,7 @@ export function VendorEscrowAndReturnPanel({
                   </div>
                   <div className="p-3 border border-border rounded-[var(--radius-sm)] bg-surface">
                     <span className="text-[10px] text-muted block font-sans">
-                      গড় প্রোডাক্ট প্ল্যাটফর্ম মার্জিন
-                    </span>
+                      <LocalizedText source={"গড় প্রোডাক্ট প্ল্যাটফর্ম মার্জিন"} area="admin" />{" "}</span>
                     <strong className="text-sm text-info">
                       {formatPoishaToBdt(
                         inspectedProducts.length > 0
@@ -3967,11 +3876,11 @@ export function VendorEscrowAndReturnPanel({
                   <table className="w-full text-left border-collapse text-xs">
                     <thead className="sticky top-0 bg-surface border-b border-border text-muted">
                       <tr>
-                        <th className="p-2.5">তারিখ ও সময়</th>
-                        <th className="p-2.5">অর্ডার নম্বর</th>
-                        <th className="p-2.5">লেজার টাইপ ও বাকেট</th>
-                        <th className="p-2.5">মার্জিন ও পাওনা বিবরণ</th>
-                        <th className="p-2.5 text-right">পরিমাণ (BDT)</th>
+                        <th className="p-2.5"><LocalizedText source={"তারিখ ও সময়"} area="admin" /></th>
+                        <th className="p-2.5"><LocalizedText source={"অর্ডার নম্বর"} area="admin" /></th>
+                        <th className="p-2.5"><LocalizedText source={"লেজার টাইপ ও বাকেট"} area="admin" /></th>
+                        <th className="p-2.5"><LocalizedText source={"মার্জিন ও পাওনা বিবরণ"} area="admin" /></th>
+                        <th className="p-2.5 text-right"><LocalizedText source={"পরিমাণ (BDT)"} area="admin" /></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -3981,8 +3890,7 @@ export function VendorEscrowAndReturnPanel({
                             colSpan={5}
                             className="p-8 text-center text-muted"
                           >
-                            কোনো মার্জিন লেজার রেকর্ড নেই।
-                          </td>
+                            <LocalizedText source={"কোনো মার্জিন লেজার রেকর্ড নেই।"} area="admin" />{" "}</td>
                         </tr>
                       ) : (
                         inspectedLedger.map((e) => (
@@ -4008,7 +3916,7 @@ export function VendorEscrowAndReturnPanel({
                               </Badge>
                             </td>
                             <td className="p-2.5 text-ink leading-relaxed max-w-xs text-[11px]">
-                              {e.descriptionBn}
+                              {localizedField(e, "descriptionBn", locale)}
                             </td>
                             <td
                               className={`p-2.5 text-right font-mono font-bold ${
@@ -4034,7 +3942,7 @@ export function VendorEscrowAndReturnPanel({
                 {inspectedOrders.length === 0 ? (
                   <div className="py-12 text-center text-muted border border-dashed border-border rounded-[var(--radius-md)]">
                     <Truck className="w-8 h-8 mx-auto mb-2 text-muted/40" />
-                    <p>কোনো কুরিয়ার ডিসপ্যাচ রেকর্ড পাওয়া যায়নি।</p>
+                    <p><LocalizedText source={"কোনো কুরিয়ার ডিসপ্যাচ রেকর্ড পাওয়া যায়নি।"} area="admin" /></p>
                   </div>
                 ) : (
                   inspectedOrders.map((o) => {
@@ -4062,7 +3970,7 @@ export function VendorEscrowAndReturnPanel({
                               {o.orderNo}
                             </span>
                             <span className="text-muted text-[11px]">
-                              · ডিসপ্যাচ তারিখ:{' '}
+                              <LocalizedText source={"· ডিসপ্যাচ তারিখ:"} area="admin" />{' '}
                               {new Date(
                                 o.createdAt ?? '2026-11-06T00:00:00.000Z'
                               ).toLocaleDateString('bn-BD')}
@@ -4097,11 +4005,10 @@ export function VendorEscrowAndReturnPanel({
                                 className="flex items-center justify-between"
                               >
                                 <span className="font-medium text-ink">
-                                  {it.productNameBn} ({it.variantTitleBn})
+                                  {localizedField(it, "productNameBn", locale)} ({localizedField(it, "variantTitleBn", locale)})
                                 </span>
                                 <span className="font-mono text-muted">
-                                  SKU: {it.publicSku} × {it.quantity} টি
-                                </span>
+                                  <LocalizedText source={"SKU:"} area="admin" />{" "}{it.publicSku} × {it.quantity} {" "}<LocalizedText source={"টি"} area="admin" />{" "}</span>
                               </div>
                             ))}
                           </div>
@@ -4109,26 +4016,26 @@ export function VendorEscrowAndReturnPanel({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                           <div>
-                            গন্তব্য জেলা:{' '}
+                            <LocalizedText source={"গন্তব্য জেলা:"} area="admin" />{' '}
                             <strong className="text-ink">
-                              {o.districtNameBn}
+                              {localizedField(o, "districtNameBn", locale)}
                             </strong>{' '}
                             ({o.streetAddress})
                           </div>
                           <div>
-                            ট্র্যাকিং কোড:{' '}
+                            <LocalizedText source={"ট্র্যাকিং কোড:"} area="admin" />{' '}
                             <strong className="font-mono text-ink">
                               {o.trackingCode ?? '—'}
                             </strong>
                           </div>
                           <div>
-                            কনসাইনমেন্ট আইডি:{' '}
+                            <LocalizedText source={"কনসাইনমেন্ট আইডি:"} area="admin" />{' '}
                             <strong className="font-mono text-ink">
                               {o.consignmentId ?? '—'}
                             </strong>
                           </div>
                           <div>
-                            ক্যাশ অন ডেলিভারি (COD):{' '}
+                            <LocalizedText source={"ক্যাশ অন ডেলিভারি (COD):"} area="admin" />{' '}
                             <strong className="font-mono text-success">
                               {formatPoishaToBdt(
                                 o.codCollectablePoisha,
@@ -4162,11 +4069,10 @@ export function VendorEscrowAndReturnPanel({
                         <h4 className="font-bold text-ink flex items-center gap-1.5 text-xs">
                           <Wallet className="w-4 h-4 text-ink" />
                           <span>
-                            ক্যাশ-আউট চার্জ ও সেন্ড মানি ফি ক্যালকুলেটর (Exact Poisha)
-                          </span>
+                            <LocalizedText source={"ক্যাশ-আউট চার্জ ও সেন্ড মানি ফি ক্যালকুলেটর (Exact Poisha)"} area="admin" />{" "}</span>
                         </h4>
                         <span className="font-mono text-[11px] text-muted">
-                          উত্তোলনযোগ্য:{' '}
+                          <LocalizedText source={"উত্তোলনযোগ্য:"} area="admin" />{' '}
                           <strong className="text-success">
                             {formatPoishaToBdt(withdrawablePoisha, locale)}
                           </strong>
@@ -4210,15 +4116,14 @@ export function VendorEscrowAndReturnPanel({
                       <div className="p-3 bg-bg border border-border rounded-[var(--radius-sm)] grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-[11px]">
                         <div>
                           <span className="text-muted block font-sans text-[10px]">
-                            মোট উত্তোলনযোগ্য ব্যালেন্স
-                          </span>
+                            <LocalizedText source={"মোট উত্তোলনযোগ্য ব্যালেন্স"} area="admin" />{" "}</span>
                           <strong className="text-ink text-sm">
                             {formatPoishaToBdt(withdrawablePoisha, locale)}
                           </strong>
                         </div>
                         <div>
                           <span className="text-muted block font-sans text-[10px]">
-                            প্রযোজ্য চার্জ ({liveCalc.ruleLabelBn})
+                            <LocalizedText source={"প্রযোজ্য চার্জ ("} area="admin" />{localizedField(liveCalc, "ruleLabelBn", locale)})
                           </span>
                           <strong className="text-danger text-sm">
                             - {formatPoishaToBdt(liveCalc.feePoisha, locale)}
@@ -4226,8 +4131,7 @@ export function VendorEscrowAndReturnPanel({
                         </div>
                         <div>
                           <span className="text-muted block font-sans text-[10px]">
-                            ভেন্ডর হাতে পাবেন (Net Disbursed)
-                          </span>
+                            <LocalizedText source={"ভেন্ডর হাতে পাবেন (Net Disbursed)"} area="admin" />{" "}</span>
                           <strong className="text-success text-sm">
                             {formatPoishaToBdt(liveCalc.netPoisha, locale)}
                           </strong>
@@ -4239,8 +4143,7 @@ export function VendorEscrowAndReturnPanel({
                     <div className="divide-y divide-border border border-border rounded-[var(--radius-md)] max-h-[38vh] overflow-y-auto">
                       {inspectedPayouts.length === 0 ? (
                         <p className="p-8 text-center text-muted">
-                          কোনো পেআউট লেনদেন পাওয়া যায়নি।
-                        </p>
+                          <LocalizedText source={"কোনো পেআউট লেনদেন পাওয়া যায়নি।"} area="admin" />{" "}</p>
                       ) : (
                         inspectedPayouts.map((p) => {
                           const estCashoutChargePoisha = Math.round(
@@ -4283,20 +4186,20 @@ export function VendorEscrowAndReturnPanel({
 
                               <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-muted bg-bg p-2.5 rounded-[var(--radius-sm)] border border-border">
                                 <div>
-                                  মেথড:{' '}
+                                  <LocalizedText source={"মেথড:"} area="admin" />{' '}
                                   <strong className="text-ink">
-                                    {p.payoutMethodBn}
+                                    {localizedField(p, "payoutMethodBn", locale)}
                                   </strong>{' '}
                                   ({p.payoutAccountNo})
                                 </div>
                                 <div>
-                                  TrxID:{' '}
+                                  <LocalizedText source={"TrxID:"} area="admin" />{' '}
                                   <strong className="text-ink">
                                     {p.paymentTrxId ?? '—'}
                                   </strong>
                                 </div>
                                 <div>
-                                  ক্যাশ-আউট / সেন্ড মানি চার্জ (১.৮৫%):{' '}
+                                  <LocalizedText source={"ক্যাশ-আউট / সেন্ড মানি চার্জ (১.৮৫%):"} area="admin" />{' '}
                                   <strong className="text-danger">
                                     -{' '}
                                     {formatPoishaToBdt(
@@ -4306,7 +4209,7 @@ export function VendorEscrowAndReturnPanel({
                                   </strong>
                                 </div>
                                 <div>
-                                  ভেন্ডর নিট প্রাপ্তি:{' '}
+                                  <LocalizedText source={"ভেন্ডর নিট প্রাপ্তি:"} area="admin" />{' '}
                                   <strong className="text-success">
                                     {formatPoishaToBdt(
                                       netDisbursedPoisha,

@@ -1,4 +1,9 @@
 'use client';
+import { localizedField } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
 
 // src/components/admin/admin-erp-client.tsx
 // Phase 4A: Multi-Vendor Consignment Admin ERP Workspace
@@ -451,7 +456,7 @@ function OrderStatusSolidButton({
                 <button
                   type="button"
                   onClick={() => onOpenMfsModal(ord)}
-                  title="MFS তথ্য এডিট / পরিবর্তন"
+                  title={uiText("MFS তথ্য এডিট / পরিবর্তন", locale)}
                   className="p-0.5 hover:text-ink text-muted cursor-pointer"
                 >
                   <Wallet className="w-2.5 h-2.5 text-amber-700 dark:text-amber-400" />
@@ -465,10 +470,10 @@ function OrderStatusSolidButton({
               type="button"
               onClick={() => onOpenMfsModal(ord)}
               className="text-[10px] text-muted hover:text-amber-700 dark:hover:text-amber-400 flex items-center gap-0.5 cursor-pointer font-medium"
-              title="অগ্রিম কুরিয়ার চার্জ বা MFS পেমেন্ট TrxID যোগ করুন"
+              title={uiText("অগ্রিম কুরিয়ার চার্জ বা MFS পেমেন্ট TrxID যোগ করুন", locale)}
             >
               <Wallet className="w-2.5 h-2.5" />
-              <span>+ MFS TrxID</span>
+              <span><LocalizedText source={"+ MFS TrxID"} area="admin" /></span>
             </button>
           </div>
         ) : null}
@@ -495,7 +500,7 @@ function OrderStatusSolidButton({
             }
           >
             <Check className="w-3 h-3" />
-            <span>হ্যাঁ (Confirm)</span>
+            <span><LocalizedText source={"হ্যাঁ (Confirm)"} area="admin" /></span>
           </button>
           <button
             type="button"
@@ -507,10 +512,10 @@ function OrderStatusSolidButton({
               });
             }}
             className="inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-[var(--radius-sm)] bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-[11px] shadow-2xs transition-colors cursor-pointer select-none"
-            title="কল রিসিভ হয়নি বা ব্যস্ত — চেষ্টা রেকর্ড করুন"
+            title={uiText("কল রিসিভ হয়নি বা ব্যস্ত — চেষ্টা রেকর্ড করুন", locale)}
           >
             <PhoneMissed className="w-3 h-3" />
-            <span>ব্যস্ত{attempts > 0 ? ` (${attempts})` : ''}</span>
+            <span><LocalizedText source={"ব্যস্ত"} area="admin" />{attempts > 0 ? ` (${attempts})` : ''}</span>
           </button>
           <button
             type="button"
@@ -522,10 +527,10 @@ function OrderStatusSolidButton({
               });
             }}
             className="inline-flex items-center justify-center gap-1 px-1.5 py-1.5 rounded-[var(--radius-sm)] bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-bold text-[11px] shadow-2xs transition-colors cursor-pointer select-none"
-            title="গ্রাহক বাতিল করেছেন — অর্ডার ক্যান্সেল করুন"
+            title={uiText("গ্রাহক বাতিল করেছেন — অর্ডার ক্যান্সেল করুন", locale)}
           >
             <XSquare className="w-3 h-3" />
-            <span>না</span>
+            <span><LocalizedText source={"না"} area="admin" /></span>
           </button>
         </div>
 
@@ -535,7 +540,7 @@ function OrderStatusSolidButton({
             <div className="flex items-center justify-between border-b border-border pb-1.5">
               <span className="font-bold flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>TrxID ও অগ্রিম কুরিয়ার চার্জ</span>
+                <span><LocalizedText source={"TrxID ও অগ্রিম কুরিয়ার চার্জ"} area="admin" /></span>
               </span>
               <button
                 type="button"
@@ -548,7 +553,7 @@ function OrderStatusSolidButton({
 
             <div className="space-y-1 bg-bg p-2 rounded border border-border text-[11px]">
               <div className="flex items-center justify-between">
-                <span className="text-muted">মাধ্যম:</span>
+                <span className="text-muted"><LocalizedText source={"মাধ্যম:"} area="admin" /></span>
                 <span className="font-bold uppercase text-ink">
                   {mfsProviderLabel}
                 </span>
@@ -569,7 +574,7 @@ function OrderStatusSolidButton({
                       }
                     }}
                     className="p-0.5 hover:text-ink text-muted cursor-pointer"
-                    title="কপি TrxID"
+                    title={uiText("কপি TrxID", locale)}
                   >
                     {copiedTrx ? (
                       <Check className="w-3 h-3 text-emerald-600" />
@@ -580,13 +585,13 @@ function OrderStatusSolidButton({
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted">অগ্রিম কুরিয়ার চার্জ:</span>
+                <span className="text-muted"><LocalizedText source={"অগ্রিম কুরিয়ার চার্জ:"} area="admin" /></span>
                 <span className="font-bold text-amber-700 dark:text-amber-400">
                   {formatPoishaToBdt(advanceAmountPoisha, locale)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted">গ্রাহক:</span>
+                <span className="text-muted"><LocalizedText source={"গ্রাহক:"} area="admin" /></span>
                 <span className="font-mono text-ink">{ord.customerPhone}</span>
               </div>
             </div>
@@ -634,8 +639,7 @@ function OrderStatusSolidButton({
                 }}
                 className="w-full py-1 px-2 border border-border bg-bg hover:bg-surface text-ink font-semibold rounded text-[10px] cursor-pointer"
               >
-                শুধু কনফার্ম (যাচাই পরে)
-              </button>
+                <LocalizedText source={"শুধু কনফার্ম (যাচাই পরে)"} area="admin" />{" "}</button>
 
               {onOpenMfsModal && (
                 <button
@@ -647,7 +651,7 @@ function OrderStatusSolidButton({
                   className="w-full py-1 px-2 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 font-semibold rounded text-[10px] cursor-pointer flex items-center justify-center gap-1"
                 >
                   <Wallet className="w-3 h-3" />
-                  <span>MFS বিস্তারিত প্যানেলে পরিবর্তন / যাচাই</span>
+                  <span><LocalizedText source={"MFS বিস্তারিত প্যানেলে পরিবর্তন / যাচাই"} area="admin" /></span>
                 </button>
               )}
             </div>
@@ -681,7 +685,7 @@ function OrderStatusSolidButton({
           });
         }}
         className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer select-none"
-        title="প্যাকিং সম্পন্ন করুন"
+        title={uiText("প্যাকিং সম্পন্ন করুন", locale)}
       >
         <Package className="w-3.5 h-3.5" />
         <span>{locale === 'bn' ? 'প্যাকিং সম্পন্ন করুন' : 'Pack Order'}</span>
@@ -733,7 +737,7 @@ function OrderStatusSolidButton({
           });
         }}
         className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer select-none"
-        title="আউট ফর ডেলিভারি মার্ক করুন"
+        title={uiText("আউট ফর ডেলিভারি মার্ক করুন", locale)}
       >
         <Truck className="w-3.5 h-3.5" />
         <span>{locale === 'bn' ? 'আউট ফর ডেলিভারি' : 'Out for Delivery'}</span>
@@ -753,7 +757,7 @@ function OrderStatusSolidButton({
           });
         }}
         className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer select-none"
-        title="ডেলিভারি সফল ও সিওডি জমা সম্পন্ন করুন"
+        title={uiText("ডেলিভারি সফল ও সিওডি জমা সম্পন্ন করুন", locale)}
       >
         <CheckCircle2 className="w-3.5 h-3.5" />
         <span>{locale === 'bn' ? 'ডেলিভারি সম্পন্ন (Mark Delivered)' : 'Mark Delivered'}</span>
@@ -787,6 +791,7 @@ function OrderStatusSolidButton({
 
 function CourierInfoCard({
   ord,
+  locale,
   onBookCourier,
 }: {
   ord: Partial<OrderGridRowDTO>;
@@ -821,16 +826,13 @@ function CourierInfoCard({
         </span>
         {ord.status === 'delivered' ? (
           <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-semibold border border-emerald-300">
-            ডেলিভার্ড
-          </span>
+            <LocalizedText source={"ডেলিভার্ড"} area="admin" />{" "}</span>
         ) : ord.status === 'shipped' || ord.status === 'out_for_delivery' ? (
           <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-800 font-semibold border border-purple-300">
-            ইন-ট্রানজিট
-          </span>
+            <LocalizedText source={"ইন-ট্রানজিট"} area="admin" />{" "}</span>
         ) : ord.status === 'packed' ? (
           <span className="px-1.5 py-0.5 rounded text-[10px] bg-indigo-100 text-indigo-800 font-semibold border border-indigo-300">
-            প্যাকড
-          </span>
+            <LocalizedText source={"প্যাকড"} area="admin" />{" "}</span>
         ) : null}
       </div>
 
@@ -844,7 +846,7 @@ function CourierInfoCard({
               type="button"
               onClick={handleCopy}
               className="p-1 text-muted hover:text-ink hover:bg-surface rounded cursor-pointer"
-              title="ট্র্যাকিং কোড কপি করুন"
+              title={uiText("ট্র্যাকিং কোড কপি করুন", locale)}
             >
               {copied ? (
                 <Check className="w-3 h-3 text-emerald-600" />
@@ -860,20 +862,19 @@ function CourierInfoCard({
             className="inline-flex items-center gap-1 text-[11px] text-blue-700 hover:text-blue-900 hover:underline font-bold"
           >
             <ExternalLink className="w-3 h-3" />
-            <span>লাইভ ট্র্যাকিং লিংক</span>
+            <span><LocalizedText source={"লাইভ ট্র্যাকিং লিংক"} area="admin" /></span>
           </a>
         </div>
       ) : (
         <div className="flex items-center gap-2 text-muted">
-          <span className="text-[11px]">বুকিং বাকি (Not Booked)</span>
+          <span className="text-[11px]"><LocalizedText source={"বুকিং বাকি (Not Booked)"} area="admin" /></span>
           {onBookCourier && (
             <button
               type="button"
               onClick={onBookCourier}
               className="text-[11px] font-bold text-blue-700 hover:underline cursor-pointer"
             >
-              + বুক করুন
-            </button>
+              <LocalizedText source={"+ বুক করুন"} area="admin" />{" "}</button>
           )}
         </div>
       )}
@@ -884,6 +885,7 @@ function CourierInfoCard({
 export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientProps) {
   const locale = useLocaleStore((s) => s.adminLocale);
   const toggleLocale = useLocaleStore((s) => s.toggleAdminLocale);
+  React.useEffect(() => { document.documentElement.lang = locale; }, [locale]);
 
   // Strict Authentication & First-Login Gate State
   const [isCheckingSession, setIsCheckingSession] = React.useState(true);
@@ -1997,7 +1999,7 @@ ${itemsList}
               ? 'অ্যাডমিন সিকিউরিটি সেশন যাচাই হচ্ছে...'
               : 'Verifying Admin Security Session...'}
           </p>
-          <p className="text-xs text-muted">RBAC + TOTP 2FA Gate</p>
+          <p className="text-xs text-muted"><LocalizedText source={"RBAC + TOTP 2FA Gate"} area="admin" /></p>
         </div>
       </div>
     );
@@ -2028,15 +2030,13 @@ ${itemsList}
 
           <div className="p-3.5 border border-border rounded-[var(--radius-md)] bg-bg text-xs space-y-1.5">
             <p className="font-semibold text-ink">
-              ইউজার: <span className="font-mono">@{gateUser.username}</span> (
+              <LocalizedText source={"ইউজার:"} area="admin" />{" "}<span className="font-mono">@{gateUser.username}</span> (
               {gateUser.roleSlug})
             </p>
             <p className="text-muted">
-              নিরাপত্তা নীতিমালা অনুযায়ী টেম্পোরারি পাসওয়ার্ড পরিবর্তন এবং Google
-              Authenticator 2FA সক্রিয় না করা পর্যন্ত কোনো পেজ বা API অ্যাক্সেস করা যাবে না।
-            </p>
+              <LocalizedText source={"নিরাপত্তা নীতিমালা অনুযায়ী টেম্পোরারি পাসওয়ার্ড পরিবর্তন এবং Google Authenticator 2FA সক্রিয় না করা পর্যন্ত কোনো পেজ বা API অ্যাক্সেস করা যাবে না।"} area="admin" />{" "}</p>
             <p className="font-mono text-ink pt-1 break-all">
-              RFC 6238 Authenticator Setup URI:{' '}
+              <LocalizedText source={"RFC 6238 Authenticator Setup URI:"} area="admin" />{' '}
               <strong>{gateTotpUri ?? 'otpauth://totp/Panchagarh-ERP'}</strong>
             </p>
           </div>
@@ -2125,8 +2125,7 @@ ${itemsList}
             <div className="flex items-center justify-between border-b border-border pb-4">
               <div>
                 <p className="text-xs font-mono uppercase text-muted">
-                  CONSIGNMENT ERP AUTH GATE
-                </p>
+                  <LocalizedText source={"CONSIGNMENT ERP AUTH GATE"} area="admin" />{" "}</p>
                 <h1 className="text-xl font-bold text-ink mt-0.5">
                   {brandName} — {locale === 'bn' ? 'অ্যাডমিন লগইন' : 'Admin Login'}
                 </h1>
@@ -2206,7 +2205,7 @@ ${itemsList}
             </form>
 
             <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-muted">
-              <span>৫ বার ভুল চেষ্টায় ৩০ মিনিট অটো-লকআউট</span>
+              <span><LocalizedText source={"৫ বার ভুল চেষ্টায় ৩০ মিনিট অটো-লকআউট"} area="admin" /></span>
               <Link href="/" className="text-ink font-semibold hover:underline">
                 {locale === 'bn' ? 'স্টোরফ্রন্টে ফিরুন' : 'Back to Storefront'}
               </Link>
@@ -2538,7 +2537,7 @@ ${itemsList}
         <div
           role="button"
           tabIndex={0}
-          aria-label="Close Mobile Sidebar"
+          aria-label={uiText("Close Mobile Sidebar", locale)}
           onClick={() => setIsMobileSidebarOpen(false)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') setIsMobileSidebarOpen(false);
@@ -2558,16 +2557,14 @@ ${itemsList}
           <div className="h-14 border-b border-border px-4 flex items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-[var(--radius-md)] border border-ink bg-ink text-bg flex items-center justify-center font-bold text-sm shrink-0">
-                প
-              </div>
+                <LocalizedText source={"প"} area="admin" />{" "}</div>
               {!isSidebarCollapsed && (
                 <div className="min-w-0">
                   <p className="font-bold text-sm tracking-tight text-ink truncate leading-tight">
                     {brandName}
                   </p>
                   <p className="text-[11px] font-mono text-muted uppercase tracking-wider">
-                    Panchagarh ERP
-                  </p>
+                    <LocalizedText source={"Panchagarh ERP"} area="admin" />{" "}</p>
                 </div>
               )}
             </div>
@@ -2616,7 +2613,7 @@ ${itemsList}
           </div>
 
           {/* Categorized Nav Links */}
-          <nav aria-label="Admin ERP Sidebar" className="p-2 space-y-4 text-xs font-medium">
+          <nav aria-label={uiText("Admin ERP Sidebar", locale)} className="p-2 space-y-4 text-xs font-medium">
             {NAV_SECTIONS.map((section) => {
               const visibleItems = section.items.filter((item) => !item.hidden);
               if (visibleItems.length === 0) return null;
@@ -2702,7 +2699,7 @@ ${itemsList}
             </div>
           ) : (
             <div className="flex flex-col items-center gap-1.5">
-              <Link href="/" title="স্টোরফ্রন্ট">
+              <Link href="/" title={uiText("স্টোরফ্রন্ট", locale)}>
                 <div className="p-2 rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:border-ink">
                   <Store className="w-4 h-4" aria-hidden="true" />
                 </div>
@@ -2721,7 +2718,7 @@ ${itemsList}
               type="button"
               onClick={() => setIsMobileSidebarOpen(true)}
               className="md:hidden p-1.5 rounded-[var(--radius-sm)] border border-border bg-surface text-ink cursor-pointer"
-              aria-label="Open Sidebar Menu"
+              aria-label={uiText("Open Sidebar Menu", locale)}
             >
               <Menu className="w-4 h-4" aria-hidden="true" />
             </button>
@@ -2734,7 +2731,7 @@ ${itemsList}
                 onClick={() => setHelpModalTab(activeTab)}
                 className="w-5 h-5 rounded-full border border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono font-bold text-xs flex items-center justify-center hover:bg-amber-500 hover:text-white transition-colors shrink-0 cursor-pointer"
                 title={locale === 'bn' ? 'মডিউল কার্যপ্রণালী গাইড (!)' : 'Module Help Guide (!)'}
-                aria-label="Module Help Guide"
+                aria-label={uiText("Module Help Guide", locale)}
               >
                 !
               </button>
@@ -2749,7 +2746,7 @@ ${itemsList}
             <button
               type="button"
               onClick={toggleLocale}
-              aria-label="Toggle admin language"
+              aria-label={uiText("Toggle admin language", locale)}
               className="flex items-center text-xs font-semibold border border-border rounded-full p-0.5 bg-surface h-8 transition-colors cursor-pointer"
               title={locale === 'bn' ? 'Switch to English' : 'বাংলায় পরিবর্তন করুন'}
             >
@@ -2760,8 +2757,7 @@ ${itemsList}
                     : 'text-muted hover:text-ink'
                 }`}
               >
-                EN
-              </span>
+                <LocalizedText source={"EN"} area="admin" />{" "}</span>
               <span
                 className={`px-2 py-0.5 rounded-full text-[11px] transition-colors ${
                   locale === 'bn'
@@ -2769,8 +2765,7 @@ ${itemsList}
                     : 'text-muted hover:text-ink'
                 }`}
               >
-                বাং
-              </span>
+                <LocalizedText source={"বাং"} area="admin" />{" "}</span>
             </button>
 
             <button
@@ -2831,8 +2826,7 @@ ${itemsList}
               onClick={() => setActionFeedback(null)}
               className="underline cursor-pointer text-ink"
             >
-              বন্ধ করুন
-            </button>
+              <LocalizedText source={"বন্ধ করুন"} area="admin" />{" "}</button>
           </div>
         )}
 
@@ -2841,7 +2835,7 @@ ${itemsList}
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-ink">
               {locale === 'bn' ? 'সক্রিয় রোল:' : 'Active Role:'}{' '}
-              {snapshot.activeRole?.nameBn}
+              {localizedField(snapshot.activeRole, "nameBn", locale)}
             </span>
             <span aria-hidden="true">·</span>
             <span className="text-muted">
@@ -2977,8 +2971,7 @@ ${itemsList}
                     : 'Consignment Finance & Operational Glossary (Hover ⓘ):'}
                 </p>
                 <span className="text-[11px] font-mono text-muted">
-                  Integer Poisha Engine · Double-Entry Balanced
-                </span>
+                  <LocalizedText source={"Integer Poisha Engine · Double-Entry Balanced"} area="admin" />{" "}</span>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[var(--radius-sm)] border border-border bg-bg text-ink">
@@ -3079,7 +3072,7 @@ ${itemsList}
                           </span>
                         </div>
                         <p className="text-muted">
-                          {ord.upazilaNameBn}, {ord.districtNameBn} —{' '}
+                          {localizedField(ord, "upazilaNameBn", locale)}, {localizedField(ord, "districtNameBn", locale)} —{' '}
                           {ord.streetAddress}
                         </p>
                       </div>
@@ -3114,7 +3107,7 @@ ${itemsList}
                                 className="w-3.5 h-3.5"
                                 aria-hidden="true"
                               />
-                              <span>wa.me</span>
+                              <span><LocalizedText source={"wa.me"} area="admin" /></span>
                             </a>
                           </>
                         )}
@@ -3517,7 +3510,7 @@ ${itemsList}
                                   {ord.source}
                                 </span>
                                 <span>·</span>
-                                <span>রিস্ক: {ord.riskScore}</span>
+                                <span><LocalizedText source={"রিস্ক:"} area="admin" />{" "}{ord.riskScore}</span>
                               </div>
                             </div>
                           </div>
@@ -3529,7 +3522,7 @@ ${itemsList}
                               )}
                             </div>
                             <div className="text-muted text-[11px]">
-                              COD:{' '}
+                              <LocalizedText source={"COD:"} area="admin" />{' '}
                               {formatPoishaToBdt(
                                 ord.codCollectablePoisha ?? 0,
                                 locale
@@ -3539,14 +3532,14 @@ ${itemsList}
                             {(((ord.totalPayablePoisha ?? 0) - (ord.codCollectablePoisha ?? 0) > 0) || Boolean(ord.manualPaymentTrxId)) && (
                               <div className="text-[10px] space-y-0.5 pt-0.5">
                                 <div className="text-amber-700 dark:text-amber-400 font-sans font-semibold">
-                                  অগ্রিম: {formatPoishaToBdt(Math.max(0, (ord.totalPayablePoisha ?? 0) - (ord.codCollectablePoisha ?? 0)) || (ord.advancePaidPoisha ?? 0), locale)}
+                                  <LocalizedText source={"অগ্রিম:"} area="admin" />{" "}{formatPoishaToBdt(Math.max(0, (ord.totalPayablePoisha ?? 0) - (ord.codCollectablePoisha ?? 0)) || (ord.advancePaidPoisha ?? 0), locale)}
                                   <span className="text-[9px] ml-1">
                                     ({ord.paymentStatus === 'paid_verified' || ord.paymentStatus === 'partial_verified' ? '✓ গৃহীত' : 'যাচাই বাকি'})
                                   </span>
                                 </div>
                                 {ord.manualPaymentTrxId && (
                                   <div className="text-[9px] text-muted font-mono truncate" title={ord.manualPaymentTrxId}>
-                                    Trx: {ord.manualPaymentTrxId}
+                                    <LocalizedText source={"Trx:"} area="admin" />{" "}{ord.manualPaymentTrxId}
                                   </div>
                                 )}
                               </div>
@@ -3559,7 +3552,7 @@ ${itemsList}
                                     : 'text-success'
                                 }`}
                               >
-                                লাভ:{' '}
+                                <LocalizedText source={"লাভ:"} area="admin" />{' '}
                                 {formatPoishaToBdt(
                                   ord.estimatedNetProfitPoisha ?? 0,
                                   locale
@@ -3580,19 +3573,19 @@ ${itemsList}
                             </span>
                           </div>
                           <div className="text-muted text-[11px] line-clamp-2">
-                            {ord.upazilaNameBn}, {ord.districtNameBn} —{' '}
+                            {localizedField(ord, "upazilaNameBn", locale)}, {localizedField(ord, "districtNameBn", locale)} —{' '}
                             {ord.streetAddress}
                           </div>
                           <div className="flex items-center gap-2 text-[11px] text-muted pt-0.5">
                             <span>
-                              ঠিকানা স্কোর:{' '}
+                              <LocalizedText source={"ঠিকানা স্কোর:"} area="admin" />{' '}
                               <strong className="text-ink font-mono">
                                 {ord.addressQualityScore}%
                               </strong>
                             </span>
                             {ord.internalStaffNote && (
                               <span className="truncate">
-                                · নোট: {ord.internalStaffNote}
+                                <LocalizedText source={"· নোট:"} area="admin" />{" "}{ord.internalStaffNote}
                               </span>
                             )}
                           </div>
@@ -3641,7 +3634,7 @@ ${itemsList}
                                   className="p-1.5 border border-border rounded-[var(--radius-sm)] bg-bg hover:bg-surface text-ink inline-flex items-center gap-1"
                                 >
                                   <PhoneCall className="w-3.5 h-3.5" />
-                                  <span className="text-[11px]">কল</span>
+                                  <span className="text-[11px]"><LocalizedText source={"কল"} area="admin" /></span>
                                 </a>
 
                                 <button
@@ -3651,7 +3644,7 @@ ${itemsList}
                                   className="p-1.5 border border-border rounded-[var(--radius-sm)] bg-bg hover:bg-surface text-ink inline-flex items-center gap-1 cursor-pointer"
                                 >
                                   <MessageSquare className="w-3.5 h-3.5" />
-                                  <span className="text-[11px]">মেসেজ</span>
+                                  <span className="text-[11px]"><LocalizedText source={"মেসেজ"} area="admin" /></span>
                                 </button>
                               </>
                             )}
@@ -3667,7 +3660,7 @@ ${itemsList}
                               }`}
                             >
                               <Wallet className="w-3.5 h-3.5" />
-                              <span className="text-[11px]">MFS</span>
+                              <span className="text-[11px]"><LocalizedText source={"MFS"} area="admin" /></span>
                             </button>
 
                             <button
@@ -3710,7 +3703,7 @@ ${itemsList}
                           <th className="p-3 w-8">
                             <input
                               type="checkbox"
-                              aria-label="Select all orders"
+                              aria-label={uiText("Select all orders", locale)}
                               checked={
                                 filteredOrders.length > 0 &&
                                 selectedOrderNos.length ===
@@ -3797,7 +3790,7 @@ ${itemsList}
                                 <span className="px-1.5 py-0.5 rounded bg-surface border border-border font-medium text-[10px]">
                                   {ord.source}
                                 </span>{' '}
-                                · রিস্ক:{' '}
+                                <LocalizedText source={"· রিস্ক:"} area="admin" />{' '}
                                 <span className="font-mono tabular-nums font-semibold text-ink">
                                   {ord.riskScore}
                                 </span>
@@ -3812,11 +3805,11 @@ ${itemsList}
                                 </span>
                               </div>
                               <div className="text-muted line-clamp-2 text-[11px]">
-                                {ord.upazilaNameBn}, {ord.districtNameBn} —{' '}
+                                {localizedField(ord, "upazilaNameBn", locale)}, {localizedField(ord, "districtNameBn", locale)} —{' '}
                                 {ord.streetAddress}
                               </div>
                               <div className="text-[11px] text-muted">
-                                ঠিকানা স্কোর:{' '}
+                                <LocalizedText source={"ঠিকানা স্কোর:"} area="admin" />{' '}
                                 <span className="font-mono font-semibold text-ink">
                                   {ord.addressQualityScore}%
                                 </span>
@@ -3865,20 +3858,17 @@ ${itemsList}
                                   className="w-full px-2 py-1 text-[11px] border border-border rounded-[var(--radius-sm)] bg-bg text-ink font-medium"
                                 >
                                   <option value="pending_confirmation">
-                                    pending_confirmation
-                                  </option>
-                                  <option value="confirmed">confirmed</option>
-                                  <option value="packed">packed</option>
-                                  <option value="shipped">shipped</option>
+                                    <LocalizedText source={"pending_confirmation"} area="admin" />{" "}</option>
+                                  <option value="confirmed"><LocalizedText source={"confirmed"} area="admin" /></option>
+                                  <option value="packed"><LocalizedText source={"packed"} area="admin" /></option>
+                                  <option value="shipped"><LocalizedText source={"shipped"} area="admin" /></option>
                                   <option value="out_for_delivery">
-                                    out_for_delivery
-                                  </option>
-                                  <option value="delivered">delivered</option>
+                                    <LocalizedText source={"out_for_delivery"} area="admin" />{" "}</option>
+                                  <option value="delivered"><LocalizedText source={"delivered"} area="admin" /></option>
                                   <option value="return_initiated">
-                                    return_initiated
-                                  </option>
-                                  <option value="returned">returned</option>
-                                  <option value="cancelled">cancelled</option>
+                                    <LocalizedText source={"return_initiated"} area="admin" />{" "}</option>
+                                  <option value="returned"><LocalizedText source={"returned"} area="admin" /></option>
+                                  <option value="cancelled"><LocalizedText source={"cancelled"} area="admin" /></option>
                                 </select>
                               )}
                             </td>
@@ -3891,7 +3881,7 @@ ${itemsList}
                                 )}
                               </div>
                               <div className="text-muted text-[11px]">
-                                COD:{' '}
+                                <LocalizedText source={"COD:"} area="admin" />{' '}
                                 {formatPoishaToBdt(
                                   ord.codCollectablePoisha ?? 0,
                                   locale
@@ -3901,22 +3891,21 @@ ${itemsList}
                               {(((ord.totalPayablePoisha ?? 0) - (ord.codCollectablePoisha ?? 0) > 0) || Boolean(ord.manualPaymentTrxId)) && (
                                 <div className="text-[10px] space-y-0.5 pt-0.5">
                                   <div className="text-amber-700 dark:text-amber-400 font-sans font-semibold">
-                                    অগ্রিম: {formatPoishaToBdt(Math.max(0, (ord.totalPayablePoisha ?? 0) - (ord.codCollectablePoisha ?? 0)) || (ord.advancePaidPoisha ?? 0), locale)}
+                                    <LocalizedText source={"অগ্রিম:"} area="admin" />{" "}{formatPoishaToBdt(Math.max(0, (ord.totalPayablePoisha ?? 0) - (ord.codCollectablePoisha ?? 0)) || (ord.advancePaidPoisha ?? 0), locale)}
                                     <span className="text-[9px] ml-1">
                                       ({ord.paymentStatus === 'paid_verified' || ord.paymentStatus === 'partial_verified' ? '✓ গৃহীত' : 'যাচাই বাকি'})
                                     </span>
                                   </div>
                                   {ord.manualPaymentTrxId && (
                                     <div className="text-[10px] text-muted font-mono truncate select-all" title={ord.manualPaymentTrxId}>
-                                      Trx: {ord.manualPaymentTrxId}
+                                      <LocalizedText source={"Trx:"} area="admin" />{" "}{ord.manualPaymentTrxId}
                                     </div>
                                   )}
                                 </div>
                               )}
                               {ord.isAdvanceMandatory && (
                                 <span className="inline-block text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 font-sans font-medium">
-                                  অগ্রিম প্রযোজ্য
-                                </span>
+                                  <LocalizedText source={"অগ্রিম প্রযোজ্য"} area="admin" />{" "}</span>
                               )}
                             </td>
 
@@ -3960,7 +3949,7 @@ ${itemsList}
 
                                     <button
                                       type="button"
-                                      title="গ্রাহককে মেসেজ পাঠান (WhatsApp / SMS / লাইভ ট্র্যাকিং লিংক)"
+                                      title={uiText("গ্রাহককে মেসেজ পাঠান (WhatsApp / SMS / লাইভ ট্র্যাকিং লিংক)", locale)}
                                       onClick={() => handleOpenMessageStudio(ord)}
                                       className="p-2 border border-border rounded-[var(--radius-sm)] bg-bg hover:bg-surface text-ink cursor-pointer"
                                     >
@@ -3972,7 +3961,7 @@ ${itemsList}
 
                                     <button
                                       type="button"
-                                      title="ম্যানুয়াল MFS পেমেন্ট ও TrxID (বিকাশ / নগদ / রকেট)"
+                                      title={uiText("ম্যানুয়াল MFS পেমেন্ট ও TrxID (বিকাশ / নগদ / রকেট)", locale)}
                                       onClick={() => handleOpenMfsModal(ord)}
                                       className={`p-2 border rounded-[var(--radius-sm)] cursor-pointer transition-colors ${
                                         ord.manualPaymentTrxId
@@ -3989,7 +3978,7 @@ ${itemsList}
                                     {!ord.trackingCode && (
                                       <button
                                         type="button"
-                                        title="১-ক্লিক কুরিয়ার বুকিং"
+                                        title={uiText("১-ক্লিক কুরিয়ার বুকিং", locale)}
                                         onClick={() =>
                                           void executeGridAction({
                                             orderNos: [ord.orderNo!],
@@ -4011,7 +4000,7 @@ ${itemsList}
 
                                 <button
                                   type="button"
-                                  title="স্লিপ প্রিন্ট করুন (A4 3-Part / 4x6 Thermal)"
+                                  title={uiText("স্লিপ প্রিন্ট করুন (A4 3-Part / 4x6 Thermal)", locale)}
                                   onClick={() => {
                                     if (ord.orderNo) {
                                       setSelectedOrderNos([ord.orderNo]);
@@ -4058,9 +4047,7 @@ ${itemsList}
                   : 'Smart Order Entry (Manual & Social Channels)'}
               </h1>
               <p className="text-xs text-muted">
-                মোবাইল নম্বর লিখলে স্বয়ংক্রিয়ভাবে গ্রাহকের আগের রিটার্ন হিস্ট্রি, ২৪ ঘণ্টার
-                ডুপ্লিকেট গার্ড, জেলাভিত্তিক ডেলিভারি চার্জ ও আনুমানিক লাভ দেখাবে।
-              </p>
+                <LocalizedText source={"মোবাইল নম্বর লিখলে স্বয়ংক্রিয়ভাবে গ্রাহকের আগের রিটার্ন হিস্ট্রি, ২৪ ঘণ্টার ডুপ্লিকেট গার্ড, জেলাভিত্তিক ডেলিভারি চার্জ ও আনুমানিক লাভ দেখাবে।"} area="admin" />{" "}</p>
             </div>
 
             <form
@@ -4174,18 +4161,18 @@ ${itemsList}
                       {locale === 'bn' ? 'অর্ডার সোর্স (Source) *' : 'Order Source *'}
                     </label>
                     <select
-                      aria-label="Order source"
+                      aria-label={uiText("Order source", locale)}
                       value={smartSource}
                       onChange={(e) =>
                         setSmartSource(e.target.value as OrderSource)
                       }
                       className="w-full min-h-[44px] px-3 py-2 text-sm bg-bg text-ink border border-border rounded-[var(--radius-md)]"
                     >
-                      <option value="facebook">Facebook Page</option>
+                      <option value="facebook"><LocalizedText source={"Facebook Page"} area="admin" /></option>
                       <option value="whatsapp">WhatsApp Direct</option>
-                      <option value="instagram">Instagram DM</option>
-                      <option value="phone_call">Phone Call</option>
-                      <option value="other">Other</option>
+                      <option value="instagram"><LocalizedText source={"Instagram DM"} area="admin" /></option>
+                      <option value="phone_call"><LocalizedText source={"Phone Call"} area="admin" /></option>
+                      <option value="other"><LocalizedText source={"Other"} area="admin" /></option>
                     </select>
                   </div>
                 </div>
@@ -4254,7 +4241,7 @@ ${itemsList}
                       {locale === 'bn' ? 'জেলা (৬৪ জেলা) *' : 'District (64 Districts) *'}
                     </label>
                     <select
-                      aria-label="District"
+                      aria-label={uiText("District", locale)}
                       value={smartDistrictId}
                       onChange={(e) => {
                         const dId = Number(e.target.value);
@@ -4277,7 +4264,7 @@ ${itemsList}
                       {locale === 'bn' ? 'উপজেলা / থানা *' : 'Upazila / Thana *'}
                     </label>
                     <select
-                      aria-label="Upazila"
+                      aria-label={uiText("Upazila", locale)}
                       value={smartUpazilaId}
                       onChange={(e) =>
                         setSmartUpazilaId(Number(e.target.value))
@@ -4316,14 +4303,14 @@ ${itemsList}
                       {locale === 'bn' ? 'কনসাইনমেন্ট পণ্য ও ভ্যারিয়েন্ট নির্বাচন *' : 'Select Product & Variant *'}
                     </label>
                     <select
-                      aria-label="Select product variant"
+                      aria-label={uiText("Select product variant", locale)}
                       value={smartVariantId}
                       onChange={(e) => setSmartVariantId(e.target.value)}
                       className="w-full min-h-[44px] px-3 py-2 text-xs sm:text-sm bg-bg text-ink border border-border rounded-[var(--radius-md)]"
                     >
                       {allVariantsFlat.map(({ product: p, variant: v }) => (
                         <option key={v.variantId} value={v.variantId}>
-                          {locale === 'bn' ? p.nameBn : p.nameEn} — {locale === 'bn' ? v.titleBn : v.titleEn} (SKU: {v.publicSku} · {locale === 'bn' ? 'স্টক:' : 'Stock:'}{' '}
+                          {locale === 'bn' ? p.nameBn : p.nameEn} — {locale === 'bn' ? v.titleBn : v.titleEn} {" "}<LocalizedText source={"(SKU:"} area="admin" />{" "}{v.publicSku} · {locale === 'bn' ? 'স্টক:' : 'Stock:'}{' '}
                           {v.stockAvailable} · {locale === 'bn' ? 'দাম:' : 'Price:'}{' '}
                           {formatPoishaToBdt(v.salePricePoisha, locale)})
                         </option>
@@ -4352,7 +4339,7 @@ ${itemsList}
                       {locale === 'bn' ? 'ডেলিভারি মাধ্যম' : 'Delivery Method'}
                     </label>
                     <select
-                      aria-label="Delivery method"
+                      aria-label={uiText("Delivery method", locale)}
                       value={smartDeliveryMethod}
                       onChange={(e) =>
                         setSmartDeliveryMethod(
@@ -4373,7 +4360,7 @@ ${itemsList}
                       {locale === 'bn' ? 'পেমেন্ট মাধ্যম' : 'Payment Method'}
                     </label>
                     <select
-                      aria-label="Payment method"
+                      aria-label={uiText("Payment method", locale)}
                       value={smartPaymentMethod}
                       onChange={(e) =>
                         setSmartPaymentMethod(
@@ -4532,9 +4519,7 @@ ${itemsList}
                   : 'Users, Mandatory 2FA & Granular Permission Matrix'}
               </h1>
               <p className="text-xs text-muted">
-                সুপার অ্যাডমিন থেকে নতুন ইউজার তৈরি (ওয়ান-টাইম টেম্পোরারি পাসওয়ার্ডসহ), 2FA
-                রিসেট, কাস্টম রোল এবং অপরিবর্তনীয় অডিট লগ।
-              </p>
+                <LocalizedText source={"সুপার অ্যাডমিন থেকে নতুন ইউজার তৈরি (ওয়ান-টাইম টেম্পোরারি পাসওয়ার্ডসহ), 2FA রিসেট, কাস্টম রোল এবং অপরিবর্তনীয় অডিট লগ।"} area="admin" />{" "}</p>
             </div>
 
             {isSuperAdmin && (
@@ -4610,7 +4595,7 @@ ${itemsList}
                           {locale === 'bn' ? 'রোল নির্বাচন করুন *' : 'Select Role *'}
                         </label>
                         <select
-                          aria-label="Select Role"
+                          aria-label={uiText("Select Role", locale)}
                           value={newRoleSlug}
                           onChange={(e) =>
                             setNewRoleSlug(e.target.value as SystemRoleSlug)
@@ -4647,8 +4632,8 @@ ${itemsList}
                           : 'Displayed once only — copy or share now'}
                       </Badge>
                       <p className="font-mono text-ink">
-                        Username: <strong>{createdTempCredentials.username}</strong>{' '}
-                        · Temp Password:{' '}
+                        <LocalizedText source={"Username:"} area="admin" />{" "}<strong>{createdTempCredentials.username}</strong>{' '}
+                        <LocalizedText source={"· Temp Password:"} area="admin" />{' '}
                         <strong>{createdTempCredentials.tempPassword}</strong>
                       </p>
                       <div className="flex flex-wrap items-center gap-2">
@@ -4748,16 +4733,16 @@ ${itemsList}
                           className="w-full h-10 px-3 bg-surface border border-border rounded-[var(--radius-sm)] text-sm text-ink"
                         >
                           <option value="marketing_manager">
-                            marketing_manager ({locale === 'bn' ? 'মার্কেটিং ম্যানেজার' : 'Marketing Manager'})
+                            <LocalizedText source={"marketing_manager ("} area="admin" />{locale === 'bn' ? 'মার্কেটিং ম্যানেজার' : 'Marketing Manager'})
                           </option>
                           <option value="packaging_manager">
-                            packaging_manager ({locale === 'bn' ? 'প্যাকেজিং ম্যানেজার' : 'Packaging Manager'})
+                            <LocalizedText source={"packaging_manager ("} area="admin" />{locale === 'bn' ? 'প্যাকেজিং ম্যানেজার' : 'Packaging Manager'})
                           </option>
                           <option value="vendor">
-                            vendor ({locale === 'bn' ? 'ভেন্ডর / সাপ্লায়ার' : 'Vendor / Supplier'})
+                            <LocalizedText source={"vendor ("} area="admin" />{locale === 'bn' ? 'ভেন্ডর / সাপ্লায়ার' : 'Vendor / Supplier'})
                           </option>
                           <option value="super_admin">
-                            super_admin ({locale === 'bn' ? 'সুপার অ্যাডমিন' : 'Super Admin'})
+                            <LocalizedText source={"super_admin ("} area="admin" />{locale === 'bn' ? 'সুপার অ্যাডমিন' : 'Super Admin'})
                           </option>
                         </select>
                       </div>
@@ -4765,7 +4750,7 @@ ${itemsList}
                         label={locale === 'bn' ? 'রোলের বাংলা নাম *' : 'Role Name (BN) *'}
                         value={customRoleNameBn}
                         onChange={(e) => setCustomRoleNameBn(e.target.value)}
-                        placeholder="মার্কেটিং ম্যানেজার"
+                        placeholder={uiText("মার্কেটিং ম্যানেজার", locale)}
                         required
                       />
                     </div>
@@ -4797,7 +4782,7 @@ ${itemsList}
                     <tr className="border-b border-border bg-surface text-muted">
                       <th className="p-3">{locale === 'bn' ? 'ইউজারনেম ও নাম' : 'Username & Name'}</th>
                       <th className="p-3">{locale === 'bn' ? 'রোল' : 'Role'}</th>
-                      <th className="p-3">First-Login / 2FA Gate</th>
+                      <th className="p-3"><LocalizedText source={"First-Login / 2FA Gate"} area="admin" /></th>
                       <th className="p-3">{locale === 'bn' ? 'সর্বোচ্চ ছাড় সীমা' : 'Max Discount Cap'}</th>
                       {isSuperAdmin && (
                         <th className="p-3 text-right">{locale === 'bn' ? 'সিকিউরিটি অ্যাকশন' : 'Security Actions'}</th>
@@ -4819,10 +4804,9 @@ ${itemsList}
                         <td className="p-3">
                           {u.mustChangePassword || !u.totpEnrolled ? (
                             <Badge status="warning">
-                              First-Login Gate Pending
-                            </Badge>
+                              <LocalizedText source={"First-Login Gate Pending"} area="admin" />{" "}</Badge>
                           ) : (
-                            <Badge status="success">2FA Enrolled & Active</Badge>
+                            <Badge status="success"><LocalizedText source={"2FA Enrolled & Active"} area="admin" /></Badge>
                           )}
                         </td>
                         <td className="p-3 font-mono tabular-nums">
@@ -4857,8 +4841,7 @@ ${itemsList}
                                 }
                               }}
                             >
-                              2FA রিসেট
-                            </Button>
+                              <LocalizedText source={"2FA রিসেট"} area="admin" />{" "}</Button>
                           </td>
                         )}
                       </tr>
@@ -4875,7 +4858,7 @@ ${itemsList}
                   <FileText className="w-4 h-4" aria-hidden="true" />
                   <span>{locale === 'bn' ? 'অপরিবর্তনীয় অডিট লগ (Immutable Append-Only Audit Log)' : 'Immutable Append-Only Audit Log'}</span>
                 </h2>
-                <Badge status="info">DELETE / UPDATE BLOCKED</Badge>
+                <Badge status="info"><LocalizedText source={"DELETE / UPDATE BLOCKED"} area="admin" /></Badge>
               </div>
               <div className="divide-y divide-border border border-border rounded-[var(--radius-md)] max-h-72 overflow-y-auto text-xs">
                 {(snapshot.auditLogs ?? []).map((log) => (
@@ -5095,7 +5078,7 @@ ${itemsList}
 
       {/* Mobile Bottom Tab Bar (<= 768px) */}
       <nav
-        aria-label="Admin Mobile Bottom Navigation"
+        aria-label={uiText("Admin Mobile Bottom Navigation", locale)}
         className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-bg safe-bottom"
       >
         <div className="grid grid-cols-5 h-14 text-[11px]">
@@ -5196,14 +5179,14 @@ ${itemsList}
                     {editOrderStatus}
                   </span>
                   <span className="text-[11px] px-2 py-0.5 rounded font-mono bg-bg border border-border text-muted">
-                    রিস্ক: {activeActionOrder.riskScore ?? 0}
+                    <LocalizedText source={"রিস্ক:"} area="admin" />{" "}{activeActionOrder.riskScore ?? 0}
                   </span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-center border-t border-border/60">
                 <div className="p-1.5 rounded bg-bg">
-                  <div className="text-[10px] text-muted">সাবটোটাল</div>
+                  <div className="text-[10px] text-muted"><LocalizedText source={"সাবটোটাল"} area="admin" /></div>
                   <div className="font-bold text-ink text-xs">
                     {formatPoishaToBdt(
                       editItems.reduce(
@@ -5216,13 +5199,13 @@ ${itemsList}
                   </div>
                 </div>
                 <div className="p-1.5 rounded bg-bg">
-                  <div className="text-[10px] text-muted">বিশেষ ছাড়</div>
+                  <div className="text-[10px] text-muted"><LocalizedText source={"বিশেষ ছাড়"} area="admin" /></div>
                   <div className="font-bold text-rose-600 text-xs">
-                    -৳{editDiscountTaka}
+                    <LocalizedText source={"-৳"} area="admin" />{editDiscountTaka}
                   </div>
                 </div>
                 <div className="p-1.5 rounded bg-bg">
-                  <div className="text-[10px] text-muted">মোট প্রদেয়</div>
+                  <div className="text-[10px] text-muted"><LocalizedText source={"মোট প্রদেয়"} area="admin" /></div>
                   <div className="font-bold text-ink text-xs">
                     {formatPoishaToBdt(
                       Math.max(
@@ -5241,8 +5224,7 @@ ${itemsList}
                 </div>
                 <div className="p-1.5 rounded bg-emerald-500/10 border border-emerald-500/20">
                   <div className="text-[10px] text-emerald-800 dark:text-emerald-300 font-semibold">
-                    ক্যাশ অন ডেলিভারি
-                  </div>
+                    <LocalizedText source={"ক্যাশ অন ডেলিভারি"} area="admin" />{" "}</div>
                   <div className="font-bold text-emerald-700 dark:text-emerald-400 text-xs">
                     {formatPoishaToBdt(
                       Math.max(
@@ -5286,10 +5268,10 @@ ${itemsList}
               <h3 className="font-bold text-ink flex items-center justify-between text-xs border-b border-border pb-2">
                 <span className="flex items-center gap-1.5">
                   <Users className="w-4 h-4 text-ink" aria-hidden="true" />
-                  <span>১. গ্রাহক ও ডেলিভারি ঠিকানা (Customer & Address)</span>
+                  <span><LocalizedText source={"১. গ্রাহক ও ডেলিভারি ঠিকানা (Customer & Address)"} area="admin" /></span>
                 </span>
                 <span className="font-mono text-[11px] text-muted">
-                  স্কোর: {evaluateAddressQuality({
+                  <LocalizedText source={"স্কোর:"} area="admin" />{" "}{evaluateAddressQuality({
                     districtId: editDistrictId,
                     upazilaId: editUpazilaId,
                     streetAddress: editAddressStreet,
@@ -5304,7 +5286,7 @@ ${itemsList}
                   label="গ্রাহকের নাম"
                   value={editCustomerName}
                   onChange={(e) => setEditCustomerName(e.target.value)}
-                  placeholder="পূর্ণ নাম লিখুন"
+                  placeholder={uiText("পূর্ণ নাম লিখুন", locale)}
                 />
                 <div>
                   <Input
@@ -5331,7 +5313,7 @@ ${itemsList}
                         : 'বাংলাদেশ মোবাইল';
                     return (
                       <p className="text-[10px] text-muted pt-0.5">
-                        অপারেটর: {carrier}
+                        <LocalizedText source={"অপারেটর:"} area="admin" />{" "}{carrier}
                       </p>
                     );
                   })()}
@@ -5341,8 +5323,7 @@ ${itemsList}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    জেলা (District)
-                  </label>
+                    <LocalizedText source={"জেলা (District)"} area="admin" />{" "}</label>
                   <select
                     value={editDistrictId}
                     onChange={(e) => {
@@ -5365,8 +5346,7 @@ ${itemsList}
 
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    উপজেলা / থানা (Upazila)
-                  </label>
+                    <LocalizedText source={"উপজেলা / থানা (Upazila)"} area="admin" />{" "}</label>
                   <select
                     value={editUpazilaId}
                     onChange={(e) => setEditUpazilaId(Number(e.target.value))}
@@ -5386,13 +5366,13 @@ ${itemsList}
                   label="বিস্তারিত ঠিকানা (বাড়ি, রোড, এলাকা)"
                   value={editAddressStreet}
                   onChange={(e) => setEditAddressStreet(e.target.value)}
-                  placeholder="যেমন: বাড়ি ১২, রোড ৪, সেক্টর ৭, উত্তরা"
+                  placeholder={uiText("যেমন: বাড়ি ১২, রোড ৪, সেক্টর ৭, উত্তরা", locale)}
                 />
                 <Input
                   label="পরিচিত ল্যান্ডমার্ক (স্কুল, মসজিদ, মোড় বা বাজার)"
                   value={editAddressLandmark}
                   onChange={(e) => setEditAddressLandmark(e.target.value)}
-                  placeholder="যেমন: উত্তরা হাই স্কুলের পাশে"
+                  placeholder={uiText("যেমন: উত্তরা হাই স্কুলের পাশে", locale)}
                 />
               </div>
 
@@ -5401,7 +5381,7 @@ ${itemsList}
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-ink" />
                   <span>
-                    ঠিকানা নির্ভুলতা রেটিং:{' '}
+                    <LocalizedText source={"ঠিকানা নির্ভুলতা রেটিং:"} area="admin" />{' '}
                     <strong className="font-mono text-ink">
                       {evaluateAddressQuality({
                         districtId: editDistrictId,
@@ -5421,8 +5401,7 @@ ${itemsList}
                   customerPhone: editCustomerPhone,
                 }).score < 70 && (
                   <span className="text-amber-700 dark:text-amber-400 font-semibold text-[10px]">
-                    ⚠ কুরিয়ার বুকিংয়ে ল্যান্ডমার্ক জরুরি
-                  </span>
+                    <LocalizedText source={"⚠ কুরিয়ার বুকিংয়ে ল্যান্ডমার্ক জরুরি"} area="admin" />{" "}</span>
                 )}
               </div>
             </div>
@@ -5432,11 +5411,10 @@ ${itemsList}
               <h3 className="font-bold text-ink flex items-center justify-between text-xs border-b border-border pb-2">
                 <span className="flex items-center gap-1.5">
                   <Package className="w-4 h-4 text-ink" aria-hidden="true" />
-                  <span>২. অর্ডারের পণ্য ও পরিমাণ (Products & Quantity)</span>
+                  <span><LocalizedText source={"২. অর্ডারের পণ্য ও পরিমাণ (Products & Quantity)"} area="admin" /></span>
                 </span>
                 <span className="font-mono text-muted text-[11px]">
-                  মোট আইটেম: {editItems.reduce((s, i) => s + i.quantity, 0)}টি
-                </span>
+                  <LocalizedText source={"মোট আইটেম:"} area="admin" />{" "}{editItems.reduce((s, i) => s + i.quantity, 0)}<LocalizedText source={"টি"} area="admin" />{" "}</span>
               </h3>
 
               <div className="space-y-2.5">
@@ -5447,9 +5425,9 @@ ${itemsList}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
-                        <p className="font-bold text-ink">{item.productNameBn}</p>
+                        <p className="font-bold text-ink">{localizedField(item, "productNameBn", locale)}</p>
                         <p className="text-muted text-[11px]">
-                          {item.variantTitleBn} · SKU: {item.publicSku}
+                          {localizedField(item, "variantTitleBn", locale)} {" "}<LocalizedText source={"· SKU:"} area="admin" />{" "}{item.publicSku}
                         </p>
                       </div>
                       {editItems.length > 1 && (
@@ -5457,7 +5435,7 @@ ${itemsList}
                           type="button"
                           onClick={() => handleRemoveItem(idx)}
                           className="p-1 text-danger hover:bg-danger/10 rounded cursor-pointer"
-                          title="পণ্য বাতিল করুন"
+                          title={uiText("পণ্য বাতিল করুন", locale)}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -5468,8 +5446,7 @@ ${itemsList}
                       {/* Quantity Stepper */}
                       <div>
                         <span className="text-muted block text-[10px] mb-1">
-                          পরিমাণ
-                        </span>
+                          <LocalizedText source={"পরিমাণ"} area="admin" />{" "}</span>
                         <div className="flex items-center border border-border rounded-[var(--radius-sm)] bg-bg">
                           <button
                             type="button"
@@ -5508,8 +5485,7 @@ ${itemsList}
                       {/* Unit Price (৳) */}
                       <div>
                         <span className="text-muted block text-[10px] mb-1">
-                          একক মূল্য (৳)
-                        </span>
+                          <LocalizedText source={"একক মূল্য (৳)"} area="admin" />{" "}</span>
                         <input
                           type="number"
                           min="0"
@@ -5527,10 +5503,9 @@ ${itemsList}
                       {/* Line Subtotal */}
                       <div className="text-right">
                         <span className="text-muted block text-[10px] mb-1">
-                          সাবটোটাল
-                        </span>
+                          <LocalizedText source={"সাবটোটাল"} area="admin" />{" "}</span>
                         <span className="font-mono font-bold text-ink text-xs">
-                          ৳{Math.round(item.lineSubtotalPoisha / 100)}
+                          <LocalizedText source={"৳"} area="admin" />{Math.round(item.lineSubtotalPoisha / 100)}
                         </span>
                       </div>
                     </div>
@@ -5553,12 +5528,11 @@ ${itemsList}
                       }}
                       className="flex-1 px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink text-xs"
                     >
-                      <option value="">+ অর্ডারে নতুন পণ্য যোগ করুন...</option>
+                      <option value=""><LocalizedText source={"+ অর্ডারে নতুন পণ্য যোগ করুন..."} area="admin" /></option>
                       {snapshot.products.map((prod) =>
                         prod.variants?.map((v) => (
                           <option key={v.variantId} value={v.variantId}>
-                            {prod.nameBn} - {v.titleBn} (৳
-                            {Math.round((v.salePricePoisha ?? 0) / 100)})
+                            {localizedField(prod, "nameBn", locale)} - {localizedField(v, "titleBn", locale)} {" "}<LocalizedText source={"(৳"} area="admin" />{" "}{Math.round((v.salePricePoisha ?? 0) / 100)})
                           </option>
                         ))
                       )}
@@ -5572,18 +5546,16 @@ ${itemsList}
               <h3 className="font-bold text-ink flex items-center justify-between text-xs border-b border-border pb-2">
                 <span className="flex items-center gap-1.5">
                   <Wallet className="w-4 h-4 text-ink" aria-hidden="true" />
-                  <span>৩. মূল্যছাড় ও আর্থিক হিসাব (Pricing & Discounts)</span>
+                  <span><LocalizedText source={"৩. মূল্যছাড় ও আর্থিক হিসাব (Pricing & Discounts)"} area="admin" /></span>
                 </span>
                 <span className="font-mono text-emerald-600 font-bold text-[11px]">
-                  পূর্ণসংখ্যা পয়সা হিসাব (Rule A1)
-                </span>
+                  <LocalizedText source={"পূর্ণসংখ্যা পয়সা হিসাব (Rule A1)"} area="admin" />{" "}</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    বিশেষ ডিসকাউন্ট / মূল্যছাড় (৳)
-                  </label>
+                    <LocalizedText source={"বিশেষ ডিসকাউন্ট / মূল্যছাড় (৳)"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     min="0"
@@ -5595,14 +5567,12 @@ ${itemsList}
                     placeholder="0"
                   />
                   <p className="text-[10px] text-muted pt-0.5">
-                    এডমিন কর্তৃক প্রদত্ত মোট ছাড়
-                  </p>
+                    <LocalizedText source={"এডমিন কর্তৃক প্রদত্ত মোট ছাড়"} area="admin" />{" "}</p>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    ডেলিভারি চার্জ (৳)
-                  </label>
+                    <LocalizedText source={"ডেলিভারি চার্জ (৳)"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     min="0"
@@ -5620,33 +5590,29 @@ ${itemsList}
                       onClick={() => setEditDeliveryChargeTaka(0)}
                       className="px-1.5 py-0.5 rounded bg-surface border border-border text-[10px] hover:bg-bg cursor-pointer"
                     >
-                      ফ্রি (৳০)
-                    </button>
+                      <LocalizedText source={"ফ্রি (৳০)"} area="admin" />{" "}</button>
                     <button
                       type="button"
                       onClick={() => setEditDeliveryChargeTaka(70)}
                       className="px-1.5 py-0.5 rounded bg-surface border border-border text-[10px] hover:bg-bg cursor-pointer"
                     >
-                      ঢাকা (৳৭০)
-                    </button>
+                      <LocalizedText source={"ঢাকা (৳৭০)"} area="admin" />{" "}</button>
                     <button
                       type="button"
                       onClick={() => setEditDeliveryChargeTaka(120)}
                       className="px-1.5 py-0.5 rounded bg-surface border border-border text-[10px] hover:bg-bg cursor-pointer"
                     >
-                      বাইরে (৳১২০)
-                    </button>
+                      <LocalizedText source={"বাইরে (৳১২০)"} area="admin" />{" "}</button>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    অগ্রিম আদায় (৳)
-                  </label>
+                    <LocalizedText source={"অগ্রিম আদায় (৳)"} area="admin" />{" "}</label>
                   <input
                     type="number"
                     min="0"
-                    value={editAdvancePaidTaka}
+                    disabled value={editAdvancePaidTaka}
                     onChange={(e) =>
                       setEditAdvancePaidTaka(
                         Math.max(0, parseInt(e.target.value) || 0)
@@ -5656,8 +5622,7 @@ ${itemsList}
                     placeholder="0"
                   />
                   <p className="text-[10px] text-muted pt-0.5">
-                    বিকাশ/নগদ অগ্রিম প্রাপ্ত টাকা
-                  </p>
+                    <LocalizedText source={"বিকাশ/নগদ অগ্রিম প্রাপ্ত টাকা"} area="admin" />{" "}</p>
                 </div>
               </div>
 
@@ -5665,8 +5630,7 @@ ${itemsList}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-border">
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    পেমেন্ট মেথড
-                  </label>
+                    <LocalizedText source={"পেমেন্ট মেথড"} area="admin" />{" "}</label>
                   <select
                     value={editPaymentMethod}
                     onChange={(e) =>
@@ -5674,39 +5638,37 @@ ${itemsList}
                     }
                     className="w-full px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink text-xs"
                   >
-                    <option value="cod">ক্যাশ অন ডেলিভারি (COD)</option>
-                    <option value="bkash_manual">বিকাশ ম্যানুয়াল (bKash)</option>
-                    <option value="nagad_manual">নগদ ম্যানুয়াল (Nagad)</option>
-                    <option value="rocket_manual">রকেট ম্যানুয়াল (Rocket)</option>
+                    <option value="cod"><LocalizedText source={"ক্যাশ অন ডেলিভারি (COD)"} area="admin" /></option>
+                    <option value="bkash_manual"><LocalizedText source={"বিকাশ ম্যানুয়াল (bKash)"} area="admin" /></option>
+
+
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    পেমেন্ট স্ট্যাটাস
-                  </label>
+                    <LocalizedText source={"পেমেন্ট স্ট্যাটাস"} area="admin" />{" "}</label>
                   <select
-                    value={editPaymentStatus}
+                    disabled value={editPaymentStatus}
                     onChange={(e) =>
                       setEditPaymentStatus(e.target.value as PaymentStatus)
                     }
                     className="w-full px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink text-xs"
                   >
-                    <option value="unpaid">unpaid (অনপরিশোধিত / সিওডি)</option>
-                    <option value="partial_verified">partial_verified (আংশিক পরিশোধ)</option>
-                    <option value="paid_verified">paid_verified (সম্পূর্ণ পরিশোধ)</option>
-                    <option value="remitted">remitted (কুরিয়ার সেটেলমেন্ট)</option>
-                    <option value="refunded">refunded (রিফান্ড)</option>
+                    <option value="unpaid"><LocalizedText source={"unpaid (অনপরিশোধিত / সিওডি)"} area="admin" /></option>
+                    <option value="partial_verified"><LocalizedText source={"partial_verified (আংশিক পরিশোধ)"} area="admin" /></option>
+                    <option value="paid_verified"><LocalizedText source={"paid_verified (সম্পূর্ণ পরিশোধ)"} area="admin" /></option>
+                    <option value="remitted"><LocalizedText source={"remitted (কুরিয়ার সেটেলমেন্ট)"} area="admin" /></option>
+                    <option value="refunded"><LocalizedText source={"refunded (রিফান্ড)"} area="admin" /></option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    বিকাশ / নগদ TrxID
-                  </label>
+                    <LocalizedText source={"বিকাশ / নগদ TrxID"} area="admin" />{" "}</label>
                   <input
                     type="text"
-                    value={editManualPaymentTrxId}
+                    disabled value={editManualPaymentTrxId}
                     onChange={(e) => setEditManualPaymentTrxId(e.target.value)}
                     placeholder="BLXXXXXXXX"
                     className="w-full px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink font-mono text-xs"
@@ -5720,18 +5682,16 @@ ${itemsList}
               <h3 className="font-bold text-ink flex items-center justify-between text-xs border-b border-border pb-2">
                 <span className="flex items-center gap-1.5">
                   <Truck className="w-4 h-4 text-ink" aria-hidden="true" />
-                  <span>৪. কুরিয়ার ও ট্র্যাকিং তথ্য (Courier & Live Tracking)</span>
+                  <span><LocalizedText source={"৪. কুরিয়ার ও ট্র্যাকিং তথ্য (Courier & Live Tracking)"} area="admin" /></span>
                 </span>
                 <span className="font-mono text-muted text-[11px]">
-                  ম্যানুয়াল এন্ট্রি ও অটোমেটিক সিঙ্ক
-                </span>
+                  <LocalizedText source={"ম্যানুয়াল এন্ট্রি ও অটোমেটিক সিঙ্ক"} area="admin" />{" "}</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    কুরিয়ার প্রভাইডার
-                  </label>
+                    <LocalizedText source={"কুরিয়ার প্রভাইডার"} area="admin" />{" "}</label>
                   <select
                     value={editCourierProvider}
                     onChange={(e) =>
@@ -5739,36 +5699,34 @@ ${itemsList}
                     }
                     className="w-full px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink text-xs font-semibold"
                   >
-                    <option value="steadfast">Steadfast Courier</option>
-                    <option value="pathao">Pathao Courier</option>
-                    <option value="redx">RedX Delivery</option>
-                    <option value="bd_post">বাংলাদেশ ডাক বিভাগ (BD Post)</option>
-                    <option value="manual">ম্যানুয়াল কুরিয়ার</option>
+                    <option value="steadfast"><LocalizedText source={"Steadfast Courier"} area="admin" /></option>
+                    <option value="pathao"><LocalizedText source={"Pathao Courier"} area="admin" /></option>
+
+                    <option value="bd_post"><LocalizedText source={"বাংলাদেশ ডাক বিভাগ (BD Post)"} area="admin" /></option>
+                    <option value="manual"><LocalizedText source={"ম্যানুয়াল কুরিয়ার"} area="admin" /></option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    কুরিয়ার ট্র্যাকিং আইডি (Tracking ID)
-                  </label>
+                    <LocalizedText source={"কুরিয়ার ট্র্যাকিং আইডি (Tracking ID)"} area="admin" />{" "}</label>
                   <input
                     type="text"
-                    value={editTrackingCode}
+                    disabled value={editTrackingCode}
                     onChange={(e) => setEditTrackingCode(e.target.value)}
-                    placeholder="যেমন: SF-12345678 বা PT-9876"
+                    placeholder={uiText("যেমন: SF-12345678 বা PT-9876", locale)}
                     className="w-full px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink font-mono font-bold text-xs"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    কন্সায়নমেন্ট আইডি (Consignment ID)
-                  </label>
+                    <LocalizedText source={"কন্সায়নমেন্ট আইডি (Consignment ID)"} area="admin" />{" "}</label>
                   <input
                     type="text"
-                    value={editConsignmentId}
+                    disabled value={editConsignmentId}
                     onChange={(e) => setEditConsignmentId(e.target.value)}
-                    placeholder="যেমন: CNS-ORD-XXXXXX"
+                    placeholder={uiText("যেমন: CNS-ORD-XXXXXX", locale)}
                     className="w-full px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink font-mono text-xs"
                   />
                 </div>
@@ -5778,8 +5736,7 @@ ${itemsList}
               <div className="p-3 rounded bg-surface border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="space-y-0.5">
                   <p className="text-[11px] text-muted">
-                    লাইভ পার্সেল ট্র্যাকিং ওয়েব লিংক:
-                  </p>
+                    <LocalizedText source={"লাইভ পার্সেল ট্র্যাকিং ওয়েব লিংক:"} area="admin" />{" "}</p>
                   <p className="font-mono text-xs text-ink truncate max-w-md">
                     {getLiveCourierTrackingUrl(
                       editCourierProvider,
@@ -5801,7 +5758,7 @@ ${itemsList}
                   className="px-3 py-1.5 rounded bg-bg border border-border text-ink hover:bg-surface font-semibold text-xs inline-flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>লিংক টেস্ট করুন</span>
+                  <span><LocalizedText source={"লিংক টেস্ট করুন"} area="admin" /></span>
                 </a>
               </div>
             </div>
@@ -5811,18 +5768,17 @@ ${itemsList}
               <h3 className="font-bold text-ink flex items-center justify-between text-xs border-b border-border pb-2">
                 <span className="flex items-center gap-1.5">
                   <PhoneCall className="w-4 h-4 text-ink" aria-hidden="true" />
-                  <span>৫. কল কনফার্মেশন ও স্ট্যাটাস (Call & Workflow)</span>
+                  <span><LocalizedText source={"৫. কল কনফার্মেশন ও স্ট্যাটাস (Call & Workflow)"} area="admin" /></span>
                 </span>
                 <span className="font-mono text-muted text-[11px]">
-                  মোট কল চেষ্টা: {activeActionOrder.callAttempts ?? 0}
+                  <LocalizedText source={"মোট কল চেষ্টা:"} area="admin" />{" "}{activeActionOrder.callAttempts ?? 0}
                 </span>
               </h3>
 
               {/* Direct Call Outcome Selector Buttons */}
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-semibold text-ink">
-                  কল করার পর ফলাফল নির্ধারণ করুন (Call Outcome Selection):
-                </label>
+                  <LocalizedText source={"কল করার পর ফলাফল নির্ধারণ করুন (Call Outcome Selection):"} area="admin" />{" "}</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     type="button"
@@ -5837,7 +5793,7 @@ ${itemsList}
                     }`}
                   >
                     <Check className="w-4 h-4" />
-                    <span>হ্যাঁ (নিশ্চিত)</span>
+                    <span><LocalizedText source={"হ্যাঁ (নিশ্চিত)"} area="admin" /></span>
                   </button>
 
                   <button
@@ -5852,7 +5808,7 @@ ${itemsList}
                     }`}
                   >
                     <PhoneMissed className="w-4 h-4" />
-                    <span>ব্যস্ত / ধরেননি</span>
+                    <span><LocalizedText source={"ব্যস্ত / ধরেননি"} area="admin" /></span>
                   </button>
 
                   <button
@@ -5868,7 +5824,7 @@ ${itemsList}
                     }`}
                   >
                     <XSquare className="w-4 h-4" />
-                    <span>না (বাতিল)</span>
+                    <span><LocalizedText source={"না (বাতিল)"} area="admin" /></span>
                   </button>
 
                   <button
@@ -5883,7 +5839,7 @@ ${itemsList}
                     }`}
                   >
                     <PhoneCall className="w-4 h-4" />
-                    <span>পরে কল করুন</span>
+                    <span><LocalizedText source={"পরে কল করুন"} area="admin" /></span>
                   </button>
                 </div>
               </div>
@@ -5891,37 +5847,32 @@ ${itemsList}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    অর্ডার স্ট্যাটাস (Order Status)
-                  </label>
+                    <LocalizedText source={"অর্ডার স্ট্যাটাস (Order Status)"} area="admin" />{" "}</label>
                   <select
-                    value={editOrderStatus}
+                    disabled value={editOrderStatus}
                     onChange={(e) =>
                       setEditOrderStatus(e.target.value as OrderStatus)
                     }
                     className="w-full px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink text-xs font-semibold"
                   >
                     <option value="pending_confirmation">
-                      pending_confirmation (পেন্ডিং কনফার্মেশন)
-                    </option>
-                    <option value="confirmed">confirmed (নিশ্চিত)</option>
-                    <option value="packed">packed (প্যাকিং সম্পন্ন)</option>
-                    <option value="shipped">shipped (কুরিয়ারে হস্তান্তর)</option>
+                      <LocalizedText source={"pending_confirmation (পেন্ডিং কনফার্মেশন)"} area="admin" />{" "}</option>
+                    <option value="confirmed"><LocalizedText source={"confirmed (নিশ্চিত)"} area="admin" /></option>
+                    <option value="packed"><LocalizedText source={"packed (প্যাকিং সম্পন্ন)"} area="admin" /></option>
+                    <option value="shipped"><LocalizedText source={"shipped (কুরিয়ারে হস্তান্তর)"} area="admin" /></option>
                     <option value="out_for_delivery">
-                      out_for_delivery (ডেলিভারির পথে)
-                    </option>
-                    <option value="delivered">delivered (ডেলিভারি সম্পন্ন)</option>
+                      <LocalizedText source={"out_for_delivery (ডেলিভারির পথে)"} area="admin" />{" "}</option>
+                    <option value="delivered"><LocalizedText source={"delivered (ডেলিভারি সম্পন্ন)"} area="admin" /></option>
                     <option value="return_initiated">
-                      return_initiated (রিটার্ন প্রক্রিয়া)
-                    </option>
-                    <option value="returned">returned (রিটার্ন গৃহীত)</option>
-                    <option value="cancelled">cancelled (বাতিল)</option>
+                      <LocalizedText source={"return_initiated (রিটার্ন প্রক্রিয়া)"} area="admin" />{" "}</option>
+                    <option value="returned"><LocalizedText source={"returned (রিটার্ন গৃহীত)"} area="admin" /></option>
+                    <option value="cancelled"><LocalizedText source={"cancelled (বাতিল)"} area="admin" /></option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">
-                    অর্ডার সোর্স (Order Source)
-                  </label>
+                    <LocalizedText source={"অর্ডার সোর্স (Order Source)"} area="admin" />{" "}</label>
                   <select
                     value={editOrderSource}
                     onChange={(e) =>
@@ -5929,12 +5880,12 @@ ${itemsList}
                     }
                     className="w-full px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink text-xs"
                   >
-                    <option value="storefront">storefront (অনলাইন ওয়েবসাইট)</option>
-                    <option value="whatsapp">whatsapp (হোয়াটসঅ্যাপ চ্যাট)</option>
-                    <option value="phone_call">phone_call (সরাসরি ফোন কল)</option>
-                    <option value="facebook">facebook (ফেসবুক পেজ / ইনবক্স)</option>
-                    <option value="instagram">instagram (ইনস্টাগ্রাম)</option>
-                    <option value="other">other (অন্যান্য ম্যানুয়াল এন্ট্রি)</option>
+                    <option value="storefront"><LocalizedText source={"storefront (অনলাইন ওয়েবসাইট)"} area="admin" /></option>
+                    <option value="whatsapp"><LocalizedText source={"whatsapp (হোয়াটসঅ্যাপ চ্যাট)"} area="admin" /></option>
+                    <option value="phone_call"><LocalizedText source={"phone_call (সরাসরি ফোন কল)"} area="admin" /></option>
+                    <option value="facebook"><LocalizedText source={"facebook (ফেসবুক পেজ / ইনবক্স)"} area="admin" /></option>
+                    <option value="instagram"><LocalizedText source={"instagram (ইনস্টাগ্রাম)"} area="admin" /></option>
+                    <option value="other"><LocalizedText source={"other (অন্যান্য ম্যানুয়াল এন্ট্রি)"} area="admin" /></option>
                   </select>
                 </div>
               </div>
@@ -5944,14 +5895,14 @@ ${itemsList}
                   label="অভ্যন্তরীণ স্টাফ নোট (Internal Staff Note)"
                   value={editStaffNote}
                   onChange={(e) => setEditStaffNote(e.target.value)}
-                  placeholder="যেমন: গ্রাহক কাল সকালে ডেলিভারি দিতে বলেছেন"
+                  placeholder={uiText("যেমন: গ্রাহক কাল সকালে ডেলিভারি দিতে বলেছেন", locale)}
                 />
 
                 <Input
                   label="কুরিয়ার ওভাররাইড কারণ (ঠিকানা স্কোর ৭০% এর কম হলে প্রযোজ্য)"
                   value={bookingOverrideReason}
                   onChange={(e) => setBookingOverrideReason(e.target.value)}
-                  placeholder="যেমন: গ্রাহকের সাথে ফোনে কথা বলে ঠিকানা কনফার্ম করা হয়েছে"
+                  placeholder={uiText("যেমন: গ্রাহকের সাথে ফোনে কথা বলে ঠিকানা কনফার্ম করা হয়েছে", locale)}
                 />
               </div>
             </div>
@@ -5960,7 +5911,7 @@ ${itemsList}
             <div className="fixed bottom-0 left-0 right-0 p-3 bg-surface/95 backdrop-blur border-t border-border flex items-center justify-between z-50 shadow-lg">
               <div className="flex items-center gap-3 text-xs">
                 <span className="font-bold text-ink">
-                  মোট:{' '}
+                  <LocalizedText source={"মোট:"} area="admin" />{' '}
                   {formatPoishaToBdt(
                     Math.max(
                       0,
@@ -5977,7 +5928,7 @@ ${itemsList}
                 </span>
                 <span className="text-muted">·</span>
                 <span className="text-emerald-700 dark:text-emerald-400 font-bold">
-                  COD:{' '}
+                  <LocalizedText source={"COD:"} area="admin" />{' '}
                   {formatPoishaToBdt(
                     Math.max(
                       0,
@@ -6019,8 +5970,7 @@ ${itemsList}
                   onClick={() => setActiveActionOrder(null)}
                   className="px-3 py-1.5 rounded-[var(--radius-sm)] border border-border bg-bg text-ink hover:bg-surface font-semibold text-xs cursor-pointer"
                 >
-                  বাতিল
-                </button>
+                  <LocalizedText source={"বাতিল"} area="admin" />{" "}</button>
                 <button
                   type="button"
                   disabled={isSavingOrder}
@@ -6030,12 +5980,12 @@ ${itemsList}
                   {isSavingOrder ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>সংরক্ষণ হচ্ছে...</span>
+                      <span><LocalizedText source={"সংরক্ষণ হচ্ছে..."} area="admin" /></span>
                     </>
                   ) : (
                     <>
                       <Check className="w-3.5 h-3.5" />
-                      <span>সংরক্ষণ করুন (Save Changes)</span>
+                      <span><LocalizedText source={"সংরক্ষণ করুন (Save Changes)"} area="admin" /></span>
                     </>
                   )}
                 </button>
@@ -6068,7 +6018,7 @@ ${itemsList}
                   {activeMessageOrder.customerName}
                 </p>
                 <p className="font-mono text-muted text-[11px]">
-                  {activeMessageOrder.customerPhone} · {activeMessageOrder.districtNameBn}
+                  {activeMessageOrder.customerPhone} · {localizedField(activeMessageOrder, "districtNameBn", locale)}
                 </p>
               </div>
               <div className="text-right">
@@ -6076,7 +6026,7 @@ ${itemsList}
                   {activeMessageOrder.orderNo}
                 </span>
                 <p className="text-[10px] text-muted">
-                  স্ট্যাটাস: {activeMessageOrder.status}
+                  <LocalizedText source={"স্ট্যাটাস:"} area="admin" />{" "}{activeMessageOrder.status}
                 </p>
               </div>
             </div>
@@ -6084,8 +6034,7 @@ ${itemsList}
             {/* Template Selector Chips */}
             <div className="space-y-1.5">
               <label className="block text-[11px] font-semibold text-ink">
-                মেসেজ টেমপ্লেট নির্বাচন করুন (Quick Templates):
-              </label>
+                <LocalizedText source={"মেসেজ টেমপ্লেট নির্বাচন করুন (Quick Templates):"} area="admin" />{" "}</label>
               <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
@@ -6101,8 +6050,7 @@ ${itemsList}
                       : 'bg-surface text-ink border-border hover:bg-bg'
                   }`}
                 >
-                  🚚 কুরিয়ার ট্র্যাকিং লিংক
-                </button>
+                  <LocalizedText source={"🚚 কুরিয়ার ট্র্যাকিং লিংক"} area="admin" />{" "}</button>
 
                 <button
                   type="button"
@@ -6118,8 +6066,7 @@ ${itemsList}
                       : 'bg-surface text-ink border-border hover:bg-bg'
                   }`}
                 >
-                  🎉 ডেলিভারি সম্পন্ন ও ফিডব্যাক
-                </button>
+                  <LocalizedText source={"🎉 ডেলিভারি সম্পন্ন ও ফিডব্যাক"} area="admin" />{" "}</button>
 
                 <button
                   type="button"
@@ -6138,8 +6085,7 @@ ${itemsList}
                       : 'bg-surface text-ink border-border hover:bg-bg'
                   }`}
                 >
-                  ✅ অর্ডার নিশ্চিতকরণ
-                </button>
+                  <LocalizedText source={"✅ অর্ডার নিশ্চিতকরণ"} area="admin" />{" "}</button>
 
                 <button
                   type="button"
@@ -6158,8 +6104,7 @@ ${itemsList}
                       : 'bg-surface text-ink border-border hover:bg-bg'
                   }`}
                 >
-                  📱 বিকাশ অগ্রিম রিমাইন্ডার
-                </button>
+                  <LocalizedText source={"📱 বিকাশ অগ্রিম রিমাইন্ডার"} area="admin" />{" "}</button>
               </div>
             </div>
 
@@ -6167,18 +6112,16 @@ ${itemsList}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-semibold text-ink">
-                  মেসেজের বিষয়বস্তু (প্রয়োজনমতো পরিবর্তন বা সাজিয়ে নিতে পারেন):
-                </label>
+                  <LocalizedText source={"মেসেজের বিষয়বস্তু (প্রয়োজনমতো পরিবর্তন বা সাজিয়ে নিতে পারেন):"} area="admin" />{" "}</label>
                 <span className="font-mono text-muted text-[10px]">
-                  {messageCustomText.length} অক্ষর
-                </span>
+                  {messageCustomText.length} {" "}<LocalizedText source={"অক্ষর"} area="admin" />{" "}</span>
               </div>
               <textarea
                 rows={11}
                 value={messageCustomText}
                 onChange={(e) => setMessageCustomText(e.target.value)}
                 className="w-full p-3 border border-border rounded-[var(--radius-md)] bg-surface text-ink font-sans text-xs leading-relaxed focus:outline-none focus:ring-1 focus:ring-ink"
-                placeholder="মেসেজের টেক্সট লিখুন..."
+                placeholder={uiText("মেসেজের টেক্সট লিখুন...", locale)}
               />
             </div>
 
@@ -6192,7 +6135,7 @@ ${itemsList}
                   className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-[var(--radius-sm)] flex items-center justify-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
                 >
                   <MessageSquare className="w-4 h-4" />
-                  <span>WhatsApp-এ পাঠান</span>
+                  <span><LocalizedText source={"WhatsApp-এ পাঠান"} area="admin" /></span>
                 </button>
 
                 <button
@@ -6202,7 +6145,7 @@ ${itemsList}
                   className="px-3 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-[var(--radius-sm)] flex items-center justify-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" />
-                  <span>SMS অ্যাপে পাঠান</span>
+                  <span><LocalizedText source={"SMS অ্যাপে পাঠান"} area="admin" /></span>
                 </button>
 
                 <button
@@ -6215,20 +6158,19 @@ ${itemsList}
                   {messageCopied ? (
                     <>
                       <Check className="w-4 h-4 text-emerald-600" />
-                      <span className="text-emerald-600">কপি হয়েছে!</span>
+                      <span className="text-emerald-600"><LocalizedText source={"কপি হয়েছে!"} area="admin" /></span>
                     </>
                   ) : (
                     <>
                       <Copy className="w-4 h-4" />
-                      <span>মেসেজ কপি করুন</span>
+                      <span><LocalizedText source={"মেসেজ কপি করুন"} area="admin" /></span>
                     </>
                   )}
                 </button>
               </div>
 
               <p className="text-[10px] text-muted text-center pt-1">
-                মেসেজ পাঠানোর সাথে সাথে সিস্টেম অডিট লগ এবং মেসেজ হিস্টরিতে সময় ও প্রেরকের নাম সংরক্ষিত হবে।
-              </p>
+                <LocalizedText source={"মেসেজ পাঠানোর সাথে সাথে সিস্টেম অডিট লগ এবং মেসেজ হিস্টরিতে সময় ও প্রেরকের নাম সংরক্ষিত হবে।"} area="admin" />{" "}</p>
             </div>
           </div>
         )}
@@ -6242,7 +6184,7 @@ ${itemsList}
         onOpenChange={(open) => {
           if (!open) setMfsModalOrder(null);
         }}
-        title="ম্যানুয়াল MFS পেমেন্ট কনফার্মেশন — বিকাশ, নগদ ও রকেট"
+        title={uiText("ম্যানুয়াল MFS পেমেন্ট কনফার্মেশন — বিকাশ, নগদ ও রকেট", locale)}
       >
         {mfsModalOrder && (
           <div className="space-y-4 text-xs">
@@ -6258,26 +6200,26 @@ ${itemsList}
                   </span>
                 </div>
                 <p className="font-mono text-muted text-[11px] mt-0.5">
-                  গ্রাহক: {mfsModalOrder.customerName} ({mfsModalOrder.customerPhone})
+                  <LocalizedText source={"গ্রাহক:"} area="admin" />{" "}{mfsModalOrder.customerName} ({mfsModalOrder.customerPhone})
                 </p>
               </div>
 
               {/* Amount Breakdown */}
               <div className="flex items-center gap-3 text-right">
                 <div>
-                  <p className="text-[10px] text-muted">মোট প্রদেয়</p>
+                  <p className="text-[10px] text-muted"><LocalizedText source={"মোট প্রদেয়"} area="admin" /></p>
                   <p className="font-mono font-bold text-ink">
                     {formatPoishaToBdt(mfsModalOrder.totalPayablePoisha ?? 0, locale)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted">COD সংগৃহীতব্য</p>
+                  <p className="text-[10px] text-muted"><LocalizedText source={"COD সংগৃহীতব্য"} area="admin" /></p>
                   <p className="font-mono font-bold text-ink">
                     {formatPoishaToBdt(mfsModalOrder.codCollectablePoisha ?? 0, locale)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted">অগ্রিম আবশ্যক/পরিশোধিত</p>
+                  <p className="text-[10px] text-muted"><LocalizedText source={"অগ্রিম আবশ্যক/পরিশোধিত"} area="admin" /></p>
                   <p className="font-mono font-bold text-amber-700 dark:text-amber-400">
                     {formatPoishaToBdt(
                       Math.max(0, (mfsModalOrder.totalPayablePoisha ?? 0) - (mfsModalOrder.codCollectablePoisha ?? 0)) ||
@@ -6295,7 +6237,7 @@ ${itemsList}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-                    <span className="font-bold text-ink">বর্তমান TrxID রেকর্ড:</span>
+                    <span className="font-bold text-ink"><LocalizedText source={"বর্তমান TrxID রেকর্ড:"} area="admin" /></span>
                   </div>
                   <span
                     className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
@@ -6311,7 +6253,7 @@ ${itemsList}
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] bg-surface p-2 rounded border border-border">
                   <div>
-                    <span className="text-muted block">মাধ্যম:</span>
+                    <span className="text-muted block"><LocalizedText source={"মাধ্যম:"} area="admin" /></span>
                     <span className="font-bold uppercase">
                       {mfsModalOrder.paymentMethod === 'nagad_manual'
                         ? 'নগদ (Nagad)'
@@ -6327,7 +6269,7 @@ ${itemsList}
                     </span>
                   </div>
                   <div>
-                    <span className="text-muted block">পেমেন্ট মেথড:</span>
+                    <span className="text-muted block"><LocalizedText source={"পেমেন্ট মেথড:"} area="admin" /></span>
                     <span className="font-mono text-muted">{mfsModalOrder.paymentMethod}</span>
                   </div>
                 </div>
@@ -6357,7 +6299,7 @@ ${itemsList}
                       className="flex-1 py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       <Check className="w-3.5 h-3.5" />
-                      <span>বিদ্যমান TrxID ভেরিফাই ও অর্ডার কনফার্ম করুন</span>
+                      <span><LocalizedText source={"বিদ্যমান TrxID ভেরিফাই ও অর্ডার কনফার্ম করুন"} area="admin" /></span>
                     </button>
                   </div>
                 )}
@@ -6368,14 +6310,13 @@ ${itemsList}
             <div className="p-3.5 border border-border rounded-[var(--radius-md)] bg-bg space-y-3.5">
               <h4 className="font-bold text-ink flex items-center gap-1.5 text-xs">
                 <Wallet className="w-4 h-4 text-emerald-600" />
-                <span>MFS লেনদেন তথ্য ইনপুট ও আপডেট</span>
+                <span><LocalizedText source={"MFS লেনদেন তথ্য ইনপুট ও আপডেট"} area="admin" /></span>
               </h4>
 
               {/* Provider Selection (bKash / Nagad / Rocket) */}
               <div>
                 <label className="block text-[11px] font-semibold text-muted mb-1.5">
-                  পেমেন্ট মাধ্যম নির্বাচন করুন *
-                </label>
+                  <LocalizedText source={"পেমেন্ট মাধ্যম নির্বাচন করুন *"} area="admin" />{" "}</label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
@@ -6386,7 +6327,7 @@ ${itemsList}
                         : 'border-border bg-surface text-ink hover:bg-surface/80'
                     }`}
                   >
-                    <span>বিকাশ (bKash)</span>
+                    <span><LocalizedText source={"বিকাশ (bKash)"} area="admin" /></span>
                   </button>
                   <button
                     type="button"
@@ -6397,7 +6338,7 @@ ${itemsList}
                         : 'border-border bg-surface text-ink hover:bg-surface/80'
                     }`}
                   >
-                    <span>নগদ (Nagad)</span>
+                    <span><LocalizedText source={"নগদ (Nagad)"} area="admin" /></span>
                   </button>
                   <button
                     type="button"
@@ -6408,7 +6349,7 @@ ${itemsList}
                         : 'border-border bg-surface text-ink hover:bg-surface/80'
                     }`}
                   >
-                    <span>রকেট (Rocket)</span>
+                    <span><LocalizedText source={"রকেট (Rocket)"} area="admin" /></span>
                   </button>
                 </div>
               </div>
@@ -6428,26 +6369,24 @@ ${itemsList}
                     type="number"
                     value={mfsAmountTaka}
                     onChange={(e) => setMfsAmountTaka(e.target.value)}
-                    placeholder="যেমন: 100 বা 170"
+                    placeholder={uiText("যেমন: 100 বা 170", locale)}
                     required
                   />
                   {/* Preset Amount Badges */}
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    <span className="text-[10px] text-muted">কুইক অ্যামাউন্ট:</span>
+                    <span className="text-[10px] text-muted"><LocalizedText source={"কুইক অ্যামাউন্ট:"} area="admin" /></span>
                     <button
                       type="button"
                       onClick={() => setMfsAmountTaka('100')}
                       className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border hover:bg-bg cursor-pointer"
                     >
-                      ৳১০০ (ঢাকা ডেলিভারি)
-                    </button>
+                      <LocalizedText source={"৳১০০ (ঢাকা ডেলিভারি)"} area="admin" />{" "}</button>
                     <button
                       type="button"
                       onClick={() => setMfsAmountTaka('170')}
                       className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border hover:bg-bg cursor-pointer"
                     >
-                      ৳১৭০ (ঢাকার বাইরে)
-                    </button>
+                      <LocalizedText source={"৳১৭০ (ঢাকার বাইরে)"} area="admin" />{" "}</button>
                     {mfsModalOrder && (
                       <button
                         type="button"
@@ -6462,8 +6401,7 @@ ${itemsList}
                         }
                         className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border hover:bg-bg cursor-pointer"
                       >
-                        ৳{Math.round((mfsModalOrder.totalPayablePoisha ?? 0) / 100)} (সম্পূর্ণ বিল)
-                      </button>
+                        <LocalizedText source={"৳"} area="admin" />{Math.round((mfsModalOrder.totalPayablePoisha ?? 0) / 100)} {" "}<LocalizedText source={"(সম্পূর্ণ বিল)"} area="admin" />{" "}</button>
                     )}
                   </div>
                 </div>
@@ -6475,12 +6413,11 @@ ${itemsList}
                   label="Transaction ID (TrxID) *"
                   value={mfsTrxId}
                   onChange={(e) => setMfsTrxId(e.target.value.toUpperCase())}
-                  placeholder="যেমন: BLG9X8Y7Z1"
+                  placeholder={uiText("যেমন: BLG9X8Y7Z1", locale)}
                   required
                 />
                 <p className="text-[10px] text-muted mt-1">
-                  গ্রাহকের পাঠানো বিকাশ, নগদ বা রকেট এসএমএস-এর ট্রানজেকশন আইডি প্রবেশ করান।
-                </p>
+                  <LocalizedText source={"গ্রাহকের পাঠানো বিকাশ, নগদ বা রকেট এসএমএস-এর ট্রানজেকশন আইডি প্রবেশ করান।"} area="admin" />{" "}</p>
               </div>
 
               {/* Staff Note */}
@@ -6488,7 +6425,7 @@ ${itemsList}
                 label="অ্যাডমিন নোট (ঐচ্ছিক)"
                 value={mfsNoteBn}
                 onChange={(e) => setMfsNoteBn(e.target.value)}
-                placeholder="যেমন: গ্রাহক হোয়াটসঅ্যাপে স্ক্রিনশট পাঠিয়েছেন"
+                placeholder={uiText("যেমন: গ্রাহক হোয়াটসঅ্যাপে স্ক্রিনশট পাঠিয়েছেন", locale)}
               />
 
               {/* Auto Verify Checkbox Toggle */}
@@ -6501,11 +6438,9 @@ ${itemsList}
                 />
                 <div className="text-xs">
                   <span className="font-bold text-ink">
-                    ইনপুট করার সাথে সাথে সরাসরি ভেরিফাই ও অনুমোদন করুন
-                  </span>
+                    <LocalizedText source={"ইনপুট করার সাথে সাথে সরাসরি ভেরিফাই ও অনুমোদন করুন"} area="admin" />{" "}</span>
                   <p className="text-[10px] text-muted">
-                    টিক চিহ্ন থাকলে TrxID-টি &apos;paid_verified&apos; স্ট্যাটাস পাবে এবং জেনারেল লেজারে পোস্টিং হবে। টিক না দিলে শুধু পেন্ডিং হিসেবে সংরক্ষিত থাকবে।
-                  </p>
+                    <LocalizedText source={"টিক চিহ্ন থাকলে TrxID-টি 'paid_verified' স্ট্যাটাস পাবে এবং জেনারেল লেজারে পোস্টিং হবে। টিক না দিলে শুধু পেন্ডিং হিসেবে সংরক্ষিত থাকবে।"} area="admin" />{" "}</p>
                 </div>
               </label>
 
@@ -6516,8 +6451,7 @@ ${itemsList}
                   onClick={() => setMfsModalOrder(null)}
                   className="px-3 py-1.5 rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:bg-bg font-semibold text-xs cursor-pointer"
                 >
-                  বাতিল
-                </button>
+                  <LocalizedText source={"বাতিল"} area="admin" />{" "}</button>
                 <button
                   type="button"
                   disabled={isSubmittingMfs}
@@ -6527,7 +6461,7 @@ ${itemsList}
                   {isSubmittingMfs ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>সংরক্ষণ হচ্ছে...</span>
+                      <span><LocalizedText source={"সংরক্ষণ হচ্ছে..."} area="admin" /></span>
                     </>
                   ) : (
                     <>

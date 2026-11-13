@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/reviews/route.ts
 // Server-Side Product Review Submission Route with Zod Validation & Verified Purchase Check
 
@@ -15,7 +16,7 @@ const reviewInputSchema = z.object({
   comment: z.string().trim().min(5, 'রিভিউ কমপক্ষে ৫ অক্ষরের হতে হবে।').max(1000),
 });
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     if (!verifyOriginAndCsrf(req).ok) return NextResponse.json({ success: false }, { status: 403 });
     const token = req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
@@ -54,3 +55,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = backendRoute(handlePOST);

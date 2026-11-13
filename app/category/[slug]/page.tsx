@@ -1,3 +1,4 @@
+import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/category/[slug]/page.tsx
 // Dedicated Category Page with Server-Side Sanitized Product Filtering
 
@@ -13,7 +14,7 @@ interface CategoryPageProps {
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params;
-  const { siteSettings, categories, products } = getPublicStorefrontData();
+  const { siteSettings, categories, products } = await withRuntimePersistence(() => getPublicStorefrontData());
 
   const category = categories.find((c) => c.slug === slug);
   if (!category) {

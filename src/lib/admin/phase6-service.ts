@@ -609,9 +609,10 @@ export function computeCustomer360Directory(): Customer360ProfileDTO[] {
 
 export function computeWebhookHmacSignature(
   rawPayload: string,
-  secret: string
+  secret: string,
+  timestamp?: string
 ): string {
-  return crypto.createHmac('sha256', secret).update(rawPayload).digest('hex');
+  return crypto.createHmac('sha256', secret).update(timestamp ? `${timestamp}.${rawPayload}` : rawPayload).digest('hex');
 }
 
 /**
@@ -625,6 +626,7 @@ export function verifyCourierWebhookHmac(params: {
   timestampHeader?: string | null;
   maxSkewSeconds?: number;
   nowMs?: number;
+  requireSignedTimestamp?: boolean;
 }): {
   valid: boolean;
   code?: 'MISSING_SECRET' | 'MISSING_SIGNATURE' | 'INVALID_SIGNATURE' | 'TIMESTAMP_EXPIRED';
@@ -648,6 +650,9 @@ export function verifyCourierWebhookHmac(params: {
     };
   }
 
+  if (params.requireSignedTimestamp && !params.timestampHeader) return {
+    valid: false, code: 'TIMESTAMP_EXPIRED', reasonBn: 'স্বাক্ষরযুক্ত ওয়েবহুক টাইমস্ট্যাম্প প্রয়োজন।',
+  };
   if (params.timestampHeader) {
     const tsNum = Number(params.timestampHeader);
     const nowMs = params.nowMs ?? Date.now();
@@ -669,7 +674,8 @@ export function verifyCourierWebhookHmac(params: {
     }
   }
 
-  const expectedHex = computeWebhookHmacSignature(params.rawPayload, secret);
+  const expectedHex = computeWebhookHmacSignature(params.rawPayload, secret,
+    params.requireSignedTimestamp ? params.timestampHeader ?? undefined : undefined);
   if (!/^[a-f0-9]{64}$/i.test(sig)) {
     return {
       valid: false,

@@ -1056,6 +1056,7 @@ export function promoteMaturedEscrowEntriesBatch(
       errorBn: 'শুধুমাত্র সুপার অ্যাডমিন এসক্রো ম্যাচুরিটি প্রমোশন ব্যাচ রান করতে পারবেন।',
     };
   }
+  if (forcePromoteAllLocked) return { success: false, errorBn: 'হোল্ড সময় ও আদায় যাচাই এড়িয়ে অর্থ ছাড় করা যাবে না।' };
 
   const p4b = readPhase4BStore();
   const store = readPhase7Store();
@@ -1063,25 +1064,20 @@ export function promoteMaturedEscrowEntriesBatch(
   const nowIso = new Date().toISOString();
 
   // Clean up any legacy entries missing escrowBucket
-  p4b.vendorLedger = p4b.vendorLedger.filter(
-    (e) =>
-      typeof e.amountPoisha === 'number' &&
-      Boolean((e as { escrowBucket?: string }).escrowBucket)
-  );
+  if (p4b.vendorLedger.some(entry => !Number.isSafeInteger(entry.amountPoisha) || !entry.escrowBucket)) {
+    return { success: false, errorBn: 'লেজারে অসংগতি আছে। ইতিহাস অক্ষুণ্ণ রেখে সমন্বয় করুন।' };
+  }
 
   // Identify EARNING_LOCKED entries that haven't been promoted to EARNING_MATURED yet
-  const maturedOrderVendorKeys = new Set(
-    p4b.vendorLedger
-      .filter((e) => e.entryType === 'EARNING_MATURED')
-      .map((e) => `${e.vendorId}:${e.orderNo ?? e.id}`)
-  );
+  const maturedSourceIds = new Set(p4b.vendorLedger.map(entry => entry.id));
+  const erp = readErpState();
 
   const eligibleLocked = p4b.vendorLedger.filter((e) => {
     if (e.entryType !== 'EARNING_LOCKED' || e.amountPoisha <= 0) return false;
-    const key = `${e.vendorId}:${e.orderNo ?? e.id}`;
-    if (maturedOrderVendorKeys.has(key)) return false;
-    if (forcePromoteAllLocked) return true;
-    return !e.maturesAt || e.maturesAt <= nowIso;
+    if (maturedSourceIds.has(`vle-mat-${e.id}`)) return false;
+    const order = erp.orders.find(order => order.orderNo === e.orderNo);
+    return Boolean(e.maturesAt && e.maturesAt <= nowIso && order?.status === 'delivered' &&
+      ['remitted', 'paid_verified'].includes(order.paymentStatus));
   });
 
   let totalPromotedPoisha = 0;
@@ -1089,7 +1085,7 @@ export function promoteMaturedEscrowEntriesBatch(
 
   for (const lockedEntry of eligibleLocked) {
     const newEntry: ImmutableVendorLedgerRecord = {
-      id: `vle-mat-${Date.now()}-${Math.floor(100 + Math.random() * 899)}`,
+      id: `vle-mat-${lockedEntry.id}`,
       vendorId: lockedEntry.vendorId,
       vendorCode: lockedEntry.vendorCode,
       orderNo: lockedEntry.orderNo,
@@ -1103,7 +1099,10 @@ export function promoteMaturedEscrowEntriesBatch(
       recordedByUsername: ctx.username,
       createdAt: nowIso,
     };
-    p4b.vendorLedger.unshift(newEntry);
+    p4b.vendorLedger.unshift({ ...newEntry, id: `vle-mat-offset-${lockedEntry.id}`,
+      entryType: 'MANUAL_ADJUSTMENT', escrowBucket: 'locked', amountPoisha: -lockedEntry.amountPoisha,
+      descriptionBn: `ম্যাচুরিটি ট্রান্সফার: ${lockedEntry.id}`,
+    }, newEntry);
     totalPromotedPoisha += lockedEntry.amountPoisha;
     affectedVendors.add(lockedEntry.vendorCode);
   }

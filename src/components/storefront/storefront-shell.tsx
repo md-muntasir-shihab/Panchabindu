@@ -1,4 +1,9 @@
 'use client';
+import { localizedField } from '@/src/lib/i18n/ui-text';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/storefront/storefront-shell.tsx
 // Botanical Heritage Calm — Global Storefront Layout Shell:
@@ -88,6 +93,7 @@ export function StorefrontShell({
   };
   const locale = useLocaleStore((s) => s.locale);
   const toggleLocale = useLocaleStore((s) => s.toggleLocale);
+  React.useEffect(() => { document.documentElement.lang = locale; }, [locale]);
   const dict = useLocaleStore((s) => s.t());
 
   const cartItems = useCartStore((s) => s.items);
@@ -237,7 +243,7 @@ export function StorefrontShell({
           </div>
           <h1 className="text-xl font-bold text-[#162119]">{brandName}</h1>
           <p className="text-sm text-[#5A655D]">
-            {siteSettings.maintenanceMessageBn}
+            {localizedField(siteSettings, "maintenanceMessageBn", locale)}
           </p>
           <div className="pt-2">
             <Link href="/admin">
@@ -284,7 +290,7 @@ export function StorefrontShell({
             <a
               href={`tel:${siteSettings.supportPhone}`}
               className="inline-flex items-center gap-1.5 text-[#FAF9F5] hover:underline font-medium tabular-nums text-xs"
-              aria-label="Customer Helpline"
+              aria-label={uiText("Customer Helpline", locale)}
             >
               <PhoneCall className="w-3.5 h-3.5 text-[#E8F0EC] shrink-0" aria-hidden="true" />
               <span>{siteSettings.supportPhone}</span>
@@ -312,11 +318,11 @@ export function StorefrontShell({
                 href="/"
                 onClick={() => onSelectCategory?.(null)}
                 className="flex items-center gap-3 shrink-0 group select-none"
-                aria-label="Panchagarh Homepage"
+                aria-label={uiText("Panchagarh Homepage", locale)}
               >
                 {/* Botanical Monogram Emblem */}
                 <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#1B4332] text-[#FAF9F5] flex items-center justify-center font-bold transition-transform group-hover:scale-[1.03]">
-                  <span className="text-base sm:text-lg font-bold tracking-tight">প</span>
+                  <span className="text-base sm:text-lg font-bold tracking-tight"><LocalizedText source={"প"} area="storefront" /></span>
                 </div>
 
                 {/* Clean Unboxed Brand Title */}
@@ -325,13 +331,12 @@ export function StorefrontShell({
                     {brandName || 'পঞ্চগড়'}
                   </span>
                   <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-[#5A655D] leading-none pt-0.5">
-                    PANCHAGARH
-                  </span>
+                    <LocalizedText source={"PANCHAGARH"} area="storefront" />{" "}</span>
                 </div>
               </Link>
 
               {/* Desktop Top-Level Navigation Links */}
-              <nav aria-label="Main Navigation" className="hidden lg:flex items-center gap-1.5 ml-4 text-xs font-semibold text-[#162119]">
+              <nav aria-label={uiText("Main Navigation", locale)} className="hidden lg:flex items-center gap-1.5 ml-4 text-xs font-semibold text-[#162119]">
                 <Link
                   href="/"
                   onClick={() => onSelectCategory?.(null)}
@@ -465,7 +470,7 @@ export function StorefrontShell({
                         onSearchChange?.('');
                         desktopSearchInputRef.current?.focus();
                       }}
-                      aria-label="Clear search"
+                      aria-label={uiText("Clear search", locale)}
                       className="p-1 text-[#5A655D] hover:text-[#162119] cursor-pointer transition-colors"
                     >
                       <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -550,7 +555,7 @@ export function StorefrontShell({
                                       {locale === 'bn' ? p.nameBn : p.nameEn}
                                     </p>
                                     <p className="text-[11px] text-[#5A655D] truncate">
-                                      SKU: {variant?.publicSku || 'BG-SKU'}
+                                      <LocalizedText source={"SKU:"} area="storefront" />{" "}{variant?.publicSku || 'BG-SKU'}
                                     </p>
                                   </div>
                                   <div className="text-right shrink-0">
@@ -672,7 +677,7 @@ export function StorefrontShell({
               <button
                 type="button"
                 onClick={toggleLocale}
-                aria-label="Toggle language"
+                aria-label={uiText("Toggle language", locale)}
                 className="flex items-center text-xs font-semibold border border-[#E4E2DC] rounded-full p-0.5 bg-[#F2EFE9] h-9 transition-colors cursor-pointer"
               >
                 <span
@@ -682,8 +687,7 @@ export function StorefrontShell({
                       : 'text-[#5A655D] hover:text-[#162119]'
                   }`}
                 >
-                  বাং
-                </span>
+                  <LocalizedText source={"বাং"} area="storefront" />{" "}</span>
                 <span
                   className={`px-2.5 py-1 rounded-full transition-colors ${
                     locale === 'en'
@@ -691,8 +695,7 @@ export function StorefrontShell({
                       : 'text-[#5A655D] hover:text-[#162119]'
                   }`}
                 >
-                  EN
-                </span>
+                  <LocalizedText source={"EN"} area="storefront" />{" "}</span>
               </button>
 
               {/* Admin Dashboard Portal Link */}
@@ -777,7 +780,7 @@ export function StorefrontShell({
                 <button
                   type="button"
                   onClick={() => onSearchChange?.('')}
-                  aria-label="Clear search"
+                  aria-label={uiText("Clear search", locale)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#5A655D] hover:text-[#162119] cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -860,8 +863,7 @@ export function StorefrontShell({
           <div className="md:col-span-5 space-y-3">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-[#1B4332] text-[#FAF9F5] flex items-center justify-center font-bold text-sm">
-                প
-              </div>
+                <LocalizedText source={"প"} area="storefront" />{" "}</div>
               <h2 className="text-lg font-bold text-[#162119]">{brandName}</h2>
             </div>
             <p className="text-xs sm:text-sm text-[#5A655D] leading-relaxed max-w-sm">
@@ -962,7 +964,7 @@ export function StorefrontShell({
 
       {/* 5. Mobile Bottom Tab Bar (<= 768px) */}
       <nav
-        aria-label="Mobile bottom navigation"
+        aria-label={uiText("Mobile bottom navigation", locale)}
         className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[#E4E2DC] bg-[#FAF9F5]/95 backdrop-blur safe-bottom"
       >
         <div className="grid grid-cols-4 h-14">
@@ -1135,7 +1137,7 @@ export function StorefrontShell({
                             onClick={() =>
                               updateQuantity(item.variantId, item.quantity - 1)
                             }
-                            aria-label="Decrease quantity"
+                            aria-label={uiText("Decrease quantity", locale)}
                             className="p-1.5 text-[#162119] hover:bg-white rounded-l-lg cursor-pointer"
                           >
                             <Minus className="w-3.5 h-3.5" aria-hidden="true" />
@@ -1148,7 +1150,7 @@ export function StorefrontShell({
                             onClick={() =>
                               updateQuantity(item.variantId, item.quantity + 1)
                             }
-                            aria-label="Increase quantity"
+                            aria-label={uiText("Increase quantity", locale)}
                             className="p-1.5 text-[#162119] hover:bg-white rounded-r-lg cursor-pointer"
                           >
                             <Plus className="w-3.5 h-3.5" aria-hidden="true" />

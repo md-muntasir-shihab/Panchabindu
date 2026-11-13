@@ -1,3 +1,7 @@
+# Current runtime boundary — November 13, 2026
+
+Production filesystem persistence is blocked, including on Vercel. The new compatibility adapter requires `PANCHAGARH_PERSISTENCE=postgres`, reviewed migrations `0009` and `0010`, an initialized server-only runtime state, valid server-side Supabase configuration, `APP_URL` and the original credentials encryption key. Configuration is not integration proof. Read `docs/audit/backend-bilingual-2026-11-13.md` before using historical instructions below. No production deployment or migration was performed. Customer SMS delivery, live courier adapters, normalized domain migration and deployed acceptance remain open.
+
 # DEPLOYMENT & PRE-LAUNCH READINESS RUNBOOK
 ## পঞ্চগড় (PANCHAGARH) — Production Release Governance
 

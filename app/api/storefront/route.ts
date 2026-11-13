@@ -1,3 +1,4 @@
+import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/storefront/route.ts
 // Public Storefront Catalog, Config & Delivery Quote API (Section 21.1 & docs/api/api-contract.md)
 // Enforces:
@@ -23,7 +24,7 @@ function createRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   const requestId = createRequestId();
   const { searchParams } = new URL(req.url);
   const slug = searchParams.get('slug');
@@ -166,3 +167,5 @@ export async function GET(req: NextRequest) {
     request_id: requestId,
   });
 }
+
+export const GET = backendRoute(handleGET);

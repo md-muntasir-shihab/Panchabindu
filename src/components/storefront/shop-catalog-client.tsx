@@ -1,4 +1,9 @@
 'use client';
+import { localizedField } from '@/src/lib/i18n/ui-text';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/storefront/shop-catalog-client.tsx
 // Phase 6 (Section 9.3): Dedicated All Products (/shop) & Search Results (/search) Client
@@ -259,7 +264,7 @@ export function ShopCatalogClient({
             {locale === 'bn' ? 'মূল্য সীমা (৳)' : 'Price Range (BDT)'}
           </span>
           <span className="font-mono font-bold text-[#1B4332]">
-            ৳{formatLocaleNumber(minPriceBdt, locale)} — ৳
+            <LocalizedText source={"৳"} area="storefront" />{formatLocaleNumber(minPriceBdt, locale)} — ৳
             {formatLocaleNumber(maxPriceBdt, locale)}
           </span>
         </div>
@@ -393,7 +398,7 @@ export function ShopCatalogClient({
         </div>
         {showBrandGapInfo && (
           <p className="p-2.5 rounded-lg bg-[#F2EFE9] border border-[#E4E2DC] text-[11px] text-[#5A655D] leading-relaxed">
-            {facets.brandFilterGapNoteBn}
+            {localizedField(facets, "brandFilterGapNoteBn", locale)}
           </p>
         )}
       </div>
@@ -413,7 +418,7 @@ export function ShopCatalogClient({
       <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10 space-y-8">
         {/* 1. Category Breadcrumb */}
         <nav
-          aria-label="Breadcrumb"
+          aria-label={uiText("Breadcrumb", locale)}
           className="flex flex-wrap items-center gap-1.5 text-xs text-[#5A655D]"
         >
           <Link href="/" className="hover:text-[#1B4332] transition-colors">
@@ -731,7 +736,7 @@ export function ShopCatalogClient({
                 {/* Verified Pagination Bar */}
                 {queryResult.totalPages > 1 && (
                   <nav
-                    aria-label="Pagination"
+                    aria-label={uiText("Pagination", locale)}
                     className="pt-6 border-t border-[#E4E2DC] flex items-center justify-between gap-4"
                   >
                     <Button

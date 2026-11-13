@@ -1,4 +1,9 @@
 'use client';
+import { localizedFetch as fetch } from '@/src/lib/i18n/localized-fetch';
+import { uiText } from '@/src/lib/i18n/ui-text';
+
+import { LocalizedText } from '@/src/components/ui/localized-text';
+
 
 // src/components/storefront/account-client.tsx
 // Professional Customer Account & User ID Dashboard:
@@ -441,7 +446,7 @@ export function AccountClient({
                   <button
                     type="button"
                     onClick={handleCopyUserId}
-                    aria-label="Copy phone number"
+                    aria-label={uiText("Copy phone number", locale)}
                     disabled={!verifiedPhone}
                     className="p-1 hover:text-ink cursor-pointer inline-flex items-center gap-1"
                   >
@@ -584,7 +589,7 @@ export function AccountClient({
                   value={orderLookupNo}
                   onChange={(e) => setOrderLookupNo(e.target.value)}
                   placeholder="ORD-261106-0001"
-                  aria-label="Order Number"
+                  aria-label={uiText("Order Number", locale)}
                   className="flex-1 sm:w-56 min-h-[44px] px-3.5 py-2 text-sm font-mono uppercase bg-surface text-ink border border-border rounded-[var(--radius-md)] focus:outline-2 focus:outline-ink"
                 />
                 <Button
@@ -676,7 +681,7 @@ export function AccountClient({
                 label={locale === 'bn' ? 'ওটিপি কোড (৬ সংখ্যা)' : 'OTP Code (6 Digits)'}
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value)}
-                placeholder="6-Digit OTP"
+                placeholder={uiText("6-Digit OTP", locale)}
                 required
               />
               <Button
@@ -700,7 +705,7 @@ export function AccountClient({
                 {otpSentMessage}
                 {sandboxOtpPreview ? (
                   <span className="ml-2 font-mono font-bold">
-                    [Sandbox OTP: {sandboxOtpPreview}]
+                    <LocalizedText source={"[Sandbox OTP:"} area="storefront" />{" "}{sandboxOtpPreview}]
                   </span>
                 ) : null}
               </p>
@@ -942,7 +947,7 @@ export function AccountClient({
                     <button
                       type="button"
                       onClick={() => { if (window.confirm(locale === 'bn' ? 'এই ঠিকানাটি মুছে ফেলবেন?' : 'Remove this address?')) handleRemoveAddress(addr.id); }}
-                      aria-label="Remove address"
+                      aria-label={uiText("Remove address", locale)}
                       className="text-muted hover:text-danger cursor-pointer p-1"
                     >
                       <Trash2 className="w-4 h-4" aria-hidden="true" />
@@ -975,7 +980,7 @@ export function AccountClient({
                     {locale === 'bn' ? 'জেলা' : 'District'}
                   </label>
                   <select
-                    aria-label="Select District"
+                    aria-label={uiText("Select District", locale)}
                     value={addrDistrictId}
                     onChange={(e) => {
                       const dId = Number(e.target.value);
@@ -998,7 +1003,7 @@ export function AccountClient({
                     {locale === 'bn' ? 'উপজেলা / থানা' : 'Upazila / Thana'}
                   </label>
                   <select
-                    aria-label="Select Upazila"
+                    aria-label={uiText("Select Upazila", locale)}
                     value={addrUpazilaId}
                     onChange={(e) => setAddrUpazilaId(Number(e.target.value))}
                     className="w-full min-h-[42px] px-3 py-2 text-xs bg-surface text-ink border border-border rounded-[var(--radius-md)]"

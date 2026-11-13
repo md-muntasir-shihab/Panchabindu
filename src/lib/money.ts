@@ -51,7 +51,7 @@ export function takaToPoisha(wholeTaka: number): Poisha {
   if (!Number.isSafeInteger(wholeTaka)) {
     throw new TypeError('takaToPoisha requires an integer Taka amount. Use parseTakaStringToPoisha for decimal input strings.');
   }
-  return wholeTaka * 100;
+  return assertIntegerPoisha(wholeTaka * 100, 'convertedPoisha');
 }
 
 /**
@@ -336,17 +336,13 @@ export function calculateMaturityTimestamp(deliveredAtIso: string, holdDays: num
   return new Date(maturesMs).toISOString();
 }
 
-/**
- * Computes Real-Time Escrow Balances for a Vendor from Append-Only Ledger Entries.
- * Rule Module E: Even before the daily cron runs, any `locked` entry whose `maturesAt <= now`
- * is automatically counted in the `available` bucket on read!
- */
+
 export function computeVendorEscrowBalance(
   vendorId: string,
   entries: readonly LedgerCalculationEntry[],
   nowIso?: string
 ): VendorEscrowBalance {
-  const nowMs = nowIso ? new Date(nowIso).getTime() : Date.now();
+  if (nowIso && !Number.isFinite(Date.parse(nowIso))) throw new Error('INVALID_BALANCE_DATE');
 
   let pendingPoisha = 0;
   let lockedPoisha = 0;
@@ -360,13 +356,7 @@ export function computeVendorEscrowBalance(
     if (entry.escrowBucket === 'pending') {
       pendingPoisha += amt;
     } else if (entry.escrowBucket === 'locked') {
-      const maturesMs = entry.maturesAt ? new Date(entry.maturesAt).getTime() : Infinity;
-      if (maturesMs <= nowMs) {
-        // Real-time maturity promotion on read
-        availablePoisha += amt;
-      } else {
-        lockedPoisha += amt;
-      }
+      lockedPoisha += amt;
     } else if (entry.escrowBucket === 'available') {
       availablePoisha += amt;
       if (entry.entryType === 'PAYOUT_HOLD') {
