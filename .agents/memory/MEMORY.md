@@ -1,0 +1,1 @@
+- [Imported dependency majors](imported-dependency-majors.md) — preserve source package majors when the workspace catalog supplies an older API.

@@ -5,10 +5,14 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "test:migration": "node --test ./src/migration-smoke.test.mjs",
+    "test:shopping": "node ./src/migration-browser.mjs",
+    "test:domain": "tsx --tsconfig ../artifacts/api-server/tsconfig.json --test ../artifacts/api-server/imported/src/lib/money.test.ts ../artifacts/api-server/imported/src/lib/validators/validators.test.ts ../artifacts/api-server/imported/src/lib/db/runtime-persistence.test.ts ../artifacts/api-server/imported/src/lib/media/product-image-precheck.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "playwright": "^1.65.0",
     "tsx": "catalog:"
   }
 }

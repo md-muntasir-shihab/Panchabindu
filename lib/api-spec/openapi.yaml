@@ -11,6 +11,34 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /page-data:
+    get:
+      operationId: getPageData
+      summary: Load the imported storefront page with customer-safe data
+      parameters:
+        - in: query
+          name: path
+          required: true
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: category
+          schema: { type: string }
+      responses:
+        "200":
+          description: Original page props and metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageDataEnvelope"
+        "404":
+          description: The original not-found page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageDataEnvelope"
   /healthz:
     get:
       operationId: healthCheck
@@ -26,6 +54,30 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    PageDataEnvelope:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean }
+        data:
+          $ref: "#/components/schemas/PageData"
+    PageData:
+      type: object
+      required: [page, props, metadata]
+      properties:
+        page:
+          type: string
+          enum: [home, account, admin, categories, checkout, contact, search, shop, vendor, category, legal, tracking, product, not-found]
+        props:
+          type: object
+          additionalProperties: true
+          description: Original page-specific public props; excludes internal repository fields.
+        metadata:
+          type: object
+          additionalProperties: true
+        jsonLd:
+          type: object
+          additionalProperties: true
     HealthStatus:
       type: object
       properties:
