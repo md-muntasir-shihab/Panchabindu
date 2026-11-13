@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "sandbox:setup": "node scripts/setup-local-sandbox.mjs",
+    "production:setup-admin": "node scripts/setup-production-admin.mjs",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"

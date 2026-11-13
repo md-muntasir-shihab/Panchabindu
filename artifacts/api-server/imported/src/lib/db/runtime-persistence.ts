@@ -128,7 +128,7 @@ async function shouldCommit(value: unknown): Promise<boolean> {
   if (value.status >= 400) return false;
   if (value.headers.get('content-type')?.includes('application/json')) {
     const body = await value.clone().json();
-    return body?.success !== false;
+    return !(body && typeof body === 'object' && 'success' in body && body.success === false);
   }
   return true;
 }

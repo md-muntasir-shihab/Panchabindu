@@ -1,0 +1,16 @@
+{
+  "installCommand": "npx --yes pnpm@10.34.9 install --frozen-lockfile",
+  "buildCommand": "PORT=3000 BASE_PATH=/ npx --yes pnpm@10.34.9 run build",
+  "outputDirectory": "artifacts/panchagarh/dist/public",
+  "functions": {
+    "api/*.mjs": {
+      "includeFiles": "artifacts/api-server/dist/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/manifest.webmanifest", "destination": "/api/__metadata/manifest.webmanifest" },
+    { "source": "/sitemap.xml", "destination": "/api/__metadata/sitemap.xml" },
+    { "source": "/robots.txt", "destination": "/api/__metadata/robots.txt" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}

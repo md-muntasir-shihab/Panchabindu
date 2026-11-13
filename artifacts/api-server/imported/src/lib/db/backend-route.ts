@@ -26,7 +26,10 @@ function localizedResponse(response: Response, request: unknown): Promise<Respon
       Object.values(record).forEach(decorate);
     };
     decorate(body);
-    if (response.status >= 400 && !body.code) body.code = ({ 400: 'INVALID_REQUEST', 401: 'AUTH_REQUIRED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT', 422: 'VALIDATION_FAILED', 429: 'RATE_LIMITED' } as Record<number, string>)[response.status] ?? 'SERVICE_UNAVAILABLE';
+    if (response.status >= 400 && body && typeof body === 'object' && !Array.isArray(body)) {
+      const record = body as Record<string, unknown>;
+      if (!record.code) record.code = ({ 400: 'INVALID_REQUEST', 401: 'AUTH_REQUIRED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT', 422: 'VALIDATION_FAILED', 429: 'RATE_LIMITED' } as Record<number, string>)[response.status] ?? 'SERVICE_UNAVAILABLE';
+    }
     const headers = new Headers(response.headers);
     headers.delete('content-length');
     return Response.json(body, { status: response.status, headers });
