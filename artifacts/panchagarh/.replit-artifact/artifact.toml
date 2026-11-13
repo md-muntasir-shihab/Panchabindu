@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Panchagarh"
+description = "The imported Panchagarh storefront with product browsing, checkout, customer accounts, order tracking, and business administration."
+version = "1.0.0"
+id = "artifacts/panchagarh"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20695
+
+[services.development]
+run = "pnpm --filter @workspace/panchagarh run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/panchagarh", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/panchagarh/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20695"
+BASE_PATH = "/"
