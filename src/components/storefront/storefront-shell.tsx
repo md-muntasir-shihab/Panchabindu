@@ -1,4 +1,6 @@
 'use client';
+import { getStorefrontConfig } from '@/src/lib/storefront/storefront-config';
+import { BrandMark } from './brand-mark';
 import { localizedField } from '@/src/lib/i18n/ui-text';
 import { uiText } from '@/src/lib/i18n/ui-text';
 
@@ -39,7 +41,6 @@ import {
   ChevronLeft,
   ChevronDown,
   X,
-  Truck,
   TrendingUp,
   ArrowUpRight,
 } from 'lucide-react';
@@ -95,6 +96,15 @@ export function StorefrontShell({
   const toggleLocale = useLocaleStore((s) => s.toggleLocale);
   React.useEffect(() => { document.documentElement.lang = locale; }, [locale]);
   const dict = useLocaleStore((s) => s.t());
+  const config = getStorefrontConfig(siteSettings);
+  const text = (bn: string, en: string) => locale === 'bn' ? bn : en;
+  React.useEffect(() => {
+    document.documentElement.style.setProperty('--store-accent', config.accentColor);
+    if (window.location.pathname === '/') {
+      document.title = (locale === 'bn' ? config.seoTitleBn : config.seoTitleEn) || `${siteSettings.brandNameBn} — ${siteSettings.brandNameEn}`;
+      document.querySelector('meta[name="description"]')?.setAttribute('content', locale === 'bn' ? config.seoDescriptionBn : config.seoDescriptionEn);
+    }
+  }, [config.accentColor, config.seoTitleBn, config.seoTitleEn, config.seoDescriptionBn, config.seoDescriptionEn, locale, siteSettings.brandNameBn, siteSettings.brandNameEn]);
 
   const cartItems = useCartStore((s) => s.items);
   const isCartOpen = useCartStore((s) => s.isDrawerOpen);
@@ -107,8 +117,6 @@ export function StorefrontShell({
   const wishlistCount = useWishlistStore((s) => s.productIds.length);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isCategoryAccordionOpen, setIsCategoryAccordionOpen] = React.useState(true);
-  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
-  const categoryDropdownRef = React.useRef<HTMLDivElement>(null);
 
   // Live Instant Search State
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
@@ -137,12 +145,8 @@ export function StorefrontShell({
       const target = event.target as Node;
       const insideDesktop = searchContainerRef.current?.contains(target);
       const insideMobile = mobileSearchContainerRef.current?.contains(target);
-      const insideCatDropdown = categoryDropdownRef.current?.contains(target);
       if (!insideDesktop && !insideMobile) {
         setIsSearchFocused(false);
-      }
-      if (!insideCatDropdown) {
-        setIsCategoryDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -239,11 +243,11 @@ export function StorefrontShell({
       <div className="min-h-screen flex flex-col items-center justify-center p-6 storefront-theme bg-[#FAF9F5] text-[#162119]">
         <div className="max-w-md w-full border border-[#E4E2DC] rounded-2xl p-8 text-center space-y-4 bg-[#F2EFE9]">
           <div className="w-12 h-12 mx-auto flex items-center justify-center rounded-xl border border-[#E4E2DC] bg-[#FAF9F5]">
-            <Wrench className="w-6 h-6 text-[#1B4332]" aria-hidden="true" />
+            <Wrench className="w-6 h-6 text-[var(--store-accent)]" aria-hidden="true" />
           </div>
           <h1 className="text-xl font-bold text-[#162119]">{brandName}</h1>
           <p className="text-sm text-[#5A655D]">
-            {localizedField(siteSettings, "maintenanceMessageBn", locale)}
+            {text(siteSettings.maintenanceMessageBn, siteSettings.maintenanceMessageEn ?? 'We will be back shortly.')}
           </p>
           <div className="pt-2">
             <Link href="/admin">
@@ -258,58 +262,20 @@ export function StorefrontShell({
   }
 
   return (
-    <div className="min-h-screen flex flex-col storefront-theme bg-[#FAF9F5] text-[#162119] pb-20 md:pb-0">
-      {/* 1. Botanical Heritage Utility Announcement Strip */}
-      <div className="bg-[#1B4332] text-[#FAF9F5] px-4 py-2 text-[11px] sm:text-xs">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          {/* Left: Delivery & COD Guarantee */}
-          <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
-            <Truck className="w-3.5 h-3.5 text-[#E8F0EC] shrink-0" aria-hidden="true" />
-            <span className="font-medium tracking-wide">
-              {locale === 'bn'
-                ? 'ঢাকায় ২৪-৪৮ ঘণ্টা ও সারাদেশে ক্যাশ অন ডেলিভারি (COD) সুবিধা'
-                : '24–48h Delivery in Dhaka & Nationwide Cash on Delivery (COD)'}
-            </span>
-          </div>
-
-          {/* Center: Provenance Trust Signals (Desktop) */}
-          <div className="hidden lg:flex items-center gap-3 text-[#E8F0EC]/90 text-[11px]">
-            <span>
-              {locale === 'bn'
-                ? '১০০% গুণমান-যাচাইকৃত কনসাইনমেন্ট কালেকশন'
-                : '100% QC-Verified Consignment Collection'}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span>
-              {locale === 'bn' ? '৭ দিনের সহজ রিটার্ন পলিসি' : '7-Day Easy Return'}
-            </span>
-          </div>
-
-          {/* Right: Helpline Call Support */}
-          <div className="flex items-center gap-2 shrink-0">
-            <a
-              href={`tel:${siteSettings.supportPhone}`}
-              className="inline-flex items-center gap-1.5 text-[#FAF9F5] hover:underline font-medium tabular-nums text-xs"
-              aria-label={uiText("Customer Helpline", locale)}
-            >
-              <PhoneCall className="w-3.5 h-3.5 text-[#E8F0EC] shrink-0" aria-hidden="true" />
-              <span>{siteSettings.supportPhone}</span>
-            </a>
-          </div>
-        </div>
-      </div>
+    <div style={{ '--store-accent': config.accentColor } as React.CSSProperties} className="min-h-screen flex flex-col storefront-theme bg-[#FAF9F5] text-[#162119] pb-20 md:pb-0">
+      {siteSettings.delayBanner.enabled && <div className="bg-[var(--store-accent)] text-white px-4 py-2.5 text-xs"><div className="max-w-7xl mx-auto flex justify-center sm:justify-between items-center gap-5"><p className="leading-relaxed text-center sm:text-left">{text(siteSettings.delayBanner.messageBn, siteSettings.delayBanner.messageEn)}</p>{config.showSupportPhone && siteSettings.supportPhone && <a href={`tel:${siteSettings.supportPhone}`} className="hidden sm:inline-flex gap-2 shrink-0 items-center"><PhoneCall className="w-3.5 h-3.5" />{siteSettings.supportPhone}</a>}</div></div>}
 
       {/* 2. Sticky Minimalist Header */}
-      <header className="sticky top-0 z-40 border-b border-[#E4E2DC] bg-[#FAF9F5]/92 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 py-3 sm:py-3.5 space-y-2.5 sm:space-y-0">
+      <header className="sticky top-0 z-40 border-b border-[#E4E2DC] bg-[#FAF9F5]/95 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 py-3 sm:py-3.5 space-y-2.5 lg:space-y-0">
           <div className="flex items-center justify-between gap-3 sm:gap-6">
             {/* Mobile Hamburger & Brand Identity */}
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
                 type="button"
                 onClick={() => setIsMenuOpen(true)}
                 aria-label={locale === 'bn' ? 'মেনু খুলুন' : 'Open menu'}
-                className="sm:hidden p-2 -ml-1 text-[#162119] hover:bg-[#F2EFE9] border border-[#E4E2DC] rounded-lg cursor-pointer touch-target flex items-center justify-center transition-colors"
+                className="xl:hidden p-2 -ml-1 text-[#162119] hover:bg-[#F2EFE9] border border-[#E4E2DC] rounded-lg cursor-pointer touch-target flex items-center justify-center transition-colors"
               >
                 <Menu className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -317,127 +283,22 @@ export function StorefrontShell({
               <Link
                 href="/"
                 onClick={() => onSelectCategory?.(null)}
-                className="flex items-center gap-3 shrink-0 group select-none"
-                aria-label={uiText("Panchagarh Homepage", locale)}
+                className="flex items-center gap-3 min-w-0 group select-none"
+                aria-label={`${brandName} — ${dict.common.home}`}
               >
-                {/* Botanical Monogram Emblem */}
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#1B4332] text-[#FAF9F5] flex items-center justify-center font-bold transition-transform group-hover:scale-[1.03]">
-                  <span className="text-base sm:text-lg font-bold tracking-tight"><LocalizedText source={"প"} area="storefront" /></span>
-                </div>
-
-                {/* Clean Unboxed Brand Title */}
-                <div className="flex flex-col">
-                  <span className="text-base sm:text-lg font-bold tracking-tight text-[#162119] leading-tight">
-                    {brandName || 'পঞ্চগড়'}
-                  </span>
-                  <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-[#5A655D] leading-none pt-0.5">
-                    <LocalizedText source={"PANCHAGARH"} area="storefront" />{" "}</span>
-                </div>
+                <BrandMark settings={siteSettings} />
               </Link>
 
               {/* Desktop Top-Level Navigation Links */}
-              <nav aria-label={uiText("Main Navigation", locale)} className="hidden lg:flex items-center gap-1.5 ml-4 text-xs font-semibold text-[#162119]">
-                <Link
-                  href="/"
-                  onClick={() => onSelectCategory?.(null)}
-                  className={`px-3.5 py-1.5 rounded-full transition-colors ${
-                    !activeCategorySlug ? 'text-[#1B4332] bg-[#E8F0EC]' : 'hover:bg-[#F2EFE9] text-[#162119]'
-                  }`}
-                >
-                  {locale === 'bn' ? 'হোম' : 'Home'}
-                </Link>
-
-                {/* Categories Navigation with Direct Click + Hover/Tap Dropdown */}
-                <div
-                  ref={categoryDropdownRef}
-                  className="relative"
-                  onMouseEnter={() => setIsCategoryDropdownOpen(true)}
-                  onMouseLeave={() => setIsCategoryDropdownOpen(false)}
-                >
-                  <Link
-                    href="/categories"
-                    onClick={() => {
-                      setIsCategoryDropdownOpen(false);
-                      onSelectCategory?.(null);
-                    }}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full transition-colors cursor-pointer ${
-                      activeCategorySlug || isCategoryDropdownOpen
-                        ? 'text-[#1B4332] bg-[#E8F0EC]'
-                        : 'hover:bg-[#F2EFE9] text-[#162119]'
-                    }`}
-                  >
-                    <span>{locale === 'bn' ? 'ক্যাটাগরি' : 'Categories'}</span>
-                    <ChevronDown
-                      className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                        isCategoryDropdownOpen ? 'rotate-180 text-[#1B4332]' : 'text-[#5A655D]'
-                      }`}
-                    />
-                  </Link>
-
-                  {/* Sub-Categories Dropdown Menu */}
-                  {isCategoryDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-[#FAF9F5] border border-[#E4E2DC] rounded-2xl shadow-xl overflow-hidden p-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                      <div className="px-2.5 py-2 border-b border-[#E4E2DC]/80 flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#5A655D] uppercase tracking-wider">
-                          {locale === 'bn' ? 'সব ক্যাটাগরি' : 'All Categories'}
-                        </span>
-                        <Link
-                          href="/categories"
-                          onClick={() => setIsCategoryDropdownOpen(false)}
-                          className="text-[11px] font-semibold text-[#1B4332] hover:underline"
-                        >
-                          {locale === 'bn' ? 'ডিরেক্টরি' : 'Directory'}
-                        </Link>
-                      </div>
-                      <div className="divide-y divide-[#E4E2DC]/60 max-h-72 overflow-y-auto pt-1">
-                        {categories.map((c) => (
-                          <Link
-                            key={c.id}
-                            href={`/category/${c.slug}`}
-                            onClick={() => {
-                              onSelectCategory?.(c.slug);
-                              setIsCategoryDropdownOpen(false);
-                            }}
-                            className="w-full text-left p-2.5 hover:bg-[#F2EFE9] rounded-xl text-xs font-medium text-[#162119] flex items-center justify-between transition-colors group"
-                          >
-                            <span className="group-hover:text-[#1B4332] group-hover:font-semibold truncate">
-                              {locale === 'bn' ? c.nameBn : c.nameEn}
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-[#5A655D] opacity-60 group-hover:opacity-100 group-hover:text-[#1B4332] shrink-0" />
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <Link
-                  href="/shop"
-                  className="px-3.5 py-1.5 rounded-full hover:bg-[#F2EFE9] transition-colors font-medium"
-                >
-                  {locale === 'bn' ? 'সকল পণ্য' : 'Shop'}
-                </Link>
-
-                <Link
-                  href="/contact"
-                  className="px-3.5 py-1.5 rounded-full hover:bg-[#F2EFE9] transition-colors"
-                >
-                  {locale === 'bn' ? 'যোগাযোগ ও পরিচিতি' : 'Contact & About'}
-                </Link>
-
-                <Link
-                  href="/account"
-                  className="px-3.5 py-1.5 rounded-full hover:bg-[#F2EFE9] transition-colors font-medium text-[#1B4332]"
-                >
-                  {locale === 'bn' ? 'আমার অ্যাকাউন্ট' : 'My Account'}
-                </Link>
+              <nav aria-label={uiText("Main Navigation", locale)} className="hidden xl:flex items-center gap-1 ml-4 text-xs font-medium">
+                {config.navigation.filter(link => link.enabled).map(link => <Link key={link.id} href={link.href} className="px-3 py-2 rounded-full hover:bg-[#F2EFE9] transition-colors">{text(link.labelBn, link.labelEn)}</Link>)}
               </nav>
             </div>
 
             {/* Desktop Center Live Instant Search Input */}
             <div
               ref={searchContainerRef}
-              className="hidden sm:flex flex-1 max-w-lg mx-4 relative"
+              className="hidden lg:flex flex-1 min-w-0 max-w-lg mx-2 relative"
             >
               <div className="relative w-full">
                 <Search
@@ -460,7 +321,7 @@ export function StorefrontShell({
                       : 'Search Jamdani, honey, crafts or SKU...'
                   }
                   aria-label={dict.common.searchPlaceholder}
-                  className="w-full min-h-[42px] pl-11 pr-14 py-2 text-sm bg-[#F2EFE9] text-[#162119] border border-[#E4E2DC] rounded-full placeholder:text-[#5A655D] focus:bg-white focus:border-[#1B4332] focus:outline-none transition-all"
+                  className="w-full min-h-[42px] pl-11 pr-14 py-2 text-sm bg-[#F2EFE9] text-[#162119] border border-[#E4E2DC] rounded-full placeholder:text-[#5A655D] focus:bg-white focus:border-[var(--store-accent)] focus:outline-none transition-all"
                 />
                 <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                   {searchQuery ? (
@@ -502,7 +363,7 @@ export function StorefrontShell({
                                   onSelectCategory?.(c.slug);
                                   setIsSearchFocused(false);
                                 }}
-                                className="px-3 py-1 text-xs font-medium rounded-full border border-[#E4E2DC] bg-[#F2EFE9] hover:border-[#1B4332] text-[#162119] transition-colors cursor-pointer"
+                                className="px-3 py-1 text-xs font-medium rounded-full border border-[#E4E2DC] bg-[#F2EFE9] hover:border-[var(--store-accent)] text-[#162119] transition-colors cursor-pointer"
                               >
                                 {locale === 'bn' ? c.nameBn : c.nameEn}
                               </button>
@@ -551,7 +412,7 @@ export function StorefrontShell({
                                     </div>
                                   )}
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-semibold text-[#162119] truncate group-hover:text-[#1B4332]">
+                                    <p className="text-xs font-semibold text-[#162119] truncate group-hover:text-[var(--store-accent)]">
                                       {locale === 'bn' ? p.nameBn : p.nameEn}
                                     </p>
                                     <p className="text-[11px] text-[#5A655D] truncate">
@@ -586,7 +447,7 @@ export function StorefrontShell({
                           <Link
                             href={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
                             onClick={() => setIsSearchFocused(false)}
-                            className="text-xs font-semibold text-[#1B4332] hover:underline flex items-center gap-1"
+                            className="text-xs font-semibold text-[var(--store-accent)] hover:underline flex items-center gap-1"
                           >
                             <span>
                               {locale === 'bn'
@@ -609,7 +470,7 @@ export function StorefrontShell({
                         <button
                           type="button"
                           onClick={() => setIsSearchFocused(false)}
-                          className="font-semibold text-[#1B4332] hover:underline flex items-center gap-1 cursor-pointer"
+                          className="font-semibold text-[var(--store-accent)] hover:underline flex items-center gap-1 cursor-pointer"
                         >
                           <span>সব ফলাফল ব্রাউজ করুন</span>
                           <ArrowUpRight className="w-3.5 h-3.5" />
@@ -621,7 +482,7 @@ export function StorefrontShell({
                     <div className="p-4 space-y-4">
                       <div className="space-y-2">
                         <p className="text-xs font-semibold text-[#5A655D] flex items-center gap-1.5">
-                          <TrendingUp className="w-3.5 h-3.5 text-[#1B4332]" />
+                          <TrendingUp className="w-3.5 h-3.5 text-[var(--store-accent)]" />
                           <span>{locale === 'bn' ? 'জনপ্রিয় অনুসন্ধান' : 'Popular Searches'}</span>
                         </p>
                         <div className="flex flex-wrap gap-1.5">
@@ -634,7 +495,7 @@ export function StorefrontShell({
                                 onSearchChange?.(term);
                                 setIsSearchFocused(true);
                               }}
-                              className="px-3 py-1 text-xs font-medium rounded-full border border-[#E4E2DC] bg-[#F2EFE9] hover:border-[#1B4332] hover:bg-white text-[#162119] transition-colors cursor-pointer"
+                              className="px-3 py-1 text-xs font-medium rounded-full border border-[#E4E2DC] bg-[#F2EFE9] hover:border-[var(--store-accent)] hover:bg-white text-[#162119] transition-colors cursor-pointer"
                             >
                               {locale === 'bn' ? item.labelBn : item.labelEn}
                             </button>
@@ -655,7 +516,7 @@ export function StorefrontShell({
                                 onSelectCategory?.(c.slug);
                                 setIsSearchFocused(false);
                               }}
-                              className="flex items-center justify-between p-2.5 text-xs font-medium rounded-xl border border-[#E4E2DC] bg-[#F2EFE9] hover:border-[#1B4332] text-left text-[#162119] transition-colors cursor-pointer"
+                              className="flex items-center justify-between p-2.5 text-xs font-medium rounded-xl border border-[#E4E2DC] bg-[#F2EFE9] hover:border-[var(--store-accent)] text-left text-[#162119] transition-colors cursor-pointer"
                             >
                               <span className="truncate">
                                 {locale === 'bn' ? c.nameBn : c.nameEn}
@@ -672,7 +533,7 @@ export function StorefrontShell({
             </div>
 
             {/* Right Action Cluster */}
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
               {/* Segmented Language Switcher */}
               <button
                 type="button"
@@ -683,7 +544,7 @@ export function StorefrontShell({
                 <span
                   className={`px-2.5 py-1 rounded-full transition-colors ${
                     locale === 'bn'
-                      ? 'bg-[#1B4332] text-[#FAF9F5] font-semibold'
+                      ? 'bg-[var(--store-accent)] text-[#FAF9F5] font-semibold'
                       : 'text-[#5A655D] hover:text-[#162119]'
                   }`}
                 >
@@ -691,7 +552,7 @@ export function StorefrontShell({
                 <span
                   className={`px-2.5 py-1 rounded-full transition-colors ${
                     locale === 'en'
-                      ? 'bg-[#1B4332] text-[#FAF9F5] font-semibold'
+                      ? 'bg-[var(--store-accent)] text-[#FAF9F5] font-semibold'
                       : 'text-[#5A655D] hover:text-[#162119]'
                   }`}
                 >
@@ -701,20 +562,20 @@ export function StorefrontShell({
               {/* Admin Dashboard Portal Link */}
               <Link
                 href="/admin"
-                className="hidden sm:inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-medium border border-[#E4E2DC] rounded-full bg-[#F2EFE9] text-[#162119] hover:border-[#1B4332] hover:bg-white transition-colors"
+                className="hidden 2xl:inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-medium border border-[#E4E2DC] rounded-full bg-[#F2EFE9] text-[#162119] hover:border-[var(--store-accent)] hover:bg-white transition-colors"
                 title={dict.common.adminPanel}
               >
-                <LayoutDashboard className="w-3.5 h-3.5 text-[#1B4332]" aria-hidden="true" />
+                <LayoutDashboard className="w-3.5 h-3.5 text-[var(--store-accent)]" aria-hidden="true" />
                 <span>{dict.common.adminPanel}</span>
               </Link>
 
               {/* User Profile / Account Shortcut Button */}
               <Link
                 href="/account"
-                className="hidden sm:inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-semibold border border-[#E4E2DC] rounded-full bg-[#F2EFE9] text-[#162119] hover:border-[#1B4332] hover:bg-white transition-colors"
+                className="hidden sm:inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-semibold border border-[#E4E2DC] rounded-full bg-[#F2EFE9] text-[#162119] hover:border-[var(--store-accent)] hover:bg-white transition-colors"
                 title={dict.common.account}
               >
-                <User className="w-3.5 h-3.5 text-[#1B4332]" aria-hidden="true" />
+                <User className="w-3.5 h-3.5 text-[var(--store-accent)]" aria-hidden="true" />
                 <span>{locale === 'bn' ? 'প্রোফাইল' : 'Profile'}</span>
               </Link>
 
@@ -722,12 +583,12 @@ export function StorefrontShell({
               <Link
                 href="/account"
                 aria-label={dict.common.wishlist}
-                className="relative w-9 h-9 hidden sm:inline-flex items-center justify-center rounded-full border border-[#E4E2DC] bg-[#F2EFE9] text-[#162119] hover:border-[#1B4332] hover:bg-white transition-colors"
+                className="relative w-9 h-9 hidden sm:inline-flex items-center justify-center rounded-full border border-[#E4E2DC] bg-[#F2EFE9] text-[#162119] hover:border-[var(--store-accent)] hover:bg-white transition-colors"
                 title={dict.common.wishlist}
               >
-                <Heart className="w-4 h-4 text-[#1B4332]" aria-hidden="true" />
+                <Heart className="w-4 h-4 text-[var(--store-accent)]" aria-hidden="true" />
                 {wishlistCount > 0 && (
-                  <span className="absolute -top-1 -right-1 px-1.5 py-0.2 text-[10px] font-bold bg-[#1B4332] text-[#FAF9F5] rounded-full tabular-nums">
+                  <span className="absolute -top-1 -right-1 px-1.5 py-0.2 text-[10px] font-bold bg-[var(--store-accent)] text-[#FAF9F5] rounded-full tabular-nums">
                     {formatLocaleNumber(wishlistCount, locale)}
                   </span>
                 )}
@@ -738,11 +599,11 @@ export function StorefrontShell({
                 type="button"
                 onClick={() => setCartOpen(true)}
                 aria-label={dict.common.cart}
-                className="inline-flex items-center gap-2 h-9 px-3.5 rounded-full bg-[#1B4332] text-[#FAF9F5] hover:bg-[#143325] font-semibold text-xs tabular-nums cursor-pointer active:scale-95 transition-all"
+                className="inline-flex items-center gap-2 h-9 px-3.5 rounded-full bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 font-semibold text-xs tabular-nums cursor-pointer active:scale-95 transition-all"
               >
                 <ShoppingBag className="w-4 h-4" aria-hidden="true" />
                 <span className="hidden sm:inline">{dict.common.cart}</span>
-                <span className="px-1.5 py-0.5 text-[11px] rounded-full bg-[#FAF9F5] text-[#1B4332] font-bold">
+                <span className="px-1.5 py-0.5 text-[11px] rounded-full bg-[#FAF9F5] text-[var(--store-accent)] font-bold">
                   {formatLocaleNumber(totalCartCount, locale)}
                 </span>
               </button>
@@ -752,7 +613,7 @@ export function StorefrontShell({
           {/* Mobile Search Bar (< 640px) */}
           <div
             ref={mobileSearchContainerRef}
-            className="sm:hidden pt-0.5 relative"
+            className="lg:hidden pt-0.5 relative"
           >
             <div className="relative w-full">
               <Search
@@ -774,7 +635,7 @@ export function StorefrontShell({
                     : 'Search products or categories...'
                 }
                 aria-label={dict.common.searchPlaceholder}
-                className="w-full min-h-[42px] pl-10 pr-10 py-2 text-xs bg-[#F2EFE9] text-[#162119] border border-[#E4E2DC] rounded-full placeholder:text-[#5A655D] focus:bg-white focus:border-[#1B4332] focus:outline-none"
+                className="w-full min-h-[42px] pl-10 pr-10 py-2 text-xs bg-[#F2EFE9] text-[#162119] border border-[#E4E2DC] rounded-full placeholder:text-[#5A655D] focus:bg-white focus:border-[var(--store-accent)] focus:outline-none"
               />
               {searchQuery && (
                 <button
@@ -856,111 +717,15 @@ export function StorefrontShell({
       {/* 3. Main Content */}
       <main className="flex-1">{children}</main>
 
-      {/* 4. Editorial Linen Footer */}
-      <footer className="border-t border-[#E4E2DC] bg-[#F2EFE9] mt-20">
-        <div className="max-w-7xl mx-auto px-4 py-12 sm:py-16 grid grid-cols-1 md:grid-cols-12 gap-10">
-          {/* Column 1: Brand Provenance Story (5 cols) */}
-          <div className="md:col-span-5 space-y-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1B4332] text-[#FAF9F5] flex items-center justify-center font-bold text-sm">
-                <LocalizedText source={"প"} area="storefront" />{" "}</div>
-              <h2 className="text-lg font-bold text-[#162119]">{brandName}</h2>
-            </div>
-            <p className="text-xs sm:text-sm text-[#5A655D] leading-relaxed max-w-sm">
-              {locale === 'bn'
-                ? siteSettings.taglineBn
-                : siteSettings.taglineEn}
-            </p>
-            <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-[#162119]">
-              <span className="font-semibold tabular-nums">
-                {locale === 'bn' ? 'হেল্পলাইন:' : 'Helpline:'} {siteSettings.supportPhone}
-              </span>
-              <span aria-hidden="true" className="text-[#5A655D]">·</span>
-              <span className="text-[#5A655D]">
-                {locale === 'bn' ? 'সকাল ৯টা – রাত ১০টা' : '9 AM – 10 PM Daily'}
-              </span>
-            </div>
-          </div>
-
-          {/* Column 2: Quick Navigation (3 cols) */}
-          <div className="md:col-span-3 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#162119]">
-              {locale === 'bn' ? 'গ্রাহক সেবা ও নেভিগেশন' : 'Customer Care'}
-            </h3>
-            <ul className="space-y-2 text-xs text-[#5A655D]">
-              <li>
-                <Link href="/shop" className="hover:text-[#1B4332] hover:underline transition-colors">
-                  {locale === 'bn' ? 'সকল পণ্য (Shop)' : 'All Products (Shop)'}
-                </Link>
-              </li>
-              <li>
-                <Link href="/search" className="hover:text-[#1B4332] hover:underline transition-colors">
-                  {locale === 'bn' ? 'উন্নত পণ্য অনুসন্ধান' : 'Product Search'}
-                </Link>
-              </li>
-              <li>
-                <Link href="/checkout" className="hover:text-[#1B4332] hover:underline transition-colors">
-                  {dict.cart.proceedToCheckout}
-                </Link>
-              </li>
-              <li>
-                <Link href="/account" className="hover:text-[#1B4332] hover:underline transition-colors">
-                  {dict.common.account} / {dict.common.wishlist}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/order-tracking/ORD-261106-0001"
-                  className="hover:text-[#1B4332] hover:underline transition-colors"
-                >
-                  {locale === 'bn' ? 'লাইভ অর্ডার ট্র্যাকিং' : 'Live Order Tracking'}
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin" className="hover:text-[#1B4332] hover:underline transition-colors">
-                  {dict.common.adminPanel}
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 3: Legal & Policies (4 cols) */}
-          <div className="md:col-span-4 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#162119]">
-              {locale === 'bn' ? 'নীতিমালা ও স্বচ্ছতা' : 'Policies & Transparency'}
-            </h3>
-            <ul className="space-y-2 text-xs text-[#5A655D]">
-              {Object.entries(siteSettings.legalPages).map(([slug, page]) => (
-                <li key={slug}>
-                  <Link
-                    href={`/legal/${slug}`}
-                    className="text-[#162119] font-medium hover:text-[#1B4332] hover:underline transition-colors"
-                  >
-                    {locale === 'bn' ? page.titleBn : page.titleEn}
-                  </Link>
-                  <p className="text-[11px] text-[#5A655D] line-clamp-1 mt-0.5">
-                    {locale === 'bn' ? page.contentBn : page.contentEn}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </div>
+      <footer className="border-t border-[#E4E2DC] bg-[#F2EFE9] mt-16 sm:mt-24">
+        <div className="max-w-7xl mx-auto px-5 py-12 sm:py-16 grid grid-cols-1 md:grid-cols-12 gap-10">
+          <div className="md:col-span-5 space-y-5"><Link href="/" aria-label={brandName}><BrandMark settings={siteSettings} compact /></Link><p className="text-sm text-[#5A655D] leading-7 max-w-sm whitespace-pre-line">{text(config.footerTextBn, config.footerTextEn)}</p><div className="flex flex-col gap-2 text-sm">{siteSettings.supportPhone && <a href={`tel:${siteSettings.supportPhone}`}>{siteSettings.supportPhone}</a>}{siteSettings.supportEmail && <a href={`mailto:${siteSettings.supportEmail}`}>{siteSettings.supportEmail}</a>}<p className="text-xs text-[#5A655D]">{text(siteSettings.aboutContactPage?.helplineHoursBn ?? '', siteSettings.aboutContactPage?.helplineHoursEn ?? '')}</p></div><div className="flex flex-wrap gap-3 text-xs">{config.socialLinks.filter(link => link.enabled).map(link => <a key={link.id} href={link.href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{text(link.labelBn, link.labelEn)}</a>)}</div></div>
+          <div className="md:col-span-3"><h2 className="text-xs font-semibold uppercase tracking-widest mb-5">{text('সাথে থাকুন', 'Explore')}</h2><ul className="space-y-3 text-sm text-[#5A655D]">{config.footerLinks.filter(link => link.enabled).map(link => <li key={link.id}><Link className="hover:underline underline-offset-4" href={link.href}>{text(link.labelBn, link.labelEn)}</Link></li>)}</ul></div>
+          <div className="md:col-span-4"><h2 className="text-xs font-semibold uppercase tracking-widest mb-5">{text('নীতিমালা', 'Useful information')}</h2><ul className="space-y-3 text-sm text-[#5A655D]">{Object.entries(siteSettings.legalPages).map(([slug, page]) => <li key={slug}><Link href={`/legal/${slug}`} className="hover:underline underline-offset-4">{text(page.titleBn, page.titleEn)}</Link></li>)}</ul></div>
         </div>
-
-        {/* Quiet Copyright Bar */}
-        <div className="border-t border-[#E4E2DC] py-4 px-4 text-xs text-[#5A655D]">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>
-              © {new Date().getFullYear()} {brandName} — {locale === 'bn' ? 'সর্বস্বত্ব সংরক্ষিত।' : 'All rights reserved.'}
-            </span>
-            <span>
-              {locale === 'bn'
-                ? 'ক্যাশ অন ডেলিভারি (COD) · ম্যানুয়াল বিকাশ ভেরিফিকেশন · ৬৪ জেলা কুরিয়ার'
-                : 'Cash on Delivery (COD) · Manual bKash Verification · 64-District Courier'}
-            </span>
-          </div>
-        </div>
+        <div className="border-t border-[#E4E2DC] px-5 py-5"><div className="max-w-7xl mx-auto flex flex-wrap justify-between gap-3 text-xs text-[#5A655D]"><span>{text(config.copyrightBn, config.copyrightEn).replaceAll('{year}', String(new Date().getFullYear())).replaceAll('{brand}', brandName)}</span><span>{text(config.footerNoteBn, config.footerNoteEn)}</span></div></div>
       </footer>
+      {config.showWhatsApp && siteSettings.whatsappNumber && <a href={`https://wa.me/${siteSettings.whatsappNumber}`} target="_blank" rel="noopener noreferrer" aria-label={text('হোয়াটসঅ্যাপে যোগাযোগ', 'Contact on WhatsApp')} className="fixed bottom-24 md:bottom-6 right-5 z-30 rounded-full bg-[var(--store-accent)] text-white shadow-lg px-4 py-3 text-xs font-semibold">WhatsApp ↗</a>}
 
       {/* 5. Mobile Bottom Tab Bar (<= 768px) */}
       <nav
@@ -971,7 +736,7 @@ export function StorefrontShell({
           <Link
             href="/"
             onClick={() => onSelectCategory?.(null)}
-            className="flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-[#162119] hover:text-[#1B4332] active:scale-95 transition-transform"
+            className="flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-[#162119] hover:text-[var(--store-accent)] active:scale-95 transition-transform"
           >
             <Home className="w-4 h-4" aria-hidden="true" />
             <span>{dict.common.home}</span>
@@ -993,7 +758,7 @@ export function StorefrontShell({
             <div className="relative">
               <ShoppingBag className="w-4 h-4" aria-hidden="true" />
               {totalCartCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 px-1 text-[10px] font-bold bg-[#1B4332] text-[#FAF9F5] rounded-full tabular-nums">
+                <span className="absolute -top-1.5 -right-2 px-1 text-[10px] font-bold bg-[var(--store-accent)] text-[#FAF9F5] rounded-full tabular-nums">
                   {formatLocaleNumber(totalCartCount, locale)}
                 </span>
               )}
@@ -1032,7 +797,7 @@ export function StorefrontShell({
               >
                 <button
                   type="button"
-                  className="w-full min-h-[46px] px-5 py-3 rounded-xl bg-[#1B4332] text-[#FAF9F5] hover:bg-[#143325] text-sm font-semibold transition-colors cursor-pointer"
+                  className="w-full min-h-[46px] px-5 py-3 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 text-sm font-semibold transition-colors cursor-pointer"
                 >
                   {dict.cart.proceedToCheckout}
                 </button>
@@ -1066,7 +831,7 @@ export function StorefrontShell({
             </div>
             <div className="w-full h-2 bg-[#FAF9F5] border border-[#E4E2DC] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#1B4332] transition-all duration-200"
+                className="h-full bg-[var(--store-accent)] transition-all duration-200"
                 style={{ width: `${freeDeliveryProgress.progressPercent}%` }}
               />
             </div>
@@ -1186,7 +951,7 @@ export function StorefrontShell({
           <Link
             href="/order-tracking/ORD-261106-0001"
             onClick={() => setIsMenuOpen(false)}
-            className="flex items-center justify-between p-3.5 rounded-xl bg-[#1B4332] text-[#FAF9F5] active:scale-98 transition-transform cursor-pointer"
+            className="flex items-center justify-between p-3.5 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] active:scale-98 transition-transform cursor-pointer"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-[#FAF9F5]/15 flex items-center justify-center text-[#FAF9F5] shrink-0">
@@ -1212,74 +977,7 @@ export function StorefrontShell({
               {locale === 'bn' ? 'প্রধান পেজসমূহ' : 'Main Pages'}
             </p>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Link
-                href="/"
-                onClick={() => {
-                  onSelectCategory?.(null);
-                  setIsMenuOpen(false);
-                }}
-                className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#FAF9F5] hover:bg-[#F2EFE9] border border-[#E4E2DC] text-xs font-semibold text-[#162119] transition-all"
-              >
-                <Home className="w-4 h-4 text-[#1B4332]" aria-hidden="true" />
-                <span>{dict.common.home}</span>
-              </Link>
-
-              <Link
-                href="/categories"
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#FAF9F5] hover:bg-[#F2EFE9] border border-[#E4E2DC] text-xs font-semibold text-[#162119] transition-all"
-              >
-                <Grid className="w-4 h-4 text-[#1B4332]" aria-hidden="true" />
-                <span>{locale === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories'}</span>
-              </Link>
-
-              <Link
-                href="/contact"
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#FAF9F5] hover:bg-[#F2EFE9] border border-[#E4E2DC] text-xs font-semibold text-[#162119] transition-all"
-              >
-                <PhoneCall className="w-4 h-4 text-[#1B4332]" aria-hidden="true" />
-                <span>{locale === 'bn' ? 'যোগাযোগ ও পরিচিতি' : 'Contact & About'}</span>
-              </Link>
-
-              <Link
-                href="/checkout"
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#FAF9F5] hover:bg-[#F2EFE9] border border-[#E4E2DC] text-xs font-semibold text-[#162119] transition-all"
-              >
-                <ShoppingBag className="w-4 h-4 text-[#1B4332]" aria-hidden="true" />
-                <span>{dict.cart.proceedToCheckout}</span>
-              </Link>
-
-              <Link
-                href="/account"
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF9F5] hover:bg-[#F2EFE9] border border-[#E4E2DC] text-xs font-semibold text-[#162119] transition-all"
-              >
-                <span className="flex items-center gap-2.5">
-                  <User className="w-4 h-4 text-[#1B4332]" aria-hidden="true" />
-                  <span>{dict.common.account}</span>
-                </span>
-                {wishlistCount > 0 && (
-                  <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-[#E8F0EC] text-[#1B4332] tabular-nums">
-                    {formatLocaleNumber(wishlistCount, locale)}
-                  </span>
-                )}
-              </Link>
-
-              <Link
-                href="/admin"
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF9F5] hover:bg-[#F2EFE9] border border-[#E4E2DC] text-xs font-semibold text-[#162119] transition-all col-span-2"
-              >
-                <span className="flex items-center gap-2.5">
-                  <LayoutDashboard className="w-4 h-4 text-[#1B4332]" aria-hidden="true" />
-                  <span>{dict.common.adminPanel}</span>
-                </span>
-                <ChevronRight className="w-4 h-4 text-[#5A655D]" aria-hidden="true" />
-              </Link>
-            </div>
+            <div className="grid grid-cols-2 gap-2">{config.navigation.filter(link => link.enabled).map(link => <Link key={link.id} href={link.href} onClick={() => setIsMenuOpen(false)} className="p-3 rounded-xl border border-[#E4E2DC] text-sm font-medium hover:bg-[#F2EFE9]">{text(link.labelBn, link.labelEn)}</Link>)}</div>
           </div>
 
           {/* Touch-Friendly Category Accordion */}
@@ -1310,7 +1008,7 @@ export function StorefrontShell({
                   }}
                   className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold text-left transition-all border cursor-pointer ${
                     !activeCategorySlug
-                      ? 'bg-[#1B4332] text-[#FAF9F5] border-[#1B4332]'
+                      ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)]'
                       : 'bg-[#FAF9F5] text-[#162119] border-[#E4E2DC] hover:bg-[#F2EFE9]'
                   }`}
                 >
@@ -1330,7 +1028,7 @@ export function StorefrontShell({
                       }}
                       className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold text-left transition-all border cursor-pointer ${
                         isSelected
-                          ? 'bg-[#1B4332] text-[#FAF9F5] border-[#1B4332]'
+                          ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)]'
                           : 'bg-[#FAF9F5] text-[#162119] border-[#E4E2DC] hover:bg-[#F2EFE9]'
                       }`}
                     >
@@ -1363,7 +1061,7 @@ export function StorefrontShell({
 
             <div className="p-3 border border-[#E4E2DC] rounded-xl bg-[#F2EFE9] flex items-center justify-between text-xs">
               <span className="text-[#5A655D] font-medium flex items-center gap-2">
-                <PhoneCall className="w-3.5 h-3.5 text-[#1B4332]" aria-hidden="true" />
+                <PhoneCall className="w-3.5 h-3.5 text-[var(--store-accent)]" aria-hidden="true" />
                 <span>{locale === 'bn' ? 'হেল্পলাইন:' : 'Helpline:'}</span>
               </span>
               <span className="font-bold text-[#162119] tabular-nums text-sm">

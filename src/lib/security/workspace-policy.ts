@@ -16,7 +16,7 @@ export const WORKSPACE_ACTIONS = {
   update_message_template: ['messaging', 'update'], preview_order_message: ['messaging', 'read'],
   toggle_automation_rule: ['automation', 'update'], simulate_automation_rule: ['automation', 'update'],
   trigger_sheets_sync: ['google_sync', 'update'], save_or_revoke_credential: ['settings_control_center', 'update'],
-  update_branding_thresholds: ['settings_control_center', 'update'], run_scheduled_job_now: ['settings_control_center', 'update'],
+  update_storefront_content: ['settings_control_center', 'update'], update_branding_thresholds: ['settings_control_center', 'update'], run_scheduled_job_now: ['settings_control_center', 'update'],
   sync_courier_tracking: ['couriers', 'update'], run_phase5_audit: ['settings_control_center', 'read'],
   inspect_role_sanitization: ['users_security', 'read'], run_consignment_lifecycle_dry_run: ['settings_control_center', 'read'],
   recover_abandoned_cart: ['orders', 'create'], record_cart_reminder: ['messaging', 'create'],

@@ -46,7 +46,7 @@ try {
     if (server.exitCode !== null) throw new Error('HTTP_TEST_SERVER_STOPPED');
     await new Promise(resolve => setTimeout(resolve, 200));
   }
-  for (const url of ['/api/orders', '/api/media', '/api/catalog/import', '/api/print/unknown']) {
+  for (const url of ['/api/admin/brand-media', '/api/orders', '/api/media', '/api/catalog/import', '/api/print/unknown']) {
     await check(url, 401, { method: 'POST', headers: { origin: base, 'content-type': 'application/json' }, body: '{}' });
   }
   await check('/api/orders', 413, { method: 'POST', headers: { origin: base }, body: 'x'.repeat(70 * 1024) });
@@ -54,7 +54,23 @@ try {
     if (!JSON.parse(body).currentUser) throw new Error('AUTHENTICATED_WORKSPACE_MISSING');
   });
   await check('/api/vendor/overview', 403, { headers: { cookie: `bg_admin_session=${session.token}` } });
-  for (const url of ['/vendor', '/shop', '/admin', '/account', '/sitemap.xml', '/manifest.webmanifest', '/api/storefront']) {
+  const workspaceResponse = await fetch(base + '/api/admin/workspace', { headers: { cookie: `bg_admin_session=${session.token}` } });
+  const workspaceData = await workspaceResponse.json();
+  const original = workspaceData.siteSettings;
+  const storefrontModule = await import(path.join(workspace, 'src/lib/storefront/storefront-config.ts'));
+  const content = { ...original, brandNameBn: 'পরীক্ষার স্টোর', brandNameEn: 'Review Store', maintenanceMessageEn: 'Back soon',
+    promoCampaign: { ...original.promoCampaign, enabled: false },
+    storefront: { ...storefrontModule.getStorefrontConfig(original), logoUrl: '/assets/product-placeholder.svg', seoTitleBn: 'পরীক্ষার শিরোনাম', footerTextEn: 'Managed footer', navigation: [{ id: 'managed', labelBn: 'নিয়ন্ত্রিত মেনু', labelEn: 'Managed menu', href: '/shop', enabled: true }] },
+    heroBanners: original.heroBanners.map(hero => ({ ...hero, titleBn: 'পরিবর্তিত ব্যানার' })),
+    homepageSections: original.homepageSections.map(section => ({ ...section, enabled: section.type !== 'hero' })),
+  };
+  const options = { method: 'POST', headers: { cookie: `bg_admin_session=${session.token}`, origin: base, 'x-csrf-token': session.csrfToken, 'content-type': 'application/json' } };
+  await check('/api/admin/workspace', 403, { ...options, headers: { ...options.headers, 'x-csrf-token': 'invalid' }, body: JSON.stringify({ operation: 'update_storefront_content', content }) });
+  await check('/api/admin/workspace', 200, { ...options, body: JSON.stringify({ operation: 'update_storefront_content', content }) }, body => { if (!JSON.parse(body).success) throw new Error('CONTENT_SAVE_FAILED'); });
+  await check('/', 200, undefined, body => { if (!body.includes('পরীক্ষার শিরোনাম') || !body.includes('পরীক্ষার স্টোর') || !body.includes('নিয়ন্ত্রিত মেনু')) throw new Error('MANAGED_BRANDING_NOT_RENDERED'); if (body.includes('<h1 class=') && body.includes('পরিবর্তিত ব্যানার</h1>')) throw new Error('DISABLED_HERO_RENDERED'); });
+  await check('/manifest.webmanifest', 200, undefined, body => { if (JSON.parse(body).short_name !== 'Review Store') throw new Error('MANIFEST_BRANDING_STALE'); });
+  await check('/admin', 200, undefined, body => { if (!body.includes('Review Store')) throw new Error('ADMIN_BRANDING_STALE'); });
+  for (const url of ['/vendor', '/categories', '/shop', '/admin', '/account', '/sitemap.xml', '/manifest.webmanifest', '/api/storefront']) {
     await check(url, 200, undefined, body => {
       if (url === '/api/storefront' && /"supplierCostPoisha"|"platformMarginPoisha"/.test(body)) throw new Error('PUBLIC_FINANCE_LEAK');
     });

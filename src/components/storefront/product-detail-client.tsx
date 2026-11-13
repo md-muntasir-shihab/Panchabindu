@@ -210,7 +210,7 @@ export function ProductDetailClient({
           aria-label={uiText("Breadcrumb", locale)}
           className="flex flex-wrap items-center gap-1.5 text-xs text-[#5A655D]"
         >
-          <Link href="/" className="hover:text-[#1B4332] hover:underline">
+          <Link href="/" className="hover:text-[var(--store-accent)] hover:underline">
             {dict.common.home}
           </Link>
           <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -233,6 +233,7 @@ export function ProductDetailClient({
           <div className="lg:col-span-6 space-y-3.5">
             <div className="relative aspect-[4/5] w-full border border-[#E4E2DC] rounded-2xl overflow-hidden bg-[#F2EFE9]">
               <Image
+                  unoptimized
                 src={activeImageUrl}
                 alt={displayName}
                 fill
@@ -253,7 +254,7 @@ export function ProductDetailClient({
                     )}
                   </span>
                 ) : product.isFreeDelivery ? (
-                  <span className="px-3 py-1 text-xs font-semibold bg-[#FAF9F5]/95 backdrop-blur-sm text-[#1B4332] rounded-md border border-[#E4E2DC]">
+                  <span className="px-3 py-1 text-xs font-semibold bg-[#FAF9F5]/95 backdrop-blur-sm text-[var(--store-accent)] rounded-md border border-[#E4E2DC]">
                     {dict.common.freeDelivery}
                   </span>
                 ) : null}
@@ -270,11 +271,12 @@ export function ProductDetailClient({
                     aria-label={`View image ${idx + 1}`}
                     className={`relative w-20 h-24 rounded-xl border overflow-hidden shrink-0 cursor-pointer transition-all ${
                       selectedImageIdx === idx
-                        ? 'border-[#1B4332] ring-2 ring-[#1B4332]/20'
+                        ? 'border-[var(--store-accent)] ring-2 ring-[var(--store-accent)]/20'
                         : 'border-[#E4E2DC] opacity-75 hover:opacity-100'
                     }`}
                   >
                     <Image
+                  unoptimized
                       src={imgUrl}
                       alt={`${displayName} thumbnail ${idx + 1}`}
                       fill
@@ -296,7 +298,7 @@ export function ProductDetailClient({
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1 font-semibold text-[#162119]">
                     <Star
-                      className="w-4 h-4 fill-[#1B4332] text-[#1B4332]"
+                      className="w-4 h-4 fill-[var(--store-accent)] text-[var(--store-accent)]"
                       aria-hidden="true"
                     />
                     <span className="tabular-nums">
@@ -375,10 +377,10 @@ export function ProductDetailClient({
                       }}
                       className={`min-h-[44px] px-4 py-2 text-xs sm:text-sm font-medium rounded-xl border transition-all cursor-pointer flex items-center gap-2 ${
                         isSelected
-                          ? 'bg-[#1B4332] text-[#FAF9F5] border-[#1B4332] font-semibold'
+                          ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)] font-semibold'
                           : vOut
                           ? 'bg-[#F2EFE9] text-[#5A655D] border-[#E4E2DC] line-through'
-                          : 'bg-[#FAF9F5] text-[#162119] border-[#E4E2DC] hover:border-[#1B4332]'
+                          : 'bg-[#FAF9F5] text-[#162119] border-[#E4E2DC] hover:border-[var(--store-accent)]'
                       }`}
                     >
                       <span>{locale === 'bn' ? v.titleBn : v.titleEn}</span>
@@ -431,11 +433,11 @@ export function ProductDetailClient({
                 <button
                   type="button"
                   onClick={() => toggleWishlist(product.productId)}
-                  className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 text-xs sm:text-sm font-medium rounded-xl border border-[#E4E2DC] bg-[#FAF9F5] text-[#162119] hover:border-[#1B4332] transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 text-xs sm:text-sm font-medium rounded-xl border border-[#E4E2DC] bg-[#FAF9F5] text-[#162119] hover:border-[var(--store-accent)] transition-colors cursor-pointer"
                 >
                   <Heart
                     className={`w-4 h-4 ${
-                      isWishlisted ? 'fill-[#1B4332] text-[#1B4332]' : 'text-[#162119]'
+                      isWishlisted ? 'fill-[var(--store-accent)] text-[var(--store-accent)]' : 'text-[#162119]'
                     }`}
                     aria-hidden="true"
                   />
@@ -451,7 +453,7 @@ export function ProductDetailClient({
                       window.setTimeout(() => setCopiedLink(false), 1500);
                     }
                   }}
-                  className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 text-xs sm:text-sm font-medium rounded-xl border border-[#E4E2DC] bg-[#FAF9F5] text-[#162119] hover:border-[#1B4332] transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 text-xs sm:text-sm font-medium rounded-xl border border-[#E4E2DC] bg-[#FAF9F5] text-[#162119] hover:border-[var(--store-accent)] transition-colors cursor-pointer"
                 >
                   {copiedLink ? (
                     <Check className="w-4 h-4 text-[#15803D]" aria-hidden="true" />
@@ -473,7 +475,7 @@ export function ProductDetailClient({
               {isOutOfStock ? (
                 <div className="p-4 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-2.5">
                   <div className="flex items-center gap-2 text-xs font-semibold text-[#162119]">
-                    <BellRing className="w-4 h-4 text-[#1B4332]" aria-hidden="true" />
+                    <BellRing className="w-4 h-4 text-[var(--store-accent)]" aria-hidden="true" />
                     <span>
                       {locale === 'bn'
                         ? 'পণ্যটি স্টকে এলে এসএমএস পেতে নম্বর দিন:'
@@ -516,7 +518,7 @@ export function ProductDetailClient({
                     type="button"
                     disabled={isOutOfStock}
                     onClick={() => handleAddToCart(false)}
-                    className="min-h-[48px] px-5 py-3 rounded-xl border border-[#1B4332] bg-[#FAF9F5] text-[#1B4332] hover:bg-[#E8F0EC] text-sm font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    className="min-h-[48px] px-5 py-3 rounded-xl border border-[var(--store-accent)] bg-[#FAF9F5] text-[var(--store-accent)] hover:bg-[#E8F0EC] text-sm font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
                   >
                     {justAdded ? (
                       <Check className="w-4 h-4" aria-hidden="true" />
@@ -536,7 +538,7 @@ export function ProductDetailClient({
                     type="button"
                     disabled={isOutOfStock}
                     onClick={() => handleAddToCart(true)}
-                    className="min-h-[48px] px-5 py-3 rounded-xl bg-[#1B4332] text-[#FAF9F5] hover:bg-[#143325] text-sm font-semibold flex items-center justify-center transition-colors cursor-pointer"
+                    className="min-h-[48px] px-5 py-3 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 text-sm font-semibold flex items-center justify-center transition-colors cursor-pointer"
                   >
                     {dict.common.buyNow}
                   </button>
@@ -548,7 +550,7 @@ export function ProductDetailClient({
             <div className="p-5 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#162119]">
-                  <MapPin className="w-4 h-4 text-[#1B4332]" aria-hidden="true" />
+                  <MapPin className="w-4 h-4 text-[var(--store-accent)]" aria-hidden="true" />
                   <span>
                     {locale === 'bn'
                       ? 'জেলাভিত্তিক ডেলিভারি চার্জ ও সময় হিসাব'
@@ -581,13 +583,8 @@ export function ProductDetailClient({
                         : 'Courier Home Delivery'}
                     </p>
                     <p className="text-[#5A655D] mt-0.5">
-                      {districtRates.isInsideDhaka
-                        ? locale === 'bn'
-                          ? '২৪-৪৮ ঘণ্টায় ডেলিভারি'
-                          : '24-48 Hours'
-                        : locale === 'bn'
-                        ? `আনুমানিক ${toBanglaDigits(leadTimeDays)}-${toBanglaDigits(leadTimeDays + 1)} কার্যদিবস`
-                        : `Est. ${leadTimeDays}-${leadTimeDays + 1} Days`}
+                      {locale === 'bn' ? `আনুমানিক ${toBanglaDigits(leadTimeDays)}-${toBanglaDigits(leadTimeDays + 1)} কার্যদিবস` : `Est. ${leadTimeDays}-${leadTimeDays + 1} business days`}
+
                     </p>
                   </div>
                   <span className="text-sm font-bold text-[#162119] tabular-nums">
@@ -635,33 +632,14 @@ export function ProductDetailClient({
                     </span>
                     <p className="mt-0.5 text-[11px] leading-relaxed">
                       {locale === 'bn'
-                        ? 'এই পণ্যটির অর্ডার নিশ্চিত করতে কুরিয়ার ডেলিভারি চার্জ অগ্রিম (বিকাশ / নগদ / রকেট) পরিশোধ করতে হবে। অবশিষ্ট পণ্যের মূল্য ডেলিভারির সময় ক্যাশ অন ডেলিভারি (COD)-তে প্রদেয়।'
-                        : 'To confirm the order for this artisan product, courier delivery charge must be paid in advance via manual bKash/Nagad/Rocket. Product price will be paid upon delivery (COD).'}
+                        ? 'এই পণ্যটির অর্ডার নিশ্চিত করতে কুরিয়ার ডেলিভারি চার্জ অগ্রিম ম্যানুয়াল বিকাশে পরিশোধ করতে হবে। অবশিষ্ট পণ্যের মূল্য ডেলিভারির সময় ক্যাশ অন ডেলিভারি (COD)-তে প্রদেয়।'
+                        : 'To confirm the order for this artisan product, courier delivery charge must be paid in advance via manual bKash. Product price will be paid upon delivery (COD).'}
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-[#5A655D]">
-                <span className="inline-flex items-center gap-1.5">
-                  <Truck className="w-3.5 h-3.5 text-[#1B4332]" aria-hidden="true" />
-                  {dict.common.codAvailable}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <RotateCcw
-                    className="w-3.5 h-3.5 text-[#1B4332]"
-                    aria-hidden="true"
-                  />
-                  {locale === 'bn' ? '৭ দিনের সহজ রিটার্ন' : '7-Day Easy Return'}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <ShieldCheck
-                    className="w-3.5 h-3.5 text-[#1B4332]"
-                    aria-hidden="true"
-                  />
-                  {locale === 'bn' ? '১০০% কিউসি ভেরিফাইড' : '100% QC Verified'}
-                </span>
-              </div>
+              <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-[#5A655D]">{siteSettings.trustBadges.map(badge => <span key={badge.id} className="inline-flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-[var(--store-accent)]" />{locale === 'bn' ? badge.labelBn : badge.labelEn}</span>)}</div>
             </div>
 
             {/* Product Specifications */}
@@ -747,11 +725,11 @@ export function ProductDetailClient({
                         </>
                       )}
                     </div>
-                    <div className="flex items-center gap-0.5 text-[#1B4332]">
+                    <div className="flex items-center gap-0.5 text-[var(--store-accent)]">
                       {Array.from({ length: rev.rating }).map((_, idx) => (
                         <Star
                           key={idx}
-                          className="w-3.5 h-3.5 fill-[#1B4332] text-[#1B4332]"
+                          className="w-3.5 h-3.5 fill-[var(--store-accent)] text-[var(--store-accent)]"
                           aria-hidden="true"
                         />
                       ))}
@@ -860,7 +838,7 @@ export function ProductDetailClient({
                   onClick={() => setRevRating(star)}
                   className={`min-h-[40px] px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer ${
                     revRating >= star
-                      ? 'bg-[#1B4332] text-[#FAF9F5] border-[#1B4332]'
+                      ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)]'
                       : 'bg-[#FAF9F5] text-[#162119] border-[#E4E2DC]'
                   }`}
                 >
@@ -921,14 +899,14 @@ export function ProductDetailClient({
             <button
               type="button"
               onClick={() => handleAddToCart(false)}
-              className="min-h-[42px] px-3.5 py-2 rounded-lg border border-[#1B4332] bg-[#FAF9F5] text-[#1B4332] text-xs font-semibold cursor-pointer"
+              className="min-h-[42px] px-3.5 py-2 rounded-lg border border-[var(--store-accent)] bg-[#FAF9F5] text-[var(--store-accent)] text-xs font-semibold cursor-pointer"
             >
               {dict.common.addToCart}
             </button>
             <button
               type="button"
               onClick={() => handleAddToCart(true)}
-              className="min-h-[42px] px-4 py-2 rounded-lg bg-[#1B4332] text-[#FAF9F5] text-xs font-semibold cursor-pointer"
+              className="min-h-[42px] px-4 py-2 rounded-lg bg-[var(--store-accent)] text-[#FAF9F5] text-xs font-semibold cursor-pointer"
             >
               {dict.common.buyNow}
             </button>

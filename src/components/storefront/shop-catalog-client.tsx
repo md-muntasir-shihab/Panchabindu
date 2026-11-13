@@ -1,4 +1,5 @@
 'use client';
+import { getStorefrontConfig } from '@/src/lib/storefront/storefront-config';
 import { localizedField } from '@/src/lib/i18n/ui-text';
 import { uiText } from '@/src/lib/i18n/ui-text';
 
@@ -169,7 +170,7 @@ export function ShopCatalogClient({
         <button
           type="button"
           onClick={handleResetFilters}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1B4332] hover:underline cursor-pointer"
+          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--store-accent)] hover:underline cursor-pointer"
         >
           <RotateCcw className="w-3 h-3" aria-hidden="true" />
           {locale === 'bn' ? 'সব রিসেট' : 'Reset All'}
@@ -187,8 +188,8 @@ export function ShopCatalogClient({
             onClick={() => setSelectedCategorySlug(null)}
             className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               selectedCategorySlug === null
-                ? 'bg-[#1B4332] text-[#FAF9F5]'
-                : 'bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] hover:border-[#1B4332]'
+                ? 'bg-[var(--store-accent)] text-[#FAF9F5]'
+                : 'bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] hover:border-[var(--store-accent)]'
             }`}
           >
             <span>{locale === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories'}</span>
@@ -204,8 +205,8 @@ export function ShopCatalogClient({
                 onClick={() => setSelectedCategorySlug(cat.slug)}
                 className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-[#1B4332] text-[#FAF9F5]'
-                    : 'bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] hover:border-[#1B4332]'
+                    ? 'bg-[var(--store-accent)] text-[#FAF9F5]'
+                    : 'bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] hover:border-[var(--store-accent)]'
                 }`}
               >
                 <span className="truncate">
@@ -228,7 +229,7 @@ export function ShopCatalogClient({
             type="checkbox"
             checked={inStockOnly}
             onChange={(e) => setInStockOnly(e.target.checked)}
-            className="w-4 h-4 accent-[#1B4332]"
+            className="w-4 h-4 accent-[var(--store-accent)]"
           />
           <span className="font-medium text-[#162119]">
             {locale === 'bn'
@@ -244,7 +245,7 @@ export function ShopCatalogClient({
             type="checkbox"
             checked={freeDeliveryOnly}
             onChange={(e) => setFreeDeliveryOnly(e.target.checked)}
-            className="w-4 h-4 accent-[#1B4332]"
+            className="w-4 h-4 accent-[var(--store-accent)]"
           />
           <span className="font-medium text-[#162119]">
             {locale === 'bn'
@@ -263,7 +264,7 @@ export function ShopCatalogClient({
           <span className="font-bold text-[#162119]">
             {locale === 'bn' ? 'মূল্য সীমা (৳)' : 'Price Range (BDT)'}
           </span>
-          <span className="font-mono font-bold text-[#1B4332]">
+          <span className="font-mono font-bold text-[var(--store-accent)]">
             <LocalizedText source={"৳"} area="storefront" />{formatLocaleNumber(minPriceBdt, locale)} — ৳
             {formatLocaleNumber(maxPriceBdt, locale)}
           </span>
@@ -320,7 +321,7 @@ export function ShopCatalogClient({
           step={50}
           value={maxPriceBdt}
           onChange={(e) => setMaxPriceBdt(Number(e.target.value))}
-          className="w-full accent-[#1B4332]"
+          className="w-full accent-[var(--store-accent)]"
         />
       </div>
 
@@ -340,8 +341,8 @@ export function ShopCatalogClient({
                   onClick={() => toggleColor(colorVal)}
                   className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer ${
                     active
-                      ? 'bg-[#1B4332] text-[#FAF9F5] border-[#1B4332]'
-                      : 'bg-white text-[#162119] border-[#E4E2DC] hover:border-[#1B4332]'
+                      ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)]'
+                      : 'bg-white text-[#162119] border-[#E4E2DC] hover:border-[var(--store-accent)]'
                   }`}
                 >
                   {colorVal}
@@ -368,8 +369,8 @@ export function ShopCatalogClient({
                   onClick={() => toggleSize(sizeVal)}
                   className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer ${
                     active
-                      ? 'bg-[#1B4332] text-[#FAF9F5] border-[#1B4332]'
-                      : 'bg-white text-[#162119] border-[#E4E2DC] hover:border-[#1B4332]'
+                      ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)]'
+                      : 'bg-white text-[#162119] border-[#E4E2DC] hover:border-[var(--store-accent)]'
                   }`}
                 >
                   {sizeVal}
@@ -390,7 +391,7 @@ export function ShopCatalogClient({
             type="button"
             onClick={() => setShowBrandGapInfo((v) => !v)}
             aria-label="Brand Filter Data Model Info"
-            className="inline-flex items-center gap-1 text-[11px] text-[#1B4332] font-semibold cursor-pointer"
+            className="inline-flex items-center gap-1 text-[11px] text-[var(--store-accent)] font-semibold cursor-pointer"
           >
             <Info className="w-3.5 h-3.5" aria-hidden="true" />
             <span>ⓘ</span>
@@ -421,7 +422,7 @@ export function ShopCatalogClient({
           aria-label={uiText("Breadcrumb", locale)}
           className="flex flex-wrap items-center gap-1.5 text-xs text-[#5A655D]"
         >
-          <Link href="/" className="hover:text-[#1B4332] transition-colors">
+          <Link href="/" className="hover:text-[var(--store-accent)] transition-colors">
             {dict.common.home}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-[#5A655D]" />
@@ -435,7 +436,7 @@ export function ShopCatalogClient({
               onClick={() => setSelectedCategorySlug(null)}
               className={
                 activeCategoryObj
-                  ? 'hover:text-[#1B4332] transition-colors'
+                  ? 'hover:text-[var(--store-accent)] transition-colors'
                   : 'text-[#162119] font-semibold'
               }
             >
@@ -457,15 +458,15 @@ export function ShopCatalogClient({
         {/* 2. Shop / Search Hero Banner */}
         <div className="p-6 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1B4332] uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--store-accent)] uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
               {mode === 'search'
                 ? locale === 'bn'
                   ? 'ক্যাটালগ অনুসন্ধান ইঞ্জিন'
                   : 'Catalog Search Engine'
                 : locale === 'bn'
-                ? 'কিউসি-যাচাইকৃত কনসাইনমেন্ট কালেকশন'
-                : 'QC-Verified Consignment Collection'}
+                ? siteSettings.taglineBn
+                : siteSettings.taglineEn}
             </span>
             <h1 className="text-2xl sm:text-4xl font-bold text-[#162119] tracking-tight">
               {mode === 'search'
@@ -490,8 +491,8 @@ export function ShopCatalogClient({
                   ? activeCategoryObj.descriptionBn
                   : activeCategoryObj.descriptionEn
                 : locale === 'bn'
-                ? 'পঞ্চগড়ের নিবন্ধিত কারিগর ও তাঁতিদের হাতে তৈরি প্রতিটি পণ্য আমাদের ওয়্যারহাউসে কিউসি (QC) যাচাইকৃত।'
-                : 'Every handcrafted item is inspected and verified at our central consignment warehouse before dispatch.'}
+                ? getStorefrontConfig(siteSettings).collectionSubtitleBn
+                : getStorefrontConfig(siteSettings).collectionSubtitleEn}
             </p>
           </div>
 
@@ -512,7 +513,7 @@ export function ShopCatalogClient({
                     ? 'নাম, ক্যাটাগরি বা SKU দিয়ে খুঁজুন...'
                     : 'Search by name, category or SKU...'
                 }
-                className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#E4E2DC] bg-[#FAF9F5] text-xs text-[#162119] placeholder:text-[#5A655D] focus:outline-none focus:border-[#1B4332]"
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#E4E2DC] bg-[#FAF9F5] text-xs text-[#162119] placeholder:text-[#5A655D] focus:outline-none focus:border-[var(--store-accent)]"
               />
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -523,7 +524,7 @@ export function ShopCatalogClient({
                   onClick={() =>
                     setSearchQuery(locale === 'bn' ? kw.labelBn : kw.labelEn)
                   }
-                  className="px-2 py-0.5 rounded-full bg-[#FAF9F5] border border-[#E4E2DC] text-[10px] font-medium text-[#5A655D] hover:border-[#1B4332] hover:text-[#1B4332] cursor-pointer"
+                  className="px-2 py-0.5 rounded-full bg-[#FAF9F5] border border-[#E4E2DC] text-[10px] font-medium text-[#5A655D] hover:border-[var(--store-accent)] hover:text-[var(--store-accent)] cursor-pointer"
                 >
                   {locale === 'bn' ? kw.labelBn : kw.labelEn}
                 </button>
@@ -549,7 +550,7 @@ export function ShopCatalogClient({
                   onClick={() => setIsMobileFilterOpen(true)}
                   className="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[#E4E2DC] bg-[#FAF9F5] text-xs font-semibold text-[#162119] cursor-pointer"
                 >
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#1B4332]" />
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--store-accent)]" />
                   <span>
                     {locale === 'bn' ? 'ফিল্টার' : 'Filters'}
                     {queryResult.appliedFiltersCount > 0
@@ -584,7 +585,7 @@ export function ShopCatalogClient({
                   onChange={(e) =>
                     setSortBy(e.target.value as CatalogSortOption)
                   }
-                  className="h-9 px-3 rounded-lg border border-[#E4E2DC] bg-[#FAF9F5] text-xs font-semibold text-[#162119] focus:outline-none focus:border-[#1B4332]"
+                  className="h-9 px-3 rounded-lg border border-[#E4E2DC] bg-[#FAF9F5] text-xs font-semibold text-[#162119] focus:outline-none focus:border-[var(--store-accent)]"
                 >
                   <option value="popular">
                     {locale === 'bn' ? 'সর্বাধিক জনপ্রিয়' : 'Most Popular'}
@@ -613,7 +614,7 @@ export function ShopCatalogClient({
             {queryResult.appliedFiltersCount > 0 && (
               <div className="flex flex-wrap items-center gap-2">
                 {selectedCategorySlug && activeCategoryObj && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0EC] text-[#1B4332] text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0EC] text-[var(--store-accent)] text-xs font-semibold">
                     {locale === 'bn'
                       ? activeCategoryObj.nameBn
                       : activeCategoryObj.nameEn}
@@ -627,7 +628,7 @@ export function ShopCatalogClient({
                   </span>
                 )}
                 {inStockOnly && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0EC] text-[#1B4332] text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0EC] text-[var(--store-accent)] text-xs font-semibold">
                     {locale === 'bn' ? 'স্টকে আছে' : 'In Stock'}
                     <button
                       type="button"
@@ -639,7 +640,7 @@ export function ShopCatalogClient({
                   </span>
                 )}
                 {freeDeliveryOnly && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0EC] text-[#1B4332] text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0EC] text-[var(--store-accent)] text-xs font-semibold">
                     {locale === 'bn' ? 'ফ্রি ডেলিভারি' : 'Free Delivery'}
                     <button
                       type="button"
@@ -653,7 +654,7 @@ export function ShopCatalogClient({
                 {selectedColors.map((col) => (
                   <span
                     key={col}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0EC] text-[#1B4332] text-xs font-semibold"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0EC] text-[var(--store-accent)] text-xs font-semibold"
                   >
                     {col}
                     <button
@@ -668,7 +669,7 @@ export function ShopCatalogClient({
                 {selectedSizes.map((sz) => (
                   <span
                     key={sz}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0EC] text-[#1B4332] text-xs font-semibold"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0EC] text-[var(--store-accent)] text-xs font-semibold"
                   >
                     {sz}
                     <button
@@ -761,8 +762,8 @@ export function ShopCatalogClient({
                           onClick={() => setPage(pageNum)}
                           className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                             pageNum === queryResult.page
-                              ? 'bg-[#1B4332] text-[#FAF9F5]'
-                              : 'border border-[#E4E2DC] bg-[#FAF9F5] text-[#162119] hover:border-[#1B4332]'
+                              ? 'bg-[var(--store-accent)] text-[#FAF9F5]'
+                              : 'border border-[#E4E2DC] bg-[#FAF9F5] text-[#162119] hover:border-[var(--store-accent)]'
                           }`}
                         >
                           {formatLocaleNumber(pageNum, locale)}

@@ -1,3 +1,7 @@
+# Storefront design authorization — November 13, 2026
+
+The newest user instruction authorizes refining the storefront design and making its business content and branding controllable in Admin. This supersedes the historical no-redesign restriction for this work. Continue directly, preserve existing commerce/security behaviour, and add no code comments. Use the existing repository; do not deploy or run live provider operations.
+
 # Current authorization — November 13, 2026
 
 The user approved the audited backend edits and Bangla/English fixes. Implement and test the approved repository changes directly, without inventing execution phases or adding code comments. Historical phase gates below do not override this instruction. Production migration, deployment, real financial/provider operations and external account connections were not authorized.

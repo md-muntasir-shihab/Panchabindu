@@ -1,3 +1,4 @@
+import { getStoreMetadata } from '@/src/lib/storefront/store-metadata';
 import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/checkout/page.tsx
 // Server Component for Single-Page Accordion Checkout
@@ -8,11 +9,7 @@ import { CheckoutClient } from '@/src/components/storefront/checkout-client';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  robots: { index: false, follow: false },
-  title: 'চেকআউট | বঙ্গকনসাইন (BongoConsign)',
-  description: 'ক্যাশ অন ডেলিভারি এবং বিকাশ পেমেন্টের মাধ্যমে সহজেই অর্ডার সম্পন্ন করুন।',
-};
+export async function generateMetadata(): Promise<Metadata> { return getStoreMetadata('চেকআউট', true); }
 
 export default async function CheckoutPage() {
   const { siteSettings, categories } = await withRuntimePersistence(() => getPublicStorefrontData());

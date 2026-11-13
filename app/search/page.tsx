@@ -1,3 +1,4 @@
+import { getStoreMetadata } from '@/src/lib/storefront/store-metadata';
 import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/search/page.tsx
 // Dedicated Search Results Page (/search) — Phase 6 (Master Prompt Section 9.3)
@@ -8,14 +9,7 @@ import { ShopCatalogClient } from '@/src/components/storefront/shop-catalog-clie
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'পণ্য অনুসন্ধান (Search Results) | পঞ্চগড়',
-  description:
-    'পঞ্চগড় কনসাইনমেন্ট মার্কেটপ্লেসে নাম, ক্যাটাগরি, রঙ, সাইজ বা পাবলিক SKU দিয়ে আপনার পছন্দের পণ্য খুঁজুন।',
-  alternates: {
-    canonical: '/search',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> { return getStoreMetadata('পণ্য অনুসন্ধান', true); }
 
 interface SearchPageProps {
   searchParams: Promise<{ q?: string; category?: string }>;

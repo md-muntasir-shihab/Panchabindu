@@ -39,7 +39,7 @@ export function backendRoute<A extends unknown[]>(handler: (...args: A) => Promi
       const request = args[0];
       if (request instanceof Request && request.body && !['GET', 'HEAD'].includes(request.method)) {
         const pathname = new URL(request.url).pathname;
-        const limit = pathname === '/api/media' ? 6 * 1024 * 1024 : pathname === '/api/admin/workspace' ? 512 * 1024 : pathname === '/api/catalog/import' ? 300 * 1024 : 64 * 1024;
+        const limit = ['/api/media', '/api/admin/brand-media'].includes(pathname) ? 6 * 1024 * 1024 : pathname === '/api/admin/workspace' ? 512 * 1024 : pathname === '/api/catalog/import' ? 300 * 1024 : 64 * 1024;
         const reader = request.body.getReader();
         const chunks: Uint8Array[] = [];
         let size = 0;

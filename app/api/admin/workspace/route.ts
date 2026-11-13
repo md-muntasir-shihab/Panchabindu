@@ -1,3 +1,5 @@
+import { storefrontContentSchema } from '@/src/lib/storefront/storefront-config';
+import { updateStorefrontContent } from '@/src/lib/admin/storefront-settings-service';
 import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/admin/workspace/route.ts
 // Server-Side Admin ERP Workspace API (Phase 4A + Phase 4B + Phase 4C):
@@ -616,6 +618,10 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     ]),
     action: z.enum(['save', 'revoke']),
     rawSecretValue: z.string().optional(),
+  }),
+  z.object({
+    operation: z.literal('update_storefront_content'),
+    content: storefrontContentSchema,
   }),
   z.object({
     operation: z.literal('update_branding_thresholds'),
@@ -1237,6 +1243,11 @@ async function handlePOST(req: NextRequest) {
         rawSecretValue: payload.rawSecretValue,
         revoke: payload.action === 'revoke',
       });
+      return NextResponse.json(res, { status: res.success ? 200 : 400 });
+    }
+
+    if (payload.operation === 'update_storefront_content') {
+      const res = updateStorefrontContent(ctx, payload.content);
       return NextResponse.json(res, { status: res.success ? 200 : 400 });
     }
 

@@ -1,3 +1,4 @@
+import { getStorefrontConfig } from '@/src/lib/storefront/storefront-config';
 import { withRuntimePersistence } from '@/src/lib/db/runtime-persistence';
 // app/manifest.ts
 // PWA Web App Manifest driven by Site Settings (01_FRONTEND_MASTER_PROMPT Section 12)
@@ -10,6 +11,7 @@ export const dynamic = 'force-dynamic';
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const { siteSettings } = await withRuntimePersistence(() => getPublicStorefrontData());
 
+  const config = getStorefrontConfig(siteSettings);
   return {
     name: `${siteSettings.brandNameBn} — ${siteSettings.brandNameEn}`,
     short_name: siteSettings.brandNameEn,
@@ -17,12 +19,11 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     start_url: '/',
     display: 'standalone',
     background_color: '#FFFFFF',
-    theme_color: '#09090B',
+    theme_color: config.accentColor,
     icons: [
       {
-        src: '/favicon.ico',
+        src: config.faviconUrl || '/favicon.ico',
         sizes: 'any',
-        type: 'image/x-icon',
       },
     ],
   };

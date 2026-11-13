@@ -1,4 +1,5 @@
 'use client';
+import { getStorefrontConfig } from '@/src/lib/storefront/storefront-config';
 import { uiText } from '@/src/lib/i18n/ui-text';
 
 import { LocalizedText } from '@/src/components/ui/localized-text';
@@ -52,6 +53,13 @@ export function HomepageClient({
 }: HomepageClientProps) {
   const locale = useLocaleStore((s) => s.locale);
   const dict = useLocaleStore((s) => s.t());
+  const config = getStorefrontConfig(siteSettings);
+  const text = (bn: string, en: string) => locale === 'bn' ? bn : en;
+  const [heroIndex, setHeroIndex] = React.useState(0);
+  const section = (type: string) => siteSettings.homepageSections.find(v => v.type === type);
+  const visible = (type: string) => section(type)?.enabled ?? false;
+  const position = (type: string) => ({ order: section(type)?.order ?? 100 });
+  const budgetLimit = Math.max(1, Math.ceil(Math.max(0, ...products.flatMap(p => p.variants.map(v => v.salePricePoisha))) / 100));
 
   const [searchQuery, setSearchQuery] = React.useState('');
   const [activeCategorySlug, setActiveCategorySlug] = React.useState<string | null>(
@@ -62,7 +70,7 @@ export function HomepageClient({
     'popular'
   );
   const [inStockOnly, setInStockOnly] = React.useState(false);
-  const [maxPriceBdt, setMaxPriceBdt] = React.useState<number>(8000);
+  const [maxPriceBdt, setMaxPriceBdt] = React.useState<number>(budgetLimit);
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
   // Active Category Object
@@ -128,7 +136,7 @@ export function HomepageClient({
       activeCategorySlug ||
       activeCollection !== 'all' ||
       inStockOnly ||
-      maxPriceBdt < 8000
+      maxPriceBdt < budgetLimit
   );
 
   const resetAllFilters = () => {
@@ -136,11 +144,12 @@ export function HomepageClient({
     setActiveCategorySlug(null);
     setActiveCollection('all');
     setInStockOnly(false);
-    setMaxPriceBdt(8000);
+    setMaxPriceBdt(budgetLimit);
     setSortBy('popular');
   };
 
-  const hero = siteSettings.heroBanners[0];
+  const hero = siteSettings.heroBanners[heroIndex] ?? siteSettings.heroBanners[0];
+  const browsing = !searchQuery.trim() && !activeCategorySlug;
 
   return (
     <StorefrontShell
@@ -152,28 +161,32 @@ export function HomepageClient({
       activeCategorySlug={activeCategorySlug}
       onSelectCategory={setActiveCategorySlug}
     >
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10 pb-24 md:pb-16 space-y-12 sm:space-y-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 pb-16 flex flex-col gap-12 sm:gap-20">
         {/* 1. BOTANICAL EDITORIAL HERO (Spacious Split Layout on Soft Linen) */}
-        {!searchQuery.trim() && !activeCategorySlug && hero && (
-          <section className="rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] overflow-hidden">
+        {browsing && visible('hero') && hero && (
+          <section style={position('hero')} className="rounded-[1.75rem] bg-[#F2EFE9] overflow-hidden border border-[#E4E2DC]">
             <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
-              <div className="lg:col-span-7 p-7 sm:p-12 lg:p-14 space-y-5">
+              <div className="lg:col-span-6 p-7 sm:p-12 lg:p-14 space-y-7">
                 {/* Quiet Editorial Kicker (Unboxed Text) */}
-                <p className="text-xs font-semibold text-[#1B4332] tracking-wide">
+                <p className="text-xs font-semibold text-[var(--store-accent)] tracking-wide">
                   {locale === 'bn' ? hero.badgeBn : hero.badgeEn}
                 </p>
 
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#162119] leading-[1.15] max-w-2xl">
+                <h1 className="text-3xl sm:text-5xl lg:text-[3.4rem] font-semibold tracking-[-0.035em] text-[#162119] leading-[1.15] max-w-2xl">
                   {locale === 'bn' ? hero.titleBn : hero.titleEn}
                 </h1>
 
                 <p className="text-sm sm:text-base text-[#5A655D] max-w-xl leading-relaxed">
                   {locale === 'bn' ? hero.subtitleBn : hero.subtitleEn}
                 </p>
+                {hero.ctaHref && <Link href={hero.ctaHref} className="inline-flex items-center gap-6 rounded-full bg-[var(--store-accent)] px-6 py-3.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity">{text(hero.ctaLabelBn, hero.ctaLabelEn) || text('কালেকশন দেখুন', 'Explore the collection')}<ArrowRight className="w-4 h-4" /></Link>}
+                {siteSettings.heroBanners.length > 1 && <div className="flex gap-2" aria-label={text('ব্যানার নির্বাচন', 'Choose banner')}>{siteSettings.heroBanners.map((slide, index) => <button key={slide.id} type="button" onClick={() => setHeroIndex(index)} aria-label={text(slide.titleBn, slide.titleEn) || String(index + 1)} aria-pressed={index === heroIndex} className={`h-9 min-w-9 rounded-full border text-xs ${index === heroIndex ? 'bg-[var(--store-accent)] text-white' : 'border-[#D5D8D0]'}`}>{formatLocaleNumber(index + 1, locale)}</button>)}</div>}
+
               </div>
 
-              <div className="lg:col-span-5 relative aspect-[16/11] lg:aspect-[4/3] w-full border-t lg:border-t-0 lg:border-l border-[#E4E2DC] bg-[#FAF9F5]">
-                <Image
+              <div className="lg:col-span-6 relative aspect-[5/4] lg:aspect-square w-full border-t lg:border-t-0 lg:border-l border-[#E4E2DC] bg-[#FAF9F5]">
+                {hero.imageUrl && <Image
+                  unoptimized
                   src={hero.imageUrl}
                   alt={locale === 'bn' ? hero.titleBn : hero.titleEn}
                   fill
@@ -181,16 +194,16 @@ export function HomepageClient({
                   sizes="(max-width: 1024px) 100vw, 45vw"
                   referrerPolicy="no-referrer"
                   className="object-cover"
-                />
+                />}
               </div>
             </div>
           </section>
         )}
 
         {/* 2. MINIMALIST 4-PILLAR TRUST STRIP (Hairline Divided, Unboxed Typography) */}
-        {!searchQuery.trim() && !activeCategorySlug && (
+        {browsing && visible('trust_strip') && siteSettings.trustBadges.length > 0 && (
           <section
-            aria-label={uiText("Trust guarantees", locale)}
+            style={position('trust_strip')} aria-label={uiText("Trust guarantees", locale)}
             className="border-y border-[#E4E2DC] py-6 grid grid-cols-2 lg:grid-cols-4 gap-6"
           >
             {siteSettings.trustBadges.map((badge, idx) => {
@@ -201,7 +214,7 @@ export function HomepageClient({
                   key={badge.id}
                   className="flex items-start gap-3.5"
                 >
-                  <div className="w-10 h-10 shrink-0 rounded-full bg-[#E8F0EC] text-[#1B4332] flex items-center justify-center">
+                  <div className="w-10 h-10 shrink-0 rounded-full bg-[#E8F0EC] text-[var(--store-accent)] flex items-center justify-center">
                     <IconComp className="w-4 h-4" aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
@@ -219,14 +232,14 @@ export function HomepageClient({
         )}
 
         {/* 3. PROMO BANNER (If Active) */}
-        {siteSettings.promoCampaign.enabled && (
-          <section className="p-4 sm:p-5 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] flex flex-wrap items-center justify-between gap-4">
+        {browsing && visible('promo_banner') && siteSettings.promoCampaign.enabled && (
+          <section style={position('promo_banner')} className="p-4 sm:p-5 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-[#E8F0EC] text-[#1B4332] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[#E8F0EC] text-[var(--store-accent)] flex items-center justify-center shrink-0">
                 <Tag className="w-4 h-4" aria-hidden="true" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-[#1B4332]">
+                <p className="text-xs font-semibold text-[var(--store-accent)]">
                   {locale === 'bn'
                     ? siteSettings.promoCampaign.discountLabelBn
                     : siteSettings.promoCampaign.discountLabelEn}
@@ -242,7 +255,7 @@ export function HomepageClient({
               <span className="text-xs text-[#5A655D]">
                 {locale === 'bn' ? 'কুপন কোড:' : 'Code:'}
               </span>
-              <span className="px-3.5 py-1.5 text-xs font-mono font-bold rounded-lg border border-[#1B4332]/30 bg-[#FAF9F5] text-[#1B4332]">
+              <span className="px-3.5 py-1.5 text-xs font-mono font-bold rounded-lg border border-[var(--store-accent)]/30 bg-[#FAF9F5] text-[var(--store-accent)]">
                 {siteSettings.promoCampaign.code}
               </span>
             </div>
@@ -250,11 +263,12 @@ export function HomepageClient({
         )}
 
         {/* 4. UNIFIED INTERACTIVE CATALOG SHOWCASE */}
-        <section id="unified-catalog" className="space-y-7">
+        {(visible('featured_products') || !browsing) && <section id="unified-catalog" style={position('featured_products')} className="space-y-7 scroll-mt-28">
           {/* Editorial Section Header & Filter Trigger */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E4E2DC] pb-4">
             <div>
-              <div className="flex items-baseline gap-2.5">
+              {browsing && <p className="text-xs uppercase tracking-[.18em] text-[var(--store-accent)] mb-3">{text(section('featured_products')?.titleBn ?? '', section('featured_products')?.titleEn ?? '')}</p>}
+              <div className="flex flex-wrap items-baseline gap-2.5">
                 <h2 className="text-2xl sm:text-3xl font-bold text-[#162119] tracking-tight">
                   {activeCategory
                     ? locale === 'bn'
@@ -265,8 +279,8 @@ export function HomepageClient({
                       ? `"${searchQuery}" এর সার্চ ফলাফল`
                       : `Search results for "${searchQuery}"`
                     : locale === 'bn'
-                    ? 'নির্বাচিত পণ্য সম্ভার'
-                    : 'Curated Collection'}
+                    ? config.collectionTitleBn
+                    : config.collectionTitleEn}
                 </h2>
                 <span aria-hidden="true" className="text-[#5A655D]">·</span>
                 <span className="text-xs sm:text-sm font-medium text-[#5A655D] tabular-nums">
@@ -280,8 +294,8 @@ export function HomepageClient({
                     ? activeCategory.descriptionBn
                     : activeCategory.descriptionEn
                   : locale === 'bn'
-                  ? 'সরাসরি কারিগর ও ভেরিফাইড সাপ্লায়ারদের থেকে সংগৃহীত খাঁটি পণ্যের কালেকশন।'
-                  : 'Authentic artisan goods sourced directly from verified consignment partners.'}
+                  ? config.collectionSubtitleBn
+                  : config.collectionSubtitleEn}
               </p>
             </div>
 
@@ -290,9 +304,9 @@ export function HomepageClient({
               <button
                 type="button"
                 onClick={() => setIsFilterOpen(true)}
-                className="inline-flex items-center gap-2 min-h-[38px] px-4 py-1.5 text-xs font-semibold rounded-full border border-[#E4E2DC] bg-[#F2EFE9] text-[#162119] hover:border-[#1B4332] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 min-h-[38px] px-4 py-1.5 text-xs font-semibold rounded-full border border-[#E4E2DC] bg-[#F2EFE9] text-[#162119] hover:border-[var(--store-accent)] transition-colors cursor-pointer"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-[#1B4332]" aria-hidden="true" />
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--store-accent)]" aria-hidden="true" />
                 <span>{locale === 'bn' ? 'ফিল্টার ও বাজেট' : 'Filter & Budget'}</span>
               </button>
               {isFiltering && (
@@ -316,48 +330,48 @@ export function HomepageClient({
                 onClick={() => setActiveCollection('all')}
                 className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'all'
-                    ? 'bg-[#1B4332] text-[#FAF9F5]'
+                    ? 'bg-[var(--store-accent)] text-[#FAF9F5]'
                     : 'text-[#5A655D] hover:text-[#162119]'
                 }`}
               >
                 {locale === 'bn' ? 'সব পণ্য' : 'All Products'}
               </button>
 
-              <button
+              {visible('featured_products') && <button
                 type="button"
                 onClick={() => setActiveCollection('featured')}
                 className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'featured'
-                    ? 'bg-[#1B4332] text-[#FAF9F5]'
+                    ? 'bg-[var(--store-accent)] text-[#FAF9F5]'
                     : 'text-[#5A655D] hover:text-[#162119]'
                 }`}
               >
                 {locale === 'bn' ? 'নির্বাচিত' : 'Featured'}
-              </button>
+              </button>}
 
-              <button
+              {visible('best_sellers') && <button
                 type="button"
                 onClick={() => setActiveCollection('best_sellers')}
                 className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'best_sellers'
-                    ? 'bg-[#1B4332] text-[#FAF9F5]'
+                    ? 'bg-[var(--store-accent)] text-[#FAF9F5]'
                     : 'text-[#5A655D] hover:text-[#162119]'
                 }`}
               >
                 {locale === 'bn' ? 'বেস্ট সেলার' : 'Best Sellers'}
-              </button>
+              </button>}
 
-              <button
+              {visible('new_arrivals') && <button
                 type="button"
                 onClick={() => setActiveCollection('new_arrivals')}
                 className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'new_arrivals'
-                    ? 'bg-[#1B4332] text-[#FAF9F5]'
+                    ? 'bg-[var(--store-accent)] text-[#FAF9F5]'
                     : 'text-[#5A655D] hover:text-[#162119]'
                 }`}
               >
                 {locale === 'bn' ? 'নতুন আগমন' : 'New Arrivals'}
-              </button>
+              </button>}
             </div>
 
             {/* Sort Selector */}
@@ -373,7 +387,7 @@ export function HomepageClient({
                     e.target.value as 'popular' | 'price_asc' | 'price_desc' | 'rating'
                   )
                 }
-                className="min-h-[38px] px-3 py-1.5 text-xs font-medium rounded-xl bg-[#F2EFE9] border border-[#E4E2DC] text-[#162119] focus:outline-none focus:border-[#1B4332]"
+                className="min-h-[38px] px-3 py-1.5 text-xs font-medium rounded-xl bg-[#F2EFE9] border border-[#E4E2DC] text-[#162119] focus:outline-none focus:border-[var(--store-accent)]"
               >
                 <option value="popular">
                   {locale === 'bn' ? 'জনপ্রিয়তা অনুযায়ী' : 'Most Popular'}
@@ -398,8 +412,8 @@ export function HomepageClient({
               onClick={() => setActiveCategorySlug(null)}
               className={`px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-all whitespace-nowrap cursor-pointer ${
                 !activeCategorySlug
-                  ? 'bg-[#1B4332] text-[#FAF9F5] border-[#1B4332]'
-                  : 'bg-[#FAF9F5] text-[#5A655D] border-[#E4E2DC] hover:text-[#162119] hover:border-[#1B4332]'
+                  ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)]'
+                  : 'bg-[#FAF9F5] text-[#5A655D] border-[#E4E2DC] hover:text-[#162119] hover:border-[var(--store-accent)]'
               }`}
             >
               <span>{locale === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories'}</span>
@@ -414,8 +428,8 @@ export function HomepageClient({
                   onClick={() => setActiveCategorySlug(isSelected ? null : c.slug)}
                   className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                     isSelected
-                      ? 'bg-[#1B4332] text-[#FAF9F5] border-[#1B4332] font-semibold'
-                      : 'bg-[#FAF9F5] text-[#5A655D] border-[#E4E2DC] hover:text-[#162119] hover:border-[#1B4332]'
+                      ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)] font-semibold'
+                      : 'bg-[#FAF9F5] text-[#5A655D] border-[#E4E2DC] hover:text-[#162119] hover:border-[var(--store-accent)]'
                   }`}
                 >
                   <span>{locale === 'bn' ? c.nameBn : c.nameEn}</span>
@@ -440,13 +454,15 @@ export function HomepageClient({
               onAction={resetAllFilters}
             />
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-10">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-10">
               {displayedProducts.map((product) => (
                 <ProductCard key={product.productId} product={product} />
               ))}
             </div>
           )}
-        </section>
+        </section>}
+        {browsing && visible('categories') && categories.length > 0 && <section style={position('categories')} className="space-y-6"><div className="flex items-end justify-between gap-4"><h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">{text(section('categories')?.titleBn ?? '', section('categories')?.titleEn ?? '')}</h2><Link href="/categories" className="text-xs underline underline-offset-4 shrink-0">{text('সব দেখুন', 'View all')}</Link></div><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">{categories.filter(c => !c.parentId).map(category => { const image = products.find(p => p.categoryId === category.id)?.images[0]; return <Link key={category.id} href={`/category/${category.slug}`} className="group space-y-3"><div className="relative aspect-square bg-[#F2EFE9] rounded-2xl overflow-hidden border border-[#E4E2DC]">{image ? <Image unoptimized src={image} alt="" fill sizes="(max-width: 640px) 50vw, 17vw" className="object-cover transition-transform duration-500 group-hover:scale-105" /> : <span className="flex h-full items-center justify-center text-4xl text-[var(--store-accent)]">{Array.from(text(category.nameBn, category.nameEn))[0]}</span>}</div><span className="flex items-center justify-between text-sm font-medium">{text(category.nameBn, category.nameEn)}<ArrowRight className="w-3.5 h-3.5" /></span></Link>; })}</div></section>}
+        {browsing && (['new_arrivals', 'best_sellers'] as const).filter(visible).map(type => { const list = type === 'best_sellers' ? [...products].filter(p => p.totalSoldCount > 0).sort((a,b) => b.totalSoldCount - a.totalSoldCount) : [...products].reverse(); return list.length > 0 && <section key={type} style={position(type)} className="space-y-6"><div className="flex items-end justify-between gap-4"><h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">{text(section(type)?.titleBn ?? '', section(type)?.titleEn ?? '')}</h2><Link href="/shop" className="text-xs underline underline-offset-4 shrink-0">{text('সব পণ্য', 'Shop all')}</Link></div><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6">{list.slice(0,4).map(product => <ProductCard key={product.productId} product={product} />)}</div></section>; })}
       </div>
 
       {/* FILTER DRAWER / SHEET */}
@@ -468,7 +484,7 @@ export function HomepageClient({
                   name="catFilter"
                   checked={!activeCategorySlug}
                   onChange={() => setActiveCategorySlug(null)}
-                  className="w-4 h-4 accent-[#1B4332]"
+                  className="w-4 h-4 accent-[var(--store-accent)]"
                 />
                 <span className="text-[#162119] font-medium">
                   {locale === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories'}
@@ -484,7 +500,7 @@ export function HomepageClient({
                     name="catFilter"
                     checked={activeCategorySlug === c.slug}
                     onChange={() => setActiveCategorySlug(c.slug)}
-                    className="w-4 h-4 accent-[#1B4332]"
+                    className="w-4 h-4 accent-[var(--store-accent)]"
                   />
                   <span className="text-[#162119] font-medium">
                     {locale === 'bn' ? c.nameBn : c.nameEn}
@@ -500,20 +516,20 @@ export function HomepageClient({
               <label className="font-semibold uppercase text-[11px] tracking-wider text-[#5A655D]">
                 {locale === 'bn' ? 'সর্বোচ্চ বাজেট' : 'Max Budget'}
               </label>
-              <span className="font-mono font-bold text-[#1B4332]"><LocalizedText source={"৳"} area="storefront" />{maxPriceBdt}</span>
+              <span className="font-mono font-bold text-[var(--store-accent)]"><LocalizedText source={"৳"} area="storefront" />{maxPriceBdt}</span>
             </div>
             <input
               type="range"
-              min={500}
-              max={15000}
-              step={100}
+              min={0}
+              max={budgetLimit}
+              step={1}
               value={maxPriceBdt}
               onChange={(e) => setMaxPriceBdt(Number(e.target.value))}
-              className="w-full accent-[#1B4332]"
+              className="w-full accent-[var(--store-accent)]"
             />
             <div className="flex justify-between text-[10px] text-[#5A655D] font-mono">
-              <span>৳৫০০</span>
-              <span>৳১৫,০০০</span>
+              <span>৳{formatLocaleNumber(0, locale)}</span>
+              <span>৳{formatLocaleNumber(budgetLimit, locale)}</span>
             </div>
           </div>
 
@@ -524,7 +540,7 @@ export function HomepageClient({
                 type="checkbox"
                 checked={inStockOnly}
                 onChange={(e) => setInStockOnly(e.target.checked)}
-                className="w-4 h-4 accent-[#1B4332]"
+                className="w-4 h-4 accent-[var(--store-accent)]"
               />
               <span className="font-semibold text-[#162119]">
                 {locale === 'bn' ? 'শুধুমাত্র স্টকে থাকা পণ্য' : 'In-Stock Only'}

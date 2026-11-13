@@ -1,3 +1,5 @@
+import type { StorefrontConfig } from '../storefront/storefront-config';
+import { getStorefrontConfig } from '../storefront/storefront-config';
 // src/lib/db/repository.ts
 // Enforces:
 //   - Rule A1/A2: Server-side field hiding (Customer NEVER sees vendor_id, internal_vendor_sku, supplier_cost_poisha, or margin)
@@ -159,6 +161,8 @@ export interface InternalProductRecord {
 }
 
 export interface SiteSettingsRecord {
+  storefront?: StorefrontConfig;
+  maintenanceMessageEn?: string;
   brandNameBn: string;
   brandNameEn: string;
   taglineBn: string;
@@ -1207,12 +1211,12 @@ const PUBLIC_SETTINGS_KEYS = [
   'supportPhone', 'supportEmail', 'whatsappNumber', 'freeDeliveryThresholdPoisha',
   'globalFreeDelivery', 'bdPostDefaultPerKgPoisha', 'bkashManualNumber',
   'bkashInstructionBn', 'bkashInstructionEn', 'maintenanceMode',
-  'maintenanceMessageBn', 'demoMode',
+  'maintenanceMessageBn', 'maintenanceMessageEn', 'demoMode',
 ] as const satisfies readonly (keyof SiteSettingsRecord)[];
 
 export type PublicSafeSiteSettingsDTO = Pick<SiteSettingsRecord,
   typeof PUBLIC_SETTINGS_KEYS[number] | 'delayBanner' | 'promoCampaign' |
-  'trustBadges' | 'heroBanners' | 'homepageSections' | 'legalPages' | 'aboutContactPage'>;
+  'trustBadges' | 'heroBanners' | 'homepageSections' | 'legalPages' | 'aboutContactPage' | 'storefront'>;
 
 function pickFields<T, K extends keyof T>(value: T, keys: readonly K[]): Pick<T, K> {
   return Object.fromEntries(keys.map((key) => [key, value[key]])) as Pick<T, K>;
@@ -1231,6 +1235,7 @@ export function sanitizeSiteSettingsForPublic(
 ): PublicSafeSiteSettingsDTO {
   return {
     ...pickFields(settings, PUBLIC_SETTINGS_KEYS),
+    storefront: getStorefrontConfig(settings),
     delayBanner: pickFields(settings.delayBanner, ['enabled', 'messageBn', 'messageEn']),
     promoCampaign: pickFields(settings.promoCampaign, ['enabled', 'titleBn', 'titleEn', 'code', 'discountLabelBn', 'discountLabelEn']),
     trustBadges: settings.trustBadges.map((v) => pickFields(v, ['id', 'labelBn', 'labelEn', 'descBn', 'descEn'])),
