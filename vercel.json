@@ -8,6 +8,7 @@
     }
   },
   "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index.mjs" },
     { "source": "/manifest.webmanifest", "destination": "/api/__metadata/manifest.webmanifest" },
     { "source": "/sitemap.xml", "destination": "/api/__metadata/sitemap.xml" },
     { "source": "/robots.txt", "destination": "/api/__metadata/robots.txt" },

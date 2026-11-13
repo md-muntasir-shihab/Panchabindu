@@ -812,7 +812,7 @@ export function ProductDetailClient({
             label={locale === 'bn' ? 'আপনার নাম *' : 'Your Name *'}
             value={revName}
             onChange={(e) => setRevName(e.target.value)}
-            placeholder={locale === 'bn' ? 'যেমন: তানভীর আহমেদ' : 'Tanvir Ahmed'}
+            placeholder={locale === 'bn' ? 'যেমন: মোঃ মুনতাসির শিহাব' : 'MD Muntasir Shihab'}
             required
           />
           <Input
