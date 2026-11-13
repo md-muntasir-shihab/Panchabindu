@@ -24,6 +24,10 @@ args = "migration"
 task = "workflow.run"
 args = "domain"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "sandbox"
+
 [[workflows.workflow]]
 name = "migration"
 author = "agent"
@@ -42,6 +46,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run test:domain"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "sandbox"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run test:sandbox"
 
 [workflows.workflow.metadata]
 isValidation = true

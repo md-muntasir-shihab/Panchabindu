@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "zYkbhnKf2oEp2kFSndYnT"
+uri = "file://artifacts/api-server/.data/LOCAL-LOGIN.txt"
+type = "text"
+title = "Private Replit development login details"
+description = "One-time admin and vendor passwords for this project’s local Replit sandbox. Change both passwords and enroll an authenticator at first login."
+logical_id = "1e0a65f7-f8e9-4a92-8cac-831562407322"
+content_hash = "sha256:c0114fd0220412763b447a3501a405686ea16c9adebcaed730fe4fdc831376ea"
+size = 918
+mtime_ms = 1794572623715
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:f1efff56-6001-4f4d-a5b7-58696cdf744b/1e0a65f7-f8e9-4a92-8cac-831562407322/8a052479-c147-4af8-bf5f-e1e98edd4110"
+storage_version_token = "1794572859559887"
+content_type = "text/plain"

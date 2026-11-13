@@ -17,6 +17,7 @@ The workflows supply `PORT` and `BASE_PATH`; do not run a root-level `pnpm dev`.
 - `pnpm --filter @workspace/scripts run test:migration` — running-app route, public-data, not-found, auth guard and manifest checks.
 - `pnpm --filter @workspace/scripts run test:domain` — original finance, checkout validators, runtime transaction and image precheck tests.
 - `pnpm --filter @workspace/scripts run test:shopping` — Chromium cart-to-checkout, refresh persistence and mobile catalog checks. Does not place an order. Requires Chromium at `/repl/tools/bin/chromium` or `CHROMIUM_PATH`.
+- `pnpm --filter @workspace/scripts run test:sandbox` — verifies development-only admin/vendor first login and customer phone-OTP login without printing credentials or OTPs.
 - `pnpm --filter @workspace/panchagarh run typecheck` — frontend TypeScript verification.
 - Browser test screenshots go into ignored `generated-artifacts/migration/`.
 
@@ -42,6 +43,12 @@ The app keeps its original persistence model. **Do not replace Supabase with the
 - Imported production credentials were not provided. Live database operations, authenticated admin/customer actions, order placement, and external payment/SMS/courier services were not verified.
 
 Use the secure workspace configuration flow for credentials. Never put them in source, logs or browser environment variables.
+
+## Private local account testing
+
+For this user's explicit private Replit development setup, run `pnpm --filter @workspace/api-server run sandbox:setup` once. It creates random first-login passwords for `admin` at `/admin` and `rupganj_vendor` at `/vendor`; the private one-time credential file is `artifacts/api-server/.data/LOCAL-LOGIN.txt`. The API development workflow loads the matching private env file from that ignored `.data/` directory. Both users must change the password and enroll an authenticator on first login. The customer at `/account` signs in using the local sandbox OTP shown in the page; customers have no password.
+
+The bootstrap refuses to overwrite an existing credential file or admin registry. It does not reset or rotate an account. Do not share the credential file or preview link; delete the one-time credential file after both accounts have been set up. These local accounts and JSON fixtures do not grant production access. Production stays fail-closed until the original Supabase runtime and production identity are separately configured.
 
 ## Architecture decisions
 
