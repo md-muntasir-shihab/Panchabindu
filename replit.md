@@ -21,7 +21,7 @@ The workflows supply `PORT` and `BASE_PATH`; do not run a root-level `pnpm dev`.
 - `pnpm --filter @workspace/scripts run test:quarantine` — isolated flash-sale default-off, data retention, public DTO leak and storefront configuration tests.
 - These two suites create fresh temporary JSON fixtures per file, discard inherited secrets/provider/sandbox configuration, block network calls and remove fixtures afterward. They never use the development `.data/` accounts. See `docs/planning/panchagarh/08-local-test-evidence.md` for scope and snapshot regeneration.
 - `pnpm --filter @workspace/scripts run test:shopping` — Chromium cart-to-checkout, refresh persistence and mobile catalog checks. Does not place an order. Requires Chromium at `/repl/tools/bin/chromium` or `CHROMIUM_PATH`.
-- `pnpm --filter @workspace/scripts run test:sandbox` — verifies development-only admin/vendor first login and customer phone-OTP login without printing credentials or OTPs.
+- `pnpm --filter @workspace/scripts run test:sandbox` — starts an isolated temporary app, checks admin/vendor first login, password change and login screens without TOTP. Requires Chromium at `/repl/tools/bin/chromium` or `CHROMIUM_PATH`. Never reads private login files or uses development accounts; ignores `TEST_APP_URL`, blocks outbound app/browser requests, and removes its process and fixtures afterward.
 - `pnpm --filter @workspace/panchagarh run typecheck` — frontend TypeScript verification.
 - Browser test screenshots go into ignored `generated-artifacts/migration/`.
 

@@ -1,2 +1,3 @@
 - [Imported dependency majors](imported-dependency-majors.md) — preserve source package majors when the workspace catalog supplies an older API.
 - [Flash-sale quarantine](flash-quarantine.md) — Owner chose default-off and hidden functionality, retaining code/data; internal opt-in is not launch approval.
+- [Sandbox authentication testing](sandbox-auth-testing.md) — test local first-login behavior with development-mode temporary identities, not legacy unit-test identities.
