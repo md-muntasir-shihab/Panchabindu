@@ -1,0 +1,425 @@
+﻿{
+    "supabase":  {
+                     "dist":  {
+                                  "shasum":  "e32cddaaa381ed84d2741e2462c890d2df2dfd5a",
+                                  "tarball":  "https://registry.npmjs.org/supabase/-/supabase-3.1.0.tgz",
+                                  "fileCount":  4,
+                                  "integrity":  "sha512-kv/vLnwcxxhkd+CvRjJhp5gP6juwzUUT0a6+JungfQyw9AcM2YSQTDDZwEVHdV85tFc7K975WGkzemw5He26/g==",
+                                  "signatures":  [
+                                                     {
+                                                         "sig":  "MEUCIQDhyNOiYT3E9vVAXVVmFbO31gLIpzpahrGZLAaFuyxUEAIgHZpp1Zu/QG2zc+a00HTOHelSx/cjYfym2pvVt+IVSIc=",
+                                                         "keyid":  "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+                                                     },
+                                                     {
+                                                         "sig":  "MEUCIGfL3Ljam9O1GNBq0hcbLtsNlrFWpY20AtJQ0BxG8IMLAiEA53yneAP17OghO+sFUbdFJ8wO07BK+03W/oMwOscRzag=",
+                                                         "keyid":  "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+                                                     }
+                                                 ],
+                                  "attestations":  {
+                                                       "url":  "https://registry.npmjs.org/-/npm/v1/attestations/supabase@3.1.0",
+                                                       "provenance":  {
+                                                                          "predicateType":  "https://slsa.dev/provenance/v1"
+                                                                      }
+                                                   },
+                                  "unpackedSize":  12661
+                              },
+                     "repository":  {
+                                        "url":  "https://github.com/supabase/cli.git",
+                                        "type":  "git",
+                                        "directory":  "apps/cli"
+                                    },
+                     "license":  "MIT",
+                     "dependencies":  {
+                                          "jose":  "^6.2.10",
+                                          "eciesjs":  "^0.5.0"
+                                      },
+                     "name":  "supabase",
+                     "scripts":  {
+                                     "dev":  "bun src/main.ts",
+                                     "test":  "pnpm run test:unit --coverage.enabled \u0026\u0026 pnpm run test:integration --coverage.enabled \u0026\u0026 pnpm run test:e2e",
+                                     "build":  "pnpm build:binary \u0026\u0026 pnpm build:shim",
+                                     "test:e2e":  "pnpm exec turbo run supabase#build \u0026\u0026 pnpm exec turbo run supabase#test:e2e:run --only --",
+                                     "docs:spec":  "bun scripts/generate-docs-spec.ts",
+                                     "test:live":  "bun --bun vitest run --project live",
+                                     "test:unit":  "pnpm exec turbo run supabase#test:unit:run --",
+                                     "build:shim":  "bun build src/shared/cli/bin.ts --outfile dist/supabase.js --target node",
+                                     "test:smoke":  "bun run tests/smoke-test.ts",
+                                     "types:check":  "tsc --noEmit -p tsconfig.types.json",
+                                     "build:binary":  "bun scripts/build-binary.ts",
+                                     "test:e2e:run":  "bun --bun vitest run --project e2e --project e2e-exclusive",
+                                     "test:unit:run":  "bun --bun vitest run --project unit --coverage.reportsDirectory=coverage/unit",
+                                     "test:integration":  "pnpm exec turbo run supabase#test:integration:run --",
+                                     "gen:feedback-types":  "pnpm dev -- gen types typescript --project-id xguihxuzqibwxjnimxev --schema public \u003e src/shared/feedback/database.types.ts",
+                                     "test:integration:run":  "bun --bun vitest run --project integration --coverage.reportsDirectory=coverage/integration"
+                                 },
+                     "version":  "3.1.0",
+                     "engines":  null
+                 },
+    "@playwright/test":  {
+                             "dist":  {
+                                          "shasum":  "11038333bcbe91badadbb1dbf0449d252c754f2e",
+                                          "tarball":  "https://registry.npmjs.org/@playwright/test/-/test-1.65.0.tgz",
+                                          "fileCount":  11,
+                                          "integrity":  "sha512-iGURLGuKDLakSEl7Pgfv8h7f+XLT+V861Wfhz0zlEl5nyFuKUopdkFBPKqTllTUp06aOwPuH8iuUEb3yp3MpbQ==",
+                                          "signatures":  [
+                                                             {
+                                                                 "sig":  "MEUCIFZun+8jcygDk4d/NBpPVyfpgByHf/dVzBpf3Ko+Cel+AiEA/NeANg4OAJ+BE5i2iW84zyaHW+CG37wirrnL8XKqgvU=",
+                                                                 "keyid":  "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+                                                             },
+                                                             {
+                                                                 "sig":  "MEYCIQDV0gx/awuNejdK5zFAKwPWS4jOoPm2me9SuhjDVkV4QQIhAON44NwQ+/eArPCYgDH+LTICQZDX99WEpp9AO+gNCQ9I",
+                                                                 "keyid":  "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+                                                             }
+                                                         ],
+                                          "attestations":  {
+                                                               "url":  "https://registry.npmjs.org/-/npm/v1/attestations/@playwright%2ftest@1.65.0",
+                                                               "provenance":  {
+                                                                                  "predicateType":  "https://slsa.dev/provenance/v1"
+                                                                              }
+                                                           },
+                                          "unpackedSize":  28544
+                                      },
+                             "repository":  {
+                                                "url":  "git+https://github.com/microsoft/playwright.git",
+                                                "type":  "git"
+                                            },
+                             "license":  "Apache-2.0",
+                             "dependencies":  {
+                                                  "playwright":  "1.65.0"
+                                              },
+                             "name":  "@playwright/test",
+                             "scripts":  {
+
+                                         },
+                             "version":  "1.65.0",
+                             "engines":  {
+                                             "node":  "\u003e=20"
+                                         }
+                         },
+    "skills":  {
+                   "dist":  {
+                                "shasum":  "f50a0caa6e95bb8d675f16a5fe2fa25ee8c842c9",
+                                "tarball":  "https://registry.npmjs.org/skills/-/skills-1.8.0.tgz",
+                                "fileCount":  27,
+                                "integrity":  "sha512-SOF4o+gtsCq2ggS416zGj+Em2ryAzewVbIIvxlf+72R6g/9HfmINaVQgFqgXdy6fd6y2J6A7IBM8VocK8c0Dmw==",
+                                "signatures":  [
+                                                   {
+                                                       "sig":  "MEUCIQCs5fEhkI7ditzUmicl8ZT99x/zVeCMT8bGAkfEccNfggIgNAutx1RFOLD3MhnyrArMV83XabExf4PN9eHMCTRrzYU=",
+                                                       "keyid":  "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+                                                   },
+                                                   {
+                                                       "sig":  "MEUCIQDoD+X2+hd3sGIiesYYYyx4dxZ4b23YzOE9TIalfiMeZgIgTWvD7qojEparP9r3yteIOxQM/GezL6EOPDztDuB4TB8=",
+                                                       "keyid":  "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+                                                   }
+                                               ],
+                                "attestations":  {
+                                                     "url":  "https://registry.npmjs.org/-/npm/v1/attestations/skills@1.8.0",
+                                                     "provenance":  {
+                                                                        "predicateType":  "https://slsa.dev/provenance/v1"
+                                                                    }
+                                                 },
+                                "unpackedSize":  746561
+                            },
+                   "repository":  {
+                                      "url":  "git+https://github.com/vercel-labs/skills.git",
+                                      "type":  "git"
+                                  },
+                   "license":  "MIT",
+                   "dependencies":  {
+                                        "tar":  "^7.5.20",
+                                        "yaml":  "^2.8.3",
+                                        "nostics":  "^1.3.0"
+                                    },
+                   "name":  "skills",
+                   "scripts":  {
+                                   "dev":  "node src/cli.ts",
+                                   "test":  "vitest",
+                                   "build":  "node scripts/generate-licenses.ts \u0026\u0026 obuild",
+                                   "format":  "prettier --write \"src/**/*.ts\" \"scripts/**/*.ts\"",
+                                   "prepare":  "husky",
+                                   "test:e2e":  "vitest run --config e2e/vitest.config.ts",
+                                   "exec:test":  "node scripts/execute-tests.ts",
+                                   "api:update":  "UPDATE_SNAPSHOT=1 pnpm build",
+                                   "type-check":  "tsc --noEmit \u0026\u0026 tsc --noEmit -p e2e",
+                                   "format:check":  "prettier --check \"src/**/*.ts\" \"scripts/**/*.ts\"",
+                                   "prepublishOnly":  "npm run build",
+                                   "publish:snapshot":  "npm version prerelease --preid=snapshot --no-git-tag-version \u0026\u0026 npm publish --tag snapshot",
+                                   "generate-licenses":  "node scripts/generate-licenses.ts",
+                                   "api:update:breaking":  "UPDATE_SNAPSHOT=1 TSNAPI_ALLOW_BREAKING=1 pnpm build"
+                               },
+                   "version":  "1.8.0",
+                   "engines":  {
+                                   "node":  "\u003e=22.20.0"
+                               }
+               },
+    "officialSkills":  {
+                           "date":  "2026-10-02T12:34:48Z",
+                           "files":  [
+                                         {
+                                             "path":  "LICENSE",
+                                             "sha":  "d3c9e94fbc6c28f66ecb5a01407d543c99c811b6",
+                                             "type":  "blob",
+                                             "size":  1065
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/CHANGELOG.md",
+                                             "sha":  "6d7d0d2acd380d09be9a4431037858149ce3496f",
+                                             "type":  "blob",
+                                             "size":  5684
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/SKILL.md",
+                                             "sha":  "6400792389dfcc82c81953054e546bd72ebcd259",
+                                             "type":  "blob",
+                                             "size":  3231
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references",
+                                             "sha":  "d6203fa7cb81c4ea1b88a32bf9c6bae4ca02d9ab",
+                                             "type":  "tree",
+                                             "size":  null
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/_contributing.md",
+                                             "sha":  "1c055aff9ad2bf12cfe7edc0002f2f77fe6980d2",
+                                             "type":  "blob",
+                                             "size":  4113
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/_sections.md",
+                                             "sha":  "8ba57c23e8119e411fcc8a230cda08e695792cac",
+                                             "type":  "blob",
+                                             "size":  1682
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/_template.md",
+                                             "sha":  "91ace90e10a4d8ef354a82bb1994842e6979ebed",
+                                             "type":  "blob",
+                                             "size":  1040
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/advanced-full-text-search.md",
+                                             "sha":  "582cbeaada9378a280ad61f57e06c10d258e3c43",
+                                             "type":  "blob",
+                                             "size":  1468
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md",
+                                             "sha":  "e3d261ea117fd7b1ad9c4f0d45308407b898ed5a",
+                                             "type":  "blob",
+                                             "size":  1444
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/conn-idle-timeout.md",
+                                             "sha":  "40b9cc50dd12cf347ed189fac965673b533f3f99",
+                                             "type":  "blob",
+                                             "size":  1282
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/conn-limits.md",
+                                             "sha":  "cb3e400c0234e7e9196c1650423faad66375b70b",
+                                             "type":  "blob",
+                                             "size":  1325
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/conn-pooling.md",
+                                             "sha":  "e2ebd581d3c85bff0a077e8d9a2cb562d2513d03",
+                                             "type":  "blob",
+                                             "size":  1382
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/conn-prepared-statements.md",
+                                             "sha":  "555547d834e35b5059152dfb2288eca5e9838ea0",
+                                             "type":  "blob",
+                                             "size":  1529
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/data-batch-inserts.md",
+                                             "sha":  "997947cb17bfed67f29eaa8da2a58de2306cc2c1",
+                                             "type":  "blob",
+                                             "size":  1287
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/data-n-plus-one.md",
+                                             "sha":  "2109186ff88b3ba1cc32789f81e2a00d345c6e3f",
+                                             "type":  "blob",
+                                             "size":  1361
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/data-pagination.md",
+                                             "sha":  "633d839323612e212a833dd96828cb31fdfb39f8",
+                                             "type":  "blob",
+                                             "size":  1358
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/data-upsert.md",
+                                             "sha":  "bc95e2305d955679446c70854cb2b56b183aa56d",
+                                             "type":  "blob",
+                                             "size":  1390
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/lock-advisory.md",
+                                             "sha":  "572eaf0dcf518ac925c4cde41beb60b62852b79c",
+                                             "type":  "blob",
+                                             "size":  1531
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md",
+                                             "sha":  "974da5edec32f79de0fcdc771d4ef759dc3e049d",
+                                             "type":  "blob",
+                                             "size":  1855
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/lock-short-transactions.md",
+                                             "sha":  "e6b8ef2633248a4aa4394628e48d8cb693e7e6ab",
+                                             "type":  "blob",
+                                             "size":  1350
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/lock-skip-locked.md",
+                                             "sha":  "77bdbb97045010ce2fdbd90733e8f764be82881a",
+                                             "type":  "blob",
+                                             "size":  1353
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md",
+                                             "sha":  "542978c3bafc510fa8d7a8864cff994ad40be4d7",
+                                             "type":  "blob",
+                                             "size":  1441
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md",
+                                             "sha":  "d7e82f1aacd105d53789eb6188d11e8ea39e7310",
+                                             "type":  "blob",
+                                             "size":  1418
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md",
+                                             "sha":  "e0e8ea0b7db8c1513a0d1605be477192bc21d91d",
+                                             "type":  "blob",
+                                             "size":  1506
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/query-composite-indexes.md",
+                                             "sha":  "fea64523fd5bb3696f943d486ccaf2aea75d27b8",
+                                             "type":  "blob",
+                                             "size":  1454
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/query-covering-indexes.md",
+                                             "sha":  "9d2a4947b94516dd975e1044d132bb007280f478",
+                                             "type":  "blob",
+                                             "size":  1287
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/query-index-types.md",
+                                             "sha":  "93b32590f4bfe377869274f45414ae6e43d168fa",
+                                             "type":  "blob",
+                                             "size":  1521
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/query-missing-indexes.md",
+                                             "sha":  "e6daace7dd368c75cdf87dc61be4afd6ff66cbbe",
+                                             "type":  "blob",
+                                             "size":  1218
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/query-partial-indexes.md",
+                                             "sha":  "3e61a3417b9cce3c8cee99b39b78b7ebf495dd1f",
+                                             "type":  "blob",
+                                             "size":  1347
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/schema-constraints.md",
+                                             "sha":  "1d2ef8f9a968cd6fa882c7299134c30ace06373c",
+                                             "type":  "blob",
+                                             "size":  1880
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/schema-data-types.md",
+                                             "sha":  "f253a5819d05531371e04485ab84f552fbb32fbe",
+                                             "type":  "blob",
+                                             "size":  1453
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md",
+                                             "sha":  "6c3d6ff622b8a9df358f6673f323292e682ce87c",
+                                             "type":  "blob",
+                                             "size":  1679
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md",
+                                             "sha":  "f0072940b159ff64e0c2d4fbb499133cb8f49a66",
+                                             "type":  "blob",
+                                             "size":  1728
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/schema-partitioning.md",
+                                             "sha":  "13137a03275fa45001c870a40b0069204d44e005",
+                                             "type":  "blob",
+                                             "size":  1548
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/schema-primary-keys.md",
+                                             "sha":  "fb0fbb166fac9ea38c127d807a263282acc2dc93",
+                                             "type":  "blob",
+                                             "size":  1821
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/security-privileges.md",
+                                             "sha":  "448ec345fab6c5a0116c584d65638b86d758c558",
+                                             "type":  "blob",
+                                             "size":  1566
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/security-rls-basics.md",
+                                             "sha":  "c61e1a8503de113be0981759b82f5e37090f344c",
+                                             "type":  "blob",
+                                             "size":  1372
+                                         },
+                                         {
+                                             "path":  "skills/supabase-postgres-best-practices/references/security-rls-performance.md",
+                                             "sha":  "c3c7c416d57d9a46a9993f4e0c20f772fb64483d",
+                                             "type":  "blob",
+                                             "size":  2103
+                                         },
+                                         {
+                                             "path":  "skills/supabase/CHANGELOG.md",
+                                             "sha":  "16c4657c58336adeb579418cc0088c46cb83ee7b",
+                                             "type":  "blob",
+                                             "size":  8345
+                                         },
+                                         {
+                                             "path":  "skills/supabase/SKILL.md",
+                                             "sha":  "66093e0a0f8d9268094c1a4b38c04419b787ca89",
+                                             "type":  "blob",
+                                             "size":  14307
+                                         },
+                                         {
+                                             "path":  "skills/supabase/assets",
+                                             "sha":  "b19a6baf3dd68fc911a059d8f2fab14c6b8b2ccd",
+                                             "type":  "tree",
+                                             "size":  null
+                                         },
+                                         {
+                                             "path":  "skills/supabase/assets/feedback-issue-template.md",
+                                             "sha":  "e81082532d36309e11f2721e8380636329221525",
+                                             "type":  "blob",
+                                             "size":  459
+                                         },
+                                         {
+                                             "path":  "skills/supabase/references",
+                                             "sha":  "7d3d961ccf597360b1e25a10af08efb95da39393",
+                                             "type":  "tree",
+                                             "size":  null
+                                         },
+                                         {
+                                             "path":  "skills/supabase/references/skill-feedback.md",
+                                             "sha":  "9c047d5a1775c0cf4b35d3687753d84b77b1cf0a",
+                                             "type":  "blob",
+                                             "size":  1035
+                                         }
+                                     ],
+                           "commit":  "c9be0e931b7930f7d02126d04774d904c381e7d7"
+                       }
+}

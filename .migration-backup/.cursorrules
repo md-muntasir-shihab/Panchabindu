@@ -1,0 +1,53 @@
+# PANCHAGARH AI GUARDRAILS & ARCHITECTURE LOCK (.cursorrules)
+# Version: 1.0 — Bangladesh Multi-Vendor Consignment F-Commerce
+
+## 1. MANDATORY MASTER SPECIFICATIONS (SOURCE OF TRUTH)
+Every AI agent working in this repository MUST read and adhere to:
+1. `docs/00_CUSTOM_INSTRUCTION.md` — Panchagarh Pre-Setup, MCP/Skill Governance, Execution Protocol & Negative Prompt.
+2. `docs/01_FRONTEND_MASTER_PROMPT.md` — Customer Storefront Design System, Layout, and API Contracts.
+3. `docs/02_BACKEND_MASTER_PROMPT.md` — Admin Dashboard, Multi-Vendor Architecture, and Financial Control System.
+4. `docs/schema.md` — Single Source of Truth for Database Schema.
+
+If any instruction or requirement is unclear or missing, mark it as `VERIFY_REQUIRED` — do NOT invent endpoints, fields, or business rules.
+
+---
+
+## 2. STRICT CONTROLLED AUTONOMY (APPROVAL POLICY)
+Never execute consequential actions without explicit user approval:
+- Adding dependencies or upgrading versions.
+- Executing database migrations or modifying existing schema.
+- Writing to production or deleting data.
+- Connecting external third-party services.
+- Never fake success states: if credentials for Pathao, Steadfast, or SMS are missing, display "Not Connected — Setup Guide" and use free fallbacks (`wa.me`, `sms:`, CSV).
+
+---
+
+## 3. STRICT NEGATIVE PROMPT (ABSOLUTELY FORBIDDEN)
+- NO Facebook Pixel, TikTok Pixel, Google Tag Manager, or marketing trackers.
+- NO automated Payment Gateways (SSLCommerz, Shurjopay, bKash automated PGW, card gateways).
+- Payment methods strictly limited to: **Cash on Delivery (COD)** and **Manual bKash**.
+- NO paid SaaS, paid CRM, or subscription-based external tools.
+- NO gradients, glassmorphism, heavy drop-shadows, or decorative emojis in UI.
+- NO exposing `supplier_cost_poisha`, `supplier_profit_poisha`, `platform_margin_poisha`, or `internal_vendor_sku` to customers.
+- NO cross-vendor data leakage (Vendor role only accesses their own records).
+
+---
+
+## 4. FINANCIAL & DATA INTEGRITY LOCK
+- Currency: BDT. All internal amounts are strictly **integer Poisha** (`1 BDT = 100 poisha`).
+- Zero floating-point arithmetic allowed for money calculations (`float` / `double` strictly prohibited).
+- Basis points for percentages: `1% = 100 bp`, `15% = 1500 bp`.
+- Three-tier pricing formula:
+  - `supplier_cost_poisha + supplier_profit_poisha = supplier_payable_poisha`
+  - `supplier_payable_poisha + platform_margin_poisha = sale_price_poisha`
+- Immutable double-entry ledger: `Total Debit = Total Credit`.
+- `vendor_ledger`, `courier_remittance_ledger`, and `audit_logs` are strictly **append-only**. NEVER execute `UPDATE` or `DELETE` on posted entries; always use balanced reversing journals.
+
+---
+
+## 5. DESIGN SYSTEM LOCK (4-SOLID COLOR SYSTEM)
+- Source of truth: `src/styles/tokens.css`
+- Core tokens ONLY: `--color-bg`, `--color-surface`, `--color-border`, `--color-ink`, `--color-muted`
+- Semantic status badges ONLY: `--color-success`, `--color-warning`, `--color-danger`, `--color-info`
+- Border lines: `1px solid var(--color-border)`
+- Touch target: >= 44px on mobile devices, responsive bottom sheets for screens < 768px.

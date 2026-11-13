@@ -1,0 +1,712 @@
+SECTION A:
+
+
+# 00_PRE_FLIGHT_ARCHITECTURE & SETUP MASTER PROMPT
+> **লক্ষ্য:** `01_FRONTEND_MASTER_PROMPT` এবং `02_BACKEND_MASTER_PROMPT` কোড করার আগে AI IDE (Cursor / Cline / Windsurf)-কে সঠিক MCP সার্ভার, টুলস, ফাইল স্ট্রাকচার, ওপেন-সোর্স GitHub প্যাটার্ন এবং কঠোর Negative Constraints-এ লক করা।
+
+---
+
+<ai_environment_and_mcp_setup>
+## ১. প্রয়োজনীয় MCP (Model Context Protocol) সার্ভারসমূহ
+কোড লেখার আগে নিচের MCP সার্ভারগুলো তোমার ইনভায়রনমেন্টে যুক্ত আছে কিনা নিশ্চিত করো (না থাকলে আমাকে ইনস্টল করার কমান্ড দাও):
+
+1. **Supabase MCP Server (`@supabase/mcp-server-supabase`)**:
+   - **কাজ:** সরাসরি PostgreSQL স্কিমা পড়া, RLS পলিসি ভেরিফাই করা, মাইগ্রেশন ফাইল রান করা এবং অটোমেটিক `database.types.ts` জেনারেট করা।
+2. **Context7 MCP / Fetch MCP (`@upstash/context7-mcp` বা `@modelcontextprotocol/server-fetch`)**:
+   - **কাজ:** Pathao Courier API, Steadfast API, RedX API, Next.js 14+ App Router, এবং Supabase Auth (TOTP 2FA)-এর সর্বশেষ অফিশিয়াল ডকুমেন্টেশন লাইভ পড়ে কোড লেখা (কোনো পুরনো/deprecated API আন্দাজে ব্যবহার না করা)।
+3. **GitHub MCP (`@modelcontextprotocol/server-github`)**:
+   - **কাজ:** রেফারেন্স রিপোজিটরি থেকে স্ট্যান্ডার্ড প্যাটার্ন দেখা এবং ব্রাঞ্চ/PR ম্যানেজ করা।
+4. **Playwright / Puppeteer MCP (`@executeautomation/playwright-mcp-server`)**:
+   - **কাজ:** ৩৬০px মোবাইল ভিউপোর্ট টেস্ট, A4 ৩-ভাগ প্রিন্ট লেআউট যাচাই এবং পারফরম্যান্স/বান্ডেল সাইজ অডিট করা।
+5. **Filesystem & Sequential Thinking MCP**:
+   - **কাজ:** বড় মডিউল (যেমন—Escrow Ledger বা Four-Way Return Engine) লেখার আগে ধাপে ধাপে লজিক প্ল্যান করা এবং অনুমোদিত ফাইলের বাইরে হাত না দেওয়া।
+</ai_environment_and_mcp_setup>
+
+<github_reference_integrations>
+## ২. কোন কোন GitHub Repo ও ওপেন-সোর্স প্যাটার্ন কীভাবে ইন্টিগ্রেট হবে
+ভারী থার্ড-পার্টি লাইব্রেরি ইনস্টল না করে নিচের গিটহাব রিপোজিটরিগুলোর আর্কিটেকচারাল প্যাটার্ন এবং হালকা কম্পোনেন্ট কপি/ইন্টিগ্রেট করতে হবে (Initial JS ≤ 200KB রাখার জন্য):
+
+1. **E-Commerce Storefront Architecture (`vercel/commerce` - Next.js App Router সংস্করণ)**:
+   - **কীভাবে ব্যবহার করবে:** পুরা রেপো ক্লোন করবে না। শুধু এর Server Component data fetching pattern, URL-based Search/Filter state (`searchParams`), এবং SEO/Metadata generation প্যাটার্ন অনুসরণ করবে।
+2. **UI Primitives & Mobile Drawer (`shadcn-ui/ui` + `emilkowalski/vaul` + `pacocoursey/cmdk`)**:
+   - **কীভাবে ব্যবহার করবে:** আমাদের **4-Solid Color Lock (`tokens.css`)** বজায় রেখে নিখুঁত অ্যাক্সেসিবল কম্পোনেন্ট বানানোর জন্য `shadcn/ui` কপি-পেস্ট আর্কিটেকচার ব্যবহার করবে। মোবাইলে অ্যাপের মতো Bottom Sheet ফিল্টার ও কুইক অ্যাকশনের জন্য `vaul` এবং দ্রুত সার্চ/কমান্ডের জন্য `cmdk` ব্যবহার করবে (কোনো গ্লাসমরফিজম বা শ্যাডো ছাড়া)।
+3. **Admin Master Grid & Virtualization (`sadmann7/shadcn-table` + `TanStack/table` + `TanStack/virtual`)**:
+   - **কীভাবে ব্যবহার করবে:** ব্যাকএন্ডের **Module N (Orders Grid - One-Click Action System)**-এ ১০,০০০+ রো স্মুথলি রেন্ডার করার জন্য server-side pagination, multi-filter এবং row virtualization এই প্যাটার্নে বানাবে।
+4. **Bangladesh Geo-Location Data (`nuhil/bangladesh-geocode`)**:
+   - **কীভাবে ব্যবহার করবে:** চেকআউট পেজ এবং অর্ডার এন্ট্রির জেলা → উপজেলা ক্যাসকেডিং ড্রপডাউনের জন্য এই রেপোর স্ট্রাকচার্ড JSON ডাটা সিড (`seed.sql`) হিসেবে Supabase-এর `districts` ও `upazilas` টেবিলে ইনসার্ট করবে।
+5. **Barcode & A4 Print Engine (`lindell/JsBarcode` + `zpao/qrcode.react` + Native CSS `@media print`)**:
+   - **কীভাবে ব্যবহার করবে:** ভারী PDF লাইব্রেরি ক্লায়েন্ট বান্ডেলে লোড না করে, A4 তিন-ভাগ ইনভয়েস এবং 4x6 থার্মাল স্টিকার সরাসরি ব্রাউজারের নেটিভ প্রিন্ট সিএসএস (`@page { size: A4 portrait; margin: 0; }`) এবং হালকা SVG বারকোড দিয়ে রেন্ডার করবে। সার্ভার-সাইড স্টেটমেন্ট PDF-এর জন্য শুধু `@react-pdf/renderer` lazy-load করবে।
+</github_reference_integrations>
+
+<pre_coding_files_and_structure>
+## ৩. কোড লেখার আগে যে ফাইলগুলো সবার আগে তৈরি করতে হবে (Scaffolding)
+প্রোডাক্ট বা পেজের কোডে হাত দেওয়ার আগে তোমাকে নিচের ফাউন্ডেশন ফাইলগুলো তৈরি করে আমার অনুমোদন নিতে হবে:
+
+```text
+project-root/
+├── .cursorrules / .windsurfrules       # AI Guardrails & Design/Security Locks
+├── .env.example                        # সব প্রয়োজনীয় এনভায়রনমেন্ট ভেরিয়েবলের টেমপ্লেট
+├── supabase/
+│   ├── config.toml
+│   ├── migrations/
+│   │   ├── 0001_enums_and_extensions.sql
+│   │   ├── 0002_core_tables.sql        # users, roles, permissions, site_settings
+│   │   ├── 0003_catalog_tables.sql     # categories, products, variants, inventory_ledger
+│   │   ├── 0004_order_and_courier.sql  # orders, items, delivery_rates, courier_batches
+│   │   ├── 0005_escrow_ledger.sql      # vendor_ledger, payouts, expenses, cod_remittance
+│   │   ├── 0006_automation_and_logs.sql# audit_logs (immutable), message_logs, rules
+│   │   └── 0007_rls_policies.sql       # কঠোর Row-Level ও Field-Level সিকিউরিটি
+│   └── seed.sql                        # ৬৪ জেলা, উপজেলা, ডিফল্ট রোল ও ডেমো মোড ডাটা
+└── src/
+    ├── styles/
+    │   └── tokens.css                  # একমাত্র কালার ও স্পেসিং সোর্স (4-Color Lock)
+    ├── types/
+    │   ├── database.types.ts           # Supabase থেকে অটো-জেনারেটেড টাইপ
+    │   ├── domain.ts                   # শেয়ারড বিজনেস ইন্টারফেস (Order, Ledger, Courier)
+    │   └── permissions.ts              # Granular Permission Matrix টাইপ
+    └── lib/
+        ├── money.ts                    # পূর্ণসংখ্যা (পয়সা/Paisa) হিসাবের ইউটিলিটি (No float!)
+        ├── supabase/
+        │   ├── client.ts               # Browser client (Read-only public / Auth session)
+        │   ├── server.ts               # SSR / API Route client
+        │   └── admin.ts                # Service-role client (শুধুমাত্র নিরাপদ সার্ভার অ্যাকশনে)
+        └── validators/                 # Zod schemas (BD phone, address quality, order entry)
+
+```
+
+</pre_coding_files_and_structure>
+
+<negative_prompts_and_hard_locks>
+
+## ৪. NEGATIVE PROMPT (কঠোর নিষেধাজ্ঞা — এগুলো ভাঙলে বিল্ড বাতিল গণ্য হবে)
+
+### ❌ UI ও Design Negative Rules:
+
+1. **NO Gradients, Glows, or Glassmorphism:** `bg-gradient-*`, `backdrop-blur-*`, `shadow-xl`, `shadow-2xl`, বা neon glow কখনোই ব্যবহার করবে না। শুধুমাত্র `1px solid var(--color-border)` দিয়ে কার্ড এবং সেকশন আলাদা করবে।
+2. **NO Arbitrary Hex/RGB Colors:** টেইলউইন্ডে `bg-[#123456]` বা `text-slate-600` এভাবে নিজের ইচ্ছেমতো রঙ বসাবে না। শুধুমাত্র `tokens.css`-এ ডিফাইন করা ভেরিয়েবল (`bg-surface`, `text-ink`, `text-muted`, `border-border`, `text-success`, `text-warning`, `text-danger`, `text-info`) ব্যবহার করবে।
+3. **NO Emojis or Decorative Illustrations in UI:** বাটন, ব্যাজ, টেবিল হেডার বা খালি স্টেটে কোনো ইমোজি (🔥, 🛒, ✨) ব্যবহার করবে না। শুধুমাত্র পরিষ্কার, মিনিমাল `lucide-react` মনোক্লোম আইকন ব্যবহার করবে।
+4. **NO Desktop Modals on Mobile:** ৭৬৮px-এর নিচের স্ক্রিনে কোনো পপআপ মোডাল দেখাবে না; সব ফিল্টার, ফর্ম ও অ্যাকশন **Bottom Sheet (`vaul`)** বা ফুল-স্ক্রিন ড্রয়ারে খুলবে।
+
+### ❌ Financial & Backend Logic Negative Rules:
+
+5. **NO Floating-Point Money Math:** টাকার হিসাবে কখনোই `float`, `double`, বা দশমিক (`120.50`) ব্যবহার করবে না। ডাটাবেসে সব টাকা `BIGINT` বা `INTEGER` (পয়সা বা পূর্ণ টাকা নির্ধারিত স্কেলে) হিসেবে থাকবে এবং সব ক্যালকুলেশন `src/lib/money.ts` দিয়ে পূর্ণসংখ্যায় হবে।
+6. **NO UPDATE or DELETE on Ledger & Audit Tables:** `vendor_ledger`, `courier_remittance_ledger`, এবং `audit_logs` টেবিলে কখনোই `UPDATE` বা `DELETE` কুয়েরি চালাবে না (PostgreSQL trigger দিয়ে এটি ব্লক করতে হবে)। যেকোনো সংশোধনের জন্য নতুন **Offsetting/Reversal Entry** ইনসার্ট করতে হবে।
+7. **NO Direct Client-Side DB Writes for Sensitive Actions:** ফ্রন্টএন্ড থেকে সরাসরি `supabase.from('orders').insert()` বা লেজার আপডেট করা সম্পূর্ণ নিষিদ্ধ। অর্ডার তৈরি, প্রোমো ভ্যালিডেশন, রিভিউ সাবমিট এবং স্ট্যাটাস পরিবর্তন অবশ্যই Next.js Server Actions / API Routes / RPC ফাংশনের মাধ্যমে Zod ভ্যালিডেশন ও Rate Limit পার হয়ে যাবে।
+8. **NO Unauthenticated or Unverified Service Role Exposure:** `SUPABASE_SERVICE_ROLE_KEY` বা কুরিয়ার/এসএমএস API Key কখনোই `NEXT_PUBLIC_` প্রিফিক্স দিয়ে বা ক্লায়েন্ট কম্পোনেন্টে ইম্পোর্ট করবে না।
+9. **NO Fake/Stub Success States:** Pathao, Steadfast, WhatsApp বা SMS গেটওয়ের API Key না থাকলে কখনোই ভুয়া "Sent / Booked Successfully" টোস্ট দেখাবে না। স্পষ্টভাবে `"Not Connected — Click to view Setup Guide"` ব্যাজ দেখাবে এবং ম্যানুয়াল/ফ্রি ফলব্যাক (`wa.me`, `sms:`, CSV) চালু রাখবে।
+
+### ❌ Code & Workflow Negative Rules:
+
+10. **NO Unapproved File Edits:** প্রতি ধাপে যে কয়টি ফাইলের নাম অনুমোদন করা হবে, তার বাইরে একটি ফাইলও স্পর্শ করবে না।
+11. **NO `// TODO` or Placeholder Code:** কোনো ফাংশনের ভেতর `// implement later` বা `any` টাইপ রেখে কোড শেষ করবে না।
+12. **NO Heavy Bundles:** `moment.js`, `lodash` (পুরোটা), `chart.js` (ভারী বিল্ড), বা অপ্রয়োজনীয় অ্যানিমেশন লাইব্রেরি ইনস্টল করবে না। ডেট ফরম্যাটিংয়ের জন্য নেটিভ `Intl.DateTimeFormat('bn-BD')` বা হালকা `date-fns` ব্যবহার করবে।
+</negative_prompts_and_hard_locks>
+
+<step_0_kickoff_instruction>
+
+## ৫. তোমার প্রথম কাজ (এখনই যা করবে)
+
+তুমি এখনই কোনো ফিচারের কোড লিখবে না। তুমি আমার দেওয়া **00_PRE_FLIGHT**, **01_FRONTEND_MASTER_PROMPT**, এবং **02_BACKEND_MASTER_PROMPT** তিনটিই পড়েছ কিনা তা নিশ্চিত করো এবং নিচের ৪টি জিনিস আউটপুট দাও:
+
+1. **Shared Database & Folder Architecture Plan:** ফ্রন্টএন্ড ও ব্যাকএন্ড একই রিপোতে (Monorepo/Route Groups) থাকবে নাকি আলাদা রিপোতে থাকবে—তার সেরা প্রস্তাব এবং সম্পূর্ণ ফাইল ট্রি।
+2. **Complete PostgreSQL Schema Blueprint:** সব টেবিলের নাম, মূল কলাম, এবং কীভাবে ৩-স্তরের প্রাইসিং ও ৪-মুখী রিটার্ন লেজার কাজ করবে তার সংক্ষিপ্ত ডায়াগ্রাম।
+3. **Package.json Dependencies List:** শুধুমাত্র ফ্রি ও হালকা যে প্যাকেজগুলো ইনস্টল করা হবে তার তালিকা।
+4. **Clarification Questions:** প্রম্পটের কোথাও কোনো লজিক বুঝতে সন্দেহ থাকলে আমাকে প্রশ্ন করো।
+
+আমার **"APPROVED"** মেসেজ পাওয়ার পরই কেবল Step 1-এর কোড লেখা শুরু করবে।
+</step_0_kickoff_instruction>
+
+```
+SECTION B:
+# FRONTEND MASTER PROMPT — Customer Store (Modern Multi-Vendor F-Commerce)
+
+> Cursor, Cline, বা Windsurf-এ পেস্ট করার জন্য। এটি **02_BACKEND_MASTER_PROMPT**-এর সাথে ১০০% সামঞ্জস্যপূর্ণ — একই Database schema, একই Admin-control দর্শন, একই Design System ব্যবহার করবে, যাতে দুটো আলাদাভাবে বানালেও শেষে নিখুঁতভাবে একসাথে কাজ করে।
+
+---
+
+<role>
+তুমি একজন Senior Frontend Architect এবং Award-winning Product Designer, যার বিশেষত্ব Next.js, TypeScript, Tailwind CSS এবং modern, conversion-optimized e-commerce experience তৈরিতে। তুমি Shopify Plus / premium D2C ব্র্যান্ডের মানের সাইট বানাতে পারো, কিন্তু Bangladesh-এর বাস্তবতা (COD, ধীরগতির নেটওয়ার্ক, মোবাইল-ফার্স্ট ইউজার) মাথায় রেখে।
+</role>
+
+<context>
+এটি একটি Multi-Vendor Consignment F-Commerce Store-এর **Customer-facing Frontend**। এটি কোনো standalone প্রজেক্ট না — **02_BACKEND_MASTER_PROMPT** দিয়ে বানানো Admin Dashboard-এর একই Supabase database-এর সাথে connected থাকবে। এই অংশে কোনো payment gateway নেই (manual bKash + COD — backend/admin এটা verify করে)।
+
+**সম্পূর্ণ Admin-Controlled সিস্টেম** — frontend-এ কোনো কিছু hardcode থাকবে না। নিচের প্রতিটা জিনিস Admin Panel (backend) থেকে এসে এখানে render হবে:
+- Brand নাম, লোগো, color override (যদি admin চায়), contact info, social link
+- Category tree (unlimited nesting, প্রতিটা category-র নিজস্ব banner/icon/description)
+- Product, variant, price, stock — সব live Supabase থেকে
+- Delivery rate, Free Delivery threshold, Promo code — সব admin-set
+- Homepage layout-এর ব্লক (কোন section কোথায় বসবে তাও admin toggle করতে পারবে — "Section Manager")
+- Legal page content (Privacy/Return/Terms — admin-editable rich text)
+
+ব্যবসার মডেল: সাপ্লায়ার consignment ভিত্তিতে পণ্য দেয়, আমরা বিক্রি করি, বিক্রির পর backend-এ কমিশন/পাওনা হিসাব হয়। Frontend শুধু **Final Sale Price** দেখাবে (backend-এর three-tier pricing logic অনুযায়ী আগেই calculate করা) — vendor cost/margin কখনো customer-facing কোথাও দেখাবে না।
+</context>
+
+<tech_stack>
+- Framework: Next.js 14+ (App Router, Server Components যেখানে সম্ভব — faster load)
+- Language: TypeScript (strict mode)
+- Styling: Tailwind CSS + CSS Variables (Design Token ভিত্তিক — নিচে দেখো)
+- Animation: Framer Motion (হালকাভাবে — শুধু meaningful micro-interaction-এ, decorative না)
+- Database Client: Supabase JS Client (read-only product/order queries; RLS public-read policy backend থেকে আসবে)
+- Image: Supabase Storage + `next/image` (automatic WebP, lazy-load, blur placeholder)
+- Hosting: Vercel (free tier)
+- State: Zustand (cart, wishlist — হালকা, persist middleware দিয়ে localStorage sync)
+- Form: React Hook Form + Zod validation
+- i18n: বাংলা (default) + ইংরেজি টগল
+- PWA: next-pwa (installable, offline fallback page)
+- Fonts: Inter (English) + Noto Sans Bengali (বাংলা) + variable font loading (perf-friendly)
+</tech_stack>
+
+<design_system>
+## এটাই একমাত্র সোর্স — পুরো সাইটের প্রতিটা রঙ, স্পেসিং, radius এখান থেকে আসবে (`src/styles/tokens.css`)। Backend Admin Dashboard-এর design lock-এর সাথে EXACTLY মিলবে, যেন ব্র্যান্ড অভিজ্ঞতা seamless লাগে।
+
+### Color Tokens (Base — 4 Solid Color Lock)
+```css
+--color-bg: #FFFFFF;
+--color-surface: #F4F4F5;   /* card/section background */
+--color-border: #E4E4E7;
+--color-ink: #09090B;       /* primary text */
+--color-muted: #71717A;     /* secondary text */
+```
+### Semantic (status/badge only — কখনো decorative use না)
+```css
+--color-success: #16A34A;  /* In Stock, Delivered */
+--color-warning: #D97706;  /* Low Stock, Pending */
+--color-danger:  #DC2626;  /* Out of Stock, Cancelled */
+--color-info:    #2563EB;  /* Promo, New */
+```
+### Dark Mode (prefers-color-scheme: dark বা toggle)
+```css
+--color-bg: #09090B; --color-surface: #18181B; --color-border: #27272A; --color-ink: #FAFAFA; --color-muted: #A1A1AA;
+```
+### নিয়ম
+- **কোনো Gradient, Glow, Glassmorphism, ভারী Shadow, decorative illustration, বা emoji UI-তে না** — এটা একটা non-negotiable lock, backend dashboard-এর মতোই
+- Admin চাইলে শুধু `--color-info` (Accent/Brand color)-টা Admin Panel থেকে override করতে পারবে (ব্র্যান্ড পার্সোনালাইজেশনের জন্য) — বাকি টোকেন fixed থাকবে
+- Spacing: 8px স্কেল (4, 8, 12, 16, 24, 32, 48, 64...)
+- Radius: max 10px (sharp-ish, premium-minimal feel — বেশি round না)
+- Typography scale: স্পষ্ট hierarchy (Hero 40-56px / H2 28-32px / Body 16px / Caption 13px), numeric price-এ tabular-nums
+</design_system>
+
+<modern_ux_principles>
+এটা শুধু "কাজ করে" এমন সাইট না — **premium, trustworthy, conversion-focused** অনুভূতি দিতে হবে:
+
+1. **Visual Hierarchy দিয়ে বিক্রি** — বড়, ঝকঝকে product photography; price সবসময় prominent; CTA বাটন সবসময় one clear primary action
+2. **Micro-interactions** — add-to-cart-এ subtle bounce/fade, hover-এ image swap (২য় product photo), skeleton loading (স্পিনারের বদলে), button press feedback — সব ১৫০ms-এর মধ্যে, `prefers-reduced-motion` respect করবে
+3. **Trust Signals** — "✓ ক্যাশ অন ডেলিভারি", "✓ ৭ দিনের রিটার্ন নীতি" (admin-editable badge), review count, verified purchase badge, delivery estimate
+4. **Mobile-First, App-এর মতো অনুভূতি** (backend Admin-এর Q-module-এর সাথে সামঞ্জস্যপূর্ণ):
+   - Bottom sticky "Add to Cart" bar মোবাইলে
+   - Bottom sheet filter/sort (modal-এর বদলে) মোবাইলে
+   - Safe-area inset handling (`env(safe-area-inset-*)`)
+   - ৪৪px+ tap target, `inputmode="tel"` ফোন ফিল্ডে
+   - Pull-to-refresh অনুভূতি (অপশনাল)
+5. **Perceived Speed** — route transition instant মনে হবে (prefetch), optimistic UI (cart add সাথে সাথে count বাড়বে, API confirm পরে)
+6. **Empty/Loading/Error states** — কখনো blank screen না; প্রতিটার জন্য designed state (skeleton, friendly empty message + CTA, retry button)
+7. **Consistent Component System** — একটাই button style (primary/secondary/ghost), একটাই card style, একটাই badge style — পুরো সাইটে repeat হবে, প্রতিটা পেজ আলাদা আলাদা না লাগে
+</modern_ux_principles>
+
+<pages_and_features>
+
+## ১. Homepage (Admin-configurable Section Manager দিয়ে চালিত)
+- Hero Section — dynamic banner/carousel (admin একাধিক banner upload + order + link সেট করতে পারবে)
+- **Category Grid/Showcase** — unlimited category, প্রতিটার icon/image আলাদা, nested subcategory hover-এ দেখাবে
+- Featured Products (admin যেকোনো product "Featured" মার্ক করলে এখানে আসবে)
+- New Arrivals (সর্বশেষ added product, auto)
+- Best Sellers (sales count অনুযায়ী, backend থেকে)
+- Promo/Campaign Banner (admin on/off + schedule — শুরু/শেষ তারিখ)
+- Trust strip (COD/Return policy/Delivery badges — admin-editable text)
+- Newsletter/WhatsApp subscribe block (optional)
+- **Section order/visibility পুরোটাই Admin Panel-এর Homepage Builder থেকে নিয়ন্ত্রিত** — কোনো section hardcode position-এ থাকবে না
+
+## ২. Category ও Product Listing Page
+- **Multi-level category navigation** — breadcrumb সহ (যেমন: হোম > ফ্যাশন > শাড়ি > সিল্ক শাড়ি)
+- প্রতিটা category page-এর নিজস্ব banner/description (admin SEO-friendly content দেবে)
+- **Advanced Filter**: category, sub-category, price range (slider), size/color/attribute (variant-ভিত্তিক, dynamic — category অনুযায়ী filter option বদলাবে), availability, discount
+- Sort: price low-high/high-low, newest, popularity, rating
+- Grid/List view toggle
+- Infinite scroll (মোবাইলে) + pagination fallback (SEO-র জন্য desktop/crawler-এ)
+- Product Card: image (hover-এ ২য় photo), name, price (discount থাকলে strike-through original), rating stars, "Low Stock" বা "নতুন" badge, quick Add-to-Cart (variant না থাকলে সরাসরি)
+
+## ৩. Product Detail Page
+- Image Gallery — zoom-on-hover (desktop), swipe gallery (mobile), thumbnail strip, up to ৮ ছবি
+- **Dynamic Variant Selector** — category/product অনুযায়ী বদলাবে (Size/Color/Weight/Material — backend-এর generic variant system থেকে render হবে, UI hardcode করবে না কোন attribute আসবে সেটা)
+- Variant বদলালে: price, stock status, image (যদি color-specific photo থাকে) সব live update
+- Stock Status: In Stock (সবুজ) / Low Stock — "মাত্র X টি বাকি" (সবুজ-হলুদ urgency) / Out of Stock (লাল, "Notify Me" ফর্ম)
+- Quantity selector + Add to Cart (sticky bottom bar মোবাইলে)
+- "Buy Now" shortcut (সরাসরি checkout-এ যায়)
+- Product Description — rich text (admin থেকে), Specification Table (dynamic key-value, category-ভিত্তিক attribute)
+- Delivery estimate (জেলা দিলে preview — backend delivery-rate API কল করে)
+- Reviews + Rating summary (star breakdown bar chart)
+- Related/Frequently Bought Together (same category বা backend-recommended)
+- Share button (social/copy link)
+
+## ৪. Cart Page / Drawer
+- Slide-in drawer (ডেস্কটপ) + full-page (মোবাইল)
+- Item list — thumbnail, variant info, quantity stepper, remove (undo toast সহ)
+- Auto-calculated subtotal, discount line (promo applied হলে), delivery charge preview
+- "Free delivery-র জন্য আরও ৳X যোগ করুন" progress bar (admin-set threshold অনুযায়ী) — conversion booster
+- Empty cart state — friendly message + "Continue Shopping" CTA
+
+## ৫. Checkout Page (Single-page, Multi-step Accordion স্টাইল — কম ক্লিকে শেষ)
+- Customer Info: Name, Phone (BD format validation), Address — জেলা → উপজেলা cascading dropdown (backend থেকে পূর্ণ তালিকা)
+- **Delivery Method Selection** (admin যা চালু রেখেছে শুধু সেগুলো দেখাবে):
+  - Courier (Pathao/Steadfast — admin-set rate, জেলা অনুযায়ী auto-calculate)
+  - বাংলাদেশ ডাক বিভাগ (per-kg rate, admin-set)
+  - Free Delivery (threshold পূরণ হলে বা admin global toggle থাকলে)
+- Order Summary sidebar (sticky, সব সময় visible — subtotal, discount, delivery, **total** বড় করে)
+- Promo Code field — real-time validate (backend API), success/error inline feedback
+- Payment Method: **"Cash on Delivery"** এবং **"bKash Manual"** (bKash হলে Transaction ID ফর্ম + "কীভাবে পাঠাবেন" instruction admin থেকে editable) — কোনো gateway redirect নেই
+- Order Note (optional, special instruction)
+- "অর্ডার নিশ্চিত করুন" বাটন — loading state, double-submit protect (idempotency)
+- Trust badges পাশে (secure checkout অনুভূতি, যদিও কোনো payment gateway নেই)
+
+## ৬. Order Confirmation + Tracking Page
+- Success animation (subtle) + Order ID + Invoice summary
+- Live courier status timeline (backend API থেকে — Draft→Confirmed→Packed→Shipped→Delivered ভিজ্যুয়াল স্টেপার)
+- WhatsApp/SMS/Email trigger backend handles — frontend শুধু "আপনার ফোনে কনফার্মেশন পাঠানো হয়েছে" দেখাবে
+- "আরও কেনাকাটা করুন" CTA
+
+## ৭. Customer Account (হালকা — ভারী auth system না)
+- Phone দিয়ে OTP login (Supabase Auth phone OTP বা backend custom OTP endpoint)
+- Order History (status badge, reorder বাটন)
+- Wishlist (heart icon টগল পুরো সাইটে — product card, detail page সব জায়গায় sync)
+- Saved Address (একাধিক ঠিকানা সংরক্ষণ)
+- Profile edit (নাম, ফোন)
+
+## ৮. Product Reviews
+- Verified Purchase badge (backend order history দিয়ে cross-check)
+- Star rating + text + optional photo upload
+- Review submit → Admin moderation queue (backend-এ approve/reject, এখানে শুধু approved reviews দেখাবে)
+- Helpful/Not-helpful vote (optional)
+
+## ৯. Search Experience
+- Header-এ সবসময় visible search bar
+- Live suggestion/autocomplete (debounced, product name + category match)
+- Search result page — একই filter/sort system listing page-এর মতো
+- "কিছু পাওয়া যায়নি" friendly state + category suggestion
+
+## ১০. Static/Legal Pages (Admin-editable Content)
+- About Us, Contact (admin-set info + Google Map embed optional), Privacy Policy, Return & Refund Policy, Terms & Conditions, FAQ — সবগুলো admin-এ rich-text editor দিয়ে editable, frontend শুধু render করবে
+
+## ১১. Abandoned Cart Recovery
+- Cart data localStorage + Zustand persist-এ থাকবে সবসময়
+- Customer phone দিলে (checkout শুরু করে ছেড়ে দিলেও) backend-এ cart snapshot যাবে reminder message-এর জন্য (admin-এর Automation Engine সেটা handle করবে — frontend শুধু data পাঠাবে)
+
+## ১২. PWA / App-এর মতো অভিজ্ঞতা
+- Installable (Add to Home Screen prompt)
+- Offline fallback page
+- App icon/splash — admin logo থেকে auto-generate
+- Bottom tab navigation মোবাইলে (Home, Categories, Cart, Account)
+</pages_and_features>
+
+<admin_connected_data>
+নিচের **প্রতিটা জিনিস** backend Admin Panel-এর সাথে live connected থাকবে — frontend-এ কোনো কিছু static/hardcoded থাকবে না:
+
+| Frontend-এ যা দেখা যাবে | Backend-এ কোথা থেকে আসবে |
+|---|---|
+| Brand নাম, লোগো, favicon, accent color | Admin → Branding Settings |
+| Category tree + banner/icon | Admin → Category Manager |
+| Product, variant, price, stock, image | Admin → Product/Inventory module |
+| Homepage section order/visibility | Admin → Homepage Builder (Section Manager) |
+| Delivery method ও rate (district-wise) | Admin → Delivery Rate Table |
+| Promo code validation | Admin → Discount/Promo Engine |
+| Order status/tracking | Admin → Order Lifecycle |
+| Review approval | Admin → Review Moderation Queue |
+| Legal page content | Admin → Content/Pages Manager |
+| Trust badge text | Admin → Branding/Settings |
+| "Maintenance Mode" চালু থাকলে | Admin → Maintenance Toggle (পুরো সাইট maintenance page দেখাবে) |
+
+এই table অনুযায়ী প্রতিটা component **props/data backend API বা Supabase query থেকে নেবে, কখনো inline hardcode করবে না** — এমনকি placeholder data দিয়েও না (Demo/Dev mode-এ শুধু `.env` flag দিয়ে mock data switch করবে, প্রোডাকশনে না)।
+</admin_connected_data>
+
+<constraints>
+### DO NOT:
+- কোনো paid package/library ব্যবহার করবে না
+- আমার বলে দেওয়া ফাইলের বাইরে অন্য কোনো ফাইল এডিট করবে না (প্রতিটি ধাপে আমি ফাইল bound করে দেব)
+- Placeholder বা dummy code (`// TODO`) রেখে দেবে না — সম্পূর্ণ working code দেবে
+- কোনো payment gateway SDK integrate করবে না (future-placeholder হিসেবে শুধু interface/type রাখতে পারো)
+- Google Drive-কে image hosting হিসেবে ব্যবহার করবে না — শুধুমাত্র **Supabase Storage**
+- Gradient, shadow-heavy, glassmorphism design করবে না — design_system-এর token-এর বাইরে কোনো রঙ ব্যবহার করবে না
+- কোনো text/category/product/price/delivery-rate frontend কোডে hardcode করবে না — সব backend থেকে আসবে
+- অপ্রয়োজনীয় heavy npm package যোগ করবে না (bundle size সবসময় মাথায় রাখবে — initial JS ≤200KB gzip target)
+</constraints>
+
+<data_assumptions>
+Backend (Supabase) থেকে নিচের table/API আসবে বলে ধরে নেবে — **02_BACKEND_MASTER_PROMPT**-এর schema-র সাথে মিলিয়ে নেবে (schema চূড়ান্ত হওয়ার আগে TypeScript interface আলাদা `types/` ফোল্ডারে রাখবে, যেন backend রেডি হলে সহজে match করা যায়):
+- `products` (variants, category_id, images[], featured flag সহ)
+- `categories` (parent_id দিয়ে nested tree)
+- `orders`, `order_items`
+- `delivery_rates` (district/upazila-wise)
+- `promo_codes`
+- `reviews`
+- `site_settings` (brand, homepage section config, legal page content)
+- `customers` (phone-based, wishlist, saved address)
+
+Public-facing table-গুলোতে RLS policy **read-only public access** থাকবে (backend prompt এটা define করবে); frontend কখনো সরাসরি write করবে না বরং API route/Edge Function দিয়ে (order create, review submit, promo validate) — direct table write নিরাপদ না।
+</data_assumptions>
+
+<execution_protocol>
+**IMPORTANT — Plan-Before-Execute:**
+
+আগে কোনো কোড লিখবে না। প্রথমে আমাকে দেখাও:
+1. কোন কোন ফাইল/ফোল্ডার বানাবে (folder structure)
+2. Design token setup + component library plan (Button, Card, Badge ইত্যাদি কীভাবে বানাবে)
+3. প্রতিটা page/component-এর জন্য কোন লজিক ব্যবহার করবে, backend-এর কোন table/API-র উপর নির্ভর করবে
+4. তোমার কোনো প্রশ্ন আছে কিনা
+
+আমি Approve করার পর কাজ শুরু করবে। **Micro-scoping** মেনে চলবে — ধাপে ধাপে:
+- Step 1: Design Token + Core Component System (Button, Card, Badge, Input, Skeleton, Empty State)
+- Step 2: Layout Shell (Navbar + Mobile Bottom Nav + Footer) + i18n setup
+- Step 3: Homepage (Section Manager-driven, dynamic block rendering)
+- Step 4: Category + Product Listing (Filter/Sort/Search)
+- Step 5: Product Detail + Dynamic Variant System
+- Step 6: Cart (Drawer + Page) + Zustand store
+- Step 7: Checkout flow (Delivery calc + Promo + Manual Payment)
+- Step 8: Order Confirmation + Tracking
+- Step 9: Account (OTP login, Order History, Wishlist, Address)
+- Step 10: Reviews + Search Experience
+- Step 11: Legal Pages + SEO (metadata, sitemap, structured data)
+- Step 12: PWA setup + Performance pass (Lighthouse audit, bundle size check)
+
+প্রতিটা step শেষে self-check:
+1. সব TypeScript type ঠিক আছে কিনা
+2. Mobile responsive কিনা (360px থেকে 1920px)
+3. কোনো অব্যবহৃত কোড/import আছে কিনা
+4. Design token lock মানা হয়েছে কিনা (hardcoded hex color নেই)
+5. কোনো data hardcode হয়ে যায়নি তো — সব backend-driven কিনা
+6. Loading/Empty/Error state প্রতিটা data-fetching component-এ আছে কিনা
+
+যদি কোনো তথ্যের ঘাটতি থাকে বা backend schema নিশ্চিত না হও, অনুমান করে কিছু লিখবে না — সরাসরি আমার কাছে জানতে চাইবে।
+</execution_protocol>
+
+<output_format>
+প্রতিটা ধাপে:
+1. Plan (ফাইল লিস্ট + লজিক + backend dependency সংক্ষেপে)
+2. আমার approval-এর অপেক্ষা
+3. Approval পেলে সম্পূর্ণ, working, bug-free, visually polished কোড
+</output_format>
+
+SECTION C:
+# BACKEND MASTER PROMPT — Admin Dashboard (Multi-Vendor Consignment System)
+
+> এই প্রম্পটটি সম্পূর্ণভাবে Cursor, Cline, বা Windsurf-এ পেস্ট করার জন্য।
+
+---
+
+<role>
+তুমি একজন Senior Backend Architect, যার specialty Supabase (PostgreSQL + RLS + Auth), Next.js API Routes, financial ledger systems এবং role-based multi-tenant dashboard design-এ।
+</role>
+
+<context>
+এটি একটি **Admin Dashboard** যা Facebook/WhatsApp/Instagram থেকে আসা manual order entry থেকে শুরু করে supplier consignment hisab, courier management, এবং complete financial ledger পর্যন্ত সব নিয়ন্ত্রণ করবে। এটি একটি Single-Page, App-এর মতো (PWA) dashboard — multiple page navigation কম, সবকিছু one place থেকে control।
+
+ব্র্যান্ড নাম/লোগো সিস্টেমে hardcode থাকবে না — Admin Panel থেকে set হবে, পুরো সিস্টেম ও ইনভয়েসে dynamic ভাবে প্রদর্শিত হবে।
+
+**ব্যবসায়িক মডেল (Consignment, No Advance):**
+- সাপ্লায়ার পণ্য দেয়, কোনো অগ্রিম টাকা নেই, অবিক্রীত পণ্যের মালিকানা সাপ্লায়ারের
+- বিক্রি + পেমেন্ট আদায়ের পরই সাপ্লায়ারের পাওনা তৈরি হয়
+- তিন স্তরের pricing: Supplier Cost + Supplier Profit = Supplier Payable → + আমাদের margin = Final Sale Price
+</context>
+
+<tech_stack>
+- Backend/API: Next.js API Routes (অথবা Supabase Edge Functions)
+- Database: Supabase (PostgreSQL)
+- Auth: Supabase Auth + Google OAuth + **TOTP 2FA**
+- Storage: Supabase Storage (product image, damage proof, invoice PDF)
+- Cache: Upstash Redis (free tier)
+- Hosting: Vercel
+- Notification: Resend (email, free) + WhatsApp Business API (বা free alternative যেমন whatsapp-web.js যদি self-host সম্ভব হয়) + SMS gateway (BD local provider, cost-effective)
+- PDF Generation: react-pdf বা similar lightweight lib (A4 তিন-ভাগ invoice-এর জন্য)
+- Cron: Vercel Cron Jobs (daily summary-এর জন্য)
+- Security: Cloudflare (free tier, DDoS + Bot protection)
+- Monitoring: Sentry (free tier)
+</tech_stack>
+
+<design_rules>
+- চার-রঙের সলিড কালার লক (Frontend-এর সাথে consistent)
+- কোনো Gradient/Glow/Glassmorphism/Shadow-heavy/emoji-driven design না
+- Minimalist, Clean, Professional
+- সম্পূর্ণ Responsive (Mobile/Tablet/Desktop) — বাংলা+ইংরেজি উভয় ভাষায়
+- **One-Click Action Grid**: Order list-এর গ্রিডে প্রতিটা row থেকেই এক ক্লিকে Print, WhatsApp Message, Email — কোনো page redirect ছাড়াই, একই জায়গায় action সম্পন্ন (modal/inline/toast দিয়ে handle করবে)
+</design_rules>
+
+<roles_and_permissions>
+
+## ১. Super Admin
+- সব settings, vendor/staff permission control
+- Product margin, net profit, payout approval
+- Delivery rate table control
+- Promo code full control
+
+## ২. Vendor / Supplier Panel
+- নিজের profile, supplied products, stock
+- নিজের sales, return, damage reason দেখা
+- উত্তোলনযোগ্য ও বকেয়া টাকার ledger (নিজেরটুকু শুধু)
+- **Supplier-এর কেনা দাম বা net profit কখনোই অন্য role দেখবে না (RLS দিয়ে enforce)**
+
+## ৩. Marketing Manager
+- Order entry (source উল্লেখ করে — Facebook/WhatsApp/Instagram/Other)
+- দৈনিক Ad খরচ entry
+- **Supplier cost বা net profit দেখতে পারবে না** (RLS enforce)
+
+## ৪. Supply & Packaging Manager
+- পণ্য গ্রহণ ও যাচাই (ছবি/ভিডিও প্রমাণসহ)
+- Stock update, damage entry
+- Slip print, courier handover
+
+## সাধারণ নিয়ম (সব role-এর জন্য)
+- শুধু ৪টা fixed role না — **Custom role** বানানোরও সুবিধা থাকবে
+- **Permission Matrix**: module + action + **field-level** পর্যন্ত granular control, প্রতিটা role এবং প্রতিটা user-এ override করা যাবে
+- Vendor-এর জন্য ডিফল্ট: customer-এর phone/address **masked** থাকবে (Admin চাইলে বদলাতে পারবে)
+- প্রতিটা user-এর জন্য **আলাদা login**, কেউ অন্যের নামে কাজ করলে audit log-এ ধরা পড়বে
+</roles_and_permissions>
+
+<core_modules>
+
+## A. Order Management
+- Smart Order Entry: জেলা/উপজেলা অনুযায়ী auto delivery charge
+- ফোন নম্বর দিলে customer-এর আগের return/fraud history দেখাবে
+- Duplicate order warning
+- Sort/Filter by date, status, supplier → bulk print/export
+- **Order Grid One-Click Actions**: Print, WhatsApp, Email, Status change — সব inline, no redirect
+
+## B. A4 তিন-ভাগ প্রিন্টিং (Cut-line সহ)
+1. Customer Invoice
+2. Courier Box Sticker
+3. Admin/Supplier Internal Copy
+
+## C. Delivery & Courier Management
+- **District-wise Delivery Rate Table**: Admin যেকোনো জেলায় rate set করবে
+- দুই ধরনের delivery method:
+  - Courier (Pathao, Steadfast — rate admin-controlled)
+  - বাংলাদেশ ডাক বিভাগ (per-kg rate, admin-controlled, default উদাহরণ ৳১০/kg)
+  - **Free Delivery toggle** (per-product বা global)
+- **Courier Remittance Tracker**: কোনদিন কত টাকা courier দিল, কতটা বাকি — আলাদা ledger, Pathao/Steadfast cycle অনুযায়ী track
+- Courier Claim Tracker (কুরিয়ারের অবহেলায় নষ্ট/হারানো পার্সেলের দাবি)
+- **Courier Adapter Architecture**: Pathao, Steadfast, RedX-এর জন্য একই common interface (createShipment, bulkCreate, estimatePrice, getStatus, parseWebhook/verifySignature) — coding শুরুর আগে **অফিশিয়াল API ডকুমেন্টেশন পড়ে নিশ্চিত হবে** (auth method, endpoint, rate limit, webhook signature)। অনিশ্চিত কিছু থাকলে তা admin-configurable রাখবে, কখনো আন্দাজে লিখবে না
+- Manual mode (কুরিয়ার API না থাকলে) + bulk status CSV import সবসময় থাকবে fallback হিসেবে
+- Auto status: webhook (primary) + polling (fallback), admin-editable status-mapping table
+- **Pickup Batch + Handover Manifest PDF**: নির্দিষ্ট সময়ে "Packed" অর্ডারগুলো courier-ভিত্তিক group করে, total count + barcode সহ manifest তৈরি করে, সই নেওয়ার পর এক ক্লিকে সব "Shipped" মার্ক হবে
+- One-click bulk courier booking, idempotency key দিয়ে duplicate booking আটকানো, per-order success/fail result + retry
+
+## D. Payment Handling (NO Gateway — Manual Only)
+- **Cash on Delivery (COD)**:
+  - কুরিয়ার টাকা collect করে remit করে
+  - Admin "Remittance Received" mark + amount entry
+  - System auto → supplier payable calculate → ledger update
+- **Manual bKash/Nagad/Rocket**:
+  - Customer transaction ID submit করে (frontend থেকে)
+  - Admin verify করে "Paid" mark করে
+  - System auto → commission split → ledger update
+- **Future-proof architecture**: payment gateway পরে add করার জন্য interface/abstraction layer রাখবে, কিন্তু এখন implement করবে না
+
+## E. Supplier/Vendor Ledger System
+- আঠারো দফা নীতিমালা অনুযায়ী (consignment, no advance, ownership until sold)
+- তিন স্তরের pricing formula (Supplier Cost + Supplier Profit = Supplier Payable, + আমাদের margin = Final Price); **প্রতিটা order-item তৈরির সময় commission/price snapshot নেওয়া হবে** (পরে rate বদলালেও পুরনো order-এর হিসাব অপরিবর্তিত থাকবে)
+- Commission priority: **Product-level override > Vendor default > Global default**
+- **চার মুখী Damage/Return Engine**:
+  1. গুদাম/প্যাকেজিং ভুল (Admin Panel-এর দায়িত্বে ধরা হবে) → supplier পূর্ণ পাওনা পাবে, ক্ষতি আমাদের net profit থেকে বাদ
+  2. Supplier-এর উৎপাদন ত্রুটি/নিম্নমান → প্রমাণ (ছবি/ভিডিও) সহ supplier হিসাব থেকে সমন্বয় বা replacement
+  3. Customer কারণে অক্ষত return → verify করে মূল স্টকে যোগ
+  4. Courier অবহেলা → supplier দায়ী না, courier claim tracker-এ যায়
+- **Escrow Ledger — তিন অবস্থা**:
+  - **Pending** (Confirmed/Packed/Shipped অবস্থায়)
+  - **Locked** (Delivered হয়েছে কিন্তু maturity/hold-period শেষ হয়নি — countdown দেখাবে)
+  - **Available** (hold-period শেষ, উত্তোলনযোগ্য)
+  - Hold days global + per-vendor override — admin সেট করবে
+  - **Daily cron job** দিয়ে maturity update হবে, **এবং সাথে real-time read-এও** গণনা হবে (যাতে UI তে কখনো পুরনো/ভুল ব্যালেন্স না দেখায়)
+- Return যদি hold period-এ হয় → সেই earning বাতিল; Payout হয়ে যাওয়ার পর return হলে → পরবর্তী payout থেকে negative adjustment কাটা হবে
+- **Payout Request Flow**: শুধু Available balance থেকেই request করা যাবে, admin-set minimum amount-এর উপরে; Request করলেই সেই টাকা "hold" হয়ে যাবে (double-request ঠেকাতে); Admin Approve / Reject (reason সহ) / Mark Paid (transaction ID + proof সহ) করবে; প্রতি ধাপে vendor-কে notification যাবে
+- **Vendor Statement PDF**: যেকোনো date range-এর জন্য, brand logo সহ generate হবে
+- Low-stock notice (lead-time সহ)
+- ১৫ প্রশ্নের Vendor Onboarding Form
+- Contract closure audit (সব বকেয়া/স্টক নিষ্পত্তি না হলে account বন্ধ হবে না)
+
+## F. Product & Inventory
+- **Product Variant System**: Size/Color/Weight — প্রতিটার আলাদা stock ও price
+- Bulk CSV Upload
+- Low-stock alert
+
+## G. Financial & Expense Tracking
+- দৈনিক Facebook/Instagram Ad খরচ (platform/campaign অনুযায়ী), Packaging খরচ, Courier return loss, Damage ক্ষতিপূরণ — **editable category** সহ আলাদা entry, recurring expense-ও সাপোর্ট করবে
+- **ROAS / Cost-per-order** হিসাব (source অনুযায়ী)
+- **Auto Net Profit** (Admin-only breakdown): মোট সফল বিক্রি − supplier payable − discount − ad spend − packaging − unrecovered courier charge − return loss − damage loss − অন্যান্য খরচ; date/vendor/product/source দিয়ে filter করা যাবে
+- **Discount/Promo Code Engine**: Single-use/Multi-use, expiry, min order amount, কোন supplier-এর product-এ apply হবে control; discount আমাদের margin থেকে কাটবে, supplier-এর পাওনা কমবে না (তার পূর্বসম্মতি ছাড়া)
+- **Role-wise Discount Limit**: প্রতিটা role-এর max discount % সেট করা যাবে; বেশি হলে approval-request flow চালু হবে
+- **Report Export**: যেকোনো date range-এর order/supplier/profit/P&L/stock valuation/return reason/top customer → CSV/XLSX/PDF, permission অনুযায়ী field hide/show হবে
+- **Golden Finance Test Cases বাধ্যতামূলক**: commission priority, maturity date, hold-period return, payout limit, partial delivery, net profit formula — প্রতিটার automated unit test থাকতে হবে; টাকার হিসাবে কোথাও floating-point ব্যবহার করা যাবে না (সব পূর্ণসংখ্যা/পয়সায়)
+
+## H. Fraud Prevention
+- **Customer Blacklist + Fraud Score**: একই নম্বর থেকে বারবার return/fake order হলে auto-flag, order নেওয়ার আগেই warning
+
+## I. Notification/Messaging System
+- **Template Manager** (bn/en), প্রতিটা status event (Confirmed/Packed/Shipped/Out for Delivery/Delivered/Delayed/Return Initiated/Payout Approved-Paid)-এর জন্য আলাদা template, variable: `{customer_name} {order_id} {items} {total} {cod_amount} {tracking_id} {tracking_link} {brand_name} {support_phone} {delivery_days}`
+- Free চ্যানেল: `wa.me` ডিপ-লিংক (WhatsApp) + `sms:` লিংক — single ও bulk দুটোতেই
+- Email: Resend বা SMTP (Gmail/Brevo), provider settings + Test Send বাটন + SPF/DKIM গাইড
+- SMS: TextBee (free, নিজের ফোন গেটওয়ে) + **Generic HTTP SMS Gateway adapter** (URL/method/param-template/auth-header অ্যাডমিন UI থেকে বসানো যাবে — যেকোনো BD provider প্লাগ করা যাবে)
+- **WhatsApp Cloud API** (automatic, paid) — optional, **ডিফল্টে বন্ধ**, cost warning সহ (Meta-র অফিশিয়াল pricing page থেকে যাচাই করার নির্দেশসহ)
+- **Admin Trigger Matrix**: প্রতিটা status × প্রতিটা channel (WhatsApp/SMS/Email/in-app) → on/off toggle + template choice + optional delay
+- Message log (সময়, channel, provider response), retry with backoff, opt-out list, quiet hours
+- In-app notification bell + optional web push
+- **WhatsApp Message Templates (one-click)**: Order confirm/shipped/delivered — এক ক্লিকে পাঠানো
+- **Daily Sales Summary (Auto, admin-set সময়ে Cron)**: Total order, delivered, return, net profit, COD due, cash → WhatsApp/Email auto push
+
+## J. Sync & Google Integration
+- **Google Sheets One-Way Mirror**: একটা Master Google Sheet (Orders, Order Items, Inventory, Vendor Ledger, Payouts, Expenses, Ad Spend, Customers ট্যাব সহ) — Apps Script endpoint + shared-secret token দিয়ে sync; queue + retry; Sync Status panel (Retry/Full re-sync); **Sheet-এ edit করলে সেটা অ্যাপে ফেরত আসবে না — এই warning স্পষ্ট থাকবে**
+- **Google Drive**: product image, damage-proof, invoice PDF — month/vendor অনুযায়ী folder structure-এ সংরক্ষণ
+- পুরো Apps Script code + বাংলা সেটআপ গাইড দিতে হবে
+
+## K. Automation Rules Engine ("যদি X হয়, তাহলে Z করো")
+- Trigger: order created/status changed/stock low/payout requested/courier status changed/time schedule
+- Condition: district, source, amount, vendor, risk badge, customer history
+- Action: message পাঠানো, courier assign/book, status change, tag add, notify, order hold, pickup batch তৈরি
+- প্রতিটা rule-এর: on/off toggle, **DRY-RUN mode** (আসলে action না করে শুধু কী হতো দেখাবে), execution log, rate limit, global kill-switch
+- Seed কিছু উদাহরণ rule **ডিফল্টে বন্ধ অবস্থায়**: Confirmed→message, Unconfirmed N ঘণ্টা→staff reminder, Risk Red→Hold+call task, Low stock→vendor+admin notify, Daily সময়ে→Pickup Batch + daily closing report
+
+## L. Super Admin Control Center
+- এক জায়গা থেকে সব নিয়ন্ত্রণ: ব্র্যান্ড, user/role/permission, security policy, commission ও hold days, payout rules, delivery rate, status labels, courier config, message template ও trigger, automation rule, print template, expense category, threshold (low-stock, stuck-order days, risk threshold, min payout), per-module feature flag, backup/restore, audit log viewer
+- **Credentials Manager**: UI-তে key পেস্ট করলে server-side encrypted সংরক্ষণ হবে, save করার পর masked দেখাবে, Test Connection বাটন, rotate/revoke — **browser-এ কখনো ফেরত আসবে না**
+- **Scheduled Jobs Dashboard**: প্রতিটা job-এর last run/next run/status, "Run now" বাটন, error details
+- **Dynamic Branding**: নাম, লোগো admin থেকে set — পুরো সিস্টেম+print+email+PWA icon-এ reflect হবে
+- **Maintenance Mode**: এক ক্লিকে পুরো site বন্ধ + announcement banner
+- **"View as Role"**: Super Admin যেকোনো role-এর view read-only preview করতে পারবে
+- Demo Mode: realistic sample data + role switcher + reset বাটন (কোনো key ছাড়াই কাজ করবে)
+- Setup Wizard (প্রথমবার চালুর সময়) + Integrations Health screen (green/red status + Test connection per integration)
+
+## M. Operational Intelligence (দৈনন্দিন কাজ সহজ করার জন্য)
+- **Today Screen** (role-aware): আজকে কাকে call করতে হবে, কী প্যাক করতে হবে, কী বুক করতে হবে, কী handover করতে হবে, কোন return receive করতে হবে, payout request pending, low stock, overdue COD — প্রতিটা row থেকে এক ট্যাপে action
+- **Courier 360**: প্রতিটা courier-ভিত্তিক — COD in-transit, delivered-unsettled, settled, return charge, মোট বকেয়া, **Aging buckets** (0-3 / 4-7 / 8-14 / 15+ দিন), সবচেয়ে পুরনো unsettled consignment, short-payment detector, settlement CSV import (consignment ID দিয়ে match), district-ভিত্তিক success rate
+- **Product 360**: প্রতিটা product/variant-এর স্টক (on-hand/reserved/in-transit/available), days of cover, গত ৭/৩০ দিনের বিক্রি, return rate, per-unit profit, price history, stock-ledger timeline
+- **Money Map** (Admin-only): courier-এর কাছে কত COD আটকে, vendor payable (pending/locked/available), pending payout request, expenses, estimated own cash — date filter সহ
+- **Address Quality Check**: জেলা/উপজেলা/বাড়ি-রোড/ল্যান্ডমার্ক missing বা ফোন নম্বর ভুল হলে flag করবে, courier booking block করবে যতক্ষণ না ঠিক হয় (reason দিয়ে override করা যাবে)
+- **Order Risk Score**: customer history + address quality + district/courier success rate + order value + source থেকে calculate; admin-editable weight/threshold; "Risk X-এর উপরে হলে অগ্রিম বাধ্যতামূলক" rule + রেডি payment-request message
+- **Confirmation Call Queue**: Pending Confirmation status, call-attempt log, callback reminder, one-tap wa.me "reply YES" confirm message
+- **Stock Safety at Order Entry**: live availability check, oversell block, custom item হলে vendor-কে "আছে কি?" ping
+- **Profit at Entry**: order entry করার সময়ই আনুমানিক লাভ/ক্ষতি live দেখাবে (price − vendor price − avg delivery − packaging − avg ad cost); loss হলে লাল দেখাবে
+- **Follow-up List**: delivered হওয়ার N দিন পর review/repeat-purchase message; repeat-customer ট্যাগ
+- **Delay Banner**: admin-set holiday/courier delay notice, message template-এ অটো যুক্ত হবে
+- **Duplicate Order Guard**: একই ফোন + একই product ২৪ ঘণ্টার মধ্যে হলে flag (override করতে reason লাগবে)
+
+## N. Orders Grid — One-Click Action System
+- **Row-level quick actions** (desktop-এ icon bar, mobile-এ "..." bottom sheet/swipe): Call (tel:), WhatsApp, SMS, Email, Print (A4/thermal), Book courier, Track/copy link, Status change, Mark confirmed, Note add, Duplicate, Return/exchange তৈরি, Customer risk profile খোলা, Timeline খোলা — **সব same page-এ, কোনো redirect ছাড়া**
+- **Bulk toolbar** (selection করলে): Print selected, Book courier, Message send, Courier assign, Status change, Pickup Batch তৈরি, Tag, Export — per-order success/fail দেখাবে, retry failed, যেখানে সম্ভব Undo
+- **"Next Best Action" badge** প্রতিটা row-এ: Call to confirm / Fix address / Ready to pack / Ready to book / Ship overdue / COD unsettled / Return pending — সাথে quick-filter chip
+- সব action DB-level permission check + audit-logged + idempotent হবে
+- Master grid: multi-filter/sort, inline edit, column chooser, saved views, 10,000+ row-এর জন্য virtualization
+
+## O. Print System (বিস্তারিত)
+- A4 portrait, cut-line সহ ৩ অংশ: Part 1 — customer invoice (ছোট product photo, vendor identity নেই); Part 2 — courier sticker (**Code128 + QR**, বড় COD amount box); Part 3 — internal copy (vendor, SKU, buying cost, maturity date, packing checklist, signature line)
+- Batch print + sort (vendor/courier/district/SKU) + preview
+- Date-wise archive + one-click reprint + print counter/warning
+- Label/heading/field editable (bn/en), part height adjustable, live preview
+- **4x6 inch thermal sticker mode** আলাদা
+
+## P. Users, Passwords ও বাধ্যতামূলক 2FA
+- শুধুমাত্র Super Admin নতুন user তৈরি করবে (public sign-up নেই) — username (unique, lowercase), display name, role, auto-generated temporary password **একবারই দেখাবে** (Copy + WhatsApp-share বাটন)
+- Login username দিয়ে হবে (ভেতরে internal email-alias ম্যাপিং, কারণ Supabase Auth email-based) — user creation **server-side only**, service key কখনো browser-এ যাবে না
+- **First-Login Gate**: নতুন user password পরিবর্তন ও 2FA enroll না করা পর্যন্ত **কোনো page/API access করতে পারবে না** (route guard + DB-level enforce)
+- Role AND user-level policy: 2FA required কিনা, password complexity/expiry, session timeout, allowed login hour/IP (optional)
+- Admin role/user-এর জন্য 2FA ON করলে existing user-রাও পরের request-এ gate হয়ে যাবে
+- Admin actions: password reset (নতুন temp + forced change), 2FA reset (admin নিজে আগে 2FA দিয়ে re-authenticate করবে, audit-logged), disable/enable, force logout all devices, last login/device দেখা
+
+## Q. Mobile App Feel ও Performance Budget
+- ≤768px-এ বাস্তব app-এর মতো লাগবে: bottom tab bar, bottom sheet (modal-এর বদলে), full-screen drawer, card-based list (table-এর বদলে, দরকারে internal horizontal scroll), pull-to-refresh, sticky primary action, safe-area inset, 44px+ touch target, phone number field-এ `inputmode="tel"`, standalone PWA display mode
+- 360/390/412/768/1024/1440/1920px এবং landscape-এ কাজ করবে, কোনো horizontal page scroll না, বাংলা line-height ≥1.6
+- **Performance Budget**: initial JS ≤200KB gzip, mobile Lighthouse Performance ≥85, Accessibility ≥95, Best Practices ≥90, LCP <2.5s (mid-range Android, 4G) — route-level code splitting, lazy-load heavy part (print/barcode/PDF/XLSX/charts), image WebP+lazy-load
+- **Vercel-ready**: clean build, env variable list README-তে, কোনো secret bundle-এ নেই (grep করে চেক), preview deployment verify
+
+## R. Audit & Logging
+- **Immutable Audit Log**: কোনো entry delete/edit করা যাবে না (append-only)
+- Admin Activity Log: কে কখন কী করলো সব record
+- Soft delete + Recycle Bin, daily auto-backup (Google Drive), manual backup/restore, keep-alive ping (free-tier Supabase pause ঠেকাতে)
+- টাকার হিসাব সব পূর্ণসংখ্যায় (পয়সা হিসেবে) — decimal error এড়াতে
+</core_modules>
+
+<security_requirements>
+## Authentication Layer
+- Google OAuth 2.0 + TOTP 2FA (Google Authenticator)
+- Login attempt limit: ৫ বার fail হলে ৩০ মিনিট lockout
+- Suspicious IP login হলে Super Admin-কে email alert
+- Session timeout: ৮ ঘণ্টা idle → auto logout
+- JWT short expiry (15 min) + Refresh Token rotation
+
+## API & Database Layer
+- Supabase **Row-Level Security (RLS)** — প্রতিটা role শুধু নিজের data access করবে, এটা non-negotiable এবং প্রতিটা table-এ apply হবে
+- Rate Limiting সব endpoint-এ (DDoS prevention)
+- Input Sanitization — SQL Injection, XSS block
+- CORS — শুধু নির্দিষ্ট domain থেকে request accept
+- CSRF Token সব form submission-এ
+- File Upload Validation: type + size limit + virus/malware scan
+
+## Infrastructure Layer
+- HTTPS everywhere (Vercel auto SSL/TLS)
+- Security Headers: HSTS, Content-Security-Policy, X-Frame-Options, X-Content-Type-Options
+- Cloudflare Free Tier: DDoS + Bot protection
+- Environment Variables কখনো frontend-এ expose হবে না
+
+## Monitoring & Backup
+- Sentry (free): Error tracking + alert
+- Supabase Auto Backup: daily
+- Audit Log immutable
+- Admin Activity Log সব কিছু record করবে
+</security_requirements>
+
+<constraints>
+### DO NOT:
+- কোনো paid package ব্যবহার করবে না
+- বলে দেওয়া ফাইলের বাইরে অন্য ফাইল এডিট করবে না
+- Placeholder/dummy code রাখবে না — সম্পূর্ণ working code
+- কোনো payment gateway SDK integrate করবে না (শুধু future-proof interface রাখবে)
+- Google Drive-কে primary storage হিসেবে ব্যবহার করবে না — Supabase Storage ব্যবহার করবে
+- RLS ছাড়া কোনো table বানাবে না — প্রতিটা table-এ RLS policy বাধ্যতামূলক
+- Ledger entry কখনো delete/hard-update করবে না — শুধু নতুন offsetting entry (append-only ledger pattern)
+- **কোনো fake/stub feature কখনো "কাজ করছে" হিসেবে দেখাবে না** — কোনো integration-এর credential না থাকলে সেই ফিচারে স্পষ্ট "Not Connected — Setup Guide" অবস্থা দেখাবে, কখনো ভুয়া সফলতা (fake success) দেখাবে না
+- **সব ফিচার Free path-এ কাজ করবে**; paid provider (WhatsApp Cloud API ইত্যাদি) optional adapter হিসেবে থাকবে, ডিফল্টে বন্ধ, cost warning সহ
+- কোনো business constant (rate, threshold, label, template, charge, limit) hardcode করবে না — সব Admin Panel থেকে editable setting হবে
+</constraints>
+
+<execution_protocol>
+**Plan-Before-Execute:**
+
+আগে কোনো কোড লিখবে না। প্রথমে দেখাও:
+1. Database Schema (সব table, relationship, RLS policy সহ)
+2. Folder/File structure
+3. প্রশ্ন থাকলে জিজ্ঞেস করো
+
+Approve করার পর শুরু করবে, **micro-scoping** অনুযায়ী ধাপে ধাপে (dependency/risk অনুযায়ী order করা):
+- Step 1: Database Schema + RLS policies (সব table আগে design, money/ledger tables আগে চিন্তা করবে)
+- Step 2: Users/Passwords/Forced 2FA system — First-Login Gate, username→email-alias mapping, role+user-level policy
+- Step 3: Permission Matrix (field-level) + Role-based access (৪ role + custom role)
+- Step 4: Order Management — Smart Entry, Duplicate Guard, Address Quality Check, Stock Safety, Profit-at-Entry, Risk Score
+- Step 5: Orders Grid + One-Click Row/Bulk Actions + "Next Best Action" badge
+- Step 6: Delivery Rate Table + Courier Adapter (manual mode আগে, API adapter পরে) + Pickup Batch
+- Step 7: Payment handling (COD reconciliation + Manual bKash verify flow) + Courier Remittance Tracker (Courier 360, aging buckets)
+- Step 8: Supplier Ledger — Escrow states (Pending/Locked/Available), Commission snapshot, Payout flow, Damage/Return Engine, Vendor Statement PDF
+- Step 9: A4 Print system (3-part + thermal mode) + Batch print + Archive
+- Step 10: Messaging — Template Manager + Trigger Matrix + free channel (wa.me/sms:) আগে, paid adapter (WhatsApp Cloud API) পরে, OFF by default
+- Step 11: Automation Rules Engine (DRY-RUN + kill-switch সহ, সব rule শুরুতে disabled)
+- Step 12: Google Sheets/Drive Sync
+- Step 13: Reports/Export + Money Map + Product 360 + Today Screen
+- Step 14: Super Admin Control Center + Credentials Manager + Scheduled Jobs Dashboard + Maintenance Mode
+- Step 15: Mobile App Feel (bottom nav, bottom sheet, safe-area) + Performance budget check (bundle size, Lighthouse)
+- Step 16: Security hardening pass + Audit Log + Backup/Restore (সব layer একসাথে verify)
+
+প্রতিটা step শেষে self-check:
+1. RLS সঠিকভাবে প্রতিটা role-এর জন্য restrict করছে কিনা (field-level সহ)
+2. টাকার হিসাব পূর্ণসংখ্যায় (পয়সা) হচ্ছে কিনা, কোনো floating-point ভুল নেই
+3. Audit log immutable থাকছে কিনা
+4. Mobile এ app-এর মতো লাগছে কিনা (bottom nav/sheet, 44px touch target)
+5. সব business constant (rate, threshold, template, limit) Admin Panel থেকে edit করা যাচ্ছে কিনা — কোথাও hardcode থেকে গেলে সেটা রিপোর্ট করবে
+6. নতুন integration (courier/SMS/email) নিশ্চিত হওয়ার আগে official docs পড়েছে কিনা, এবং credential না থাকলে "Not Connected — Setup Guide" state দেখাচ্ছে কিনা (কখনো fake success না)
+
+যদি কোনো তথ্যের ঘাটতি থাকে, অনুমান করবে না — সরাসরি জিজ্ঞেস করবে।
+</execution_protocol>
+
+<output_format>
+প্রতিটা ধাপে:
+1. Plan (schema/file list + logic সংক্ষেপে)
+2. আমার approval-এর অপেক্ষা
+3. Approval পেলে সম্পূর্ণ, working, bug-free, RLS-secured code
+</output_format>
+
+END
+Research and plan first. if anything missig add them.

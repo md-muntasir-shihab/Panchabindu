@@ -1,0 +1,124 @@
+﻿{
+    "checkedAt":  "2026-11-11T10:03:45.3232586+06:00",
+    "runs":  [
+                 {
+                     "path":  "F:\\CODE\\.panchagarh-audit\\baseline-AcAxlB",
+                     "createdAt":  "2026-11-11T01:15:44.1855490+06:00",
+                     "summaryExists":  true,
+                     "sourceFiles":  [
+                                         ".eslintrc.json",
+                                         "bun.lock",
+                                         "eslint.config.mjs",
+                                         "next-env.d.ts",
+                                         "next.config.ts",
+                                         "package.json",
+                                         "postcss.config.mjs",
+                                         "tsconfig.json"
+                                     ],
+                     "logs":  [
+                                  {
+                                      "Name":  "build.err",
+                                      "Length":  1842
+                                  },
+                                  {
+                                      "Name":  "build.out",
+                                      "Length":  201
+                                  },
+                                  {
+                                      "Name":  "build.result.json",
+                                      "Length":  256
+                                  },
+                                  {
+                                      "Name":  "lint.err",
+                                      "Length":  0
+                                  },
+                                  {
+                                      "Name":  "lint.out",
+                                      "Length":  1231
+                                  },
+                                  {
+                                      "Name":  "lint.result.json",
+                                      "Length":  254
+                                  },
+                                  {
+                                      "Name":  "typecheck.err",
+                                      "Length":  0
+                                  },
+                                  {
+                                      "Name":  "typecheck.out",
+                                      "Length":  358
+                                  },
+                                  {
+                                      "Name":  "typecheck.result.json",
+                                      "Length":  293
+                                  },
+                                  {
+                                      "Name":  "unit.err",
+                                      "Length":  7118
+                                  },
+                                  {
+                                      "Name":  "unit.out",
+                                      "Length":  28
+                                  },
+                                  {
+                                      "Name":  "unit.result.json",
+                                      "Length":  215
+                                  }
+                              ]
+                 },
+                 {
+                     "path":  "F:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ",
+                     "createdAt":  "2026-11-11T10:01:07.7231667+06:00",
+                     "summaryExists":  false,
+                     "sourceFiles":  [
+                                         ".eslintrc.json",
+                                         "bun.lock",
+                                         "eslint.config.mjs",
+                                         "next-env.d.ts",
+                                         "next.config.ts",
+                                         "package.json",
+                                         "postcss.config.mjs",
+                                         "tsconfig.json"
+                                     ],
+                     "logs":  [
+
+                              ]
+                 },
+                 {
+                     "path":  "F:\\CODE\\.panchagarh-audit\\baseline-ZfYb89",
+                     "createdAt":  "2026-11-11T09:53:02.9821302+06:00",
+                     "summaryExists":  false,
+                     "sourceFiles":  [
+                                         ".eslintrc.json",
+                                         "bun.lock",
+                                         "eslint.config.mjs",
+                                         "next-env.d.ts",
+                                         "next.config.ts",
+                                         "package.json",
+                                         "postcss.config.mjs",
+                                         "tsconfig.json"
+                                     ],
+                     "logs":  [
+
+                              ]
+                 }
+             ],
+    "latest":  {
+                   "output":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ",
+                   "workspace":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ\\workspace",
+                   "logs":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ\\logs",
+                   "status":  "COPYING"
+               },
+    "processes":  [
+                      {
+                          "ProcessId":  3904,
+                          "ParentProcessId":  10096,
+                          "Name":  "node.exe"
+                      },
+                      {
+                          "ProcessId":  5016,
+                          "ParentProcessId":  7836,
+                          "Name":  "node.exe"
+                      }
+                  ]
+}

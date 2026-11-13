@@ -1,0 +1,17 @@
+﻿{
+    "optionalDependencies":  {
+                                 "@supabase/cli-linux-x64":  "3.1.0",
+                                 "@supabase/cli-darwin-x64":  "3.1.0",
+                                 "@supabase/cli-linux-arm64":  "3.1.0",
+                                 "@supabase/cli-windows-x64":  "3.1.0",
+                                 "@supabase/cli-darwin-arm64":  "3.1.0",
+                                 "@supabase/cli-windows-arm64":  "3.1.0",
+                                 "@supabase/cli-linux-x64-musl":  "3.1.0",
+                                 "@supabase/cli-linux-arm64-musl":  "3.1.0"
+                             },
+    "bin":  {
+                "supabase":  "dist/supabase.js"
+            },
+    "os":  null,
+    "cpu":  null
+}

@@ -1,0 +1,50 @@
+﻿{
+    "checkedAt":  "2026-11-11T10:05:31.8660437+06:00",
+    "latest":  {
+                   "output":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ",
+                   "workspace":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ\\workspace",
+                   "logs":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ\\logs",
+                   "status":  "CHECKING"
+               },
+    "logs":  [
+                 {
+                     "Name":  "lint.err",
+                     "Length":  0
+                 },
+                 {
+                     "Name":  "lint.out",
+                     "Length":  0
+                 },
+                 {
+                     "Name":  "typecheck.err",
+                     "Length":  0
+                 },
+                 {
+                     "Name":  "typecheck.out",
+                     "Length":  358
+                 },
+                 {
+                     "Name":  "typecheck.result.json",
+                     "Length":  293
+                 },
+                 {
+                     "Name":  "unit.err",
+                     "Length":  16527
+                 },
+                 {
+                     "Name":  "unit.out",
+                     "Length":  28
+                 },
+                 {
+                     "Name":  "unit.result.json",
+                     "Length":  215
+                 }
+             ],
+    "runner":  [
+                   {
+                       "Id":  5016,
+                       "CPU":  28.6875,
+                       "ProcessName":  "node"
+                   }
+               ]
+}

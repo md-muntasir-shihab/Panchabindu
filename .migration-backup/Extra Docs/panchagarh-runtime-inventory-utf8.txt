@@ -1,0 +1,98 @@
+﻿v26.13.0
+11.20.0
+12.18.0
+1.4.4
+{"Client":{"Version":"29.9.2","ApiVersion":"1.56","DefaultAPIVersion":"1.56","GitCommit":"a82e528","GoVersion":"go1.26.10","Os":"windows","Arch":"amd64","BuildTime":"Tue Oct 20 19:44:07 2026","Context":"desktop-linux"},"Server":null}
+docker : failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct and if the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The 
+system cannot find the file specified.
+At line:1 char:203
++ ... \bin\bun.exe" --version; docker version --format '{{json .}}'; '--- S ...
++                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (failed to conne...file specified.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+--- SAME DRIVE SPACE ---
+
+Name        Used        Free
+----        ----        ----
+F    75584290816 79733927936
+--- CODEX HOME CONFIG FILE NAMES ONLY ---
+.sandbox
+.sandbox-bin
+.sandbox-secrets
+.tmp
+cache
+computer-use
+mcp-oauth-locks
+pets
+plugins
+sessions
+skills
+sqlite
+thread-writer-locks
+tmp
+vendor_imports
+visualizations
+.codex-global-state.json
+.codex-global-state.json.bak
+.codex-provisioning-ce0d95fe55907768.guard
+.sandbox_migration
+.sqlite-maintenance.lock
+auth.json
+auth.json.lock
+auth.lock
+config.toml
+goals_1.sqlite
+installation_id
+logs_2.sqlite
+logs_2.sqlite-shm
+logs_2.sqlite-wal
+memories_1.sqlite
+models_cache.codex_work_desktop.json
+models_cache.json
+queue_1.sqlite
+queue_1.sqlite-shm
+queue_1.sqlite-wal
+session_index.jsonl
+session_index.jsonl.lock
+state_5.sqlite
+state_5.sqlite-shm
+state_5.sqlite-wal
+thread_history_1.sqlite
+thread_history_1.sqlite-shm
+thread_history_1.sqlite-wal
+--- INSTALLED PACKAGE ENGINES ---
+{"name":"next","version":"15.5.29","engines":{"node":"^18.18.0 || ^19.8.0 || >= 20.0.0"},"license":"MIT"}
+{"name":"react","version":"19.3.1","engines":{"node":">=0.10.0"},"license":"MIT"}
+{"name":"typescript","version":"5.9.3","engines":{"node":">=14.17"},"license":"Apache-2.0"}
+{"name":"eslint","version":"9.39.1","engines":{"node":"^18.18.0 || ^20.9.0 || >=21.1.0"},"license":"MIT"}
+node : node:internal/modules/cjs/loader:772
+At line:1 char:481
++ ... GINES ---'; node -e "for (const n of ['next','react','typescript','es ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (node:internal/modules/cjs/loader:772:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+      throw e;
+      ^
+
+Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './package.json' is not defined by "exports" in F:\CODE\Panchagarh\node_modules\eslint-config-next\package.json
+    at exportsNotFound (node:internal/modules/esm/resolve:282:10)
+    at packageExportsResolve (node:internal/modules/esm/resolve:630:9)
+    at resolveExports (node:internal/modules/cjs/loader:765:36)
+    at Module._findPath (node:internal/modules/cjs/loader:832:31)
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1596:27)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)
+    at Module._load (node:internal/modules/cjs/loader:1370:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19) {
+  code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+}
+
+Node.js v26.13.0
+--- SCRIPTS ---
+generate-geo-seed.mjs
+--- ZIP FILE NAMES MATCHING SPEC ---
+
+

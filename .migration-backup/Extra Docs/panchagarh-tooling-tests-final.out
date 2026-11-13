@@ -1,0 +1,18 @@
+✔ normalizes Windows namespaced paths without changing ordinary paths (2.6372ms)
+✔ creates ordinary output paths whether the parent exists or is new (4.2506ms)
+✔ rejects workspace targets equal to, inside, or above the source (4.3223ms)
+✔ does not pass inherited secrets or Node injection settings to checks (2.6854ms)
+✔ fingerprints source while excluding existing data and env files (10.3543ms)
+✔ copies source and scripts without nested data, environment or cached state (24.2699ms)
+✔ rejects source symlinks and workspace aliases into the source (9.2755ms)
+✔ captures real child exit codes and stdout without relying on terminal integration (121.3731ms)
+✔ records a missing executable once without unhandled descriptor errors (6.2436ms)
+✔ records direct-child timeout rather than reporting a passing check (127.7253ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 479.8888

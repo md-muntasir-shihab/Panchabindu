@@ -1,0 +1,286 @@
+﻿--- f:\CODE\Panchagarh\supabase\migrations\0008_phase2_schema_rls_and_gl_completion.sql:215-285 ---
+215: CREATE UNIQUE INDEX IF NOT EXISTS uq_manual_payment_active_trx_id
+216:   ON manual_payment_submissions(trx_id)
+217:   WHERE status IN ('pending_verification', 'under_review', 'approved');
+218: 
+219: CREATE INDEX IF NOT EXISTS idx_manual_payment_order_no
+220:   ON manual_payment_submissions(order_no, status);
+221: 
+222: -- ----------------------------------------------------------------------------
+223: -- 5. DOUBLE-ENTRY GENERAL LEDGER, REVERSALS, REFUNDS & ESCROW MATURITY BATCHES
+224: -- ----------------------------------------------------------------------------
+225: CREATE TABLE IF NOT EXISTS ledger_accounts (
+226:   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+227:   account_code TEXT NOT NULL UNIQUE,
+228:   name_bn TEXT NOT NULL,
+229:   name_en TEXT NOT NULL,
+230:   account_type TEXT NOT NULL CHECK (account_type IN ('ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE')),
+231:   normal_balance TEXT NOT NULL CHECK (normal_balance IN ('DEBIT', 'CREDIT')),
+232:   is_system BOOLEAN NOT NULL DEFAULT TRUE,
+233:   is_active BOOLEAN NOT NULL DEFAULT TRUE,
+234:   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+235: );
+236: 
+237: CREATE TABLE IF NOT EXISTS journal_entries (
+238:   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+239:   entry_no TEXT NOT NULL UNIQUE,
+240:   reference_type TEXT NOT NULL,
+241:   reference_id TEXT NOT NULL,
+242:   description_bn TEXT NOT NULL,
+243:   description_en TEXT NOT NULL DEFAULT '',
+244:   total_debit_poisha BIGINT NOT NULL CHECK (total_debit_poisha > 0),
+245:   total_credit_poisha BIGINT NOT NULL CHECK (total_credit_poisha > 0),
+246:   posted_by UUID REFERENCES users_profile(id) ON DELETE SET NULL,
+247:   posted_by_username TEXT,
+248:   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+249:   CONSTRAINT chk_journal_entry_balanced CHECK (total_debit_poisha = total_credit_poisha)
+250: );
+251: 
+252: CREATE INDEX IF NOT EXISTS idx_journal_entries_ref
+253:   ON journal_entries(reference_type, reference_id, created_at DESC);
+254: 
+255: CREATE TRIGGER trg_journal_entries_immutable
+256: BEFORE UPDATE OR DELETE ON journal_entries
+257: FOR EACH ROW EXECUTE FUNCTION fn_prevent_ledger_mutation();
+258: 
+259: CREATE TABLE IF NOT EXISTS journal_lines (
+260:   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+261:   journal_entry_id UUID NOT NULL REFERENCES journal_entries(id) ON DELETE RESTRICT,
+262:   account_id UUID NOT NULL REFERENCES ledger_accounts(id) ON DELETE RESTRICT,
+263:   vendor_id UUID REFERENCES vendors(id) ON DELETE RESTRICT,
+264:   order_id UUID REFERENCES orders(id) ON DELETE RESTRICT,
+265:   debit_poisha BIGINT NOT NULL DEFAULT 0 CHECK (debit_poisha >= 0),
+266:   credit_poisha BIGINT NOT NULL DEFAULT 0 CHECK (credit_poisha >= 0),
+267:   memo_bn TEXT NOT NULL DEFAULT '',
+268:   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+269:   CONSTRAINT chk_journal_line_single_sided CHECK (
+270:     (debit_poisha > 0 AND credit_poisha = 0)
+271:     OR (credit_poisha > 0 AND debit_poisha = 0)
+272:   )
+273: );
+274: 
+275: CREATE INDEX IF NOT EXISTS idx_journal_lines_entry_id ON journal_lines(journal_entry_id);
+276: CREATE INDEX IF NOT EXISTS idx_journal_lines_account_id ON journal_lines(account_id, created_at DESC);
+277: 
+278: CREATE TRIGGER trg_journal_lines_immutable
+279: BEFORE UPDATE OR DELETE ON journal_lines
+280: FOR EACH ROW EXECUTE FUNCTION fn_prevent_ledger_mutation();
+281: 
+282: CREATE TABLE IF NOT EXISTS ledger_reversal_requests (
+283:   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+284:   reversal_code TEXT NOT NULL UNIQUE,
+285:   original_ledger_entry_id UUID NOT NULL REFERENCES vendor_ledger(id) ON DELETE RESTRICT,
+--- f:\CODE\Panchagarh\supabase\migrations\0008_phase2_schema_rls_and_gl_completion.sql:455-570 ---
+455: 
+456: CREATE OR REPLACE FUNCTION fn_current_role_slug()
+457: RETURNS TEXT
+458: LANGUAGE sql
+459: STABLE
+460: SECURITY DEFINER
+461: SET search_path = public, pg_temp
+462: AS $$
+463:   SELECT r.slug
+464:   FROM public.users_profile up
+465:   JOIN public.roles r ON r.id = up.role_id
+466:   WHERE up.id = auth.uid()
+467:     AND up.is_active = TRUE
+468:     AND up.must_change_password = FALSE
+469:     AND (r.require_2fa = FALSE OR up.totp_enrolled = TRUE);
+470: $$;
+471: 
+472: CREATE OR REPLACE FUNCTION fn_current_vendor_id()
+473: RETURNS UUID
+474: LANGUAGE sql
+475: STABLE
+476: SECURITY DEFINER
+477: SET search_path = public, pg_temp
+478: AS $$
+479:   SELECT up.vendor_id
+480:   FROM public.users_profile up
+481:   JOIN public.roles r ON r.id = up.role_id
+482:   WHERE up.id = auth.uid()
+483:     AND up.is_active = TRUE
+484:     AND up.must_change_password = FALSE
+485:     AND (r.require_2fa = FALSE OR up.totp_enrolled = TRUE);
+486: $$;
+487: 
+488: CREATE OR REPLACE FUNCTION fn_current_customer_phone()
+489: RETURNS TEXT
+490: LANGUAGE sql
+491: STABLE
+492: SECURITY DEFINER
+493: SET search_path = public, pg_temp
+494: AS $$
+495:   SELECT COALESCE(
+496:     NULLIF(auth.jwt() ->> 'phone', ''),
+497:     NULLIF(auth.jwt() -> 'user_metadata' ->> 'phone', '')
+498:   );
+499: $$;
+500: 
+501: REVOKE ALL ON FUNCTION fn_prevent_ledger_mutation() FROM PUBLIC;
+502: REVOKE ALL ON FUNCTION fn_current_role_slug() FROM PUBLIC;
+503: REVOKE ALL ON FUNCTION fn_current_vendor_id() FROM PUBLIC;
+504: REVOKE ALL ON FUNCTION fn_current_customer_phone() FROM PUBLIC;
+505: 
+506: GRANT EXECUTE ON FUNCTION fn_current_role_slug() TO authenticated, service_role;
+507: GRANT EXECUTE ON FUNCTION fn_current_vendor_id() TO authenticated, service_role;
+508: GRANT EXECUTE ON FUNCTION fn_current_customer_phone() TO authenticated, service_role;
+509: 
+510: -- ----------------------------------------------------------------------------
+511: -- 8. FIX site_settings PUBLIC READ EXPOSURE & CREATE PUBLIC-SAFE VIEW
+512: -- ----------------------------------------------------------------------------
+513: DROP POLICY IF EXISTS pol_site_settings_public_read ON site_settings;
+514: 
+515: CREATE POLICY pol_site_settings_staff_read ON site_settings
+516:   FOR SELECT USING (
+517:     fn_current_role_slug() IN ('super_admin', 'marketing_manager', 'packaging_manager')
+518:   );
+519: 
+520: CREATE POLICY pol_site_settings_super_admin_write ON site_settings
+521:   FOR ALL USING (fn_current_role_slug() = 'super_admin')
+522:   WITH CHECK (fn_current_role_slug() = 'super_admin');
+523: 
+524: -- Public-safe storefront settings projection (Strips commission, hold days, min payout, packaging cost, risk weights, print config)
+525: CREATE OR REPLACE VIEW v_public_site_settings AS
+526: SELECT
+527:   id,
+528:   brand_name_bn,
+529:   brand_name_en,
+530:   tagline_bn,
+531:   tagline_en,
+532:   logo_url,
+533:   favicon_url,
+534:   accent_color_hex,
+535:   support_phone,
+536:   support_email,
+537:   whatsapp_number,
+538:   facebook_page_url,
+539:   default_locale,
+540:   free_delivery_threshold_poisha,
+541:   global_free_delivery,
+542:   bd_post_default_per_kg_poisha,
+543:   bkash_manual_number,
+544:   bkash_instruction_bn,
+545:   bkash_instruction_en,
+546:   trust_badges_json,
+547:   homepage_sections_json,
+548:   hero_banners_json,
+549:   promo_campaign_json,
+550:   delay_banner_json,
+551:   legal_pages_json,
+552:   maintenance_mode,
+553:   maintenance_message_bn,
+554:   updated_at
+555: FROM site_settings
+556: WHERE id = 1;
+557: 
+558: GRANT SELECT ON v_public_site_settings TO anon, authenticated, service_role;
+559: GRANT SELECT ON v_storefront_products TO anon, authenticated, service_role;
+560: GRANT SELECT ON v_vendor_masked_orders TO authenticated, service_role;
+561: 
+562: -- ----------------------------------------------------------------------------
+563: -- 9. ENABLE RLS & EXPLICIT POLICIES FOR ALL PREVIOUSLY UNCOVERED + NEW TABLES
+564: -- ----------------------------------------------------------------------------
+565: ALTER TABLE customer_addresses ENABLE ROW LEVEL SECURITY;
+566: ALTER TABLE product_images ENABLE ROW LEVEL SECURITY;
+567: ALTER TABLE warehouses ENABLE ROW LEVEL SECURITY;
+568: ALTER TABLE consignment_dispatch_lots ENABLE ROW LEVEL SECURITY;
+569: ALTER TABLE supplier_product_offers ENABLE ROW LEVEL SECURITY;
+570: ALTER TABLE vendor_price_proposals ENABLE ROW LEVEL SECURITY;
+--- f:\CODE\Panchagarh\supabase\migrations\0008_phase2_schema_rls_and_gl_completion.sql:635-730 ---
+635: -- (8) pickup_batches
+636: CREATE POLICY pol_pickup_batches_ops_all ON pickup_batches
+637:   FOR ALL USING (fn_current_role_slug() IN ('super_admin', 'packaging_manager'))
+638:   WITH CHECK (fn_current_role_slug() IN ('super_admin', 'packaging_manager'));
+639: 
+640: -- (9) print_logs
+641: CREATE POLICY pol_print_logs_ops_read_insert ON print_logs
+642:   FOR SELECT USING (fn_current_role_slug() IN ('super_admin', 'packaging_manager'));
+643: CREATE POLICY pol_print_logs_ops_insert ON print_logs
+644:   FOR INSERT WITH CHECK (fn_current_role_slug() IN ('super_admin', 'packaging_manager'));
+645: 
+646: -- (10) courier_remittance_ledger (Append-only: SELECT + INSERT for super_admin)
+647: CREATE POLICY pol_courier_remittance_super_admin_read ON courier_remittance_ledger
+648:   FOR SELECT USING (fn_current_role_slug() = 'super_admin');
+649: CREATE POLICY pol_courier_remittance_super_admin_insert ON courier_remittance_ledger
+650:   FOR INSERT WITH CHECK (fn_current_role_slug() = 'super_admin');
+651: 
+652: -- (11) courier_claims
+653: CREATE POLICY pol_courier_claims_ops_all ON courier_claims
+654:   FOR ALL USING (fn_current_role_slug() IN ('super_admin', 'packaging_manager'))
+655:   WITH CHECK (fn_current_role_slug() IN ('super_admin', 'packaging_manager'));
+656: 
+657: -- (12) message_templates
+658: CREATE POLICY pol_message_templates_staff_read ON message_templates
+659:   FOR SELECT USING (fn_current_role_slug() IN ('super_admin', 'marketing_manager', 'packaging_manager'));
+660: CREATE POLICY pol_message_templates_admin_write ON message_templates
+661:   FOR ALL USING (fn_current_role_slug() IN ('super_admin', 'marketing_manager'))
+662:   WITH CHECK (fn_current_role_slug() IN ('super_admin', 'marketing_manager'));
+663: 
+664: -- (13) message_trigger_matrix
+665: CREATE POLICY pol_message_trigger_matrix_staff_read ON message_trigger_matrix
+666:   FOR SELECT USING (fn_current_role_slug() IN ('super_admin', 'marketing_manager'));
+667: CREATE POLICY pol_message_trigger_matrix_super_admin_write ON message_trigger_matrix
+668:   FOR ALL USING (fn_current_role_slug() = 'super_admin')
+669:   WITH CHECK (fn_current_role_slug() = 'super_admin');
+670: 
+671: -- (14) message_logs
+672: CREATE POLICY pol_message_logs_staff_read_insert ON message_logs
+673:   FOR SELECT USING (fn_current_role_slug() IN ('super_admin', 'marketing_manager', 'packaging_manager'));
+674: CREATE POLICY pol_message_logs_staff_insert ON message_logs
+675:   FOR INSERT WITH CHECK (fn_current_role_slug() IN ('super_admin', 'marketing_manager', 'packaging_manager'));
+676: 
+677: -- (15) automation_rules
+678: CREATE POLICY pol_automation_rules_super_admin_all ON automation_rules
+679:   FOR ALL USING (fn_current_role_slug() = 'super_admin')
+680:   WITH CHECK (fn_current_role_slug() = 'super_admin');
+681: 
+682: -- (16) automation_execution_logs
+683: CREATE POLICY pol_automation_exec_logs_super_admin_read ON automation_execution_logs
+684:   FOR SELECT USING (fn_current_role_slug() = 'super_admin');
+685: CREATE POLICY pol_automation_exec_logs_super_admin_insert ON automation_execution_logs
+686:   FOR INSERT WITH CHECK (fn_current_role_slug() = 'super_admin');
+687: 
+688: -- (17) idempotency_keys (Server-side service_role or super_admin inspection only)
+689: CREATE POLICY pol_idempotency_keys_super_admin_read ON idempotency_keys
+690:   FOR SELECT USING (fn_current_role_slug() = 'super_admin');
+691: 
+692: -- (18) sheets_sync_queue
+693: CREATE POLICY pol_sheets_sync_queue_super_admin_all ON sheets_sync_queue
+694:   FOR ALL USING (fn_current_role_slug() = 'super_admin')
+695:   WITH CHECK (fn_current_role_slug() = 'super_admin');
+696: 
+697: -- 9.2 Customer Ownership & New Table Policies:
+698: CREATE POLICY pol_orders_customer_own_read ON orders
+699:   FOR SELECT USING (customer_phone = fn_current_customer_phone());
+700: 
+701: CREATE POLICY pol_customer_addresses_own_all ON customer_addresses
+702:   FOR ALL USING (
+703:     EXISTS (
+704:       SELECT 1 FROM customers c
+705:       WHERE c.id = customer_addresses.customer_id
+706:         AND c.phone = fn_current_customer_phone()
+707:     )
+708:     OR fn_current_role_slug() IN ('super_admin', 'marketing_manager', 'packaging_manager')
+709:   )
+710:   WITH CHECK (
+711:     EXISTS (
+712:       SELECT 1 FROM customers c
+713:       WHERE c.id = customer_addresses.customer_id
+714:         AND c.phone = fn_current_customer_phone()
+715:     )
+716:     OR fn_current_role_slug() IN ('super_admin', 'marketing_manager', 'packaging_manager')
+717:   );
+718: 
+719: CREATE POLICY pol_product_images_public_read ON product_images
+720:   FOR SELECT USING (TRUE);
+721: CREATE POLICY pol_product_images_admin_write ON product_images
+722:   FOR ALL USING (fn_current_role_slug() = 'super_admin')
+723:   WITH CHECK (fn_current_role_slug() = 'super_admin');
+724: 
+725: CREATE POLICY pol_warehouses_staff_read ON warehouses
+726:   FOR SELECT USING (fn_current_role_slug() IS NOT NULL);
+727: CREATE POLICY pol_warehouses_super_admin_write ON warehouses
+728:   FOR ALL USING (fn_current_role_slug() = 'super_admin')
+729:   WITH CHECK (fn_current_role_slug() = 'super_admin');
+730: 

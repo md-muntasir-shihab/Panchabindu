@@ -1,0 +1,2 @@
+src/lib/db/repository.ts(2558,5): error TS2367: This comparison appears to be unintentional because the types '"bkash"' and '"nagad"' have no overlap.
+src/lib/db/repository.ts(2560,9): error TS2367: This comparison appears to be unintentional because the types '"bkash"' and '"rocket"' have no overlap.

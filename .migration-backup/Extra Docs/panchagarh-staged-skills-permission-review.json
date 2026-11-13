@@ -1,0 +1,38 @@
+﻿[
+    {
+        "path":  "F:\\CODE\\.panchagarh-audit\\skills-review\\skills\\supabase\\SKILL.md",
+        "line":  71,
+        "text":  "- **Storage upsert requires INSERT + SELECT + UPDATE.** Granting only INSERT allows new uploads but file replacement (upsert) silently fails. You need all three.",
+        "pattern":  "(?i)ignore.*(previous|instruction)|override.*instruction|feedback|telemetry|exfiltrat|upload"
+    },
+    {
+        "path":  "F:\\CODE\\.panchagarh-audit\\skills-review\\skills\\supabase\\SKILL.md",
+        "line":  154,
+        "text":  "- **Skill Feedback** → [references/skill-feedback.md](references/skill-feedback.md)",
+        "pattern":  "(?i)ignore.*(previous|instruction)|override.*instruction|feedback|telemetry|exfiltrat|upload"
+    },
+    {
+        "path":  "F:\\CODE\\.panchagarh-audit\\skills-review\\skills\\supabase\\references\\skill-feedback.md",
+        "line":  1,
+        "text":  "# Skill Feedback",
+        "pattern":  "(?i)ignore.*(previous|instruction)|override.*instruction|feedback|telemetry|exfiltrat|upload"
+    },
+    {
+        "path":  "F:\\CODE\\.panchagarh-audit\\skills-review\\skills\\supabase\\references\\skill-feedback.md",
+        "line":  7,
+        "text":  "1. **Ask permission** — Ask the user if they\u0027d like to submit feedback to the skill maintainers. If they decline, move on.",
+        "pattern":  "(?i)ignore.*(previous|instruction)|override.*instruction|feedback|telemetry|exfiltrat|upload"
+    },
+    {
+        "path":  "F:\\CODE\\.panchagarh-audit\\skills-review\\skills\\supabase\\references\\skill-feedback.md",
+        "line":  9,
+        "text":  "2. **Draft the issue** — Use the template at [assets/feedback-issue-template.md](../assets/feedback-issue-template.md) to structure the feedback. Fill in the fields based on the conversation. Always identify which specific reference file and section caused the problem.",
+        "pattern":  "(?i)ignore.*(previous|instruction)|override.*instruction|feedback|telemetry|exfiltrat|upload"
+    },
+    {
+        "path":  "F:\\CODE\\.panchagarh-audit\\skills-review\\skills\\supabase\\references\\skill-feedback.md",
+        "line":  11,
+        "text":  "3. **Submit** — Create a GitHub Issue on the `supabase/agent-skills` repository using the draft as the issue body. The title must follow this format: `user-feedback: \u003csummary of the problem\u003e`.",
+        "pattern":  "(?i)ignore.*(previous|instruction)|override.*instruction|feedback|telemetry|exfiltrat|upload"
+    }
+]

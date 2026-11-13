@@ -1,0 +1,170 @@
+﻿[
+    {
+        "pattern":  "fetch\\(",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\admin-fetch-origin.test.ts",
+        "line":  23,
+        "text":  "await adminFetch(\u0027/api/admin/workspace\u0027);"
+    },
+    {
+        "pattern":  "fetch\\(",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\admin-fetch-origin.test.ts",
+        "line":  24,
+        "text":  "await adminFetch(\u0027https://attacker.test/api/admin/workspace\u0027);"
+    },
+    {
+        "pattern":  "fetch\\(",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\admin-fetch-origin.test.ts",
+        "line":  25,
+        "text":  "await adminFetch(\u0027/api/administer\u0027);"
+    },
+    {
+        "pattern":  "fetch\\(",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\admin-fetch.test.ts",
+        "line":  35,
+        "text":  "const res = await adminFetch(\u0027https://example.com/api/test\u0027, {"
+    },
+    {
+        "pattern":  "fetch\\(",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\admin-fetch.ts",
+        "line":  15,
+        "text":  "export async function adminFetch("
+    },
+    {
+        "pattern":  "fetch\\(",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\admin-fetch.ts",
+        "line":  59,
+        "text":  "response = await globalThis.fetch("
+    },
+    {
+        "pattern":  "fetch\\(",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\admin-fetch.ts",
+        "line":  63,
+        "text":  "response = await globalThis.fetch(input, { ...init, headers });"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\courier-and-escrow-panel.tsx",
+        "line":  1852,
+        "text":  "list = list.filter((e) =\u003e e.escrowBucket === \u0027pending\u0027);"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\courier-and-escrow-panel.tsx",
+        "line":  1854,
+        "text":  "list = list.filter((e) =\u003e e.escrowBucket === \u0027locked\u0027);"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\courier-and-escrow-panel.tsx",
+        "line":  1856,
+        "text":  "list = list.filter((e) =\u003e e.escrowBucket === \u0027available\u0027);"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\courier-and-escrow-panel.tsx",
+        "line":  2766,
+        "text":  ": entry.escrowBucket === \u0027available\u0027"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\components\\admin\\courier-and-escrow-panel.tsx",
+        "line":  2768,
+        "text":  ": entry.escrowBucket === \u0027locked\u0027"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  360,
+        "text":  "if (entry.escrowBucket === \u0027pending\u0027) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  362,
+        "text":  "} else if (entry.escrowBucket === \u0027locked\u0027) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  370,
+        "text":  "} else if (entry.escrowBucket === \u0027available\u0027) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  372,
+        "text":  "if (entry.entryType === \u0027PAYOUT_HOLD\u0027) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  374,
+        "text":  "} else if (entry.entryType === \u0027PAYOUT_HOLD_RELEASE\u0027 || entry.entryType === \u0027PAYOUT_DISBURSED\u0027) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  376,
+        "text":  "} else if (entry.entryType === \u0027POST_PAYOUT_CLAWBACK\u0027 \u0026\u0026 amt \u003c 0) {"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  447,
+        "text":  "const entryType ="
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\money.ts",
+        "line":  472,
+        "text":  "const entryType ="
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4b-service.ts",
+        "line":  1439,
+        "text":  "e.escrowBucket === \u0027pending\u0027 \u0026\u0026"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4b-service.ts",
+        "line":  1691,
+        "text":  "e.escrowBucket === \u0027locked\u0027"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase4b-service.ts",
+        "line":  1700,
+        "text":  "e.escrowBucket === \u0027pending\u0027 \u0026\u0026"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\admin\\phase7-service.ts",
+        "line":  1090,
+        "text":  ".filter((e) =\u003e e.entryType === \u0027EARNING_MATURED\u0027)"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\db\\product-sync.ts",
+        "line":  499,
+        "text":  "const escrowBucket: EscrowBucket = isDelivered ? \u0027locked\u0027 : \u0027pending\u0027;"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\lib\\db\\product-sync.ts",
+        "line":  500,
+        "text":  "const entryType: VendorLedgerEntryType = isDelivered ? \u0027EARNING_LOCKED\u0027 : \u0027EARNING_PENDING\u0027;"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\types\\database.types.ts",
+        "line":  72,
+        "text":  "export type EscrowBucket = \u0027pending\u0027 | \u0027locked\u0027 | \u0027available\u0027;"
+    },
+    {
+        "pattern":  "entryType\\s*=|escrowBucket\\s*=",
+        "path":  "F:\\CODE\\Panchagarh\\src\\types\\database.types.ts",
+        "line":  74,
+        "text":  "export type VendorLedgerEntryType ="
+    }
+]

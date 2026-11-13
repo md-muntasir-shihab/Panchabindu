@@ -1,0 +1,130 @@
+﻿{
+    "checkedAt":  "2026-11-11T10:07:24.1524166+06:00",
+    "latest":  {
+                   "output":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ",
+                   "workspace":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ\\workspace",
+                   "logs":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ\\logs",
+                   "status":  "FINISHED",
+                   "results":  {
+                                   "typecheck":  {
+                                                     "command":  "node.exe",
+                                                     "args":  [
+                                                                  "node_modules/typescript/bin/tsc",
+                                                                  "--noEmit",
+                                                                  "--incremental",
+                                                                  "false"
+                                                              ],
+                                                     "startedAt":  "2026-11-11T04:04:39.668Z",
+                                                     "finishedAt":  "2026-11-11T04:05:00.235Z",
+                                                     "exitCode":  2,
+                                                     "signal":  null,
+                                                     "timedOut":  false,
+                                                     "error":  null
+                                                 },
+                                   "unit":  {
+                                                "command":  "bun.exe",
+                                                "args":  [
+                                                             "test"
+                                                         ],
+                                                "startedAt":  "2026-11-11T04:04:39.768Z",
+                                                "finishedAt":  "2026-11-11T04:05:22.846Z",
+                                                "exitCode":  1,
+                                                "signal":  null,
+                                                "timedOut":  false,
+                                                "error":  null
+                                            },
+                                   "lint":  {
+                                                "command":  "node.exe",
+                                                "args":  [
+                                                             "node_modules/eslint/bin/eslint.js",
+                                                             "."
+                                                         ],
+                                                "startedAt":  "2026-11-11T04:04:39.702Z",
+                                                "finishedAt":  "2026-11-11T04:05:38.509Z",
+                                                "exitCode":  0,
+                                                "signal":  null,
+                                                "timedOut":  false,
+                                                "error":  null
+                                            },
+                                   "build":  {
+                                                 "command":  "node.exe",
+                                                 "args":  [
+                                                              "node_modules/next/dist/bin/next",
+                                                              "build"
+                                                          ],
+                                                 "startedAt":  "2026-11-11T04:05:38.524Z",
+                                                 "finishedAt":  "2026-11-11T04:06:57.048Z",
+                                                 "exitCode":  0,
+                                                 "signal":  null,
+                                                 "timedOut":  false,
+                                                 "error":  null
+                                             }
+                               },
+                   "checksPassed":  false,
+                   "applicationAndConfigUnchanged":  true,
+                   "originalDataDirectoryExists":  false,
+                   "notes":  [
+                                 "Synthetic JSON fixtures only. No database/RLS/browser or production readiness certification.",
+                                 "Only allowlisted source/configuration/scripts are fingerprinted; docs, dependencies and excluded private files are outside that comparison.",
+                                 "A timeout terminates the direct child only; inspect descendant processes before reusing or cleaning the audit directory.",
+                                 "No inherited project/service credentials; network is not an OS-level sandbox."
+                             ]
+               },
+    "logs":  [
+                 {
+                     "Name":  "build.err",
+                     "Length":  191
+                 },
+                 {
+                     "Name":  "build.out",
+                     "Length":  3046
+                 },
+                 {
+                     "Name":  "build.result.json",
+                     "Length":  256
+                 },
+                 {
+                     "Name":  "lint.err",
+                     "Length":  0
+                 },
+                 {
+                     "Name":  "lint.out",
+                     "Length":  1223
+                 },
+                 {
+                     "Name":  "lint.result.json",
+                     "Length":  254
+                 },
+                 {
+                     "Name":  "typecheck.err",
+                     "Length":  0
+                 },
+                 {
+                     "Name":  "typecheck.out",
+                     "Length":  358
+                 },
+                 {
+                     "Name":  "typecheck.result.json",
+                     "Length":  293
+                 },
+                 {
+                     "Name":  "unit.err",
+                     "Length":  16527
+                 },
+                 {
+                     "Name":  "unit.out",
+                     "Length":  28
+                 },
+                 {
+                     "Name":  "unit.result.json",
+                     "Length":  215
+                 }
+             ],
+    "processes":  [
+                      {
+                          "ProcessId":  3904,
+                          "ParentProcessId":  10096,
+                          "Name":  "node.exe"
+                      }
+                  ]
+}

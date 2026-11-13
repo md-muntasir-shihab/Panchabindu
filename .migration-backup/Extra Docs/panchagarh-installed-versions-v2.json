@@ -1,0 +1,54 @@
+﻿[
+    {
+        "name":  "next",
+        "version":  "15.5.29",
+        "engines":  {
+                        "node":  "^18.18.0 || ^19.8.0 || \u003e= 20.0.0"
+                    },
+        "license":  "MIT"
+    },
+    {
+        "name":  "react",
+        "version":  "19.3.1",
+        "engines":  {
+                        "node":  "\u003e=0.10.0"
+                    },
+        "license":  "MIT"
+    },
+    {
+        "name":  "typescript",
+        "version":  "5.9.3",
+        "engines":  {
+                        "node":  "\u003e=14.17"
+                    },
+        "license":  "Apache-2.0"
+    },
+    {
+        "name":  "eslint",
+        "version":  "9.39.1",
+        "engines":  {
+                        "node":  "^18.18.0 || ^20.9.0 || \u003e=21.1.0"
+                    },
+        "license":  "MIT"
+    },
+    {
+        "name":  "eslint-config-next",
+        "version":  "16.0.8",
+        "engines":  null,
+        "license":  "MIT"
+    },
+    {
+        "name":  "@supabase/supabase-js",
+        "version":  "2.119.0",
+        "engines":  {
+                        "node":  "\u003e=22.0.0"
+                    },
+        "license":  "MIT"
+    },
+    {
+        "name":  "@supabase/ssr",
+        "version":  "0.12.7",
+        "engines":  null,
+        "license":  "MIT"
+    }
+]

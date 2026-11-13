@@ -1,0 +1,211 @@
+﻿{
+    "commit":  "c9be0e931b7930f7d02126d04774d904c381e7d7",
+    "files":  [
+                  {
+                      "path":  "LICENSE",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/CHANGELOG.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/SKILL.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/_contributing.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/_sections.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/_template.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/advanced-full-text-search.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/conn-idle-timeout.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/conn-limits.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/conn-pooling.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/conn-prepared-statements.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/data-batch-inserts.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/data-n-plus-one.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/data-pagination.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/data-upsert.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/lock-advisory.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/lock-short-transactions.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/lock-skip-locked.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/query-composite-indexes.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/query-covering-indexes.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/query-index-types.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/query-missing-indexes.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/query-partial-indexes.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/schema-constraints.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/schema-data-types.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/schema-partitioning.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/schema-primary-keys.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/security-privileges.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/security-rls-basics.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase-postgres-best-practices/references/security-rls-performance.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase/CHANGELOG.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase/SKILL.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase/assets/feedback-issue-template.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  },
+                  {
+                      "path":  "skills/supabase/references/skill-feedback.md",
+                      "sha256Matches":  true,
+                      "gitBlobMatches":  true
+                  }
+              ],
+    "actualFileCount":  41
+}

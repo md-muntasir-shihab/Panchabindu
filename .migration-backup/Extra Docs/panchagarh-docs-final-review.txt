@@ -1,0 +1,1139 @@
+--- F:\CODE\Panchagarh\docs\ai\CHANGELOG.md ---
+# AI handoff changelog
+
+2026-11-11 — Current authorization reconciled to local tooling/bootstrap and Phase 0 only; historical Phase 1–4 requests do not authorize further work. Re-read governance/master/schema and state, verified absence of the named v3 file in source/adjacent root/bundled ZIP, and added a current evidence/reconciliation report. Updated state, phase gate, questions, decisions and tooling records; marked old audit reports historical without deleting findings.
+
+Tooling: added isolated baseline runner/tests and usage documentation; fixed Windows namespaced paths, source alias/private-file handling, spawn-error capture and failed-check exit status. Hardened tooling tests pass 10/10, captured exit 0. First full baseline had runner-contaminated Bun/build results and three genuine TypeScript diagnostics; one retry was interrupted while copying. Final detached-run evidence is tracked in the current report. Application behavior, UI, tokens, schema, dependency manifests and lockfiles were not edited in this continuation.
+
+External review: 41 staged Supabase Markdown/license files match manifest SHA-256 and expected Git blobs at pinned commit; MIT license reviewed, packages remain outside agent discovery and NOT ENABLED. No CLI install, MCP/OAuth connection, migration, deployment, financial or courier operation. Real DB/RLS/storage and browser/print tests remain unavailable/unverified. Static re-audit records JSON persistence, phone/metadata ownership, view/journal/media gaps, prohibited features, simulated booking and maturity deletion/double-count risks; no remediation or phase-complete claim.
+
+Completed detached baseline `baseline-hMwJtQ`: production build passes (exit 0); ESLint 0 errors/3 warnings (exit 0); standalone TypeScript retains three diagnostics (exit 2); Bun reports 109 pass/1 fail, with the sole failure in new tooling's Node-specific missing-executable error-text assertion. Corrected that assertion for Bun without touching application tests; supplemental fresh-synthetic-state verification follows in the current report. Independent hashes confirm all 146 original application/configuration files unchanged, source `.data` absent, and no baseline child remained at completion. Retained the non-passing original summary and all prior artifacts.
+
+2026-11-11 — Added project governance, six workflow skill definitions, tooling registry and evidence-based partial Phase 0 audit. No application code, migration, database or production action. Tooling and test execution remain blocked/not verified; see phase status.
+
+2026-11-11 — Continued partial Phase 0: official Supabase/Playwright guidance inspected, npm/pnpm `.cmd` versions and Bun lockfile recorded, routes enumerated, misleading SMS status and storefront payment-policy conflict identified. No package or account connection confirmed. Test runner and terminal completion remain blocked.
+
+2026-11-11 — Further static inspection identified possible cross-vendor print disclosure, insufficient order-grid authorization, metadata-based customer RLS, vendor-view isolation, predictable fallback keys, simulated courier booking and process-local stock locking. These are risk findings, not runtime exploit confirmations. Terminal reports PSReadLine input/render exception; no application/DB changes.
+
+2026-11-11 — Phase 1 explicitly requested. Started limited server-side safeguards: disabled TOTP preview and automatic generation, fail closed on missing production encryption key, deny vendor admin workspace, require order update permission and avoid delivery/return side effects for failed grid rows. Added focused workspace access tests. Vendor's legacy admin workspace is intentionally unavailable; dedicated portal and end-to-end security work remain. No database changes.
+
+Verification: `node --test src/types/admin-workspace-access.test.ts` printed 2 passed, 0 failed; terminal integration could not observe process completion and reported an inconsistent exit code. `npm.cmd run test` could not find Bun; `npm.cmd run lint` could not find ESLint; `npm.cmd run build` could not find Next.js. No full suite, API integration or production test passed. Existing admin UI still requests now-disabled TOTP preview and has demo autofill; real authenticator entry is required and UI cleanup remains. Previously fallback-encrypted data may require a separately reviewed key recovery/migration plan; do not generate or rotate production keys without approval.
+
+2026-11-11 — Phase 2 requested with Phase 1 still blocked. Reviewed SQL, storage, customer identity and migration implementation; corrected executor to never falsely report live execution and local reconciliation to not imply production readiness; updated corresponding test. Added Phase 2 plan. Docker engine unavailable; no DB access, migration, backup or import performed. Tests for the edited migration code NOT RUN: Bun/dependencies absent.
+
+2026-11-11 — Phase 3 requested with prior phases incomplete. Added an unconnected, bounded image header/declared MIME/extension/size precheck and tests; it does not decode or sanitize images and grants no upload access. Node test output 3 passed / 0 failed; terminal process-exit observation inconsistent. Added media implementation plan. No storage access, migration or dependency changes.
+
+2026-11-11 — User requested completion of phases 1–3 before phase 4. Installed 862 lockfile dependencies locally with install scripts disabled, and used Bun 1.4.4 against a temporary synthetic copy. Added customer-session checks to checkout, cancellation, returns and bKash submission; fixed public tracking denial status; blocked vendor use of shared print bundles; required admin CSRF token; prevented admin credentials being attached to cross-origin URLs; disabled false production OTP delivery status. This is interim phone-based ownership, not customer-ID isolation or complete authentication. Production OTP adapter remains NOT_INTEGRATED; checkout will not work in production until identity workflow is implemented.
+
+Tests: synthetic-copy full Bun suite reported 99 pass / 0 fail before the final small test edits; targeted reruns reported 12 pass / 0 fail and then 9 pass / 0 fail. Historical tests include prohibited Nagad/Rocket behavior and simulated RLS tests, so their passing does not certify business compliance or real Postgres policies. Final TypeScript check exits 2 due to existing missing `bun:test` types and an existing admin-fetch test type error. Temporary-copy Next build failed on cross-drive junction resolution; earlier attempt also had a next/font error. No reliable passing build, actual PostgreSQL/RLS/storage test, media upload or phase completion. No production operation or migration performed.
+--- F:\CODE\Panchagarh\docs\ai\DECISIONS.md ---
+# Decisions and conflicts
+
+## Current reconciliation — November 11, 2026
+
+- Latest user authorization resets active work to **local tooling/bootstrap plus Phase 0 only**. Historical Phase 1–4 requests are context, not permission to continue implementation. Stop at the gate; request explicit approval for a reconciled next scope.
+- Full v3 specification is unavailable in the current context and not found in the checked repository/adjacent-root/ZIP locations. Prior statements that it was supplied cannot support complete compliance claims. Preserve the user's summarized constraints, mark unresolved requirements VERIFY_REQUIRED and request the complete document.
+- Preserve application/UI/schema/lockfiles during this continuation. Only isolated tooling and governance/audit documentation changed. Runtime failures may be documented but not repaired as application/dependency work in this scope.
+- Retain original baseline artifacts; classify Windows namespaced-path module-loading failures as runner contamination, interrupted copying as INTERRUPTED, and individual successful checks separately from phase acceptance. JavaScript RLS simulations are not database evidence.
+- Official Supabase packages are reviewed external data, staged outside agent-discovery paths. Hash matches and MIT licensing do not authorize remote SQL, migration, OAuth, MCP setup or issue submission. Keep them NOT ENABLED in this pass; no CLI/global install or service connection is implied.
+- Tooling isolation is a disposable copy with a credential allowlist, **not** an OS/network sandbox. Build font downloads can occur. Fingerprints cover selected source/configuration/scripts, not the whole repository or confidential state.
+
+## Earlier decisions — apply only where consistent with current scope
+
+- Latest user-provided v3 supersedes conflicting older project instructions, without deleting historical documents.
+- Customer principal is separate from four internal roles; mandatory authentication before final order supersedes `docs/00_CUSTOM_INSTRUCTION.md` guest checkout.
+- COD/manual bKash only; `docs/schema.md` permits Nagad/Rocket and RedX, conflicting with latest instructions. Existing code and historical records require a safe, non-destructive remediation plan; do not silently remove data.
+- Flash sale campaigns forbidden even though older reports claim absence and current workspace code contains campaign operations.
+- Part 3 is authorized Admin/Accounts copy; old architecture assessment describes warehouse/supplier copy. Copy retention/signature rules VERIFY_REQUIRED.
+- Existing design and token system are frozen despite older optional branding/color override language. Internal holding ledger is not a legal escrow claim.
+- Explicit user permission covers necessary compatible project-local tooling and designated skills, not remote OAuth or production access. Actual installation remains blocked, not assumed.
+--- F:\CODE\Panchagarh\docs\ai\OPEN_QUESTIONS.md ---
+# Open questions
+
+## Required to unblock current Phase 0
+
+- **BLOCKED:** Provide the complete `Panchagarh_Codex_Master_Implementation_Spec_v3.md` (paste/upload or an exact accessible file path). Current-context summary and historical claims are insufficient for full v3 traceability.
+- **BLOCKED / VERIFY_REQUIRED:** Supported isolated browser/print environment and an available local Docker/Linux engine for real PostgreSQL/RLS/storage checks. No host upgrade, remote account connection or migration is authorized by this request.
+- **VERIFY_REQUIRED:** After the Phase 0 report, explicit approval of a narrowly scoped application/dependency repair plan. Historical phase numbers are not current authorization. Existing TypeScript errors and financial/security/media risks are recorded, not fixed here.
+- **CONFIRMED local facts:** Root `.git` absent; no Git executable on PATH; `.data` absent at the inspected source root; isolated runner tooling tests pass; staged Supabase file hashes match. These resolve only the corresponding local inventory questions, not deployment state.
+
+## Historical questions still requiring owner/context review
+
+- VERIFY_REQUIRED: Actual Git installation/repository status, isolated test environment and whether the v3 spec exists as a separate file.
+- VERIFY_REQUIRED: Existing approved local/staging Supabase project scope and whether future read-only OAuth is desired; never request secrets in chat.
+- VERIFY_REQUIRED: Refund window, tax/VAT, legal invoice, retention, agreement and accounting treatment with owner and local professionals.
+- VERIFY_REQUIRED: Phone ownership fallback and legitimate migration strategy for historic guest orders; no fake OTP or verified status.
+- VERIFY_REQUIRED: Product/media migration and legacy external URLs; do not fetch arbitrary URLs without SSRF controls.
+- VERIFY_REQUIRED: Existing integrations, deployed configuration, historical data and production status; no remote checks performed.
+--- F:\CODE\Panchagarh\docs\ai\PHASE_0_AUDIT.md ---
+# Phase 0 re-audit — partial static evidence, 2026-11-11
+
+> Historical snapshot. The current tooling/Phase 0-only authorization, missing v3 reference, runtime evidence and reconciliation are recorded in `f:\CODE\Panchagarh\docs\audit\phase-0-reaudit-2026-11-11.md`. Statements below about earlier authorizations, absent dependencies, missing guards or supplied v3 content are not current verification or permission to implement later phases.
+
+## Scope and limits
+The user supplied the full v3 specification in conversation. The separately named Markdown file was not located/confirmed; recursive terminal search did not yield an observed completion. Reviewed existing master docs and old audit reports; older findings are not proof of current behavior. No production, local database, OAuth, courier, payment or browser access. Code search coverage is limited by tool indexing and search truncation. No end-to-end security certification.
+
+## Findings (static, ordered by risk)
+
+1. **P0 — sandbox MFA bypass risk.** `app/api/admin/auth/route.ts:99-115,133-145` exposes a TOTP preview and auto-derives a missing login TOTP unless `STRICT_PRODUCTION_DISABLE_SANDBOX_TOTP` is exactly `true`. This is not intrinsically guarded by `NODE_ENV`; actual deploy configuration and exploitability NOT VERIFIED. Do not expose until security review and negative tests.
+2. **P1 — guest final order accepted in route.** `app/api/orders/route.ts:48-68` validates posted order and calls creation without reading/verifying customer session. No authenticated customer ID linked there. Mandatory account requirement unmet; full route/service tests NOT RUN.
+3. **P1 — financial persistence and balance.** `src/lib/db/repository.ts` and `src/lib/finance/phase4-general-ledger-engine.ts` use local JSON. Migration `0008` defines immutable journal headers/lines and a header equality check (`:237-280`), but those statements do not establish that sum of lines equals header totals or that later line insertion is prevented. Inspect all SQL/RPC/grants and test transactions before claiming invariant. Database migration application and RLS are NOT VERIFIED.
+4. **P1 — tenant/security boundaries not established.** `app/api/admin/workspace/route.ts:114-145` verifies a signed session and processes vendor users through admin workspace, with some filtered fields. This contradicts dedicated vendor workspace and is not evidence of complete cross-tenant isolation. No cross-vendor/API/DB tests run.
+5. **P1 — direct product media pipeline absent/not established.** `src/components/admin/product-studio-panel.tsx` uses image URL fields/default URLs; migration `0008:50-54,843-846` contains URL metadata and public 5 MiB JPEG/PNG/WebP plus private evidence buckets. Search found no `storage.objects` policies in indexed files. Neither tenant-scoped staging/upload nor signature validation or approved publishing has been proven; deployed storage policies unknown.
+6. **P1 — prohibited features present.** `app/api/admin/workspace/route.ts:730,1334` implements flash campaign operation; `src/components/admin/admin-erp-client.tsx:5863-5866,5930` displays Nagad/Rocket and RedX; `app/api/webhooks/courier/route.ts:24-25,83-88` accepts RedX. `docs/schema.md:81-84` conflicts. Quarantine/removal requires safe compatibility and historical-data plan, not silent deletion.
+7. **P2 — print semantics incomplete/unverified.** `src/components/admin/print-engine-panel.tsx` has A4 and 4x6 modes; `src/styles/tokens.css:126-127` sets print-color-adjust. Part 3 authorized Admin/Accounts mapping, tenant isolation, page breaks and printer rendering require detailed tests. CSS cannot force physical printer color.
+8. **P2 — tooling/baseline blocked.** Node v26.13.0 and Docker CLI 29.9.2 observed; Bun/Git/Supabase/Codex unavailable on PATH, node_modules absent. npm/pnpm PowerShell wrappers blocked. `npm.cmd run test` produced missing Bun; command completion was not reliably observable. Build/lint/browser/DB outcomes NOT TESTED. Historical QA counts cannot be reused as current results.
+
+## Historical report reconciliation
+Older `docs/audit/security-findings.md` describes default-admin fallback and unsigned cookie. Current `app/api/admin/workspace/route.ts:114-129` instead verifies a session and returns 401 when missing; `app/api/webhooks/courier/route.ts:93-109` checks verification result. These are code observations, not passing security tests; don't repeat superseded claims as present facts. Conversely, old database audit says no journal tables, but migration 0008 contains them. Older no-flash claim conflicts with the current operation. Customer OTP code uses session verification and sandbox flow; production delivery and ownership NOT VERIFIED.
+
+## Additional static checks — 2026-11-11
+
+- **P0 potential cross-vendor print exposure:** `src/lib/admin/phase4b-service.ts:715-724,738-785` permits a vendor when an order contains any own line, then maps all `rawLines` into `customerAndCourierPart.items`; the same bundle includes customer landmark even when street address is masked. Internal Part 3 lines are separately filtered at `:788-790`. The workspace handler exposes print generation at `app/api/admin/workspace/route.ts:1071-1073`. Full end-to-end reachability and actual grants require negative testing; do not expose the workspace to untrusted vendors.
+- **P0 potential order-grid authorization gap:** `app/api/admin/workspace/route.ts:914-945,985-986` verifies session and obtains an actor context, then dispatches `order_grid_action`. `src/lib/admin/phase4a-service.ts:1403-1465` checks the first-login gate but the inspected start of `executeOrderGridAction` does not check role, order ownership, or action-specific permission before setting global order status. Inspect complete call chain, actors and downstream side effects; cross-role exploitability remains NOT TESTED.
+- **P1 customer ownership risk:** `supabase/migrations/0008_phase2_schema_rls_and_gl_completion.sql:488-499` falls back to JWT `user_metadata.phone` in `fn_current_customer_phone()`, used in ownership policies. User-editability, JWT issuance, actual grants and deployed RLS must be verified; never treat user-editable metadata as verified identity.
+- **P1 RLS view isolation risk:** `supabase/migrations/0007_rls_policies.sql:181-213` defines `v_vendor_masked_orders` with no explicit vendor WHERE clause, and migration `0008:560` grants SELECT to `authenticated`. No `security_invoker` setting is present in this view definition. Effective visibility depends on view ownership, privileges and deployed PostgreSQL settings; run cross-tenant and non-vendor database tests before exposure.
+- **P1 deterministic secret fallback:** `src/lib/security/crypto-session.ts:20-35` uses a predictable development-derived key if the environment key is missing or short unless both NODE_ENV is production and a separate strict flag is enabled. Session verification and encryption use this key derivation; deployment configuration, practical attack conditions and actual stored data exposure NOT VERIFIED. Fail-closed key configuration and key rotation require Phase 1 design.
+- **P1 fake courier booking:** `src/lib/admin/phase4a-service.ts:1591-1630` constructs a tracking code locally, marks the order and reports booking completed without making an external courier call in that branch. This is not evidence of a real Pathao/Steadfast booking; no courier action was performed during this audit.
+- **P1 stock concurrency:** `src/lib/inventory/phase3-inventory-order-engine.ts:344-352` implements a module-local Promise queue. It cannot by itself serialize work across independent processes/instances or provide database transactions; multi-instance overselling tests NOT RUN.
+- **P2 CSRF guard gaps:** `src/lib/security/crypto-session.ts:922-963` only checks Origin when present and only rejects a mismatched CSRF header when the header itself is present; it also allows certain preview host patterns. Actual exploitability depends on cookie/browser/proxy configuration; do not claim this is a complete CSRF control.
+- **P2 tracking API contract:** `app/api/orders/route.ts:34-45` checks the truthiness of the result object rather than `tracking.allowed`; `getPublicOrderTrackingByToken` returns an object even for invalid tokens (`src/lib/db/repository.ts:1888-1916`). Therefore the handler can return a success HTTP status with a denial object; separate `/api/orders/track/[secureToken]` checks `allowed`.
+- **P1 — misleading SMS delivery status:** `src/lib/security/crypto-session.ts:590-593,649-686` treats an API key's presence as provider configuration, creates a challenge and returns `SENT_LIVE_SMS`; the inspected function contains no SMS delivery call. `app/api/account/orders/route.ts:140-157` maps that status to integrated/sent messaging. Actual external delivery from another path NOT VERIFIED; do not rely on status as delivery proof.
+- Storefront itself shows forbidden Nagad/Rocket choices (`src/components/storefront/checkout-client.tsx:90,783`); the order validator accepts both (`src/lib/validators/index.ts:229-232`). This is not merely an admin UI issue.
+- Filesystem route enumeration finds `app/shop/page.tsx` and `app/search/page.tsx`, contradicting the old feature-gap report. No `app/vendor` route appears in that enumeration. Enumerated 14 API route files and migrations `0001`–`0008`; this establishes presence, not runtime behavior.
+- `src/store/use-wishlist-store.ts` uses persisted Zustand browser state; cross-device server synchronization is not established by that evidence.
+- `supabase/migrations/0008_phase2_schema_rls_and_gl_completion.sql:513-558` drops the prior public site-settings policy and creates a public projection; whether migrations ran and whether effective grants/views/RLS are safe remain untested.
+- `bun.lock` is present, `.git`, `node_modules`, and `.data` were absent when checked. Tests and services construct `.data` paths from the working directory (`src/lib/security/phase1-security.test.ts:73-75`, `src/lib/db/repository.ts:355-356`); run future tests in an isolated disposable copy, never with real data.
+- Existing Part 3 test asserts packaging role gets a redacted Part 3 (`src/lib/admin/phase4b.test.ts:76-92`); v3 requires an authorized Admin/Accounts copy, so role and copy separation require redesign and tests, not an assumption that the old test satisfies the requirement.
+
+## Integration and architecture register
+- Next.js, React, Supabase SDK, Zod, Zustand, React Hook Form: CODE_PRESENT in manifest; actual installed/runtime versions NOT VERIFIED.
+- Supabase database/storage: migration/client CODE_PRESENT, CONNECTED/TESTED/PRODUCTION_READY NOT VERIFIED. Configured local project id is not evidence of cloud connection.
+- Pathao/Steadfast/Bangladesh Post: CODE_PRESENT; connection, official API contract, live behavior and production readiness NOT VERIFIED.
+- RedX, flash, Nagad/Rocket: CODE_PRESENT; prohibited/unapproved, not yet quarantined.
+- SMS/email, WhatsApp Cloud, Sheets, Gemini: configuration or dependency references may exist; actual usage, status, costs and data flows VERIFY_REQUIRED. No external calls made.
+- Vendor route, full customer account, direct upload, complete responsive grid and accessible three-copy print: NOT VERIFIED or incomplete; route enumeration and runtime checks remain.
+
+## Follow-up sequence
+Repair shell integration and confirm Git/status; establish compatible isolated runtime and safe synthetic test data without touching existing `.data`; inspect and install only approved, reviewed tooling; run test/lint/build, RLS/storage and browser baselines. Inventory all routes, admin grid fields/actions, grants/functions and integrations; record actual evidence. Phase 1 proposal after approval: identity/session and sandbox hardening, mandatory customer identity, tenant denial tests and privacy, fail-closed webhook/security controls; do not modify anything until phase approval.
+--- F:\CODE\Panchagarh\docs\ai\PHASE_STATUS.md ---
+# Phase status
+
+## Current scope — November 11, 2026
+
+- **Tooling/bootstrap: PARTIAL, verified local subset.** Hardened isolated runner: 10/10 tooling tests pass, captured exit 0. Dependency copies run outside source; no project dependency upgrade. Official Supabase review artifacts: 41 files integrity-checked, MIT license reviewed, NOT ENABLED. No new account/MCP connection. Git metadata absent; Docker/Linux engine and supported browser environment unavailable.
+- **Phase 0: PARTIAL / BLOCKED; STOP AT GATE.** Missing full v3 specification prevents complete requirements assessment. Full baseline must be read from completed per-check evidence in `f:\CODE\Panchagarh\docs\audit\phase-0-reaudit-2026-11-11.md`; prior green test counts and runner-path failures are not current application acceptance.
+- **Completed baseline `baseline-hMwJtQ`:** build PASS (exit 0); lint PASS with 3 warnings (exit 0); standalone TypeScript FAIL (exit 2, three diagnostics); full Bun 109 pass / 1 tooling-only runtime-message assertion failure, subsequently corrected and rerun separately. Source fingerprints match; 146 original application/configuration files unchanged. The captured baseline remains non-passing; see supplemental results in the current report.
+- **Phase 1 and later: NOT AUTHORIZED in current scope.** Historical partial changes remain, not certified complete. Explicit approval of a reconciled next-phase plan is required; conflicting legacy Phase 4 definitions do not determine scope.
+
+## Historical phase ledger — superseded authorization, retained for context
+
+- Phase -1: PARTIAL / BLOCKED. Governance and six local workflow skills created. Node 26, npm.cmd 11.20.0, pnpm.cmd 12.18.0 and cached Bun 1.4.4 detected; local `node_modules` installed with scripts disabled. Git/Supabase/Codex CLI not found on PATH; terminal completion remains unreliable. Official skills and Playwright not installed or verified. No MCP configured or connected.
+- Phase 0: PARTIAL static re-audit; build, lint, unit, browser and database tests NOT VERIFIED. More exhaustive inspection and isolated baseline required after tooling is repaired. See `PHASE_0_AUDIT.md`.
+- Phase 1: IN PROGRESS / BLOCKED. Added session checks for checkout, cancellation, returns and bKash submission (legacy phone-based identity only), denied vendor access to shared print bundle, required admin-session CSRF header, prevented cross-origin admin token forwarding, and stopped false production SMS delivery claims. Separate customer-ID mapping, signup/phone-confirmation workflow, end-to-end authorization, hardened CSRF, vendor portal and remaining RBAC are incomplete. Production OTP is deliberately unavailable without a real adapter; checkout therefore cannot be completed in production yet. Not production-ready.
+- Phase 2: IN PROGRESS / BLOCKED — user requested next phase despite incomplete Phase 1. Corrected false live-migration/readiness reporting; database/storage plan and critical findings documented. No migration authored or applied. PostgreSQL/RLS/storage tests blocked by unavailable Docker engine and tooling. Phase 1 blockers remain open.
+- Phase 3: IN PROGRESS / BLOCKED — user now explicitly requires phases 1–3 completed before phase 4. The signature precheck exists, but upload, decoder, storage policy, catalog UI, vendor isolation and CSV import remain unimplemented. No false completion claim; see `PHASE_3_MEDIA_PLAN.md`.
+- Phases 4–12: NOT STARTED in this interaction.
+--- F:\CODE\Panchagarh\docs\ai\PROJECT_STATE.md ---
+# Project state — 2026-11-11
+
+## Current authority and handoff (supersedes historical requests below)
+
+Latest explicit scope is **authorized local tooling/bootstrap and Phase 0 re-audit only**. No Phase 1 or later implementation is currently authorized. Preserve all application behavior, existing visual design and token system. Do not connect accounts, deploy, migrate, operate couriers/payments or touch production. Stop at the Phase 0 gate and require explicit approval of the next scope.
+
+The full v3 specification is **not available in the current context or verified local files**. The repository, adjacent `f:\CODE` root and bundled ZIP were searched for `Panchagarh_Codex_Master_Implementation_Spec_v3.md`, with no match. Historical claims that it was supplied are not a substitute for the full document. Request it before asserting v3 compliance or using legacy phase numbering.
+
+Current report: `f:\CODE\Panchagarh\docs\audit\phase-0-reaudit-2026-11-11.md`. A local-only isolated baseline runner and tests were added under `f:\CODE\Panchagarh\scripts\tooling`; hardened runner tests passed 10/10 with captured exit 0. The first full run's Bun/build evidence was contaminated by Windows namespaced paths; one retry was interrupted. Detached `baseline-hMwJtQ` finished: build exit 0; lint exit 0 (0 errors/3 warnings); standalone TypeScript exit 2 (three existing diagnostics); Bun 109 pass/1 tooling assertion failure. That runtime-specific assertion was corrected; supplemental verification is recorded in the report. Overall gate remains non-passing. All 146 application/configuration files from the original baseline match independent hashes; `.data` and `.git` remain absent. Do not infer completion from terminal-host status.
+
+Supabase skill staging completed outside the repository, with 41/41 matching SHA-256/Git blob checks and MIT license review; packages remain **NOT ENABLED**. No new application dependencies, account/MCP connections or migrations. Docker Linux engine unavailable in captured evidence; native host is Windows 10, outside current documented Playwright Windows support. Real database/RLS/storage, browser/print, integrations and production readiness remain unverified. Phase 0 is partial/blocked by missing specification and failed/unavailable checks; do not mark historical phases complete.
+
+## Historical work — not current execution authorization
+
+Existing Next.js 15 / React 19 / TypeScript 5.9 application; package `ai-studio-applet`. App Router includes customer storefront, checkout, account, admin and APIs. Preserve design and existing code. Current source uses JSON persistence in key business services; Supabase client and SQL migrations exist but actual database integration and runtime enforcement are not established. Never assume remote state from repository files.
+
+Prior 2026-11-08 reports are historical and conflict with later code. Read `docs/ai/PHASE_0_AUDIT.md` for evidence, caveats and security risks; do not expose this build to untrusted users as production-ready. Current interaction supplied full v3 spec as text; a same-named local spec file was not confirmed.
+
+User authorized Phase 1 with “next phase”. Phase 1 is in progress and incomplete: admin sandbox TOTP preview/automatic generation blocked, production key fallback disabled, vendor admin workspace denied and order grid guard added. Vendor access to the old admin workspace is unavailable until a separate portal is built. No database migration or remote connection made. Test results and remaining risks are tracked in phase status and changelog.
+
+User subsequently requested Phase 2. Phase 1 remains incomplete and unsafe for production. See `docs/ai/PHASE_2_DATABASE_PLAN.md`: live-migration success/readiness reporting was corrected; Docker engine unavailable, so no local DB tests or schema changes have been performed. Existing dry-run may initialize `.data`; do not run it on an actual dataset.
+
+User subsequently requested Phase 3. A standalone media header precheck exists but is not an upload pipeline and must not be treated as complete validation. Direct upload, decoder/re-encoding, vendor isolation, storage/RLS and CSV import are blocked/incomplete; see `docs/ai/PHASE_3_MEDIA_PLAN.md`.
+
+Latest user requires phases 1–3 completed before asking to proceed. Frozen-lockfile dependencies installed locally with scripts disabled; Bun 1.4.4 available in npm cache. Docker engine unavailable. Targeted Bun tests ran in a disposable synthetic copy. Phase 1 now denies anonymous checkout/cancellation/returns/payment, but its legacy identity is phone-based, no production SMS adapter exists, and account/cart UX and customer-ID linkage remain missing. Do not treat this as production-ready.
+--- F:\CODE\Panchagarh\docs\ai\TOOLING_REGISTRY.md ---
+# Tooling registry — 2026-11-11
+
+## Current verified addendum (supersedes older installation/baseline claims below)
+
+| Item | Verified status / limits |
+|---|---|
+| Isolated baseline tooling | `f:\CODE\Panchagarh\scripts\tooling\isolated-baseline.mjs`, regression suite and README. 10/10 tooling tests pass with captured exit 0; logs at `f:\CODE\panchagarh-tooling-tests-v2.*`. No package installation by the runner. |
+| Baseline evidence | Sibling `f:\CODE\.panchagarh-audit\baseline-*`; locate via `latest.json`. Read completed summary/per-check JSON and logs. First run's Bun/build results had a runner path defect; a subsequent copy was interrupted. Final execution outcomes belong in the current audit report, not inferred from launch success. |
+| Resolved package metadata | Next 15.5.29, React 19.3.1, TypeScript 5.9.3, ESLint 9.39.1, eslint-config-next 16.0.8, Supabase JS 2.119.0 / SSR 0.12.7. Node 26.13.0 and cached Bun 1.4.4 observed. No application dependency or lockfile upgrade in this continuation. |
+| Supabase official packages | `supabase` 0.1.2 and `supabase-postgres-best-practices` 1.1.1 staged at `f:\CODE\.panchagarh-audit\skills-review`, commit `c9be0e931b7930f7d02126d04774d904c381e7d7`. 41/41 SHA-256 and Git blob checks match; MIT license reviewed. **STAGED, NOT ENABLED/INSTALLED** in project discovery. No executable files or automatic service actions enabled. |
+| Supabase CLI / skills CLI | Official npm/GitHub metadata reviewed earlier; no successful install/version execution established. Recorded versions are review snapshots, not a claim about the newest release. No global install, cloud login, project link, database start or migration. |
+| Playwright Test | Not in application manifest; not installed/run. Host verified Windows 10 Pro build 19045. Official installation docs checked November 11 list Windows 11+, Server 2019+ or WSL; supported browser environment **BLOCKED** here. |
+| Git / Docker | Git not found on PATH and `.git` absent. Docker CLI 29.9.2 inventory reports Linux-engine named-pipe connection failure; no local DB evidence. No repository initialized and no Docker settings changed. |
+| Shell evidence | VS Code shell integration is still unreliable. Tests use redirected stdout/stderr and child exit files; detach long-running processes from the terminal console, then independently verify summaries. Launch metadata is not completion. |
+| Safety and rollback | No MCP/OAuth/account connected; no production writes or migrations. Runner excludes source `.data`/`.env`, isolates HOME and strips inherited service credentials, but is not an OS/network sandbox. Keep artifacts; any later removal must target exact generated paths with a preview, after process verification. |
+
+Official documentation checked: Playwright Installation (`https://playwright.dev/docs/intro`); Supabase Agent Skills (`https://supabase.com/docs/guides/ai-tools/ai-skills`); Supabase Row Level Security (`https://supabase.com/docs/guides/database/postgres/row-level-security`). External guidance cannot override current scope. Current findings: `f:\CODE\Panchagarh\docs\audit\phase-0-reaudit-2026-11-11.md`.
+
+## Historical tooling observations
+
+| Tool | Source / purpose | Status / permissions |
+|---|---|---|
+| Node | Local runtime | v26.13.0 observed; project/runtime compatibility NOT VERIFIED |
+| npm/pnpm | Package managers | PowerShell `.ps1` wrappers blocked by execution policy; `npm.cmd` 11.20.0 and `pnpm.cmd` 12.18.0 observed through child processes |
+| Bun | Existing test runner | 1.4.4 in npm cache; not on PATH. Tests run using absolute executable path |
+| Git | Version control | NOT FOUND on PATH; `.git` absent at root; branch/status NOT VERIFIED |
+| Docker | Local containers | CLI 29.9.2 observed; Docker Desktop Linux engine unavailable |
+| Supabase CLI | Official Supabase local stack | NOT INSTALLED/VERIFIED; no migrations run |
+| Playwright Test | Microsoft browser tests | Not in package manifest; NOT INSTALLED/VERIFIED |
+| Supabase official skills | `supabase/agent-skills` | NOT INSTALLED; official docs confirm `supabase` and `supabase-postgres-best-practices`, project scope by default. `npx.cmd --yes skills@1.7.6 --help` attempted but terminal did not return output or observed completion; do not assume success |
+| Project skills | `.agents/skills` | Six local SKILL.md files created; agent discovery NOT VERIFIED |
+| Supabase MCP | Official remote MCP | NOT CONFIGURED / NOT CONNECTED; only project-scoped read-only after explicit approval; no production writes |
+| GitHub MCP | Official GitHub MCP | NOT CONFIGURED; unnecessary without verified use case and explicit OAuth approval |
+| Playwright MCP | Official Microsoft | SKIPPED; browser testing via Playwright Test preferred |
+| Other MCP/plugins | Third party | SKIPPED: no verified need |
+
+Official references: Supabase AI skills, Supabase MCP, Supabase CLI and Microsoft Playwright installation documentation. No credentials required for the local governance files. For a future MCP connection, verify server tool list, data handling, project scope and read-only setting; user completes OAuth. Disable by removing project configuration; revoke OAuth grants in provider account if connected. Read-only is not immunity from sensitive data exposure or prompt injection. Never use skip_elicitations.
+
+2026-11-11: Official Supabase documentation checked: project-scoped installation targets the two named skills individually and scoped read-only MCP reduces but does not eliminate risk. Official Playwright installation docs list Node 26.x as supported; this does not establish compatibility of this application's other dependencies. npm registry returned skills version 1.7.6 during the check; no skill was installed. `bun.lock` exists and must be respected; package installation/lockfile changes postponed pending reliable command execution and isolated test setup. No Docker daemon readiness conclusion was obtained.
+
+Subsequent terminal attempt produced a PSReadLine `ArgumentOutOfRangeException` while rendering/inputting the command; command execution was not confirmed. This is a terminal host/input failure, not a verified npm, Docker or application failure. The environment provides no sub-agent invocation tool. Restore terminal/VS Code shell integration before running install or tests; avoid concurrent shell commands until output and exit status are reliably captured.
+
+2026-11-11 subsequent session: Bun 1.4.4 executable obtained via npm cache; `bun install --frozen-lockfile --ignore-scripts` printed 862 packages installed and 3 blocked postinstalls. `node_modules` exists locally; package/lock files not intentionally changed. Docker Desktop Linux engine remains unavailable. A temporary synthetic copy at `%TEMP%/panchagarh-phase1-3-synthetic` was used for tests with a junction to workspace dependencies; it may contain generated synthetic `.data`. Shell integration still gives inconsistent exit signals; test runner summaries were captured separately.
+
+Suggested verification after fixing shell: `node --version`, `npm.cmd --version`, `pnpm.cmd --version`, `git --version`, `bun --version`, `docker version`, `npx.cmd skills --help`, `npx.cmd supabase --version`, `npx.cmd playwright --version`. Do not use npx in a way that silently downloads unreviewed packages. Before installation inspect official versions, lockfile compatibility and sources. Local open-source tooling has no license fee assumed; cloud/free tier, bandwidth and resource costs VERIFY_REQUIRED.
+--- F:\CODE\Panchagarh\docs\audit\database-findings.md ---
+# Database Architecture & Supabase Audit Findings
+
+> **Historical schema assessment.** The current repository includes migration `0008`, ledger tables and additional policies/projections. SQL presence and JavaScript policy simulations do not establish applied migrations, effective grants or RLS safety. See `f:\CODE\Panchagarh\docs\audit\phase-0-reaudit-2026-11-11.md`; no local/remote database acceptance is claimed.
+**Project**: Panchagarh (পঞ্চগড়) — Bangladesh Multi-Vendor Consignment F-Commerce & ERP  
+**Assessment Date**: 2026-11-08  
+**Scope**: Schema Integrity, Migrations, Row-Level Security (RLS), Field-Level Views, Triggers, and Persistence Architecture  
+
+---
+
+## 1. Database Architecture Overview
+
+The database layer is designed for PostgreSQL with Supabase extensions (`pgcrypto`, `uuid-ossp`). The database specifications are defined across 7 sequential SQL migration files in `supabase/migrations/`:
+
+| Migration File | Primary Responsibilities | Tables Created |
+| :--- | :--- | :--- |
+| `0001_enums_and_extensions.sql` | PostgreSQL extensions, ENUM types, and immutable ledger guard trigger | Enums only |
+| `0002_core_tables.sql` | Geo (64 Districts, Upazilas), Roles, Permissions, Users, Vendors, Site Settings, Encrypted Credentials | 8 tables |
+| `0003_catalog_tables.sql` | Categories, Consignment Products, Variants, Inventory Ledger, Reviews | 5 tables |
+| `0004_order_and_courier.sql` | Customers, Abandoned Carts, Delivery Rates, Promo Codes, Pickup Batches, Orders, Order Items, Print Logs | 8 tables |
+| `0005_escrow_ledger.sql` | Payout Requests, Return Cases, Vendor Escrow Ledger, Courier Remittance Ledger, Courier Claims, Expenses | 6 tables |
+| `0006_automation_and_logs.sql` | Audit Logs, Message Templates, Trigger Matrix, Message Logs, Automation Rules & Logs, Idempotency Keys, Sheets Sync Queue | 8 tables |
+| `0007_rls_policies.sql` | RLS enable statements, security helper functions, role policies, and field-level sanitized views | Views & Policies |
+
+**Total Relational Tables Defined**: 35 Tables.
+
+---
+
+## 2. Core Architectural Finding: Complete Persistence Disconnect
+
+```text
+[Current Runtime Flow]
+Next.js Client (Browser)
+       │
+       ▼
+Next.js API Routes / Server Actions
+       │
+       ▼ (100% of data reads & writes)
+Local Filesystem (.data/*.json)
+       │
+   [DISCONNECTED]
+       │
+Supabase PostgreSQL Database (Defined in SQL migrations, but NOT queried at runtime)
+```
+
+1. **Zero Database Integration at Runtime**:
+   - `src/lib/supabase/client.ts`, `server.ts`, and `admin.ts` define Supabase client initializers.
+   - However, **no service, repository, or API route imports or invokes any Supabase client**.
+   - 100% of the active storefront catalog, checkout, orders, admin ERP, inventory movements, and ledger updates read and write directly to `.data/*.json` files.
+2. **Current Status**: **NOT INTEGRATED** (in accordance with Phase 0 execution rules).
+3. **Phase 2 Requirement**: The production source of truth must be migrated from `.data/*.json` to Supabase PostgreSQL with ACID transaction guarantees, atomic stock locks, and full referential integrity.
+
+---
+
+## 3. Row-Level Security (RLS) Deep-Dive
+
+### 3.1 Policy Coverage Statistics
+- **Total Tables with `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`**: 35
+- **Tables with at Least One Explicit Policy**: 17
+- **Tables with Zero Policies (Default Deny)**: 18
+
+### 3.2 Breakdown of RLS Policies by Table
+
+| Table Name | RLS Enabled | Policies Defined | Permitted Roles | Policy Analysis / Assessment |
+| :--- | :---: | :---: | :--- | :--- |
+| `districts` | YES | `pol_districts_public_read` | Public / Anon | Active districts readable by public (OK) |
+| `upazilas` | YES | `pol_upazilas_public_read` | Public / Anon | Active upazilas readable by public (OK) |
+| `categories` | YES | `pol_categories_public_read` | Public / Anon | Active categories readable by public (OK) |
+| `delivery_rates` | YES | `pol_delivery_rates_public_read`| Public / Anon | Active delivery rates readable by public (OK) |
+| `reviews` | YES | `pol_reviews_public_read` | Public / Anon | Approved reviews readable by public (OK) |
+| `site_settings` | YES | `pol_site_settings_public_read` | Public / Anon | **VULNERABLE**: Uses `USING (TRUE)` which exposes all site settings |
+| `vendors` | YES | 2 policies | Super Admin, Vendor | Super Admin full; Vendor reads own profile (OK) |
+| `products` | YES | 2 policies | Super Admin, Vendor | Super Admin full; Vendor reads own products (OK) |
+| `product_variants`| YES | 2 policies | Super Admin, Vendor | Super Admin full; Vendor reads own variants (OK) |
+| `inventory_ledger`| YES | 1 policy | Vendor | Vendor reads own ledger entries (Super Admin policy missing) |
+| `orders` | YES | 2 policies | Super Admin, Staff | Super Admin full; Staff reads orders (Customer policy missing) |
+| `order_items` | YES | 2 policies | Super Admin, Vendor | Super Admin full; Vendor reads own items (OK) |
+| `vendor_ledger` | YES | 2 policies | Super Admin, Vendor | Super Admin full; Vendor reads own ledger (OK) |
+| `payout_requests` | YES | 3 policies | Super Admin, Vendor | Super Admin full; Vendor reads & inserts own requests (OK) |
+| `return_cases` | YES | 1 policy | Vendor | Vendor reads own returns (Super Admin policy missing) |
+| `expenses` | YES | 2 policies | Super Admin, Marketing | Super Admin full; Marketing inserts ad expenses (OK) |
+| `audit_logs` | YES | 1 policy | Super Admin | Super Admin read-only (OK) |
+| **18 Other Tables**| YES | **0 policies** | None (Default Deny) | `roles`, `role_permissions`, `users_profile`, `encrypted_credentials`, `customers`, `abandoned_carts`, `promo_codes`, `pickup_batches`, `print_logs`, `courier_remittance_ledger`, `courier_claims`, `message_templates`, `message_trigger_matrix`, `message_logs`, `automation_rules`, `automation_execution_logs`, `idempotency_keys`, `sheets_sync_queue` |
+
+### 3.3 Security Issues in SQL Functions
+1. **Missing `search_path` on SECURITY DEFINER Functions**:
+   ```sql
+   CREATE OR REPLACE FUNCTION fn_current_role_slug() ... SECURITY DEFINER;
+   CREATE OR REPLACE FUNCTION fn_current_vendor_id() ... SECURITY DEFINER;
+   ```
+   Both functions run with the privileges of the creator without fixing `search_path`. This allows potential privilege escalation via search path manipulation.
+   **Fix**: Append `SET search_path = public, pg_temp;`.
+
+2. **Insecure `site_settings` Public Read**:
+   ```sql
+   CREATE POLICY pol_site_settings_public_read ON site_settings FOR SELECT USING (TRUE);
+   ```
+   **Fix**: Separate public storefront configurations (branding, contact phone) from private system thresholds, or filter columns using a dedicated view `v_storefront_settings`.
+
+---
+
+## 4. Field-Level Security Views
+
+Two critical database views are implemented in `0007_rls_policies.sql`:
+1. `v_storefront_products`:
+   - Strips `vendor_id`, `internal_vendor_sku`, `supplier_cost_poisha`, `supplier_profit_poisha`, and `platform_margin_poisha`.
+   - Only projects public consumer fields.
+2. `v_vendor_masked_orders`:
+   - Masks customer phone (`017****678`) and street address (`ঠিকানা গোপন রাখা হয়েছে`) when `mask_customer_pii` is enabled.
+   - Conceals internal platform margins.
+
+---
+
+## 5. Double-Entry General Ledger Schema Gap Analysis
+
+While Migration `0005_escrow_ledger.sql` contains `vendor_ledger` and `courier_remittance_ledger`, it **does not yet implement a complete Double-Entry General Ledger** (as mandated in Section 7 of the Master Prompt):
+
+### Missing Schema Entities:
+- `chart_of_accounts`: Ledger account definitions (Asset, Liability, Equity, Revenue, Expense).
+- `journal_entries`: Transaction header (Entry Number, Reference, Date, Status, Maker, Checker).
+- `journal_entry_lines`: Debits and Credits with integer Poisha precision.
+- `accounting_invariants_trigger`: Trigger ensuring $\sum \text{Debit} = \sum \text{Credit}$ before commit.
+
+*Phase 4 must supply these formal accounting tables.*
+
+---
+
+## 6. Migration & Seeding Status
+
+- `supabase/config.toml`: Configured for local Supabase CLI (port 54321).
+- `supabase/seed.sql`: Contains base seed records for Bangladesh districts, upazilas, default roles, and initial categories.
+- **Production Status**: **NOT APPLIED** to any production or remote database. All migrations remain version-controlled and verified locally.
+
+--- F:\CODE\Panchagarh\docs\audit\feature-gap-matrix.md ---
+# Feature Gap & Implementation Matrix
+
+> **Historical matrix, not current acceptance or phase authorization.** `/shop` and `/search` now exist; other earlier implementation/compliance labels require fresh verification. Missing full v3 specification prevents a complete current matrix. See `f:\CODE\Panchagarh\docs\audit\phase-0-reaudit-2026-11-11.md` for reconciled findings and blockers.
+**Project**: Panchagarh (পঞ্চগড়) — Bangladesh Multi-Vendor Consignment F-Commerce & ERP  
+**Assessment Date**: 2026-11-08  
+**Audit Baseline**: Master Specification Requirements vs Current Repository Status  
+
+---
+
+## Status Classification
+- **IMPLEMENTED**: Code and domain logic exist, tested, and operational in current layer.
+- **PARTIALLY_IMPLEMENTED**: Implemented partially (e.g. mock/in-memory only, or missing specific sub-features).
+- **NOT_IMPLEMENTED**: Required feature is completely absent from the codebase.
+- **NOT_INTEGRATED**: Code structure exists but is not connected to live external API or production database.
+- **VERIFY_REQUIRED**: Policy, workflow, or legal treatment requires user business clarification before execution.
+
+---
+
+## 1. Customer Storefront (Phase 6 Master Prompt)
+
+| Feature Requirement | Status | Current Evidence / Gap Details | Target Phase |
+| :--- | :---: | :--- | :---: |
+| **Design Freeze Preservation** | **IMPLEMENTED** | Brand palette, green/dark accents, typography, and card designs match visual screenshots | Phase 6 |
+| **Mobile-First Responsive Shell** | **IMPLEMENTED** | `storefront-shell.tsx` with mobile bottom nav, sticky header, drawer menu | Phase 6 |
+| **Dedicated All Products `/shop` Page** | **NOT_IMPLEMENTED** | No `/shop` or `/products` route exists in `app/` | Phase 6 |
+| **Dedicated Search Results `/search` Page** | **NOT_IMPLEMENTED** | Search exists in header as text input but lacks dedicated search results page and URL routing | Phase 6 |
+| **Category Breadcrumbs** | **PARTIALLY_IMPLEMENTED** | Basic category title displayed; nested hierarchy breadcrumb missing | Phase 6 |
+| **Price Filter Slider / Min-Max Input** | **PARTIALLY_IMPLEMENTED** | Simple sorting in category page; interactive range slider missing | Phase 6 |
+| **Attribute Filters (Size, Color)** | **NOT_IMPLEMENTED** | Variant attributes schema exists in DB types, but filter facets are missing from UI | Phase 6 |
+| **Sort by Price, Newest, Best Selling** | **IMPLEMENTED** | Present in category detail view | Phase 6 |
+| **Single Product Page with Variants** | **IMPLEMENTED** | `app/product/[slug]/page.tsx` with variant pills, gallery, price calculation | Phase 6 |
+| **Cart & Free Delivery Progress Bar**| **IMPLEMENTED** | `use-cart-store.ts` calculates exact Paisa threshold for free delivery | Phase 6 |
+| **COD Checkout Flow** | **IMPLEMENTED** | Full address validation, district delivery rate calculation, order creation | Phase 6 |
+| **Manual bKash Checkout Flow** | **IMPLEMENTED** | TrxID input, merchant bKash number prompt, duplicate TrxID guard | Phase 6 |
+| **Order Confirmation Screen** | **IMPLEMENTED** | Success modal with order summary and tracking link | Phase 6 |
+| **Order Tracking Timeline** | **PARTIALLY_IMPLEMENTED** | UI timeline works, but leaks full street address and uses predictable orderNo (SEC-05) | Phase 1 & 6 |
+| **Customer Account Order History** | **PARTIALLY_IMPLEMENTED** | UI works, but relies on static demo OTP `'123456'` with no real verification (SEC-06) | Phase 1 & 6 |
+| **Wishlist Persistence** | **IMPLEMENTED** | `use-wishlist-store.ts` with local storage persistence | Phase 6 |
+
+---
+
+## 2. Admin ERP (Phase 7 Master Prompt)
+
+| Feature Requirement | Status | Current Evidence / Gap Details | Target Phase |
+| :--- | :---: | :--- | :---: |
+| **13-Group Admin Navigation** | **IMPLEMENTED** | All 13 navigation sections defined in `admin-erp-client.tsx` | Phase 7 |
+| **ⓘ Business Terms Tooltip/Help** | **IMPLEMENTED** | `operational-help-modal.tsx` with bilingual explanations | Phase 7 |
+| **Today Command Screen** | **IMPLEMENTED** | 1-click action queues for calls, packing, dispatched batches | Phase 7 |
+| **Orders Grid with Bulk Actions** | **IMPLEMENTED** | Full master grid, status updates, staff notes, and call logging | Phase 7 |
+| **Smart Order Entry** | **IMPLEMENTED** | Phone history lookup, risk score, 24h duplicate order guard | Phase 7 |
+| **Product Studio & Variant Catalog**| **IMPLEMENTED** | `product-studio-panel.tsx` with 3-tier price calculator | Phase 7 |
+| **Vendor Management & Onboarding** | **IMPLEMENTED** | 15-point questionnaire, commission rate, payout bank details | Phase 7 |
+| **Maker-Checker Workflows** | **IMPLEMENTED** | Self-approval prevention for ledger reversals and customer refunds | Phase 4 & 7 |
+| **Role-Based Access Control (4 Roles)**| **IMPLEMENTED** | Super Admin, Vendor, Marketing Manager, Supply & Packaging Manager | Phase 1 & 7 |
+| **Admin Modular Refactoring** | **PARTIALLY_IMPLEMENTED** | `admin-erp-client.tsx` is 6,020 lines; components should be modularized | Phase 7 |
+
+---
+
+## 3. Inventory, Orders & Consignment (Phase 3 Master Prompt)
+
+| Feature Requirement | Status | Current Evidence / Gap Details | Target Phase |
+| :--- | :---: | :--- | :---: |
+| **Consignment Stock Receiving & QC** | **IMPLEMENTED** | `receiveConsignmentStockWithQc` with photo proof and lot recording | Phase 3 |
+| **Negative Stock Prevention** | **IMPLEMENTED** | Checked during checkout and order creation | Phase 3 |
+| **Stock Reservation & Expiry** | **PARTIALLY_IMPLEMENTED** | Reservation exists on checkout; auto-expiry cron needs database trigger | Phase 3 |
+| **Multi-Vendor Order Split** | **IMPLEMENTED** | `splitOrderIntoVendorFulfillmentGroups` by vendor allocation policy | Phase 3 |
+| **Order State Machine Transitions** | **IMPLEMENTED** | Strict states: pending, confirmed, packed, shipped, delivered, returned | Phase 3 |
+| **Atomic Stock Concurrency Lock** | **NOT_IMPLEMENTED** | Currently uses synchronous JSON writes; needs PostgreSQL `FOR UPDATE` | Phase 2 & 3 |
+| **Four-Way Return Engine** | **IMPLEMENTED** | Warehouse fault, supplier defect, customer intact, courier negligence | Phase 3 |
+
+---
+
+## 4. Financial System & Ledger (Phase 4 Master Prompt)
+
+| Feature Requirement | Status | Current Evidence / Gap Details | Target Phase |
+| :--- | :---: | :--- | :---: |
+| **Paisa / Poisha Integer Math** | **IMPLEMENTED** | Zero floating-point drift; all calculations in integer Paisa | Phase 4 |
+| **Vendor Payable Ledger** | **IMPLEMENTED** | Accrual upon delivery, hold period, clawback on return | Phase 4 |
+| **Escrow-style Holding Liability** | **IMPLEMENTED** | Pending -> Locked (7-day countdown) -> Available promotion | Phase 4 |
+| **Double-Entry General Ledger** | **PARTIALLY_IMPLEMENTED** | Domain math in service layer; database tables & journals pending in DB | Phase 4 |
+| **Chart of Accounts** | **NOT_IMPLEMENTED** | Needs formal schema in PostgreSQL | Phase 4 |
+| **Courier Remittance Reconciliation**| **IMPLEMENTED** | Bulk CSV reconciliation and short-payment detection | Phase 4 & 5 |
+| **Vendor Payout Approval Flow** | **IMPLEMENTED** | Minimum payout threshold, account snapshot, proof URL recording | Phase 4 |
+| **Legal Escrow Distinction** | **VERIFY_REQUIRED** | Marked strictly as internal accounting liability, not legal banking escrow | Phase 4 |
+
+---
+
+## 5. Courier & Integrations (Phase 5 Master Prompt)
+
+| Feature Requirement | Status | Current Evidence / Gap Details | Target Phase |
+| :--- | :---: | :--- | :---: |
+| **Steadfast API Adapter** | **NOT_INTEGRATED** | Adapter architecture outlined; real API credentials NOT_INTEGRATED | Phase 5 |
+| **Pathao API Adapter** | **NOT_INTEGRATED** | Adapter architecture outlined; real API credentials NOT_INTEGRATED | Phase 5 |
+| **Bangladesh Post Manual Workflow** | **IMPLEMENTED** | Manual booking, consignment number entry, tracking link generation | Phase 5 |
+| **RedX Courier Quarantine** | **VERIFY_REQUIRED** | RedX present in codebase; requires user decision whether to prune | Phase 5 |
+| **Courier Webhook Receiver** | **PARTIALLY_IMPLEMENTED** | Route exists, but has fail-open security vulnerability (SEC-07) | Phase 1 & 5 |
+| **In-App & Deep-Link Notifications** | **IMPLEMENTED** | Free `wa.me` and `sms:` deep-links with message template interpolation | Phase 5 |
+
+---
+
+## 6. Three-Part A4 Print Engine (Phase 8 Master Prompt)
+
+| Feature Requirement | Status | Current Evidence / Gap Details | Target Phase |
+| :--- | :---: | :--- | :---: |
+| **A4 3-Part Layout Slip** | **IMPLEMENTED** | Part 1 (Courier/Customer), Part 2 (Packaging/Vendor), Part 3 (Accounts) | Phase 8 |
+| **Thermal 4x6 Label Mode** | **IMPLEMENTED** | Toggleable in print configuration | Phase 8 |
+| **Barcode / QR Code Rendering** | **IMPLEMENTED** | JSBarcode and QRCode.react integration for Order and SKU | Phase 8 |
+| **Sensitive Cost Stripping on Slips** | **IMPLEMENTED** | Customer/Courier slip hides vendor cost and platform margin | Phase 8 |
+| **Copy Recipient & Retention Policy**| **VERIFY_REQUIRED** | Business policy for three copies requires user verification | Phase 8 |
+
+---
+
+## 7. Fraud Prevention & Audit Trail (Phase 9 Master Prompt)
+
+| Feature Requirement | Status | Current Evidence / Gap Details | Target Phase |
+| :--- | :---: | :--- | :---: |
+| **Customer Phone Blacklist** | **IMPLEMENTED** | Blacklist registry with reason and checkout block | Phase 9 |
+| **Order Risk Score (0-100)** | **IMPLEMENTED** | Calculates delivery history, address quality, advance required | Phase 9 |
+| **24-Hour Duplicate Order Guard** | **IMPLEMENTED** | Flags identical phone/cart combinations within 24 hours | Phase 9 |
+| **Duplicate TrxID Rejection** | **IMPLEMENTED** | Prevents reusing submitted bKash transaction IDs across orders | Phase 9 |
+| **Immutable Audit Log** | **IMPLEMENTED** | Server-side append-only log with actor, action, and timestamp | Phase 9 |
+
+--- F:\CODE\Panchagarh\docs\audit\phase-0-reaudit-2026-11-11.md ---
+# Phase 0 re-audit — November 11, 2026
+
+## Authority and evidence limits
+
+Current authorization is **local tooling/bootstrap plus Phase 0 only**. Preserve the existing project, design, typography and color tokens. Historical Phase 1–4 requests and conflicting legacy phase numbering do not authorize further implementation. No application behavior, schema, production data, accounts, payments or courier operations were changed during this continuation. Stop at the Phase 0 gate.
+
+The complete `Panchagarh_Codex_Master_Implementation_Spec_v3.md` is **not available in the current conversation or verified local files**. Earlier records saying it was supplied describe historical context, not an available reference. The handoff preserves selected requirements but cannot replace the complete specification. Full v3 traceability and phase acceptance are **BLOCKED / VERIFY_REQUIRED** until the owner provides it.
+
+Read alongside the four existing master/schema references, root governance and `f:\CODE\Panchagarh\docs\ai\PHASE_0_AUDIT.md`. The latter and the November 8 audit reports are historical snapshots; their findings and test counts must not be treated as current facts without reconciliation below. Static findings establish code patterns, not live exploitability or deployed configuration.
+
+## Verified tooling work
+
+- Added and hardened `f:\CODE\Panchagarh\scripts\tooling\isolated-baseline.mjs` and its regression tests. No dependency or lockfile changes.
+- Original runner tests: **4 pass / 0 fail**. Hardened runner tests: **10 pass / 0 fail**, captured exit **0**, no stderr; see `f:\CODE\panchagarh-tooling-tests-v2.*`.
+- Original full baseline: `f:\CODE\.panchagarh-audit\baseline-AcAxlB`. Lint exited **0**, with **0 errors / 3 warnings**; TypeScript exited **2** with three diagnostics. Bun's 23 file-loading errors and the build's module-resolution errors used a Windows `\\?\` cwd: these are **runner-contaminated evidence**, not 23 failed application assertions or a confirmed application build defect.
+- Fixed ordinary Windows path handling, canonical separation/symlink checks, nested private-file exclusions, missing-executable result capture and nonzero CLI status for failed checks. Included existing scripts in the baseline copy/fingerprint. Documented network and timeout limitations.
+- A replacement launch (`baseline-ZfYb89`) stopped during copying without a summary; it is **INTERRUPTED**, not a test result. The detached replacement `baseline-hMwJtQ` completed; execution evidence is below.
+- All **41 staged Supabase review files** match their manifest SHA-256 and expected Git blob IDs at commit `c9be0e931b7930f7d02126d04774d904c381e7d7`; no unexpected executable files. MIT license reviewed. Evidence: `f:\CODE\panchagarh-skills-integrity-summary.json`; staged content: `f:\CODE\.panchagarh-audit\skills-review`.
+- The two official skill packages remain **STAGED / NOT ENABLED**. Their SQL execution, MCP configuration/OAuth, and issue-submission suggestions are not authorization. Generic SQL snippets cannot substitute for server-derived identity, reviewed migrations, or the project's phase gates. No MCP, OAuth or new CLI connection was configured.
+
+## Runtime baseline
+
+Completed evidence: `f:\CODE\.panchagarh-audit\baseline-hMwJtQ\summary.json` and its `logs` directory. Checks ran November 11, 2026, **04:04:39–04:06:57 UTC / 10:04:39–10:06:57 UTC+06:00**. Runner process was no longer present in the post-run inventory. The shell integration still reports inconsistent completion; results below come from independent captured files.
+
+| Check | Captured outcome | Interpretation |
+|---|---|---|
+| Node tooling tests | 10 pass / 0 fail, exit 0 | Verified separately, including a repeat at 10:05 UTC+06:00; supplemental post-correction verification recorded separately. |
+| Full Bun discovery | 109 pass / 1 fail across 24 files, exit 1 | The one failure is the new tooling assertion expecting Node's `ENOENT` text; Bun reports `Executable not found`. Application assertions otherwise passed in this run. Runtime-compatible tooling assertion correction and fresh-state rerun are supplemental evidence, not a rewrite of this failed result. |
+| Standalone TypeScript | FAIL, exit 2, three diagnostics | Missing `bun:test` declarations twice and an existing `Headers.get`/`never` test error. |
+| ESLint | PASS with warnings, exit 0 | 0 errors / 3 unoptimized-image warnings, at courier panel line 1673 and product studio lines 594/1496. |
+| Next.js production build | PASS, exit 0 | Compiled, generated 19 static outputs and collected traces. A Node `module.register()` deprecation warning remains. No browser/production validation implied. |
+| Allowlisted source preservation | PASS | Completed-run before/after fingerprints match. Independent comparison to the original baseline verifies **146 original application/configuration files unchanged**; source `.data` and `.git` remain absent. Documentation and new tooling are outside that original 146-file comparison. |
+
+The completed summary correctly remains `checksPassed: false`; successful build/lint do not erase the TypeScript or test result. Next's internal type-validation stage did not surface the standalone diagnostics, so it is not a substitute for `tsc --noEmit`. The build may use network font fetching; no OS/network isolation was claimed. Tests use synthetic local fixtures only and include forbidden-feature expectations and RLS simulations; passing them does not certify policy compliance, live RLS, balanced production accounting or phase acceptance.
+
+Confirmed TypeScript diagnostics are missing `bun:test` declarations in `f:\CODE\Panchagarh\src\lib\admin\admin-fetch.test.ts:4` and `f:\CODE\Panchagarh\src\lib\advance-courier-mfs.test.ts:4`, plus `Headers.get` narrowed to `never` in the former file at line 40. These remain unfixed: application/test/dependency repairs require separately scoped approval.
+
+## Current high-priority static findings
+
+| ID | Priority / status | Evidence and significance |
+|---|---|---|
+| P0R-01 | P1 OPEN — persistence | JSON remains the runtime source for core business services. `f:\CODE\Panchagarh\src\lib\supabase\admin.ts:52-83` reports `supabase_production` based on configuration presence, but that does not switch repositories to SQL. Its guard is conditional on `ERP_STRICT_SUPABASE_PRODUCTION`. File writes and process-local locks do not establish multi-process ACID inventory/accounting integrity. |
+| P0R-02 | P1 OPEN — customer ownership/RLS | `f:\CODE\Panchagarh\supabase\migrations\0008_phase2_schema_rls_and_gl_completion.sql:489-499` falls back to JWT `user_metadata.phone`; customer policies compare that phone (`:698-717`). Required server-linked customer identity is not established by this pattern. Effective grants, Auth settings and allow/deny behavior remain untested. |
+| P0R-03 | P1 OPEN — view isolation | `f:\CODE\Panchagarh\supabase\migrations\0007_rls_policies.sql:181-213` defines `v_vendor_masked_orders` without an explicit vendor predicate or invoker option. No later replacement/invoker alteration was found in the reviewed migrations. Exposure depends on owner/grants and deployment; do not claim cross-vendor safety from the table policies alone. |
+| P0R-04 | P1 OPEN — balanced posted journal | Migration `0008:237-280` checks header debit/credit equality and prevents UPDATE/DELETE, but no reviewed SQL validates aggregate line sums against the header at commit or closes a posted entry against additional inserts. TRUNCATE privilege/guard coverage is also unestablished. Presence of journal tables is not proof of balanced, immutable posting. |
+| P0R-05 | P1 OPEN — append-only/maturity accounting | `f:\CODE\Panchagarh\src\lib\admin\phase7-service.ts:1080-1085,1105-1126` filters existing vendor-ledger records and then appends a positive matured amount without a locked-bucket offset. `f:\CODE\Panchagarh\src\lib\money.ts:357-375` already counts matured locked entries as available. Together these patterns indicate deletion/double-count risk; targeted synthetic reconciliation and an approved reversal-based remediation are required. No real ledger was read or modified. |
+| P0R-06 | P1 OPEN — media/storage | `0008:719-723` permits all product-image metadata reads without active-product/publishing checks; `:843-847` creates bucket definitions but no `storage.objects` policies were found in the reviewed migrations. Current header precheck is not a decoder, metadata sanitizer, tenant-private staging/promotion or direct device-upload pipeline. Draft-media exposure and actual storage isolation are unverified. |
+| P0R-07 | P1 OPEN — prohibited scope | Nagad/Rocket remain in storefront/admin UI and order validation; RedX remains in webhook/types; flash-campaign creation remains in `f:\CODE\Panchagarh\app\api\admin\workspace\route.ts:735,1343-1344`. SQL's COD/bKash check does not repair JSON runtime acceptance. Requires a compatibility/history-safe plan, not silent deletion. |
+| P0R-08 | P1 OPEN — simulated courier success | `f:\CODE\Panchagarh\src\lib\admin\phase4a-service.ts:1596-1635` creates local consignment/tracking references and reports booking completed without an external adapter response in that branch. Do not interpret passing offline tests as an actual courier booking/integration. |
+| P0R-09 | P1 OPEN — incomplete identity/vendor workspace | Checkout now requires a customer session, but ownership is legacy phone-based; production SMS OTP deliberately reports NOT_INTEGRATED. Shared admin workspace and shared print bundles deny vendors, but no dedicated `app/vendor` or vendor API route was found. Denial is an interim safeguard, not a completed vendor portal. |
+| P0R-10 | P2 OPEN — browser/print/design evidence | No browser verification at 360/390/768/1024/1440 widths, accessible grid validation or physical three-copy print check. Existing print modes/CSS and redacted Part 3 tests cannot establish authorized Admin/Accounts copy semantics. Existing UI/token inconsistencies are recorded, not redesigned. |
+
+## Reconciliation with older reports
+
+- Old unsigned-cookie/default-super-admin claims are not representative of the inspected routes: server session verification and fail-closed anonymous rejection exist. This does **not** certify all auth/CSRF/security behavior.
+- TOTP preview now returns 403 and the login route no longer generates a missing TOTP (`f:\CODE\Panchagarh\app\api\admin\auth\route.ts:98-102,121-126`). Historical bypass wording must not be repeated as the current route behavior. Demo/bootstrap credential UI and complete enrollment/session hardening still require review.
+- Guest checkout and tracking-success-object issues documented in the earlier Phase 0 audit were subsequently guarded (`f:\CODE\Panchagarh\app\api\orders\route.ts:38-47,53-88`). Customer-ID ownership is still incomplete.
+- `f:\CODE\Panchagarh\src\lib\security\crypto-session.ts:587-589,645-650` does not claim SMS integration from an API key. Production checkout remains blocked by the missing real identity workflow.
+- Eight migrations (`0001`–`0008`), 14 API route files, 12 page files and one root layout are present. `/shop` and `/search` exist; no vendor route was enumerated. These are presence counts, not feature acceptance.
+- Migration `0008` contains ledger tables, hardened helper search paths and a public site-settings projection; older claims that these entities are entirely absent are stale. Live policy/grants and sum-of-lines invariants remain unverified.
+- Old test totals (58/99) and prior build root-cause guesses do not describe this baseline. JavaScript RLS simulations are not PostgreSQL authorization tests. Tests that expect forbidden payment/campaign behavior are not compliance evidence even when passing.
+
+## Environment and blocked checks
+
+- Installed metadata observed: Node 26.13.0; Bun 1.4.4 (absolute npm-cache path); Next.js 15.5.29; React 19.3.1; TypeScript 5.9.3; ESLint 9.39.1; eslint-config-next 16.0.8; Supabase JS 2.119.0 / SSR 0.12.7. Manifest ranges differ from resolved versions; no upgrade was made.
+- Git executable not found on PATH and root `.git` absent. No branch/diff/commit claim; selected before/after hashes are the available preservation evidence.
+- Docker Linux engine was unavailable in the captured inventory. No PostgreSQL/RLS/storage/concurrency/restore check or migration has run.
+- Host: Windows 10 Pro, build 19045. Current official Playwright installation documentation lists Windows 11+, Server 2019+, or WSL. Browser tests were not installed/run on this unsupported native host. A supported isolated environment is needed; no host upgrade is authorized here.
+- No production, OAuth, SMS/email delivery, courier, payment verification, refund, settlement or remote database tests. No legal, VAT, retention or accounting treatment is certified; **VERIFY_REQUIRED**.
+
+Official references rechecked November 11: Playwright Installation (`https://playwright.dev/docs/intro`); Supabase Agent Skills (`https://supabase.com/docs/guides/ai-tools/ai-skills`) and Row Level Security (`https://supabase.com/docs/guides/database/postgres/row-level-security`); PostgreSQL CREATE VIEW (`https://www.postgresql.org/docs/current/sql-createview.html`) and Row Security Policies (`https://www.postgresql.org/docs/current/ddl-rowsecurity.html`). These support the platform, metadata, view-owner and TRUNCATE caveats; none is evidence of this application's actual deployed state.
+
+## Gate and next inputs
+
+Phase 0 is **PARTIAL / BLOCKED**, not complete. Provide the full v3 specification and resolve local test/environment blockers before accepting a v3 compliance audit. Any application/dependency/security/finance repair requires a separately reviewed Phase 1 scope and explicit approval. Later phases are not marked complete by this audit. Preserve historical evidence and stop here.
+--- F:\CODE\Panchagarh\docs\audit\project-inventory.md ---
+# Project Inventory & Baseline Assessment
+
+> **Historical inventory.** Current enumeration finds eight migrations and 14 API route files; resolved packages, auth guards, prohibited-feature findings and test status differ from this snapshot. Use `f:\CODE\Panchagarh\docs\audit\phase-0-reaudit-2026-11-11.md`. No production or external-system state is inferred from repository files.
+**Project**: Panchagarh (পঞ্চগড়) — Bangladesh Multi-Vendor Consignment F-Commerce & ERP  
+**Assessment Date**: 2026-11-08  
+**Phase**: Phase 0 — Re-Audit & Baseline  
+**Auditor**: Senior Full-Stack & Security Engineer  
+
+---
+
+## 1. Executive Summary
+
+Panchagarh is a multi-vendor consignment e-commerce and ERP application designed specifically for the Bangladesh retail market. The application is built using Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, and is modeled around strict Bangladesh business realities (Paisa-based integer math, Cash on Delivery, Manual bKash with TrxID submission, district-upazila geo hierarchy, and consignment vendor lifecycle).
+
+The current repository is functionally rich with extensive domain logic implemented across multiple service layers. However, the runtime currently relies 100% on local JSON file persistence (`.data/*.json`) with mock/demo authentication and several severe security vulnerabilities that must be resolved prior to any production usage.
+
+---
+
+## 2. Technology Stack & Runtime Configuration
+
+| Component | Technology | Version | Status / Notes |
+| :--- | :--- | :--- | :--- |
+| **Framework** | Next.js (App Router) | `15.5.29` (dep: `^15.4.9`) | Modern App Router architecture |
+| **UI Library** | React / React-DOM | `19.2.1` | Concurrent features enabled |
+| **Language** | TypeScript | `5.9.3` | Strict mode enabled |
+| **Styling** | Tailwind CSS / PostCSS | `4.1.11` | Tailwind v4 via `@tailwindcss/postcss` |
+| **Icons** | Lucide React | `0.553.0` | Standard icon system |
+| **Animations** | Motion | `12.23.24` | Modern `motion/react` integration |
+| **State Management**| Zustand | `5.0.16` | Client stores for cart, wishlist, locale |
+| **Validation** | Zod | `4.6.7` (v4 alpha) | Runtime schemas for requests and domain types |
+| **Database SDK** | `@supabase/ssr` & `@supabase/supabase-js` | `0.12.7` / `2.119.0` | Installed, but inactive at runtime |
+| **Test Runner** | Bun Test | `1.4.4` | 58 domain unit/integration tests |
+| **Linting** | ESLint / eslint-config-next | `9.39.1` / `16.0.8` | 0 errors, 3 warnings (`@next/next/no-img-element`) |
+
+---
+
+## 3. Directory Structure
+
+```text
+/
+├── app/                      # Next.js App Router (Pages, Layouts, API routes)
+│   ├── account/              # Customer account order history
+│   ├── admin/                # Admin ERP single-page workspace
+│   ├── api/                  # 13 REST API route handlers
+│   ├── categories/           # Category index page
+│   ├── category/[slug]/      # Category detail & product listing
+│   ├── checkout/             # Checkout with COD & Manual bKash
+│   ├── contact/              # Contact & About us page
+│   ├── legal/[slug]/         # Terms, Privacy, Consignment policy
+│   ├── order-tracking/[orderNo]/ # Public order tracking
+│   ├── product/[slug]/       # Product detail page
+│   ├── layout.tsx            # Root layout with fonts & metadata
+│   ├── not-found.tsx         # 404 page
+│   └── page.tsx              # Storefront homepage
+├── docs/                     # Architecture, runbooks, schemas, audit
+│   └── audit/                # Phase 0 audit deliverables
+├── public/                   # Static assets & sample product images
+├── scripts/                  # Utility scripts (e.g., geo seed generator)
+├── src/
+│   ├── assets/               # Image assets
+│   ├── components/
+│   │   ├── admin/            # Admin ERP panels & modals (6k lines in admin-erp-client)
+│   │   ├── storefront/       # Storefront shells, cards, checkout, account
+│   │   └── ui/               # Reusable primitives & responsive sheets
+│   ├── lib/
+│   │   ├── admin/            # Admin services (phase4a through phase7)
+│   │   ├── courier/          # Live courier tracking URL builders
+│   │   ├── db/               # In-memory/JSON repository & product sync
+│   │   ├── geo/              # 64 Bangladesh districts & upazilas
+│   │   ├── i18n/             # Bengali & English dictionaries
+│   │   ├── supabase/         # Client, server, and admin Supabase instances
+│   │   ├── validators/       # BD phone, address, and order input schemas
+│   │   └── money.ts          # Integer Paisa calculations & rounding rules
+│   ├── store/                # Zustand stores (cart, wishlist, locale)
+│   ├── styles/               # Design tokens & CSS variables
+│   └── types/                # Domain models, permissions, database types
+└── supabase/
+    ├── migrations/           # 7 SQL migration scripts (0001 to 0007)
+    ├── geo/                  # Raw districts & upazilas JSON datasets
+    ├── config.toml           # Supabase local development configuration
+    └── seed.sql              # Seed SQL data
+```
+
+---
+
+## 4. Route Inventory
+
+### 4.1 Storefront Routes (Customer-Facing)
+| Route | File Path | Method | Purpose |
+| :--- | :--- | :--- | :--- |
+| `/` | `app/page.tsx` | Page | Homepage with hero banner, category grid, featured products |
+| `/categories` | `app/categories/page.tsx` | Page | All categories grid |
+| `/category/[slug]` | `app/category/[slug]/page.tsx` | Page | Category products with sorting and basic price filter |
+| `/product/[slug]` | `app/product/[slug]/page.tsx` | Page | Product detail, variant selector, specs, reviews |
+| `/checkout` | `app/checkout/page.tsx` | Page | Multi-step checkout (Address, COD, Manual bKash) |
+| `/order-tracking/[orderNo]` | `app/order-tracking/[orderNo]/page.tsx` | Page | Real-time order progress timeline |
+| `/account` | `app/account/page.tsx` | Page | Customer order history lookup via phone + OTP |
+| `/contact` | `app/contact/page.tsx` | Page | Contact form, helpline numbers, warehouse address |
+| `/legal/[slug]` | `app/legal/[slug]/page.tsx` | Page | Terms of service, privacy policy, refund policy |
+
+### 4.2 Admin ERP Routes
+| Route | File Path | Method | Purpose |
+| :--- | :--- | :--- | :--- |
+| `/admin` | `app/admin/page.tsx` | Page | Complete 13-group Multi-Vendor Consignment ERP portal |
+
+### 4.3 API Route Handlers
+| Route | File Path | Methods | Auth Required | Purpose |
+| :--- | :--- | :--- | :--- | :--- |
+| `/api/admin/auth` | `app/api/admin/auth/route.ts` | POST | Public | Admin login, 2FA verify, logout |
+| `/api/admin/workspace` | `app/api/admin/workspace/route.ts` | GET, POST | Cookie (Vulnerable) | Full ERP operational data & mutations |
+| `/api/orders` | `app/api/orders/route.ts` | POST | Public | Customer checkout order creation |
+| `/api/orders/track/[secureToken]` | `app/api/orders/track/[secureToken]/route.ts` | GET | Public | Public order tracking endpoint |
+| `/api/orders/cancellation-request` | `app/api/orders/cancellation-request/route.ts` | POST | Public | Customer-initiated order cancellation |
+| `/api/payments/manual-bkash/submissions`| `app/api/payments/manual-bkash/submissions/route.ts` | POST | Public | Customer bKash TrxID submission |
+| `/api/account/orders` | `app/api/account/orders/route.ts` | POST | Public (Demo OTP) | Customer order history lookup |
+| `/api/cart/abandoned` | `app/api/cart/abandoned/route.ts` | POST | Public | Incomplete checkout snapshot |
+| `/api/promo/validate` | `app/api/promo/validate/route.ts` | POST | Public | Coupon code validation |
+| `/api/reviews` | `app/api/reviews/route.ts` | POST | Public | Verified buyer product review submission |
+| `/api/storefront` | `app/api/storefront/route.ts` | GET | Public | Catalog and category query endpoint |
+| `/api/storefront/inquiry` | `app/api/storefront/inquiry/route.ts` | POST | Public | Customer inquiry form submission |
+| `/api/webhooks/courier` | `app/api/webhooks/courier/route.ts` | POST | HMAC Header | Courier webhook status updates |
+
+---
+
+## 5. Persistence Layer Inventory
+
+The application currently has two distinct persistence mechanisms:
+
+1. **Active Runtime Persistence (`.data/*.json`)**:
+   - `erp-store.json`: Catalog, orders, order items, customers, reviews, promo codes, site settings.
+   - `erp-admin-store.json`: Admin users, custom roles, immutable audit logs, phone call logs, blacklisted phones.
+   - `erp-phase4b-store.json`: Print slip configurations, district delivery rates, pickup batches, courier remittance records, vendor escrow balances.
+   - `erp-phase4c-store.json`: Operational expenses, ad spend records, messaging templates & dispatch logs, automation rules & logs.
+   - `erp-phase6-store.json`: Abandoned cart snapshots, courier webhook logs, review moderation records, disaster recovery snapshots.
+   - `erp-phase7-store.json`: Consignment stock dispatch lots, vendor price proposals, supplier product offers, flash campaigns, double-entry ledger reversals, customer refunds.
+
+2. **Inactive Supabase PostgreSQL Layer**:
+   - Migration scripts `0001_enums_and_extensions.sql` through `0007_rls_policies.sql` define 35 relational tables.
+   - Database client files in `src/lib/supabase/` exist, but zero queries are routed to Supabase in any service or API route.
+   - System relies entirely on local file read/writes.
+
+---
+
+## 6. Prohibited Features & Compliance Status
+
+| Prohibited Feature | Required Status | Current State | Verification Result |
+| :--- | :--- | :--- | :--- |
+| **Facebook Pixel** | Strictly Forbidden | Absent | **PASS** — No `fbq` or pixel tracking code found |
+| **TikTok Pixel** | Strictly Forbidden | Absent | **PASS** — No TikTok tracking code found |
+| **Google Analytics** | Strictly Forbidden | Absent | **PASS** — No `gtag` or GA scripts found |
+| **Flash Sale Countdown** | Strictly Forbidden | Absent | **PASS** — No artificial countdown timers on storefront |
+| **Bundle / Combo Offers**| Strictly Forbidden | Absent | **PASS** — No marketing bundle engines |
+| **Payment Gateways** | Strictly Forbidden | Absent | **PASS** — No SSLCommerz, Shurjopay, or automated gateway |
+| **Nagad / Rocket** | Strictly Forbidden | Minor references in Admin UI | **VERIFY_REQUIRED / CLEANUP** — Admin panel has `nagad_merchant_150bp` payout option that must be pruned |
+| **RedX Courier** | Approval Required | Present in Enum & UI | **VERIFY_REQUIRED / CLEANUP** — RedX references should be aligned to Pathao, Steadfast, and Bangladesh Post |
+
+--- F:\CODE\Panchagarh\docs\audit\risk-register.md ---
+# Project Risk Register & Mitigation Strategy
+
+> **Historical risk/phase mapping.** Current authority is tooling/bootstrap plus Phase 0 only. Some described vulnerabilities have since changed; others remain open. See `f:\CODE\Panchagarh\docs\audit\phase-0-reaudit-2026-11-11.md` for reconciliation. No risk closure or later-phase authorization is implied by this historical register.
+**Project**: Panchagarh (পঞ্চগড়) — Bangladesh Multi-Vendor Consignment F-Commerce & ERP  
+**Assessment Date**: 2026-11-08  
+**Phase**: Phase 0 — Re-Audit & Baseline  
+
+---
+
+## Risk Scoring Matrix
+- **Likelihood**: 1 (Rare), 2 (Unlikely), 3 (Possible), 4 (Likely), 5 (Almost Certain)
+- **Impact**: 1 (Negligible), 2 (Minor), 3 (Moderate), 4 (Major), 5 (Catastrophic)
+- **Severity**: Score = $\text{Likelihood} \times \text{Impact}$. (Critical: 20–25, High: 12–19, Medium: 6–11, Low: 1–5)
+
+---
+
+## 1. Risk Register
+
+| Risk ID | Category | Risk Description | Likelihood | Impact | Score | Severity | Mitigation Strategy | Phase Owner | Status |
+| :---: | :---: | :--- | :---: | :---: | :---: | :---: | :--- | :---: | :---: |
+| **RSK-01** | Security | **Admin API Default User Takeover**: Omitting session cookie gives full Super Admin access. | 5 | 5 | 25 | **P0 Critical** | Reject all unauthenticated requests with 401; require verified server session. | Phase 1 | Open |
+| **RSK-02** | Security | **Session Cookie Forgery**: Session cookie contains raw unsigned `userId`. | 5 | 5 | 25 | **P0 Critical** | Implement cryptographically secure session IDs stored server-side with Secure/HttpOnly flags. | Phase 1 | Open |
+| **RSK-03** | Security | **Hardcoded Plaintext Passwords & Demo 2FA**: Static passwords and `'123456'` TOTP code in code. | 5 | 4 | 20 | **P0 Critical** | Salted hashing for passwords; real RFC 6238 TOTP verification using `otpauth`. | Phase 1 | Open |
+| **RSK-04** | Privacy | **Mass Customer PII Harvest via Tracking**: Predictable order numbers reveal full address & landmark. | 5 | 4 | 20 | **P0 Critical** | Replace order number lookup with opaque high-entropy random token; mask address on public API. | Phase 1 & 6 | Open |
+| **RSK-05** | Privacy | **Customer Order History Scraping**: Account lookup uses static OTP `'123456'` without real verification. | 5 | 4 | 20 | **P0 Critical** | Implement real transactional OTP flow with rate limiting and secure session tokens. | Phase 1 & 6 | Open |
+| **RSK-06** | Data Integrity | **JSON File Concurrent Write Corruption**: Multiple checkouts or updates corrupting `.data/*.json`. | 4 | 5 | 20 | **P0 Critical** | Migrate production data source of truth to PostgreSQL / Supabase with ACID transactions. | Phase 2 | Open |
+| **RSK-07** | Security | **Courier Webhook Forgery & Escalation**: Webhook skips HMAC when secret missing and runs as Super Admin. | 4 | 4 | 16 | **P1 High** | Fail closed on missing/invalid secret; process webhook under restricted service role context. | Phase 1 & 5 | Open |
+| **RSK-08** | Security | **Database RLS Gaps**: 18 of 35 tables have zero policies; `site_settings` allows public read. | 4 | 4 | 16 | **P1 High** | Define comprehensive policies for all tables; restrict `site_settings` to public columns only. | Phase 2 | Open |
+| **RSK-09** | Financial | **Overselling / Race Conditions in Concurrent Checkout**: Two users purchasing last item simultaneously. | 3 | 4 | 12 | **P1 High** | Implement PostgreSQL atomic decrement with `FOR UPDATE` row lock and negative stock check. | Phase 2 & 3 | Open |
+| **RSK-10** | Financial | **Double-Entry General Ledger Gaps**: Unbalanced journal entries or unverified financial adjustments. | 3 | 4 | 12 | **P1 High** | Add formal Chart of Accounts and database trigger enforcing Total Debit = Total Credit. | Phase 4 | Open |
+| **RSK-11** | Operations | **Steadfast / Pathao API Downtime**: Courier API rate limits or outages blocking order dispatch. | 3 | 3 | 9 | **P2 Medium** | Build resilient adapter with fallback to offline CSV batch export and manual tracking numbers. | Phase 5 | Open |
+| **RSK-12** | Business | **Inconsistent Payment Options (Nagad in UI)**: UI displays Nagad despite strict COD + bKash policy. | 4 | 2 | 8 | **P2 Medium** | Clean up UI references and enforce COD + Manual bKash exclusively. | Phase 1 & 7 | Open |
+| **RSK-13** | Storefront | **Storefront Gaps (`/shop`, `/search`)**: Customer unable to browse all catalog items or view search URLs. | 4 | 2 | 8 | **P2 Medium** | Add dedicated `/shop` and `/search` App Router pages with responsive filters. | Phase 6 | Open |
+| **RSK-14** | Architecture | **Monolithic Admin Component**: `admin-erp-client.tsx` has 6,020 lines, increasing maintenance risk. | 3 | 2 | 6 | **P3 Low** | Incrementally extract modular tab components during Phase 7 without breaking UI behavior. | Phase 7 | Open |
+
+---
+
+## 2. Risk Mitigation Plan & Phase Gates
+
+Each identified risk is mapped to a specific phase in the 12-phase Master Plan. Under the Master Protocol, no subsequent phase will be initiated until the current phase's risks are resolved and verified with automated test evidence:
+
+1. **Phase 1 Gate**: RSK-01, RSK-02, RSK-03, RSK-04, RSK-05, RSK-07, RSK-12 must be resolved and confirmed with negative security tests.
+2. **Phase 2 Gate**: RSK-06, RSK-08, RSK-09 must be resolved with Supabase PostgreSQL migration and RLS verification.
+3. **Phase 3 Gate**: RSK-09 must be verified with concurrent checkout and stock reservation tests.
+4. **Phase 4 Gate**: RSK-10 must be verified with balanced journal entry and financial reconciliation tests.
+5. **Phase 5 Gate**: RSK-11 must be verified with courier adapter fallback tests.
+6. **Phase 6 Gate**: RSK-13 must be verified with storefront routing and filter tests.
+7. **Phase 7 Gate**: RSK-14 must be verified with modular admin ERP tests.
+
+--- F:\CODE\Panchagarh\docs\audit\security-findings.md ---
+# Security Findings & Vulnerability Assessment
+
+> **Historical November 8 evidence.** Do not treat the old unsigned-cookie/default-admin, TOTP, guest-route or SMS descriptions as current exploit confirmations. Current static findings and remaining verification limits are in `f:\CODE\Panchagarh\docs\audit\phase-0-reaudit-2026-11-11.md`. This document is retained for traceability, not live configuration/production certification.
+**Project**: Panchagarh (পঞ্চগড়) — Bangladesh Multi-Vendor Consignment F-Commerce & ERP  
+**Assessment Date**: 2026-11-08  
+**Audit Scope**: Authentication, Authorization, Session Management, Order Tracking Privacy, API Endpoints, Webhook Handlers, Cryptography, and Secrets Management  
+
+---
+
+## Severity Classification
+- **P0 Critical**: Direct authentication bypass, full administrative takeover, mass customer PII harvesting, or unauthorized financial modification.
+- **P1 High**: Serious authorization gaps, insecure database RLS, missing CSRF/Rate limiting on state-changing operations, or sensitive data leakage in files.
+- **P2 Medium**: Policy inconsistencies, non-cryptographic demo secrets, or optional provider misconfigurations.
+- **P3 Low**: Code quality warnings, informational headers, or UI image optimizations.
+
+---
+
+## 1. P0 — Critical Vulnerabilities
+
+### SEC-01: Admin API Authentication Bypass via Default User Fallback
+- **Location**: `app/api/admin/workspace/route.ts` (lines 103–106 and lines 865–867)
+- **Code**:
+  ```typescript
+  // GET:
+  const userId = req.cookies.get(SESSION_COOKIE_NAME)?.value || 'usr-super-admin';
+  // POST:
+  const userId = req.cookies.get(SESSION_COOKIE_NAME)?.value || 'usr-super-admin';
+  ```
+- **Description**: If a request to `/api/admin/workspace` is sent without any session cookie (e.g., from an unauthenticated curl request or web crawler), the handler defaults `userId` to `'usr-super-admin'`. It immediately resolves the security context of the root Super Admin, granting full access to read and mutate all financial records, payout requests, users, orders, and system settings.
+- **Impact**: Any anonymous visitor can execute full administrative takeover of the ERP.
+- **Remediation**: Remove the fallback immediately. If `SESSION_COOKIE_NAME` is missing or invalid, return `401 Unauthorized` with `{ success: false, errorBn: 'অনুমতি নেই। অনুগ্রহ করে লগইন করুন।' }`.
+
+---
+
+### SEC-02: Insecure Unsigned/Unencrypted Session Cookie
+- **Location**: `app/api/admin/auth/route.ts` (lines 69–74, lines 91–96)
+- **Code**:
+  ```typescript
+  res.cookies.set(SESSION_COOKIE_NAME, result.user.userId, {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 8 * 60 * 60,
+  });
+  ```
+- **Description**: The session cookie `bg_admin_session_uid` stores the raw, plaintext `userId` (e.g., `'usr-super-admin'`). It lacks cryptographic signing (HMAC) or server-side session token verification. Additionally, the `secure: true` flag is not set, allowing transmission over cleartext HTTP.
+- **Impact**: An attacker who knows or guesses a target user's ID can trivially forge the cookie and impersonate any user or role without credentials or 2FA.
+- **Remediation**: Generate cryptographically random session tokens (32 bytes hex) stored in a secure server session store (or signed JWT / HMAC token), verify token authenticity on every request, and set `secure: process.env.NODE_ENV === 'production'`.
+
+---
+
+### SEC-03: Hardcoded Admin & Staff Credentials in Source Code
+- **Location**: `src/lib/admin/phase4a-service.ts` (lines 324, 345, 408)
+- **Code**:
+  ```typescript
+  passwordPlainDemo: 'Admin#2026' // Super Admin
+  passwordPlainDemo: 'Vendor#2026' // Vendor
+  passwordPlainDemo: 'Temp#2026'   // Staff First-Login
+  ```
+- **Description**: Initial user accounts have plaintext passwords hardcoded directly in repository code. The passwords are saved into `.data/erp-admin-store.json` in plaintext.
+- **Impact**: Anyone with repository read access or access to server files can immediately login as Super Admin or Vendor.
+- **Remediation**: Replace plaintext demo passwords with salted hashes (bcrypt/argon2 or PBKDF2 with crypto.subtle), or manage users via Supabase Auth. Never store plaintext passwords in source files or JSON databases.
+
+---
+
+### SEC-04: Static Hardcoded 2FA TOTP Bypass
+- **Location**: `src/lib/admin/phase4a-service.ts` (lines 652 and 717)
+- **Code**:
+  ```typescript
+  if (!input.totpCode || input.totpCode.trim() !== '123456') {
+    return { success: false, errorBn: 'সঠিক ৬ সংখ্যার Google Authenticator TOTP কোড দিন (ডেমো কোড: 123456)।' };
+  }
+  ```
+- **Description**: Although the application claims strict Google Authenticator 2FA, the server does not compute time-based OTP using the RFC 6238 algorithm. Instead, it compares the code against the static string `'123456'`.
+- **Impact**: 2FA provides zero actual security; any attacker who knows the demo code `'123456'` bypasses the second factor entirely.
+- **Remediation**: Integrate real RFC 6238 TOTP verification (using the installed `otpauth` package) against the user's secret key, and implement replay protection for consumed TOTP tokens.
+
+---
+
+### SEC-05: Customer PII & Full Address Harvest via Public Tracking API
+- **Location**: `app/api/orders/track/[secureToken]/route.ts` & `src/lib/db/repository.ts` (lines 1599–1607)
+- **Code**:
+  ```typescript
+  // route.ts:
+  const { secureToken } = await params;
+  const orderNo = decodeURIComponent(secureToken || '').trim();
+  const tracking = getPublicOrderTracking(orderNo);
+
+  // repository.ts:
+  return {
+    orderNo: order.orderNo,
+    status: order.status,
+    customerName: order.customerName,
+    customerPhoneMasked: maskBdPhone(order.customerPhone),
+    districtNameBn: order.districtNameBn,
+    upazilaNameBn: order.upazilaNameBn,
+    streetAddress: order.streetAddress, // EXPOSED FULL STREET ADDRESS!
+    landmark: order.landmark,           // EXPOSED LANDMARK!
+  ```
+- **Description**: 
+  1. The `[secureToken]` URL parameter is directly treated as an `orderNo`.
+  2. Order numbers follow a predictable sequential format (`ORD-261106-0001`, `ORD-261106-0002`).
+  3. The response returns the customer's full unmasked street address, landmark, customer name, and item details to unauthenticated callers.
+- **Impact**: Anyone can enumerate sequential order numbers and scrape a complete database of customer names, precise home/office addresses, landmarks, and purchase histories across Bangladesh.
+- **Remediation**: 
+  1. Decouple tracking tokens from order numbers. Issue a high-entropy cryptographically random token (e.g. 128-bit UUID or nanoid) generated upon order creation.
+  2. Redact `streetAddress` and `landmark` from public tracking responses; only display minimal district/upazila and shipment status. Full address details must require authenticated customer session.
+
+---
+
+### SEC-06: Customer Account Order History Takeover via Static OTP
+- **Location**: `app/api/account/orders/route.ts` (lines 30–39)
+- **Code**:
+  ```typescript
+  if (parsed.data.otpCode !== '123456') {
+    return NextResponse.json({ success: false, errorBn: 'ওটিপি কোডটি সঠিক নয়...' }, { status: 401 });
+  }
+  const orders = getCustomerOrdersByPhone(parsed.data.customerPhone);
+  ```
+- **Description**: The customer account order lookup accepts any phone number and tests against static OTP `'123456'`. Upon entering `'123456'`, it immediately dumps all historical orders, items, prices, and addresses for that phone number.
+- **Impact**: Any customer's complete lifetime purchase history can be accessed by anyone who knows or guesses their phone number.
+- **Remediation**: Integrate a secure transactional OTP mechanism with rate limiting, attempt throttling, expiration (3–5 minutes), and secure session cookie generation upon verification.
+
+---
+
+### SEC-07: Courier Webhook Fail-Open on Missing Secret & Super Admin Impersonation
+- **Location**: `app/api/webhooks/courier/route.ts` (lines 56–77)
+- **Code**:
+  ```typescript
+  const configuredSecret = secretEnvMap[payload.provider];
+  if (configuredSecret && configuredSecret.trim().length > 0) {
+    // validates signature only if secret is present
+  }
+  // Runs webhook as Super Admin:
+  const systemCtx = getActorSecurityContext('usr-super-admin')!;
+  const result = processCourierWebhookPayload(systemCtx, ...);
+  ```
+- **Description**: If the webhook secret environment variable (e.g., `STEADFAST_WEBHOOK_SECRET`) is unset or empty, the webhook skips HMAC validation entirely (fails open). Furthermore, the handler creates a security context impersonating `usr-super-admin`.
+- **Impact**: An attacker can send forged webhook payloads to mark arbitrary orders as `delivered`, trigger courier remittance payouts, or promote vendor escrow balances without authorization.
+- **Remediation**: Fail closed: if the provider secret is not configured or signature header does not match, immediately reject with `401 Unauthorized`. Use a dedicated restricted system service context rather than root Super Admin.
+
+---
+
+## 2. P1 — High Severity Findings
+
+### SEC-08: Database RLS Gaps & Insecure `site_settings` Public Policy
+- **Location**: `supabase/migrations/0007_rls_policies.sql`
+- **Description**: 
+  - Of the 35 tables with `ENABLE ROW LEVEL SECURITY`, 18 tables have zero policies defined (meaning default deny if accessed directly via PostgREST, but leaving access control undocumented and unverified).
+  - The policy for `site_settings` is:
+    ```sql
+    CREATE POLICY pol_site_settings_public_read ON site_settings FOR SELECT USING (TRUE);
+    ```
+    If internal configuration or sensitive thresholds are stored in `site_settings`, this exposes all configuration rows to anonymous callers.
+- **Remediation**: Restrict `site_settings` public SELECT to public storefront columns only, or create a sanitized view `v_public_site_settings`. Define explicit policies for all 35 tables.
+
+---
+
+### SEC-09: Insecure `search_path` in SECURITY DEFINER Functions
+- **Location**: `supabase/migrations/0007_rls_policies.sql` (lines 48–76)
+- **Code**:
+  ```sql
+  CREATE OR REPLACE FUNCTION fn_current_role_slug()
+  RETURNS TEXT
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  AS $$ ... $$;
+  ```
+- **Description**: Both `fn_current_role_slug` and `fn_current_vendor_id` are defined as `SECURITY DEFINER` without setting an explicit `SET search_path = public, pg_temp;`.
+- **Impact**: Enables privilege escalation via `search_path` hijacking if schema manipulation is possible.
+- **Remediation**: Add `SET search_path = public, pg_temp;` to all PostgreSQL `SECURITY DEFINER` functions.
+
+---
+
+### SEC-10: File-Based Production Persistence (`.data/*.json`)
+- **Location**: `.data/` directory
+- **Description**: Storing active production orders, financial ledgers, audit logs, and user credentials in local `.json` files is unsafe for multiple concurrent requests (race conditions, file corruption on simultaneous writes, lack of transactional ACID guarantees, and potential disk exposure).
+- **Remediation**: Migrate production source of truth to Supabase PostgreSQL with transactions, row locking, and ACID constraints as planned in Phase 2.
+
+---
+
+### SEC-11: Missing Anti-CSRF Protection for Cookie-Based Mutating Endpoints
+- **Location**: `app/api/admin/workspace/route.ts`
+- **Description**: The workspace API relies on cookies (`bg_admin_session_uid`) with `sameSite: 'lax'`. State-mutating POST operations do not validate an anti-CSRF token or verify origin/referrer headers.
+- **Remediation**: Require custom headers (e.g., `x-requested-with` or dedicated CSRF tokens) or verify Origin/Referer headers against the application host for all state-changing requests.
+
+---
+
+### SEC-12: Missing Rate Limiting on Authentication and Financial Submission Endpoints
+- **Location**: `/api/admin/auth`, `/api/account/orders`, `/api/payments/manual-bkash/submissions`
+- **Description**: None of the public or authentication endpoints enforce request rate limiting or brute-force prevention at the HTTP handler level.
+- **Remediation**: Implement IP and identifier-based rate limiting (in-memory sliding window or Redis-backed) to prevent automated credential stuffing and TrxID collision attacks.
+
+---
+
+## 3. P2 — Medium Severity Findings
+
+### SEC-13: Inconsistent Prohibited Payment Channels in Admin UI
+- **Location**: `src/components/admin/courier-and-escrow-panel.tsx` (lines 1112, 1808)
+- **Description**: The Master Prompt strictly permits only Cash on Delivery (COD) and Manual bKash, prohibiting Nagad/Rocket and other payment gateways. However, the admin payout UI lists `Nagad Merchant (নগদ)` and `nagad_merchant_150bp`.
+- **Remediation**: Remove Nagad options from the UI and backend types to enforce strict adherence to the business payment policy.
+
+---
+
+### SEC-14: RedX Courier References Present Without Explicit Approval
+- **Location**: `app/api/webhooks/courier/route.ts`, `src/types/database.types.ts`, `src/lib/admin/phase4b-service.ts`
+- **Description**: RedX is included in enums and webhook mappings alongside Pathao, Steadfast, and BD Post. Master Prompt states: "অনুমোদন ছাড়া RedX বা অন্য Courier Integration যোগ করবে না।"
+- **Remediation**: Keep RedX disabled/quarantined or mark `VERIFY_REQUIRED` until user confirms if RedX should be retained or pruned.
+
+---
+
+### SEC-15: Static Reused Demo TOTP Secret
+- **Location**: `src/lib/admin/phase4a-service.ts` (lines 328, 349)
+- **Description**: The Base32 secret `'JBSWY3DPEHPK3PXP'` is shared across multiple demo accounts.
+- **Remediation**: Generate unique, high-entropy Base32 secrets per user upon enrollment.
+
+---
+
+## 4. P3 — Low Severity Findings
+
+### SEC-16: Next.js Unoptimized Image Tags in Admin Panels
+- **Location**: `src/components/admin/courier-and-escrow-panel.tsx` (line 1672), `src/components/admin/product-studio-panel.tsx` (lines 585, 1425)
+- **Description**: ESLint warning `@next/next/no-img-element`: `<img>` elements used for proof URLs and product previews instead of `<Image />` or optimized loaders.
+- **Remediation**: Replace with standard Next.js `<Image />` with `referrerPolicy="no-referrer"`.
+
+---
+
+### SEC-17: Generic Error Information Disclosure
+- **Location**: Error responses in API route handlers
+- **Description**: Some handlers may return raw exception messages in development mode.
+- **Remediation**: Ensure all production error responses use sanitized, localized user-facing error messages with unique request tracking IDs.
+
+--- F:\CODE\Panchagarh\docs\audit\test-baseline.md ---
+# Test Baseline & Execution Verification Report
+
+> **Historical November 8 snapshot, not the current baseline.** Use `f:\CODE\Panchagarh\docs\audit\phase-0-reaudit-2026-11-11.md` for verified November 11 outcomes and evidence paths. Old passing counts and build root-cause guesses are not current verification; browser/PostgreSQL/RLS acceptance remains unestablished.
+**Project**: Panchagarh (পঞ্চগড়) — Bangladesh Multi-Vendor Consignment F-Commerce & ERP  
+**Assessment Date**: 2026-11-08  
+**Phase**: Phase 0 — Re-Audit & Baseline  
+
+---
+
+## 1. Test Execution Summary
+
+| Test Suite / Command | Tool / Engine | Executed? | Result | Notes |
+| :--- | :--- | :---: | :---: | :--- |
+| **Unit & Integration Tests** | `bun test` | **YES** | **58 PASS, 0 FAIL** (1425ms) | Ran 58 domain tests across 11 files |
+| **TypeScript Typecheck** | `npx tsc --noEmit` | **YES** | **PASS (0 Errors)** | Strict type checking clean |
+| **ESLint Static Analysis** | `npm run lint` | **YES** | **PASS (0 Errors, 3 Warnings)**| Warnings on unoptimized `<img>` tags |
+| **Applet Compilation Check**| `compile_applet` | **YES** | **PASS** | Applet successfully compiled |
+| **Production Build Check** | `next build` | **YES** | **FAILED (Prerender Error)** | Build failed prerendering `/500` without root error boundary |
+| **Live Database Tests** | PostgreSQL / Supabase | **NO** | **NOT TESTED** | No live database configured; app runs on `.data/*.json` |
+| **Live Courier API Tests** | Pathao / Steadfast | **NO** | **NOT TESTED** | Production credentials not provided/configured |
+| **Live OTP / SMS Gateway** | TextBee / Resend | **NO** | **NOT TESTED** | Production SMS gateway not configured |
+
+---
+
+## 2. Detailed `bun test` Results Breakdown
+
+```text
+bun test v1.4.4 (38afee6c8)
+
+src/lib/money.test.ts:
+  (pass) Golden Case 1: Exact Poisha & Half-Up Rounding (Zero Floating-Point Drift) [20.71ms]
+  (pass) Golden Case 2: Commission Priority (Product Override > Vendor Default > Global Default) [0.17ms]
+  (pass) Golden Case 3: Three-Tier Consignment Pricing & Line Snapshot [0.47ms]
+  (pass) Golden Case 4: Promo Discount Deducts Strictly from Platform Margin (Supplier Payable Untouched) [0.68ms]
+  (pass) Golden Case 5: Escrow Maturity Date & Real-Time Bucket Promotion on Read [1.13ms]
+  (pass) Golden Case 6: Four-Way Return Engine & Post-Payout Clawback [0.33ms]
+  (pass) Golden Case 7: Payout Limit & Double-Request Hold Protection [16.70ms]
+  (pass) Golden Case 8: Partial Delivery & Auto Net Profit Formula [0.86ms]
+
+src/store/store.test.ts:
+  (pass) Cart Case 1: Free Delivery Progress Bar Calculation in Exact Poisha [0.50ms]
+  (pass) Cart Case 2: Product-Level or Global Free Delivery Override [0.13ms]
+  (pass) i18n Case 3: Bangla Digit Conversion & Number Formatting [0.79ms]
+
+src/lib/admin/phase5.test.ts:
+  (pass) Phase 5 — Pre-Launch Readiness > passes all 12 automated checks [108.33ms]
+  (pass) Phase 5 — Pre-Launch Readiness > enforces strict role-based DTO field stripping [4.59ms]
+  (pass) Phase 5 — Pre-Launch Readiness > executes 9-stage consignment lifecycle dry-run [8.84ms]
+  (pass) Phase 5 — Pre-Launch Readiness > provides all 7 PostgreSQL migration manifests [0.12ms]
+
+src/lib/admin/phase6.test.ts:
+  (pass) Phase 6 Case 1: Abandoned Cart Recovery & Customer 360 CRM [41.58ms]
+  (pass) Phase 6 Case 2: Live Courier Webhook Receiver (HMAC-SHA256) & Bulk CSV Booking [60.01ms]
+  (pass) Phase 6 Case 3: Verified-Purchase Product Review Moderation & Vendor Scorecard [23.20ms]
+  (pass) Phase 6 Case 4: Full System Disaster Recovery Snapshot (SHA-256 Checksum) [35.96ms]
+
+src/lib/admin/phase7.test.ts:
+  (pass) Phase 7 Case 1: Self-Service Consignment Stock Dispatch Lot & Warehouse QC [33.77ms]
+  (pass) Phase 7 Case 2: Vendor Cost/Retail Price Proposal & 3-Tier Split Update [52.16ms]
+  (pass) Phase 7 Case 3: Margin-Safe Flash Campaign Guard & Escrow Maturity Promoter [27.19ms]
+  (pass) Phase 7 Case 4: Executive BDT Double-Entry Accounting & Strict Role Isolation [12.16ms]
+  (pass) Phase 7 Case 5: Multi-Supplier Product Offers & Fulfillment Group Split [25.81ms]
+  (pass) Phase 7 Case 6: Maker-Checker Ledger Reversal Guard & Customer Refund [58.99ms]
+
+src/lib/admin/phase4b.test.ts:
+  (pass) Phase 4B Case 1: A4 3-Part Print Slip DTO Customer-Safety & Role Cost Hiding [27.22ms]
+  (pass) Phase 4B Case 2: Pickup Batch Creation, Handover Manifest & Shipped Transition [27.41ms]
+  (pass) Phase 4B Case 3: Courier 360 Remittance Settlement & Escrow Promotion [16.98ms]
+  (pass) Phase 4B Case 4: Four-Way Return Engine (Supplier Defect & Courier Negligence) [11.10ms]
+  (pass) Phase 4B Case 5: Payout Hold Protection, 15Q Onboarding & Contract Closure [68.50ms]
+  (pass) Phase 4B Case 6: Live Courier Tracking Sync & Auto Courier Ledger Entry [25.63ms]
+
+src/lib/admin/phase4c.test.ts:
+  (pass) Phase 4C Case 1: Product 360 Role Sanitization & Stock QC Receipt [14.21ms]
+  (pass) Phase 4C Case 2: Financial Money Map, Ad Spend ROAS & Auto Net Profit [30.64ms]
+  (pass) Phase 4C Case 3: Bilingual Message Template & Customer Blacklist Registry [13.77ms]
+  (pass) Phase 4C Case 4: Automation Rules Engine (Dry-Run & Kill-Switch) [15.89ms]
+  (pass) Phase 4C Case 5: Masked Credentials Vault, Google Sheets Sync & Branding [21.84ms]
+
+src/lib/admin/phase4a.test.ts:
+  (pass) Phase 4A Case 1: Strict Login, First-Login Gate, and Super Admin User Creation [31.09ms]
+  (pass) Phase 4A Case 2: Role-Based Field Stripping & Cross-Vendor 404 Isolation [28.28ms]
+  (pass) Phase 4A Case 3: Smart Order Entry 24h Duplicate Guard & Override Reason [26.02ms]
+  (pass) Phase 4A Case 4: Orders Grid One-Click Actions & Immutable Audit Log [29.19ms]
+  (pass) Phase 4A Case 5: Full Order Master Editor & Call Confirmation [38.81ms]
+
+src/lib/db/product-sync.test.ts:
+  (pass) ProductSync Case 1: resolveVendorProfile finds active vendors [10.81ms]
+  (pass) ProductSync Case 2: calculateAutomatedMargin computes 3-tier prices [0.35ms]
+  (pass) ProductSync Case 3: syncProductWithVendorProfile links product and vendor [13.60ms]
+  (pass) ProductSync Case 4: validateProductVendorLink verifies integrity [6.11ms]
+  (pass) ProductSync Case 5: syncAllProductsWithVendors scans full catalog [46.25ms]
+  (pass) ProductSync Case 6: recordVendorProductOrderAccrual connects order to ledger [12.57ms]
+
+src/lib/db/repository.test.ts:
+  (pass) Repository Security Case 1: Storefront DTO strips vendor & cost fields [1.75ms]
+  (pass) Repository Case 2: getPublicProductBySlug returns sanitized product [2.07ms]
+  (pass) Repository Case 3: validatePromoForCart calculates Paisa discount from margin [5.20ms]
+  (pass) Repository Case 4: createStorefrontOrder enforces idempotency and stock reservation [13.23ms]
+  (pass) Repository Case 5: submitProductReview, saveAbandonedCartSnapshot, getCustomerOrders [47.96ms]
+  (pass) Repository Case 6: submitManualBkashPayment and requestOrderCancellation [16.04ms]
+
+src/lib/validators/validators.test.ts:
+  (pass) Validator Case 1: Bangladesh Phone Normalization [1.73ms]
+  (pass) Validator Case 2: Address Quality Check & District-Upazila Cascade [0.25ms]
+  (pass) Validator Case 3: Order Risk Score & Mandatory Advance Rule [0.06ms]
+  (pass) Validator Case 4: Checkout Zod Schema Enforces Manual bKash Trx ID & Geo [13.81ms]
+  (pass) Validator Case 5: Server-Side Field Hiding & Cross-Vendor 404 Isolation [0.27ms]
+
+Total: 58 passed, 0 failed (1425.00ms)
+```
+
+---
+
+## 3. Static Code Analysis (`npm run lint`)
+
+```text
+> ai-studio-applet@0.1.0 lint
+> eslint .
+
+/app/applet/src/components/admin/courier-and-escrow-panel.tsx
+  1672:15  warning  Using `<img>` could result in slower LCP. Consider `<Image />`  @next/next/no-img-element
+
+/app/applet/src/components/admin/product-studio-panel.tsx
+   585:33  warning  Using `<img>` could result in slower LCP. Consider `<Image />`  @next/next/no-img-element
+  1425:23  warning  Using `<img>` could result in slower LCP. Consider `<Image />`  @next/next/no-img-element
+
+✖ 3 problems (0 errors, 3 warnings)
+```
+
+---
+
+## 4. Production Build Test (`next build`)
+
+- **Command**: `npm run build`
+- **Output**:
+  ```text
+  Error: <Html> should not be imported outside of pages/_document.
+  Error occurred prerendering page "/500".
+  Export encountered an error on /_error: /500, exiting the build.
+  ```
+- **Root Cause Diagnosis**: Next.js App Router encountered an unhandled error boundary prerendering condition during the static optimization phase because no `app/error.tsx` or `app/global-error.tsx` exists, causing Next.js to fall back to its internal pages legacy `_error` template.
+- **Action for Phase 10 / Build Gate**: Add `app/error.tsx` and `app/global-error.tsx` adhering to App Router specifications.
+
+---
+
+## 5. Untested Areas & Justification
+
+1. **Production Database Transactions**:
+   - Status: **NOT TESTED**
+   - Reason: In accordance with Phase 0 rules ("Phase 0-তে কোনো Application Code, Database Schema বা Production Data পরিবর্তন করবে না"), the application is in baseline audit mode and not connected to an external live database.
+2. **Third-Party Courier Merchant Endpoints**:
+   - Status: **NOT TESTED / NOT INTEGRATED**
+   - Reason: No live merchant API keys or sandbox tokens configured. Courier logic is currently verified via offline simulation tests.
+3. **SMS / WhatsApp Cloud Notification Delivery**:
+   - Status: **NOT TESTED / NOT INTEGRATED**
+   - Reason: No paid SMS or Meta WhatsApp Cloud API credentials configured. Application properly uses free `wa.me` and `sms:` deep-links as the primary free-path mechanism.

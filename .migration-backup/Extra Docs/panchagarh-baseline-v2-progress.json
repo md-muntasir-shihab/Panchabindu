@@ -1,0 +1,16 @@
+﻿{
+    "checkedAt":  "2026-11-11T09:57:20.0446978+06:00",
+    "status":  "COPYING",
+    "processes":  [
+                      {
+                          "ProcessId":  3904,
+                          "ParentProcessId":  10096,
+                          "Name":  "node.exe",
+                          "CreationDate":  "\/Date(1794368841079)\/"
+                      }
+                  ],
+    "logs":  [
+
+             ],
+    "dependencyDirectory":  false
+}

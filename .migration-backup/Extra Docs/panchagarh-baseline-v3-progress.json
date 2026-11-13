@@ -1,0 +1,17 @@
+﻿{
+    "checkedAt":  "2026-11-11T10:02:33.6986332+06:00",
+    "runner":  [
+                   {
+                       "Id":  5016,
+                       "ProcessName":  "node",
+                       "CPU":  11.875,
+                       "StartTime":  "\/Date(1794369667595)\/"
+                   }
+               ],
+    "latest":  {
+                   "output":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ",
+                   "workspace":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ\\workspace",
+                   "logs":  "f:\\CODE\\.panchagarh-audit\\baseline-hMwJtQ\\logs",
+                   "status":  "COPYING"
+               }
+}

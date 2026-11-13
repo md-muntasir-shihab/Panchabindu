@@ -1,0 +1,16 @@
+# Cline / Roo Code Rules — পঞ্চগড় (Panchagarh)
+
+Refer to master specifications before writing any code:
+1. `docs/00_CUSTOM_INSTRUCTION.md`
+2. `docs/01_FRONTEND_MASTER_PROMPT.md`
+3. `docs/02_BACKEND_MASTER_PROMPT.md`
+4. `docs/schema.md`
+
+Non-negotiable:
+- Integer Poisha money only.
+- Double-entry balanced accounting.
+- Append-only ledger; no UPDATE or DELETE on ledger records.
+- COD + Manual bKash only (no payment gateways).
+- No marketing tracking pixels.
+- Zero-leak DTOs (strip cost, profit, and internal SKU from storefront).
+- 4-solid color system from `src/styles/tokens.css`.

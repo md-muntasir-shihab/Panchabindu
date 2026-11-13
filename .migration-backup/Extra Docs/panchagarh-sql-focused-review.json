@@ -1,0 +1,326 @@
+﻿[
+    {
+        "pattern":  "auth\\.jwt|user_metadata",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  496,
+        "text":  "NULLIF(auth.jwt() -\u003e\u003e \u0027phone\u0027, \u0027\u0027),"
+    },
+    {
+        "pattern":  "auth\\.jwt|user_metadata",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  497,
+        "text":  "NULLIF(auth.jwt() -\u003e \u0027user_metadata\u0027 -\u003e\u003e \u0027phone\u0027, \u0027\u0027)"
+    },
+    {
+        "pattern":  "CREATE.*VIEW|security_invoker",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0003_catalog_tables.sql",
+        "line":  122,
+        "text":  "CREATE TABLE reviews ("
+    },
+    {
+        "pattern":  "CREATE.*VIEW|security_invoker",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0003_catalog_tables.sql",
+        "line":  139,
+        "text":  "CREATE INDEX idx_reviews_product_status ON reviews(product_id, status);"
+    },
+    {
+        "pattern":  "CREATE.*VIEW|security_invoker",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0007_rls_policies.sql",
+        "line":  83,
+        "text":  "CREATE POLICY pol_reviews_public_read ON reviews FOR SELECT USING (status = \u0027approved\u0027);"
+    },
+    {
+        "pattern":  "CREATE.*VIEW|security_invoker",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0007_rls_policies.sql",
+        "line":  146,
+        "text":  "CREATE OR REPLACE VIEW v_storefront_products AS"
+    },
+    {
+        "pattern":  "CREATE.*VIEW|security_invoker",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0007_rls_policies.sql",
+        "line":  181,
+        "text":  "CREATE OR REPLACE VIEW v_vendor_masked_orders AS"
+    },
+    {
+        "pattern":  "CREATE.*VIEW|security_invoker",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  511,
+        "text":  "-- 8. FIX site_settings PUBLIC READ EXPOSURE \u0026 CREATE PUBLIC-SAFE VIEW"
+    },
+    {
+        "pattern":  "CREATE.*VIEW|security_invoker",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  525,
+        "text":  "CREATE OR REPLACE VIEW v_public_site_settings AS"
+    },
+    {
+        "pattern":  "\\bGRANT\\b|\\bREVOKE\\b|\\bTRUNCATE\\b",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  501,
+        "text":  "REVOKE ALL ON FUNCTION fn_prevent_ledger_mutation() FROM PUBLIC;"
+    },
+    {
+        "pattern":  "\\bGRANT\\b|\\bREVOKE\\b|\\bTRUNCATE\\b",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  502,
+        "text":  "REVOKE ALL ON FUNCTION fn_current_role_slug() FROM PUBLIC;"
+    },
+    {
+        "pattern":  "\\bGRANT\\b|\\bREVOKE\\b|\\bTRUNCATE\\b",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  503,
+        "text":  "REVOKE ALL ON FUNCTION fn_current_vendor_id() FROM PUBLIC;"
+    },
+    {
+        "pattern":  "\\bGRANT\\b|\\bREVOKE\\b|\\bTRUNCATE\\b",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  504,
+        "text":  "REVOKE ALL ON FUNCTION fn_current_customer_phone() FROM PUBLIC;"
+    },
+    {
+        "pattern":  "\\bGRANT\\b|\\bREVOKE\\b|\\bTRUNCATE\\b",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  506,
+        "text":  "GRANT EXECUTE ON FUNCTION fn_current_role_slug() TO authenticated, service_role;"
+    },
+    {
+        "pattern":  "\\bGRANT\\b|\\bREVOKE\\b|\\bTRUNCATE\\b",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  507,
+        "text":  "GRANT EXECUTE ON FUNCTION fn_current_vendor_id() TO authenticated, service_role;"
+    },
+    {
+        "pattern":  "\\bGRANT\\b|\\bREVOKE\\b|\\bTRUNCATE\\b",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  508,
+        "text":  "GRANT EXECUTE ON FUNCTION fn_current_customer_phone() TO authenticated, service_role;"
+    },
+    {
+        "pattern":  "\\bGRANT\\b|\\bREVOKE\\b|\\bTRUNCATE\\b",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  558,
+        "text":  "GRANT SELECT ON v_public_site_settings TO anon, authenticated, service_role;"
+    },
+    {
+        "pattern":  "\\bGRANT\\b|\\bREVOKE\\b|\\bTRUNCATE\\b",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  559,
+        "text":  "GRANT SELECT ON v_storefront_products TO anon, authenticated, service_role;"
+    },
+    {
+        "pattern":  "\\bGRANT\\b|\\bREVOKE\\b|\\bTRUNCATE\\b",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  560,
+        "text":  "GRANT SELECT ON v_vendor_masked_orders TO authenticated, service_role;"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0001_enums_and_extensions.sql",
+        "line":  3,
+        "text":  "-- Extensions, Enum Types, and Immutable Append-Only Ledger Guard Trigger"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0001_enums_and_extensions.sql",
+        "line":  144,
+        "text":  "-- 14. Immutable Table Guard Function (Blocks UPDATE and DELETE on Ledgers/Logs)"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0001_enums_and_extensions.sql",
+        "line":  151,
+        "text":  "RAISE EXCEPTION \u0027IMMUTABLE_LEDGER_VIOLATION: Table \"%\" is append-only. UPDATE and DELETE operations are strictly prohibited. Insert an offsetting reversal entry instead.\u0027, TG_TABLE_NAME;"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0003_catalog_tables.sql",
+        "line":  4,
+        "text":  "-- Immutable Inventory Ledger, and Moderated Customer Reviews"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0003_catalog_tables.sql",
+        "line":  93,
+        "text":  "-- 4. Immutable Inventory Ledger (Tracks Every Consignment Intake, Reservation, Shipment \u0026 Damage)"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0003_catalog_tables.sql",
+        "line":  117,
+        "text":  "CREATE TRIGGER trg_inventory_ledger_immutable"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0003_catalog_tables.sql",
+        "line":  118,
+        "text":  "BEFORE UPDATE OR DELETE ON inventory_ledger"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0004_order_and_courier.sql",
+        "line":  4,
+        "text":  "-- Pickup Batches, Orders, Order Items (Immutable Price Snapshot), Print Logs"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0004_order_and_courier.sql",
+        "line":  171,
+        "text":  "-- 7. Order Items (Immutable Snapshot of 3-Tier Pricing \u0026 Commission at Order Creation)"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0005_escrow_ledger.sql",
+        "line":  3,
+        "text":  "-- Payout Requests, 4-Way Return Cases, Immutable Vendor Escrow Ledger,"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0005_escrow_ledger.sql",
+        "line":  4,
+        "text":  "-- Immutable Courier Remittance Ledger, Courier Claims, and Expenses/Ad Spend"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0005_escrow_ledger.sql",
+        "line":  53,
+        "text":  "-- 3. Immutable Vendor Escrow Ledger (Pending -\u003e Locked -\u003e Available + Reversals/Clawbacks)"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0005_escrow_ledger.sql",
+        "line":  76,
+        "text":  "CREATE TRIGGER trg_vendor_ledger_immutable"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0005_escrow_ledger.sql",
+        "line":  77,
+        "text":  "BEFORE UPDATE OR DELETE ON vendor_ledger"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0005_escrow_ledger.sql",
+        "line":  80,
+        "text":  "-- 4. Immutable Courier Remittance Ledger (Courier 360 \u0026 COD Settlement Tracking)"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0005_escrow_ledger.sql",
+        "line":  98,
+        "text":  "CREATE TRIGGER trg_courier_remittance_ledger_immutable"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0005_escrow_ledger.sql",
+        "line":  99,
+        "text":  "BEFORE UPDATE OR DELETE ON courier_remittance_ledger"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0006_automation_and_logs.sql",
+        "line":  3,
+        "text":  "-- Immutable Audit Logs, Messaging Templates \u0026 Trigger Matrix, Message Logs,"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0006_automation_and_logs.sql",
+        "line":  8,
+        "text":  "-- 1. Immutable Audit Logs (Every Sensitive Read/Write/Override/Auth Event)"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0006_automation_and_logs.sql",
+        "line":  29,
+        "text":  "CREATE TRIGGER trg_audit_logs_immutable"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0006_automation_and_logs.sql",
+        "line":  30,
+        "text":  "BEFORE UPDATE OR DELETE ON audit_logs"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  255,
+        "text":  "CREATE TRIGGER trg_journal_entries_immutable"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  256,
+        "text":  "BEFORE UPDATE OR DELETE ON journal_entries"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  259,
+        "text":  "CREATE TABLE IF NOT EXISTS journal_lines ("
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  275,
+        "text":  "CREATE INDEX IF NOT EXISTS idx_journal_lines_entry_id ON journal_lines(journal_entry_id);"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  276,
+        "text":  "CREATE INDEX IF NOT EXISTS idx_journal_lines_account_id ON journal_lines(account_id, created_at DESC);"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  278,
+        "text":  "CREATE TRIGGER trg_journal_lines_immutable"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  279,
+        "text":  "BEFORE UPDATE OR DELETE ON journal_lines"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  452,
+        "text":  "RAISE EXCEPTION \u0027IMMUTABLE_LEDGER_VIOLATION: Table \"%\" is append-only. UPDATE and DELETE operations are strictly prohibited. Insert an offsetting reversal entry instead.\u0027, TG_TABLE_NAME;"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  575,
+        "text":  "ALTER TABLE journal_lines ENABLE ROW LEVEL SECURITY;"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  795,
+        "text":  "CREATE POLICY pol_journal_lines_super_admin_or_vendor ON journal_lines"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  800,
+        "text":  "CREATE POLICY pol_journal_lines_super_admin_insert ON journal_lines"
+    },
+    {
+        "pattern":  "fn_check_journal|journal_lines|IMMUTABLE|BEFORE UPDATE OR DELETE",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  864,
+        "text":  "-- DROP TABLE IF EXISTS journal_lines;"
+    },
+    {
+        "pattern":  "pol_product_images|storage\\.objects",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  719,
+        "text":  "CREATE POLICY pol_product_images_public_read ON product_images"
+    },
+    {
+        "pattern":  "pol_product_images|storage\\.objects",
+        "path":  "F:\\CODE\\Panchagarh\\supabase\\migrations\\0008_phase2_schema_rls_and_gl_completion.sql",
+        "line":  721,
+        "text":  "CREATE POLICY pol_product_images_admin_write ON product_images"
+    }
+]

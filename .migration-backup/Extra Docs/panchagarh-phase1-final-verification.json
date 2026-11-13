@@ -1,0 +1,204 @@
+{
+  "checkedAt": "2026-11-11T10:08:25.120Z",
+  "sourceMatchesFinalVerifiedCopy": true,
+  "protectedSourceChanges": [],
+  "documentation": [
+    {
+      "path": "f:/CODE/Panchagarh/AGENTS.md",
+      "bytes": 1847,
+      "sha256": "29127074ce86f4922fd4b64c90176913853c7c625ba1564565513c457c866c6e",
+      "ok": true
+    },
+    {
+      "path": "f:/CODE/Panchagarh/docs/ai/PROJECT_STATE.md",
+      "bytes": 7183,
+      "sha256": "4207a0d7752a3e4a2570611d88c2c57b5055cf703c7f4ab7b65377d02686c944",
+      "ok": true
+    },
+    {
+      "path": "f:/CODE/Panchagarh/docs/ai/PHASE_STATUS.md",
+      "bytes": 4611,
+      "sha256": "5ff551e80e1514c25442bbac0a706732468fc43342e3814b5ba9782f6a50477b",
+      "ok": true
+    },
+    {
+      "path": "f:/CODE/Panchagarh/docs/ai/DECISIONS.md",
+      "bytes": 4957,
+      "sha256": "9930ee370accfe89ee4d56ebfb028c7cf3eedf2ab492efd3c623556f264da8f1",
+      "ok": true
+    },
+    {
+      "path": "f:/CODE/Panchagarh/docs/ai/OPEN_QUESTIONS.md",
+      "bytes": 2738,
+      "sha256": "35b1fef1662558d4fa17ddf0bdb439b81bf6f947fa826ce5bceec3d5e9d7ed7d",
+      "ok": true
+    },
+    {
+      "path": "f:/CODE/Panchagarh/docs/ai/CHANGELOG.md",
+      "bytes": 9736,
+      "sha256": "23754509f62558f39791532ac24b337ed566bda8dfad31b0996f6272bb813855",
+      "ok": true
+    },
+    {
+      "path": "f:/CODE/Panchagarh/docs/audit/v3-requirements-matrix.md",
+      "bytes": 20990,
+      "sha256": "6cfeb24945660008175e447907ff21888738bd20822d4dbcb342786eb31bee22",
+      "ok": true
+    },
+    {
+      "path": "f:/CODE/Panchagarh/docs/audit/v3-phase-0-reconciliation.md",
+      "bytes": 19614,
+      "sha256": "a2c6b84f265f0ee975426446a368ec5fe2498c31b4f5063c333c4ec879f208c0",
+      "ok": true
+    },
+    {
+      "path": "f:/CODE/Panchagarh/docs/audit/risk-register.md",
+      "bytes": 6227,
+      "sha256": "ae76d38c1f22cf39fc523c53459e630e2300047cf463c7e4ebda99ccf6e4aded",
+      "ok": true
+    },
+    {
+      "path": "f:/CODE/Panchagarh/docs/audit/v3-phase-1-security-identity.md",
+      "bytes": 16233,
+      "sha256": "e0ccf9b3b141eb220ab916dc1c85a3ecd9eb3317be5eeb905dcf0deb215f7cd0",
+      "ok": true
+    },
+    {
+      "path": "f:/CODE/Panchagarh/.env.example",
+      "bytes": 2927,
+      "sha256": "7dd124b5b8391d28cd8e1fdf3d8cbe706d0183f30e7436416d3fcb7163e264da",
+      "ok": true
+    }
+  ],
+  "sourceDataExists": false,
+  "unitBuildSummary": {
+    "status": "FINISHED",
+    "output": "f:/CODE/.panchagarh-audit/phase1-verification-MOSXmS",
+    "workspace": "f:\\CODE\\.panchagarh-audit\\baseline-pW4lIR\\workspace",
+    "results": {
+      "tooling-node": {
+        "command": "node.exe",
+        "args": [
+          "--test",
+          "scripts/tooling/isolated-baseline.test.mjs"
+        ],
+        "startedAt": "2026-11-11T10:01:36.755Z",
+        "finishedAt": "2026-11-11T10:01:37.646Z",
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "error": null
+      },
+      "unit": {
+        "command": "bun.exe",
+        "args": [
+          "test"
+        ],
+        "startedAt": "2026-11-11T10:01:36.749Z",
+        "finishedAt": "2026-11-11T10:01:43.812Z",
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "error": null
+      },
+      "typecheck": {
+        "command": "node.exe",
+        "args": [
+          "node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "--incremental",
+          "false"
+        ],
+        "startedAt": "2026-11-11T10:01:36.736Z",
+        "finishedAt": "2026-11-11T10:01:53.149Z",
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "error": null
+      },
+      "lint": {
+        "command": "node.exe",
+        "args": [
+          "node_modules/eslint/bin/eslint.js",
+          "."
+        ],
+        "startedAt": "2026-11-11T10:01:36.743Z",
+        "finishedAt": "2026-11-11T10:02:15.140Z",
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "error": null
+      },
+      "build": {
+        "command": "node.exe",
+        "args": [
+          "node_modules/next/dist/bin/next",
+          "build"
+        ],
+        "startedAt": "2026-11-11T10:02:15.162Z",
+        "finishedAt": "2026-11-11T10:03:03.151Z",
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "error": null
+      }
+    },
+    "sourceStableDuringVerification": true,
+    "originalDataDirectoryExists": false,
+    "checksPassed": true
+  },
+  "smoke": {
+    "results": [
+      {
+        "route": "/api/storefront",
+        "method": "GET",
+        "expected": 200,
+        "status": 200,
+        "leaks": [],
+        "pass": true
+      },
+      {
+        "route": "/admin",
+        "method": "GET",
+        "expected": 200,
+        "status": 200,
+        "leaks": [],
+        "pass": true
+      },
+      {
+        "route": "/api/admin/workspace",
+        "method": "GET",
+        "expected": 401,
+        "status": 401,
+        "leaks": [],
+        "pass": true
+      },
+      {
+        "route": "/api/orders",
+        "method": "POST",
+        "expected": 403,
+        "status": 403,
+        "leaks": [],
+        "pass": true
+      },
+      {
+        "route": "/api/orders",
+        "method": "POST",
+        "expected": 401,
+        "status": 401,
+        "leaks": [],
+        "pass": true
+      },
+      {
+        "route": "/api/admin/auth",
+        "method": "POST",
+        "expected": 503,
+        "status": 503,
+        "leaks": [],
+        "pass": true
+      }
+    ],
+    "pass": true,
+    "serverStopped": true
+  }
+}

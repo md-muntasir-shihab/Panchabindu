@@ -1,0 +1,9 @@
+{
+  "docs/00_CUSTOM_INSTRUCTION.md": "6205ad4f78bf970d730e1ed4d8b8c223ed574fab650cb51b51ccd08b56ce0358",
+  "docs/01_FRONTEND_MASTER_PROMPT.md": "5b4c65d5cb9422cffb36cae479868ff0a5e45f93e5e2b14590cb73c3d2dde2e3",
+  "docs/02_BACKEND_MASTER_PROMPT.md": "3fe8be6af9550ce51785c76ede641c595a02c10f9efc8f9502e7d19c0ddf09d2",
+  "docs/schema.md": "7ac0bf90db5b7bb9459b3143f3faf075634bb09e7bd9a20353817e012e8baee3",
+  "src/styles/tokens.css": "a6f7f5b23f1281f33f1ac308fdcdec8b733ce623a0f14745e07dc5ba99c30fce",
+  "package.json": "10d8d56bd1c483cd1c41deb4cd883748bc5642740b4cacb15e8078ff05605027",
+  "bun.lock": "91ba40879eac5b6e0e435031caeb52c63b83a6a9dbb66e7cf721137ac96639bb"
+}

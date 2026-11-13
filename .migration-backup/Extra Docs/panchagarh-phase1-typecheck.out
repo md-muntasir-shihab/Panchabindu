@@ -1,0 +1,20 @@
+src/components/admin/admin-erp-client.tsx(2382,5): error TS2571: Object is of type 'unknown'.
+src/components/admin/admin-erp-client.tsx(4539,27): error TS2571: Object is of type 'unknown'.
+src/components/admin/admin-erp-client.tsx(5024,13): error TS2322: Type 'unknown' is not assignable to type 'number'.
+src/components/storefront/checkout-client.tsx(795,39): error TS2339: Property 'nagadManualNumber' does not exist on type 'PublicSafeSiteSettingsDTO'.
+src/components/storefront/checkout-client.tsx(820,39): error TS2339: Property 'rocketManualNumber' does not exist on type 'PublicSafeSiteSettingsDTO'.
+src/components/storefront/checkout-client.tsx(850,44): error TS2339: Property 'nagadManualNumber' does not exist on type 'PublicSafeSiteSettingsDTO'.
+src/components/storefront/checkout-client.tsx(852,44): error TS2339: Property 'rocketManualNumber' does not exist on type 'PublicSafeSiteSettingsDTO'.
+src/components/storefront/checkout-client.tsx(862,46): error TS2339: Property 'nagadManualNumber' does not exist on type 'PublicSafeSiteSettingsDTO'.
+src/components/storefront/checkout-client.tsx(864,46): error TS2339: Property 'rocketManualNumber' does not exist on type 'PublicSafeSiteSettingsDTO'.
+src/components/storefront/checkout-client.tsx(895,44): error TS2339: Property 'nagadInstructionBn' does not exist on type 'PublicSafeSiteSettingsDTO'.
+src/components/storefront/checkout-client.tsx(898,44): error TS2339: Property 'rocketInstructionBn' does not exist on type 'PublicSafeSiteSettingsDTO'.
+src/lib/admin/admin-fetch.test.ts(4,38): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/lib/admin/admin-fetch.test.ts(40,34): error TS2339: Property 'get' does not exist on type 'never'.
+src/lib/admin/phase4b-service.ts(727,9): error TS2367: This comparison appears to be unintentional because the types '"super_admin"' and '"vendor"' have no overlap.
+src/lib/admin/phase4b-service.ts(771,9): error TS2367: This comparison appears to be unintentional because the types '"super_admin"' and '"vendor"' have no overlap.
+src/lib/admin/phase4b-service.ts(777,9): error TS2367: This comparison appears to be unintentional because the types '"super_admin"' and '"vendor"' have no overlap.
+src/lib/admin/phase4b-service.ts(996,9): error TS2367: This comparison appears to be unintentional because the types '"super_admin"' and '"vendor"' have no overlap.
+src/lib/admin/phase4b-service.ts(1000,9): error TS2367: This comparison appears to be unintentional because the types '"super_admin"' and '"vendor"' have no overlap.
+src/lib/admin/phase4b-service.ts(1008,9): error TS2367: This comparison appears to be unintentional because the types '"super_admin"' and '"vendor"' have no overlap.
+src/lib/advance-courier-mfs.test.ts(4,38): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.

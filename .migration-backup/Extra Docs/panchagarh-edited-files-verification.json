@@ -1,0 +1,128 @@
+﻿[
+    {
+        "path":  "f:\\CODE\\Panchagarh\\AGENTS.md",
+        "length":  1687,
+        "sha256":  "D101677F46B2B26CE199DA86BBA5FC6D36CE134238D0226FCC30CA86D1740CAD",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "f:\\CODE\\Panchagarh\\scripts\\tooling\\README.md",
+        "length":  3411,
+        "sha256":  "76A011DA7C9F64470827BD968229D31E593F52F59F68BF4A28B0E4BDA955BAC6",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "f:\\CODE\\Panchagarh\\scripts\\tooling\\isolated-baseline.mjs",
+        "length":  9180,
+        "sha256":  "5A964F11FD7C2C505A4A6B9D1F82293FD2A551E32A017830899B319990C8986D",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "f:\\CODE\\Panchagarh\\scripts\\tooling\\isolated-baseline.test.mjs",
+        "length":  6869,
+        "sha256":  "57DF14B3A824863EEA27912CCBAFFDEEEDDC58674C7CE92558A59642FB4713F1",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\ai\\CHANGELOG.md",
+        "length":  7573,
+        "sha256":  "E2B219ED507BAC99A82589EF23F53BF00E572C4660BC75A5C1931D8A30307E64",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\ai\\DECISIONS.md",
+        "length":  2936,
+        "sha256":  "751EE295978720C2E20590E8C895C306C910AD82064067B0747E8986B1B51EBB",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\ai\\OPEN_QUESTIONS.md",
+        "length":  1981,
+        "sha256":  "34844B5E79857111888DFAD10CD1C2ED05C7DD44AAF595FBCE160701314CA4CC",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\ai\\PHASE_0_AUDIT.md",
+        "length":  11993,
+        "sha256":  "E72A0C4BB5A1C922B5C5CF74E83D16E7BDAE21D657D8ECC597B88FF241657628",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\ai\\PHASE_STATUS.md",
+        "length":  3868,
+        "sha256":  "0A4DFC1CB3FB18703125C0BC964E77573EDBFDC3F503413A20930C48FBD3E454",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\ai\\PROJECT_STATE.md",
+        "length":  5402,
+        "sha256":  "63CB83F29D2A1BE8360555DA930ED7C47EF4195BD5245F2236047FC401BE4D49",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\ai\\TOOLING_REGISTRY.md",
+        "length":  8099,
+        "sha256":  "21AEA0ABC6D151FD2A7E887C60C104A482E4B9688F13DFA6E4595F4371AC5A84",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\audit\\database-findings.md",
+        "length":  8329,
+        "sha256":  "766C36CF8DB09BE0C354E059477C3555178F9C429E6437E202ACD478898F2A66",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\audit\\feature-gap-matrix.md",
+        "length":  9906,
+        "sha256":  "A24B466415E8F5D1B6F9A29456A24C595FAD093B7D17878804569B295D88636B",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\audit\\phase-0-reaudit-2026-11-11.md",
+        "length":  16789,
+        "sha256":  "06B44E03FE8A66FC32C68BADA22A0F73FAC49F52D661D901032C8EDD6C1BF0E2",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\audit\\project-inventory.md",
+        "length":  10453,
+        "sha256":  "16A4A12510EF5E99E8FAC37E3DCCD28BF108DBFF148156707ACF8C22EABD06FE",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\audit\\risk-register.md",
+        "length":  5795,
+        "sha256":  "EA86480FDC88C7333666A156B24C95C3DF46BF2F587FAAFA5C210386332458DF",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\audit\\security-findings.md",
+        "length":  14399,
+        "sha256":  "E02DE34249850243BEB2C8FE0033F9F3AD87F71B30A9CE1FD3747D68AA0B04FA",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    },
+    {
+        "path":  "F:\\CODE\\Panchagarh\\docs\\audit\\test-baseline.md",
+        "length":  9510,
+        "sha256":  "0140EA696E5A33A6A639FB2E71D04A7B421FFF41578FED3AA9AFB48CD6907FB0",
+        "hasMergeMarkers":  false,
+        "hasNul":  false
+    }
+]
