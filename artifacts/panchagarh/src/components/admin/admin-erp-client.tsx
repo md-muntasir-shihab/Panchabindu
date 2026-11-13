@@ -73,6 +73,7 @@ import {
   Bell,
   CheckCheck,
   Filter,
+  Download,
   ArrowUpRight,
 } from 'lucide-react';
 import type {
@@ -1505,6 +1506,31 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
         updatedCount?: number;
         messageBn?: string;
         errorBn?: string;
+      };
+
+      const handleExportOrders = () => {
+        const exportRows = filteredOrders.length > 0 ? filteredOrders : orders;
+        if (exportRows.length === 0) {
+          setActionFeedback({ type: 'error', text: 'এক্সপোর্ট করার মতো কোনো অর্ডার নেই।' });
+          return;
+        }
+
+        const keys = Array.from(new Set(exportRows.flatMap((order) => Object.keys(order))));
+        const csvValue = (value: unknown) => {
+          const text = typeof value === 'string' ? value : JSON.stringify(value ?? '');
+          return `"${text.replace(/"/g, '""')}"`;
+        };
+        const csv = [
+          keys.map(csvValue).join(','),
+          ...exportRows.map((order) => keys.map((key) => csvValue((order as Record<string, unknown>)[key])).join(',')),
+        ].join('\r\n');
+        const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `panchabindu-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+        anchor.click();
+        URL.revokeObjectURL(url);
       };
       if (data.success) {
         const timeStr = new Date().toLocaleTimeString(locale === 'bn' ? 'bn-BD' : 'en-US');
@@ -3346,6 +3372,15 @@ ${itemsList}
                       ? 'Sync Tracking Now (লাইভ কুরিয়ার সিঙ্ক)'
                       : 'Sync Tracking Now'}
                   </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportOrders}
+                  className="min-h-[36px] px-3.5 py-1.5 border border-border bg-bg hover:bg-surface text-ink font-bold rounded-[var(--radius-md)] inline-flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
+                  title={locale === 'bn' ? 'ফিল্টার করা অর্ডার Excel-compatible CSV হিসেবে ডাউনলোড করুন' : 'Download filtered orders as an Excel-compatible CSV'}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{locale === 'bn' ? 'Excel Export' : 'Export Excel'}</span>
                 </button>
                 {!isVendor && (
                   <Button

@@ -21,6 +21,7 @@ import * as inquiry from '../../imported/app/api/storefront/inquiry/route';
 import * as storefront from '../../imported/app/api/storefront/route';
 import * as vendor from '../../imported/app/api/vendor/overview/route';
 import * as webhook from '../../imported/app/api/webhooks/courier/route';
+import * as courierStatusCron from '../../imported/app/api/cron/courier-status/route';
 import { pageData, manifest, sitemap, robots } from './page-data';
 
 type Handler = (request: ApiRequest, context: { params: Promise<Record<string, string>> }) => Promise<Response>;
@@ -67,6 +68,7 @@ const routes: Array<[string, Record<string, unknown>]> = [
   ['/api/promo/validate', promo], ['/api/reviews', reviews],
   ['/api/storefront/inquiry', inquiry], ['/api/storefront', storefront],
   ['/api/vendor/overview', vendor], ['/api/webhooks/courier', webhook],
+  ['/api/cron/courier-status', courierStatusCron],
   ['/api/page-data', { GET: pageData }],
   ['/manifest.webmanifest', { GET: manifest }], ['/sitemap.xml', { GET: sitemap }],
   ['/robots.txt', { GET: robots }],
