@@ -77,7 +77,7 @@ test('copies source and scripts without nested data, environment or cached state
     }
     copySource(source, target);
     assert.deepEqual(Object.keys(sourceFingerprint(target)), ['app/page.tsx', 'run-local.cmd', 'scripts/check.mjs']);
-    assert.deepEqual(fs.readdirSync(target), ['app', 'run-local.cmd', 'scripts']);
+    assert.deepEqual(fs.readdirSync(target).sort(), ['app', 'run-local.cmd', 'scripts']);
     assert.deepEqual(fs.readdirSync(path.join(target, 'app')), ['page.tsx']);
   } finally { fs.rmSync(root, { recursive: true }); }
 });

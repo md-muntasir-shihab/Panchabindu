@@ -79,32 +79,17 @@ export function AccountClient({
     'tracking' | 'orders' | 'addresses' | 'wishlist'
   >('tracking');
 
-  const [orderLookupNo, setOrderLookupNo] = React.useState('ORD-261106-0001');
-  const [recentOrders] = React.useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = window.localStorage.getItem('bg_recent_orders');
-        if (raw) {
-          const parsed = JSON.parse(raw) as string[];
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
-      } catch {
-        // Ignore storage error
-      }
-    }
-    return [];
-  });
+  const [orderLookupNo, setOrderLookupNo] = React.useState('');
+  const [recentOrders, setRecentOrders] = React.useState<string[]>([]);
 
   // Phone + OTP Login for Customer Order History (Phase 1 Hardened)
-  const [loginPhone, setLoginPhone] = React.useState('01712345678');
+  const [loginPhone, setLoginPhone] = React.useState('');
   const [otpCode, setOtpCode] = React.useState('');
   const [otpSentMessage, setOtpSentMessage] = React.useState<string | null>(null);
   const [sandboxOtpPreview, setSandboxOtpPreview] = React.useState<string | null>(null);
   const [smsProviderStatus, setSmsProviderStatus] = React.useState<
     'INTEGRATED' | 'NOT_INTEGRATED' | 'SANDBOX_TEST_ONLY'
-  >('SANDBOX_TEST_ONLY');
+  >('NOT_INTEGRATED');
   const [verifiedPhone, setVerifiedPhone] = React.useState<string | null>(null);
   const [customerOrders, setCustomerOrders] = React.useState<
     PublicOrderTrackingDTO[]
@@ -116,29 +101,7 @@ export function AccountClient({
   // Saved Delivery Addresses
   const [savedAddresses, setSavedAddresses] = React.useState<
     SavedCustomerAddress[]
-  >(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = window.localStorage.getItem('bg_saved_addresses');
-        if (raw) {
-          const parsed = JSON.parse(raw) as SavedCustomerAddress[];
-          if (Array.isArray(parsed)) return parsed;
-        }
-      } catch {
-        // Ignore storage error
-      }
-    }
-    return [
-      {
-        id: 'addr-1',
-        label: 'বাসা (ধানমন্ডি)',
-        districtId: 47,
-        upazilaId: 365,
-        streetAddress: 'বাড়ি ২৪, রোড ৭/এ, ধানমন্ডি আবাসিক এলাকা',
-        landmark: 'সাত মসজিদ রোড ওভারব্রিজের পাশে',
-      },
-    ];
-  });
+  >([]);
   const [addrLabel, setAddrLabel] = React.useState('');
   const [addrDistrictId, setAddrDistrictId] = React.useState<number>(47);
   const [addrUpazilaId, setAddrUpazilaId] = React.useState<number>(365);
@@ -162,11 +125,77 @@ export function AccountClient({
     wishlistIds.includes(p.productId)
   );
 
-  const handleCopyUserId = () => {
-    const idToCopy = verifiedPhone ?? 'CUST-261106-001';
-    navigator.clipboard.writeText(idToCopy);
-    setIsCopiedId(true);
-    setTimeout(() => setIsCopiedId(false), 1500);
+  React.useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/account/orders', { cache: 'no-store', signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Account unavailable');
+        const data = await response.json() as {
+          authenticated?: boolean;
+          customerPhone?: string;
+          providerStatus?: 'INTEGRATED' | 'NOT_INTEGRATED' | 'SANDBOX_TEST_ONLY';
+          orders?: PublicOrderTrackingDTO[];
+        };
+        if (controller.signal.aborted) return;
+        setSmsProviderStatus(data.providerStatus ?? 'NOT_INTEGRATED');
+        if (data.authenticated && typeof data.customerPhone === 'string') {
+          setVerifiedPhone(data.customerPhone);
+          setLoginPhone(data.customerPhone);
+          setCustomerOrders(Array.isArray(data.orders) ? data.orders : []);
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setAuthError('অ্যাকাউন্টের তথ্য লোড করা যায়নি। আবার চেষ্টা করুন।');
+      });
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const recent: unknown = JSON.parse(window.localStorage.getItem('bg_recent_orders') ?? '[]');
+        if (Array.isArray(recent)) setRecentOrders(recent.filter((value): value is string => typeof value === 'string').slice(0, 10));
+        const addresses: unknown = JSON.parse(window.localStorage.getItem('bg_saved_addresses') ?? '[]');
+        if (Array.isArray(addresses)) setSavedAddresses(addresses.filter((value): value is SavedCustomerAddress => Boolean(value && typeof value === 'object' && typeof value.id === 'string' && typeof value.label === 'string' && typeof value.streetAddress === 'string' && typeof value.landmark === 'string' && Number.isInteger(value.districtId) && Number.isInteger(value.upazilaId))));
+      } catch {
+        setAuthError('এই ব্রাউজারে সংরক্ষিত তথ্য পড়া যায়নি।');
+      }
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      if (tab === 'orders' || tab === 'addresses' || tab === 'wishlist' || tab === 'tracking') setActiveTab(tab);
+    });
+    return () => { controller.abort(); window.cancelAnimationFrame(frame); };
+  }, []);
+
+  const handleCopyUserId = async () => {
+    if (!verifiedPhone) return;
+    try {
+      await navigator.clipboard.writeText(verifiedPhone);
+      setIsCopiedId(true);
+      setTimeout(() => setIsCopiedId(false), 1500);
+    } catch {
+      setAuthError('কপি করা যায়নি। নম্বরটি নির্বাচন করে কপি করুন।');
+    }
+  };
+
+  const handleLogout = async () => {
+    if (authLoading) return;
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const response = await fetch('/api/account/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+      const data = await response.json() as { success?: boolean };
+      if (!response.ok || !data.success) throw new Error('Logout failed');
+      setVerifiedPhone(null);
+      setCustomerOrders([]);
+      setOtpCode('');
+      setSandboxOtpPreview(null);
+      setOtpSentMessage(null);
+      router.refresh();
+    } catch {
+      setAuthError('লগআউট করা যায়নি। আবার চেষ্টা করুন।');
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const handleTrackOrder = (e: React.FormEvent) => {
@@ -243,6 +272,7 @@ export function AccountClient({
         setVerifiedPhone(data.customerPhone ?? loginPhone);
         setCustomerOrders(data.orders ?? []);
         setOtpSentMessage(null);
+        if (new URLSearchParams(window.location.search).get('returnTo') === 'checkout') router.push('/checkout');
       }
     } catch {
       setAuthError('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।');
@@ -381,6 +411,7 @@ export function AccountClient({
               </div>
 
               <div className="space-y-1">
+                {verifiedPhone && <Button variant="outline" size="sm" onClick={handleLogout} isLoading={authLoading}>{locale === 'bn' ? 'লগআউট' : 'Log out'}</Button>}
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg sm:text-2xl font-bold text-ink tracking-tight">
                     {verifiedPhone
@@ -394,7 +425,7 @@ export function AccountClient({
                   {verifiedPhone ? (
                     <Badge status="success">
                       <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
-                      {locale === 'bn' ? 'ভেরিফাইড' : 'Verified'}
+                      {smsProviderStatus === 'SANDBOX_TEST_ONLY' ? 'Sandbox session' : locale === 'bn' ? 'লগইন করা আছে' : 'Signed in'}
                     </Badge>
                   ) : (
                     <Badge status="neutral">
@@ -405,12 +436,13 @@ export function AccountClient({
 
                 <div className="flex items-center gap-2 text-xs text-muted">
                   <span className="font-mono">
-                    ইউজার আইডি: {verifiedPhone ?? 'CUST-261106-001'}
+                    {locale === 'bn' ? 'মোবাইল: ' : 'Phone: '}{verifiedPhone ?? '—'}
                   </span>
                   <button
                     type="button"
                     onClick={handleCopyUserId}
-                    aria-label="Copy User ID"
+                    aria-label="Copy phone number"
+                    disabled={!verifiedPhone}
                     className="p-1 hover:text-ink cursor-pointer inline-flex items-center gap-1"
                   >
                     {isCopiedId ? (
@@ -431,7 +463,7 @@ export function AccountClient({
                 </p>
                 <p className="text-sm sm:text-base font-bold text-ink tabular-nums mt-0.5">
                   {formatLocaleNumber(
-                    customerOrders.length || recentOrders.length,
+                    customerOrders.length,
                     locale
                   )}
                 </p>
@@ -883,7 +915,7 @@ export function AccountClient({
               <h2 className="text-base sm:text-lg font-bold text-ink flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-ink" aria-hidden="true" />
                 <span>
-                  {locale === 'bn' ? 'সংরক্ষিত ডেলিভারি ঠিকানা' : 'Saved Delivery Addresses'}
+                  {locale === 'bn' ? 'এই ব্রাউজারে সংরক্ষিত ঠিকানা' : 'Addresses saved in this browser'}
                 </span>
               </h2>
             </div>
@@ -909,7 +941,7 @@ export function AccountClient({
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleRemoveAddress(addr.id)}
+                      onClick={() => { if (window.confirm(locale === 'bn' ? 'এই ঠিকানাটি মুছে ফেলবেন?' : 'Remove this address?')) handleRemoveAddress(addr.id); }}
                       aria-label="Remove address"
                       className="text-muted hover:text-danger cursor-pointer p-1"
                     >

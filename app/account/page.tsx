@@ -8,6 +8,7 @@ import { AccountClient } from '@/src/components/storefront/account-client';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: 'পছন্দের তালিকা ও অর্ডার ট্র্যাকিং | বঙ্গকনসাইন',
   description: 'আপনার সেভ করা পণ্য এবং অর্ডার ট্র্যাকিং।',
 };

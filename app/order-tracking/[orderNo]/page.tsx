@@ -24,13 +24,10 @@ interface OrderTrackingPageProps {
   params: Promise<{ orderNo: string }>;
 }
 
-export async function generateMetadata({
-  params,
-}: OrderTrackingPageProps): Promise<Metadata> {
-  const { orderNo } = await params;
-  const decoded = decodeURIComponent(orderNo);
+export function generateMetadata(): Metadata {
   return {
-    title: `অর্ডার ট্র্যাকিং ${decoded} | পঞ্চগড়`,
+    title: 'অর্ডার ট্র্যাকিং | পঞ্চগড়',
+    robots: { index: false, follow: false },
     description: 'আপনার অর্ডারের বর্তমান অবস্থান এবং ডেলিভারি স্ট্যাটাস দেখুন।',
   };
 }

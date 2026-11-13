@@ -4,6 +4,8 @@
 import type { MetadataRoute } from 'next';
 import { buildStorefrontSitemapEntries } from '@/src/lib/storefront/phase6-storefront-engine';
 
+export const dynamic = 'force-dynamic';
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || 'https://panchagarh.com';

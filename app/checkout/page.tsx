@@ -8,6 +8,7 @@ import { CheckoutClient } from '@/src/components/storefront/checkout-client';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: 'চেকআউট | বঙ্গকনসাইন (BongoConsign)',
   description: 'ক্যাশ অন ডেলিভারি এবং বিকাশ পেমেন্টের মাধ্যমে সহজেই অর্ডার সম্পন্ন করুন।',
 };
