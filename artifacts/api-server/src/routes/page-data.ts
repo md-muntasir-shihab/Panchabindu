@@ -78,7 +78,7 @@ export const pageData = backendRoute(async (request: ApiRequest) => {
     case 'product': {
       const detail = getPublicProductBySlug(parts[1]);
       if (!detail.product) { page = 'not-found'; props = {}; break; }
-      props = detail;
+      props = { ...common, ...detail };
       const category = categories.find(c => c.id === detail.product!.categoryId);
       jsonLd = buildVerifiedProductJsonLd({ product: detail.product, categoryNameEn: category?.nameEn, brandNameEn: siteSettings.brandNameEn });
       break;

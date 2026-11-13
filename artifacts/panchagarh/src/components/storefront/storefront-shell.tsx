@@ -10,7 +10,7 @@ import { LocalizedText } from '@/components/ui/localized-text';
 // src/components/storefront/storefront-shell.tsx
 // Botanical Heritage Calm — Global Storefront Layout Shell:
 //   - Deep Forest Green (#1B4332) Top Utility Bar (Delivery, QC Provenance & Helpline)
-//   - Sticky Minimalist Header on Warm Alabaster (#FAF9F5) with Brand Monogram, Pill Live Search, Bilingual Switcher, Wishlist, Cart & Admin Link
+//   - Sticky Minimalist Header on Warm Alabaster (#FAF9F5) with Brand Monogram, Pill Live Search, Bilingual Switcher, Wishlist & Cart
 //   - Clean Horizontal Category Navigation Bar
 //   - Mobile Bottom Tab Navigation (Home, Categories, Cart, Account — <= 768px)
 //   - Slide-in / Bottom-Sheet Cart Drawer with 4:5 Portrait Thumbnails & Forest-Green Free Delivery Progress Bar
@@ -33,7 +33,6 @@ import {
   RotateCcw,
   PhoneCall,
   Wrench,
-  LayoutDashboard,
   Menu,
   Package,
   ChevronRight,
@@ -254,13 +253,6 @@ export function StorefrontShell({
           <p className="text-sm text-[#5A655D]">
             {text(siteSettings.maintenanceMessageBn, siteSettings.maintenanceMessageEn ?? 'We will be back shortly.')}
           </p>
-          <div className="pt-2">
-            <Link href="/admin">
-              <Button variant="outline" size="sm">
-                {dict.common.adminPanel}
-              </Button>
-            </Link>
-          </div>
         </div>
       </div>
     );
@@ -560,16 +552,6 @@ export function StorefrontShell({
                 >
                   <LocalizedText source={"EN"} area="storefront" />{" "}</span>
               </button>
-
-              {/* Admin Dashboard Portal Link */}
-              <Link
-                href="/admin"
-                className="hidden 2xl:inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-medium border border-[#E4E2DC] rounded-full bg-[#F2EFE9] text-[#162119] hover:border-[var(--store-accent)] hover:bg-white transition-colors"
-                title={dict.common.adminPanel}
-              >
-                <LayoutDashboard className="w-3.5 h-3.5 text-[var(--store-accent)]" aria-hidden="true" />
-                <span>{dict.common.adminPanel}</span>
-              </Link>
 
               {/* User Profile / Account Shortcut Button */}
               <Link
