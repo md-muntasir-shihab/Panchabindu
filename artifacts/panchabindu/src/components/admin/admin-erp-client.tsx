@@ -2394,8 +2394,12 @@ ${itemsList}
     groupLabelEn: string;
     items: Array<{
       key: AdminTabKey;
+      /** Short label for the sidebar; must stay readable when truncated. */
       labelBn: string;
       labelEn: string;
+      /** Optional descriptive title used in the page header only. */
+      fullLabelBn?: string;
+      fullLabelEn?: string;
       icon: React.ReactNode;
       badge?: number | string;
       badgeStatus?: 'neutral' | 'success' | 'warning' | 'danger' | 'info';
@@ -2403,13 +2407,15 @@ ${itemsList}
     }>;
   }> = [
     {
-      groupLabelBn: '০১. ওভারভিউ ও আজকের অপারেশন',
+      groupLabelBn: '০১. ওভারভিউ',
       groupLabelEn: '01. Overview',
       items: [
         {
           key: 'today_screen',
-          labelBn: 'আজকের কাজ ও ওভারভিউ',
-          labelEn: 'Today Work & Overview',
+          labelBn: 'আজকের কাজ',
+          labelEn: 'Today',
+          fullLabelBn: 'আজকের অপারেশনাল কমান্ড সেন্টার',
+          fullLabelEn: 'Today Operational Command Center',
           icon: <Eye className="w-4 h-4 shrink-0" aria-hidden="true" />,
           badge:
             today.callToConfirmCount + today.readyToPackCount > 0
@@ -2420,53 +2426,63 @@ ${itemsList}
       ],
     },
     {
-      groupLabelBn: '০২. অর্ডার ও ফুলফিলমেন্ট',
-      groupLabelEn: '02. Orders & Fulfillment',
+      groupLabelBn: '০২. অর্ডার',
+      groupLabelEn: '02. Orders',
       items: [
         {
           key: 'orders_grid',
-          labelBn: 'অর্ডার গ্রিড ও ভেরিফিকেশন',
-          labelEn: 'Orders Grid & Verification',
+          labelBn: 'অর্ডার গ্রিড',
+          labelEn: 'Orders Grid',
+          fullLabelBn: 'অর্ডার গ্রিড ও ভেরিফিকেশন',
+          fullLabelEn: 'Orders Grid & Verification',
           icon: <ClipboardList className="w-4 h-4 shrink-0" aria-hidden="true" />,
           badge: orders.length,
           badgeStatus: 'neutral',
         },
         {
           key: 'smart_order_entry',
-          labelBn: 'নতুন স্মার্ট অর্ডার এন্ট্রি',
-          labelEn: 'Smart Order Entry',
+          labelBn: 'নতুন অর্ডার',
+          labelEn: 'New Order',
+          fullLabelBn: 'নতুন স্মার্ট অর্ডার এন্ট্রি',
+          fullLabelEn: 'Smart Order Entry',
           icon: <PlusCircle className="w-4 h-4 shrink-0" aria-hidden="true" />,
           hidden: isVendor,
         },
       ],
     },
     {
-      groupLabelBn: '০৩. প্রোডাক্ট ও ক্যাটালগ',
-      groupLabelEn: '03. Product & Catalog',
+      groupLabelBn: '০৩. ক্যাটালগ',
+      groupLabelEn: '03. Catalog',
       items: [
         {
           key: 'product_studio',
-          labelBn: 'প্রোডাক্ট ও ক্যাটাগরি স্টুডিও',
-          labelEn: 'Product Studio & Catalog',
+          labelBn: 'প্রোডাক্ট স্টুডিও',
+          labelEn: 'Product Studio',
+          fullLabelBn: 'প্রোডাক্ট ও ক্যাটাগরি স্টুডিও',
+          fullLabelEn: 'Product & Category Studio',
           icon: <Package className="w-4 h-4 shrink-0" aria-hidden="true" />,
           badge: snapshot.products ? `${snapshot.products.length}` : undefined,
         },
       ],
     },
     {
-      groupLabelBn: '০৪. ভেন্ডর ও কনসাইনমেন্ট এসক্রো',
-      groupLabelEn: '04. Vendor & Escrow Engine',
+      groupLabelBn: '০৪. ভেন্ডর ও এসক্রো',
+      groupLabelEn: '04. Vendor & Escrow',
       items: [
         {
           key: 'vendor_escrow',
-          labelBn: 'ভেন্ডর ডাইরেক্টরি, এসক্রো লেজার ও পেআউট',
-          labelEn: 'Vendor Directory, Escrow Ledger & Payout Engine',
+          labelBn: 'ভেন্ডর লেজার ও পেআউট',
+          labelEn: 'Vendor Ledger & Payouts',
+          fullLabelBn: 'ভেন্ডর ডাইরেক্টরি, এসক্রো লেজার ও পেআউট',
+          fullLabelEn: 'Vendor Directory, Escrow Ledger & Payouts',
           icon: <Wallet className="w-4 h-4 shrink-0" aria-hidden="true" />,
         },
         {
           key: 'vendor_control',
-          labelBn: 'ভেন্ডর প্যানেল নিয়ন্ত্রণ ও অনুমতি',
-          labelEn: 'Vendor Panel Control & Permissions',
+          labelBn: 'ভেন্ডর অনুমতি',
+          labelEn: 'Vendor Permissions',
+          fullLabelBn: 'ভেন্ডর প্যানেল নিয়ন্ত্রণ ও অনুমতি',
+          fullLabelEn: 'Vendor Panel Control & Permissions',
           icon: <Store className="w-4 h-4 shrink-0" aria-hidden="true" />,
           hidden: !isSuperAdmin,
           badge: snapshot.vendors?.length || undefined,
@@ -2474,13 +2490,15 @@ ${itemsList}
       ],
     },
     {
-      groupLabelBn: '০৫. ইনভেন্টরি, অফার ও একাউন্টিং',
-      groupLabelEn: '05. Inventory, Promo & Accounting',
+      groupLabelBn: '০৫. পোর্টাল ও অ্যাকাউন্টিং',
+      groupLabelEn: '05. Portal & Accounting',
       items: [
         {
           key: 'phase7_portal',
-          labelBn: 'সেলফ-সার্ভিস ভেন্ডর পোর্টাল, প্রোমো ক্যাম্পেইন ও এক্সিকিউটিভ একাউন্টিং',
-          labelEn: 'Self-Service Vendor Portal, Promo Campaigns & Executive Accounting',
+          labelBn: 'ভেন্ডর পোর্টাল ও অ্যাকাউন্টিং',
+          labelEn: 'Vendor Portal & Accounting',
+          fullLabelBn: 'সেলফ-সার্ভিস ভেন্ডর পোর্টাল, প্রোমো ও একাউন্টিং',
+          fullLabelEn: 'Vendor Portal, Promo & Executive Accounting',
           icon: <Store className="w-4 h-4 shrink-0" aria-hidden="true" />,
           badge: snapshot.phase7Overview
             ? `${snapshot.phase7Overview.consignmentLots.filter((l) => l.status === 'pending_qc').length}`
@@ -2489,38 +2507,44 @@ ${itemsList}
       ],
     },
     {
-      groupLabelBn: '০৬. কুরিয়ার ও লজিস্টিক্স হাব',
-      groupLabelEn: '06. Courier & Logistics Hub',
+      groupLabelBn: '০৬. কুরিয়ার',
+      groupLabelEn: '06. Courier',
       items: [
         {
           key: 'courier_360',
-          labelBn: 'কুরিয়ার ৩৬০, ম্যানিফেস্ট ও রেট',
-          labelEn: 'Courier 360 & Logistics Hub',
+          labelBn: 'কুরিয়ার ও রেট',
+          labelEn: 'Courier & Rates',
+          fullLabelBn: 'কুরিয়ার ৩৬০, ম্যানিফেস্ট ও রেট',
+          fullLabelEn: 'Courier 360, Manifest & Rates',
           icon: <Truck className="w-4 h-4 shrink-0" aria-hidden="true" />,
           hidden: isVendor,
         },
       ],
     },
     {
-      groupLabelBn: '০৭. পেমেন্ট ও ফাইন্যান্স লেজার',
-      groupLabelEn: '07. Payment & Finance',
+      groupLabelBn: '০৭. ফাইন্যান্স',
+      groupLabelEn: '07. Finance',
       items: [
         {
           key: 'finance_product360',
-          labelBn: 'ফাইন্যান্স, মানি-ম্যাপ, প্রোমো ও প্রোডাক্ট ৩৬০',
-          labelEn: 'Finance, Money Map, Promo & Product 360',
+          labelBn: 'ফাইন্যান্স ও মানি-ম্যাপ',
+          labelEn: 'Finance & Money Map',
+          fullLabelBn: 'ফাইন্যান্স, মানি-ম্যাপ, প্রোমো ও প্রোডাক্ট ৩৬০',
+          fullLabelEn: 'Finance, Money Map, Promo & Product 360',
           icon: <TrendingUp className="w-4 h-4 shrink-0" aria-hidden="true" />,
         },
       ],
     },
     {
-      groupLabelBn: '০৮. লাইভ অপারেশনস ও সিআরএম',
-      groupLabelEn: '08. Live Operations & CRM',
+      groupLabelBn: '০৮. লাইভ অপারেশনস',
+      groupLabelEn: '08. Live Operations',
       items: [
         {
           key: 'phase6_ops',
-          labelBn: 'লাইভ অপারেশনস, কার্ট রিকভারি সিআরএম, কুরিয়ার ওয়েবহুক ও ব্যাকআপ',
-          labelEn: 'Live Operations, Cart Recovery CRM, Courier Webhooks & System Backup',
+          labelBn: 'লাইভ অপস ও CRM',
+          labelEn: 'Live Ops & CRM',
+          fullLabelBn: 'লাইভ অপারেশনস, কার্ট রিকভারি CRM ও ব্যাকআপ',
+          fullLabelEn: 'Live Operations, Cart Recovery CRM & Backup',
           icon: <TrendingUp className="w-4 h-4 shrink-0" aria-hidden="true" />,
           hidden: isVendor,
           badge: snapshot.phase6Overview
@@ -2530,38 +2554,44 @@ ${itemsList}
       ],
     },
     {
-      groupLabelBn: '০৯. মেসেজিং ও সিঙ্ক',
-      groupLabelEn: '09. Messaging & Sync',
+      groupLabelBn: '০৯. মেসেজিং',
+      groupLabelEn: '09. Messaging',
       items: [
         {
           key: 'messaging_automation',
-          labelBn: 'মেসেজিং টেমপ্লেট ও শিট সিঙ্ক',
+          labelBn: 'মেসেজিং ও সিঙ্ক',
           labelEn: 'Messaging & Sync',
+          fullLabelBn: 'মেসেজিং টেমপ্লেট ও শিট সিঙ্ক',
+          fullLabelEn: 'Messaging Templates & Sheet Sync',
           icon: <Zap className="w-4 h-4 shrink-0" aria-hidden="true" />,
           hidden: isVendor,
         },
       ],
     },
     {
-      groupLabelBn: '১০. প্রিন্ট ও ইনভয়েস স্টুডিও',
-      groupLabelEn: '10. Print & Invoice Studio',
+      groupLabelBn: '১০. প্রিন্ট ও ইনভয়েস',
+      groupLabelEn: '10. Print & Invoice',
       items: [
         {
           key: 'print_engine',
-          labelBn: 'প্রিন্ট ইঞ্জিন ও ইনভয়েস স্টুডিও',
-          labelEn: 'Print Engine & Invoice Studio',
+          labelBn: 'প্রিন্ট ও ইনভয়েস',
+          labelEn: 'Print & Invoice',
+          fullLabelBn: 'প্রিন্ট ইঞ্জিন ও ইনভয়েস স্টুডিও',
+          fullLabelEn: 'Print Engine & Invoice Studio',
           icon: <Printer className="w-4 h-4 shrink-0" aria-hidden="true" />,
         },
       ],
     },
     {
-      groupLabelBn: '১১. অডিট ও সিকিউরিটি রিপোর্টস',
-      groupLabelEn: '11. Audit & Security Reports',
+      groupLabelBn: '১১. অডিট ও সিকিউরিটি',
+      groupLabelEn: '11. Audit & Security',
       items: [
         {
           key: 'phase5_readiness',
-          labelBn: 'প্রি-লঞ্চ অডিট ও সিকিউরিটি রিপোর্টস',
-          labelEn: 'Pre-Launch Audit & Security Reports',
+          labelBn: 'অডিট রিপোর্ট',
+          labelEn: 'Audit Reports',
+          fullLabelBn: 'প্রি-লঞ্চ অডিট ও সিকিউরিটি রিপোর্টস',
+          fullLabelEn: 'Pre-Launch Audit & Security Reports',
           icon: <ShieldCheck className="w-4 h-4 shrink-0" aria-hidden="true" />,
           hidden: !isSuperAdmin,
           badge: snapshot.phase5Audit
@@ -2571,25 +2601,29 @@ ${itemsList}
       ],
     },
     {
-      groupLabelBn: '১২. টিম ও অ্যাক্সেস কন্ট্রোল (RBAC)',
-      groupLabelEn: '12. Team & Access Control',
+      groupLabelBn: '১২. টিম ও অ্যাক্সেস',
+      groupLabelEn: '12. Team & Access',
       items: [
         {
           key: 'users_and_rbac',
-          labelBn: 'ইউজার ও RBAC সিকিউরিটি ম্যাট্রিক্স',
-          labelEn: 'Users & Access Control (RBAC)',
+          labelBn: 'ইউজার ও রোল',
+          labelEn: 'Users & Roles',
+          fullLabelBn: 'ইউজার ও RBAC সিকিউরিটি ম্যাট্রিক্স',
+          fullLabelEn: 'Users & RBAC Security Matrix',
           icon: <Users className="w-4 h-4 shrink-0" aria-hidden="true" />,
         },
       ],
     },
     {
-      groupLabelBn: '১৩. সিস্টেম ও সিকিউরিটি কন্ট্রোল',
-      groupLabelEn: '13. System & Security',
+      groupLabelBn: '১৩. সিস্টেম',
+      groupLabelEn: '13. System',
       items: [
         {
           key: 'control_center',
-          labelBn: 'কন্ট্রোল সেন্টার ও সিকিউরিটি',
-          labelEn: 'Control Center & Security',
+          labelBn: 'কন্ট্রোল সেন্টার',
+          labelEn: 'Control Center',
+          fullLabelBn: 'কন্ট্রোল সেন্টার ও সিকিউরিটি',
+          fullLabelEn: 'Control Center & Security',
           icon: <Sliders className="w-4 h-4 shrink-0" aria-hidden="true" />,
           hidden: !isSuperAdmin,
         },
@@ -2796,7 +2830,9 @@ ${itemsList}
             </button>
             <div className="flex items-center gap-2 min-w-0">
               <h1 className="text-sm sm:text-base font-bold text-ink truncate">
-                {locale === 'bn' ? currentTabTitle?.labelBn : currentTabTitle?.labelEn}
+                {locale === 'bn'
+                  ? currentTabTitle?.fullLabelBn ?? currentTabTitle?.labelBn
+                  : currentTabTitle?.fullLabelEn ?? currentTabTitle?.labelEn}
               </h1>
               <button
                 type="button"
