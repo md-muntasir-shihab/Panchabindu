@@ -44,3 +44,23 @@ test('every workspace operation matches the committed seven-principal RBAC snaps
   assert.equal(fs.readFileSync(snapshot, 'utf8'), markdown, 'RBAC policy changed; review the allow/deny diff');
   for (const [, actor] of actors) assert.equal(canExecuteWorkspaceAction(actor, 'unknown_future_operation'), false);
 });
+
+test('every admin UI workspace mutation maps to a server operation', () => {
+  const adminDir = new URL('../../../../../panchagarh/src/components/admin/', import.meta.url);
+  const sources = fs.readdirSync(adminDir)
+    .filter(file => file.endsWith('.tsx'))
+    .map(file => fs.readFileSync(new URL(file, adminDir), 'utf8'));
+  const uiOperations = [...new Set(sources.flatMap(source =>
+    [...source.matchAll(/operation:\s*['"]([^'"]+)['"]/g)].map(match => match[1])
+  ))].sort();
+  const route = fs.readFileSync(new URL('../../../app/api/admin/workspace/route.ts', import.meta.url), 'utf8');
+  const serverOperations = new Set(
+    [...route.matchAll(/operation: z.literal\('([^']+)'\)/g)].map(match => match[1])
+  );
+  assert.ok(uiOperations.length > 0, 'admin UI workspace mutations must be discoverable');
+  assert.deepEqual(
+    uiOperations.filter(operation => !serverOperations.has(operation)),
+    [],
+    'every admin UI mutation must match a validated server operation'
+  );
+});

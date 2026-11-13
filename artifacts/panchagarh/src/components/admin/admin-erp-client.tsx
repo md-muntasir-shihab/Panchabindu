@@ -889,6 +889,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
 
   // Strict Authentication & First-Login Gate State
   const [isCheckingSession, setIsCheckingSession] = React.useState(true);
+  const [workspaceLoadFailed, setWorkspaceLoadFailed] = React.useState(false);
   const [snapshot, setSnapshot] =
     React.useState<WorkspaceSnapshotResponse | null>(null);
   const siteSettings = snapshot?.siteSettings ?? publicSettings;
@@ -1259,14 +1260,18 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       if (res.ok && data.authorized) {
         setSnapshot(data);
         setGateUser(null);
+        setWorkspaceLoadFailed(false);
       } else if (data.requiresFirstLoginGate && data.currentUser) {
         setGateUser(data.currentUser);
         setSnapshot(null);
+        setWorkspaceLoadFailed(false);
       } else {
         setSnapshot(null);
+        setWorkspaceLoadFailed(res.status !== 401);
       }
     } catch {
       setSnapshot(null);
+      setWorkspaceLoadFailed(true);
     } finally {
       setIsCheckingSession(false);
     }
@@ -1289,17 +1294,21 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
         if (ok && data.authorized) {
           setSnapshot(data);
           setGateUser(null);
+          setWorkspaceLoadFailed(false);
         } else if (data.requiresFirstLoginGate && data.currentUser) {
           setGateUser(data.currentUser);
           setSnapshot(null);
+          setWorkspaceLoadFailed(false);
         } else {
           setSnapshot(null);
+          setWorkspaceLoadFailed(!ok);
         }
         setIsCheckingSession(false);
       })
       .catch(() => {
         if (!active) return;
         setSnapshot(null);
+        setWorkspaceLoadFailed(true);
         setIsCheckingSession(false);
       });
     return () => {
@@ -2147,6 +2156,26 @@ ${itemsList}
     return (
       <div className="min-h-screen bg-bg text-ink flex flex-col justify-center py-10 px-4">
         <div className="max-w-4xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {workspaceLoadFailed && (
+            <div
+              role="alert"
+              className="lg:col-span-12 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-[var(--radius-md)] border border-warning bg-warning/10 p-4 text-sm text-ink"
+            >
+              <span>
+                {locale === 'bn'
+                  ? 'অ্যাডমিন সার্ভার এখন সাড়া দিচ্ছে না। লগইন করার আগে সংযোগ আবার চেষ্টা করুন।'
+                  : 'The admin service is unavailable. Please retry the connection before signing in.'}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void fetchWorkspace()}
+              >
+                {locale === 'bn' ? 'আবার চেষ্টা করুন' : 'Retry'}
+              </Button>
+            </div>
+          )}
           {/* Left: Strict Username + Password + TOTP 2FA Login Card */}
           <Card
             surface="surface"
