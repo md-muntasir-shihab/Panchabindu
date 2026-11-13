@@ -171,6 +171,11 @@ function isLocalSandboxTwoFactorDisabled(): boolean {
     process.env.PANCHAGARH_SANDBOX_DISABLE_2FA === '1';
 }
 
+function requireTwoFactorByDefault(): boolean {
+  return process.env.PANCHAGARH_REQUIRE_2FA_BY_DEFAULT === '1' &&
+    !isLocalSandboxTwoFactorDisabled();
+}
+
 const ALL_MODULES: PermissionModuleKey[] = [
   'today_screen',
   'orders',
@@ -296,7 +301,7 @@ function buildDefaultRolePermissions(
 }
 
 function getInitialAdminStore(): AdminPersistentStore {
-  const require2faByDefault = !isLocalSandboxTwoFactorDisabled();
+  const require2faByDefault = requireTwoFactorByDefault();
   const adminUsername = isLocalSandboxTwoFactorDisabled()
     ? process.env.PANCHAGARH_SANDBOX_ADMIN_USERNAME?.trim().toLowerCase() || 'admin'
     : 'admin';
@@ -573,7 +578,7 @@ export function readAdminStore(): AdminPersistentStore {
           migratedSecrets = true;
         }
 
-        const require2fa = localTwoFactorDisabled ? false : (u.require2fa ?? true);
+        const require2fa = localTwoFactorDisabled ? false : (u.require2fa ?? requireTwoFactorByDefault());
         if (require2fa !== u.require2fa) migratedSecrets = true;
 
         return {
@@ -2196,7 +2201,7 @@ export function createAdminUserBySuperAdmin(
     temporaryPasswordExpiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     mustChangePassword: true,
     totpEnrolled: false,
-    require2fa: !isLocalSandboxTwoFactorDisabled(),
+    require2fa: requireTwoFactorByDefault(),
     totpSecretEncrypted: encryptSecretAtRest(uniqueTotpSecret),
     lastUsedTotpStep: null,
     backupCodeHashes: generateRecoveryBackupCodes(6).codeHashes,
