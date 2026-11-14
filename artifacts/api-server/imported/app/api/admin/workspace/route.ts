@@ -154,6 +154,8 @@ async function handleGET(req: NextRequest) {
 
   return NextResponse.json({
     ...snapshot,
+    csrfToken: session.csrfToken,
+    emergencyStopActive: isSuperAdmin ? p4c.emergencyStopActive === true : undefined,
     siteSettings: isSuperAdmin ? erpState.siteSettings : sanitizeSiteSettingsForPublic(erpState.siteSettings),
     printConfig: p4b.printConfig,
     districtRates: isVendor ? [] : getAllDistrictDeliveryRatesWithOverrides(),
@@ -1096,6 +1098,9 @@ async function handlePOST(req: NextRequest) {
     }
 
     if (payload.operation === 'create_user') {
+      if (payload.roleSlug === 'vendor' && !readPhase4BStore().vendors.some(v => v.vendorId === payload.vendorId)) {
+        return NextResponse.json({ success: false, errorBn: 'সঠিক ভেন্ডর প্রোফাইল নির্বাচন করুন।' }, { status: 400 });
+      }
       const res = createAdminUserBySuperAdmin(ctx, payload);
       return NextResponse.json(res, { status: res.success ? 201 : 400 });
     }

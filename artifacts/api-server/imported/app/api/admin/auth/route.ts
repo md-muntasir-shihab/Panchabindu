@@ -13,12 +13,14 @@ import { hasDurableRuntimeContext } from '@/src/lib/db/runtime-persistence';
 import {
   authenticateAdminUser,
   completeFirstLoginGate,
+  updateOwnSecurity,
 } from '@/src/lib/admin/phase4a-service';
 import {
   ADMIN_SESSION_COOKIE_NAME,
   assertJsonBodySize,
   checkRateLimit,
   createAdminSession,
+  ADMIN_SESSION_TTL_MS,
   extractAdminSessionTokenFromRequest,
   getClientIpFromRequest,
   revokeAdminSession,
@@ -39,6 +41,12 @@ const authActionSchema = z.discriminatedUnion('action', [
     currentPassword: z.string().min(4).max(128),
     newPassword: z.string().min(8).max(128),
     totpCode: z.string().trim().max(16),
+  }),
+  z.object({
+    action: z.enum(['start_mfa', 'enable_mfa', 'disable_mfa', 'change_password']),
+    currentPassword: z.string().min(1).max(128),
+    newPassword: z.string().max(128).optional(),
+    totpCode: z.string().trim().max(16).optional(),
   }),
   z.object({
     action: z.literal('logout'),
@@ -128,6 +136,16 @@ async function handlePOST(req: NextRequest) {
       );
     }
 
+    if (data.action === 'start_mfa' || data.action === 'enable_mfa' || data.action === 'disable_mfa' || data.action === 'change_password') {
+      const token = req.cookies.get(ADMIN_SESSION_COOKIE_NAME)?.value || extractAdminSessionTokenFromRequest(req);
+      const session = verifyAdminSessionToken(token);
+      if (!session || session.purpose === 'enrollment' || !verifyOriginAndCsrf(req, session).ok) return NextResponse.json({ success: false, errorBn: 'সঠিক সেশন ও নিরাপত্তা যাচাই প্রয়োজন।' }, { status: 403 });
+      const result = updateOwnSecurity(session.userId, data);
+      const res = NextResponse.json(result, { status: result.success ? 200 : 400 });
+      if (result.sessionRevoked) res.cookies.delete(ADMIN_SESSION_COOKIE_NAME);
+      return res;
+    }
+
     if (data.action === 'login') {
       const result = authenticateAdminUser({
         username: data.username,
@@ -167,7 +185,7 @@ async function handlePOST(req: NextRequest) {
           sameSite: 'lax',
           secure: secureCookie,
           path: '/',
-          maxAge: 8 * 60 * 60, // 8 hours session timeout
+          maxAge: ADMIN_SESSION_TTL_MS / 1000,
         });
         res.cookies.delete('bg_admin_session_uid');
         return res;
@@ -225,7 +243,7 @@ async function handlePOST(req: NextRequest) {
         sameSite: 'lax',
         secure: secureCookie,
         path: '/',
-        maxAge: 8 * 60 * 60,
+        maxAge: ADMIN_SESSION_TTL_MS / 1000,
       });
       res.cookies.delete('bg_admin_session_uid');
       return res;
@@ -247,9 +265,8 @@ async function handleGET() {
   const localSandbox = process.env.NODE_ENV !== 'production' &&
     process.env.PANCHABINDU_ENABLE_SANDBOX_AUTH === '1';
   return NextResponse.json({
-    twoFactorLoginEnabled: !(
-      localSandbox && process.env.PANCHABINDU_SANDBOX_DISABLE_2FA === '1'
-    ),
+    // Optional code field remains available even in local sandboxes if a user enables MFA.
+    twoFactorLoginEnabled: true,
     defaultAdminUsername: localSandbox
       ? process.env.PANCHABINDU_SANDBOX_ADMIN_USERNAME?.trim() || 'admin'
       : 'admin',

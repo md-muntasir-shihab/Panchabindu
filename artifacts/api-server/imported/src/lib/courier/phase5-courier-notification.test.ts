@@ -332,6 +332,7 @@ describe('Phase 5 — Courier Adapter Architecture, Webhook DLQ & Non-Blocking N
       purpose: 'CUSTOMER_ACCOUNT_LOGIN',
     });
     assert.equal(otpDispatch.category, 'SECURITY_OTP');
+    assert.equal(otpDispatch.dispatched, false, 'placeholder must not claim SMS delivery');
     assert.ok(
       !otpDispatch.logRecord.sanitizedMessagePreview.includes('849201'),
       'Plaintext OTP must never appear in notification delivery logs'

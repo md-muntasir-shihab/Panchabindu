@@ -81,6 +81,8 @@ export interface AdminUserAccount {
   mustChangePassword: boolean;
   totpEnrolled: boolean;
   require2fa: boolean;
+  pendingTotpSecretEncrypted?: string | null;
+  pendingTotpExpiresAt?: string | null;
   totpSecretEncrypted: string; // AES-256-GCM encrypted Base32 secret at rest
   lastUsedTotpStep?: number | null;
   backupCodeHashes?: string[];
@@ -578,7 +580,7 @@ export function readAdminStore(): AdminPersistentStore {
           migratedSecrets = true;
         }
 
-        const require2fa = localTwoFactorDisabled ? false : (u.require2fa ?? requireTwoFactorByDefault());
+        const require2fa = u.require2fa ?? requireTwoFactorByDefault();
         if (require2fa !== u.require2fa) migratedSecrets = true;
 
         return {
@@ -595,6 +597,8 @@ export function readAdminStore(): AdminPersistentStore {
           totpEnrolled: Boolean(u.totpEnrolled),
           require2fa,
           totpSecretEncrypted,
+          pendingTotpSecretEncrypted: u.pendingTotpSecretEncrypted ?? null,
+          pendingTotpExpiresAt: u.pendingTotpExpiresAt ?? null,
           lastUsedTotpStep: u.lastUsedTotpStep ?? null,
           backupCodeHashes: Array.isArray(u.backupCodeHashes)
             ? u.backupCodeHashes
@@ -755,7 +759,6 @@ export function verifyAdminActorTotp(
   if (!user) {
     return { valid: false, reasonBn: 'ইউজার খুঁজে পাওয়া যায়নি।' };
   }
-  if (isLocalSandboxTwoFactorDisabled()) return { valid: true };
   const base32 = decryptSecretAtRest(user.totpSecretEncrypted);
   const enforceReplay = options?.enforceReplayGuard ?? false;
   const check = verifyTotpWithReplayGuard({
@@ -852,7 +855,7 @@ export function authenticateAdminUser(input: {
 
   const base32Secret = decryptSecretAtRest(user.totpSecretEncrypted);
 
-  const require2fa = user.require2fa && !isLocalSandboxTwoFactorDisabled();
+  const require2fa = user.require2fa;
 
   // Change temporary passwords at first login; enroll TOTP only when required.
   if (user.mustChangePassword || (user.require2fa && !user.totpEnrolled)) {
@@ -937,7 +940,7 @@ export function completeFirstLoginGate(input: {
 } {
   const store = readAdminStore();
   const user = store.users.find((u) => u.userId === input.userId);
-  const require2fa = Boolean(user?.require2fa && !isLocalSandboxTwoFactorDisabled());
+  const require2fa = Boolean(user?.require2fa);
   if (!user || !user.isActive ||
       (!user.mustChangePassword && (!require2fa || user.totpEnrolled)) ||
       (user.lockedUntilIso && Date.parse(user.lockedUntilIso) > Date.now()) ||
@@ -2316,6 +2319,64 @@ export function createAdminUserBySuperAdmin(
   };
 }
 
+/** Self-service security changes are bound to the authenticated account, never a supplied user ID. */
+export function updateOwnSecurity(userId: string, input: {
+  action: 'start_mfa' | 'enable_mfa' | 'disable_mfa' | 'change_password';
+  currentPassword: string; totpCode?: string; newPassword?: string;
+}): { success: boolean; errorBn?: string; setupUri?: string; recoveryBackupCodes?: string[]; sessionRevoked?: boolean } {
+  const store = readAdminStore();
+  const user = store.users.find(u => u.userId === userId && u.isActive);
+  if (!user || user.mustChangePassword || (user.require2fa && !user.totpEnrolled)) return { success: false, errorBn: 'অ্যাকাউন্ট যাচাই করা যায়নি।' };
+  if (user.lockedUntilIso && Date.parse(user.lockedUntilIso) > Date.now()) return { success: false, errorBn: 'অ্যাকাউন্ট সাময়িকভাবে লক আছে।' };
+  const fail = (errorBn: string) => {
+    user.failedLoginAttempts += 1;
+    if (user.failedLoginAttempts >= 5) user.lockedUntilIso = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    writeAdminStore(store);
+    return { success: false, errorBn };
+  };
+  if (!verifyPassword(input.currentPassword, user.passwordHash)) return fail('বর্তমান পাসওয়ার্ড সঠিক নয়।');
+  if (input.action === 'start_mfa') {
+    if (user.require2fa) return { success: false, errorBn: '2FA ইতিমধ্যে চালু আছে।' };
+    const secret = generateUniqueTotpSecret();
+    user.pendingTotpSecretEncrypted = encryptSecretAtRest(secret);
+    user.pendingTotpExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    user.failedLoginAttempts = 0; user.lockedUntilIso = null;
+    appendImmutableAuditLog(store, { actorUserId: user.userId, actorUsername: user.username, actorRole: user.roleSlug, actionCode: 'MFA_ENROLLMENT_STARTED', targetType: 'user', targetId: user.userId, summaryBn: 'ব্যবহারকারী 2FA সেটআপ শুরু করেছেন।', metadata: {} });
+    writeAdminStore(store);
+    return { success: true, setupUri: buildTotpSetupUri(user.username, secret) };
+  }
+  if (input.action === 'enable_mfa') {
+    if (user.require2fa || !user.pendingTotpSecretEncrypted || !user.pendingTotpExpiresAt || Date.parse(user.pendingTotpExpiresAt) <= Date.now()) return { success: false, errorBn: '2FA সেটআপের মেয়াদ শেষ; আবার শুরু করুন।' };
+    const check = verifyTotpWithReplayGuard({ base32Secret: decryptSecretAtRest(user.pendingTotpSecretEncrypted), token: input.totpCode ?? '' });
+    if (!check.valid || check.matchedStep === undefined) return fail('সঠিক অথেনটিকেটর কোড দিন।');
+    const recovery = generateRecoveryBackupCodes(8);
+    user.totpSecretEncrypted = user.pendingTotpSecretEncrypted; user.pendingTotpSecretEncrypted = null; user.pendingTotpExpiresAt = null;
+    user.require2fa = true; user.totpEnrolled = true; user.lastUsedTotpStep = check.matchedStep; user.backupCodeHashes = recovery.codeHashes;
+    user.failedLoginAttempts = 0; user.lockedUntilIso = null;
+    appendImmutableAuditLog(store, { actorUserId: user.userId, actorUsername: user.username, actorRole: user.roleSlug, actionCode: 'MFA_ENABLED', targetType: 'user', targetId: user.userId, summaryBn: 'ব্যবহারকারী 2FA চালু করেছেন।', metadata: {} });
+    writeAdminStore(store); revokeAllUserSessions(user.userId);
+    return { success: true, recoveryBackupCodes: recovery.plainCodes, sessionRevoked: true };
+  }
+  if (input.action === 'disable_mfa' && (!user.require2fa || !user.totpEnrolled)) return { success: false, errorBn: '2FA চালু নেই।' };
+  if (user.require2fa && user.totpEnrolled) {
+    const check = verifyTotpWithReplayGuard({ base32Secret: decryptSecretAtRest(user.totpSecretEncrypted), token: input.totpCode ?? '', lastUsedStep: user.lastUsedTotpStep, backupCodeHashes: input.action === 'disable_mfa' ? [] : user.backupCodeHashes });
+    if (!check.valid) return fail(check.reasonBn ?? 'সঠিক অথেনটিকেটর কোড দিন।');
+    if (check.usedBackupCodeHash) user.backupCodeHashes = (user.backupCodeHashes ?? []).filter(h => h !== check.usedBackupCodeHash);
+    else user.lastUsedTotpStep = check.matchedStep ?? user.lastUsedTotpStep;
+  }
+  if (input.action === 'change_password') {
+    if (!input.newPassword || input.newPassword.trim().length < 10 || input.newPassword.length > 128 || input.newPassword === input.currentPassword) return { success: false, errorBn: 'ভিন্ন নতুন পাসওয়ার্ড অন্তত ১০ অক্ষরের হতে হবে।' };
+    user.passwordHash = hashPassword(input.newPassword);
+  } else {
+    user.require2fa = false; user.totpEnrolled = false; user.backupCodeHashes = []; user.lastUsedTotpStep = null;
+    user.pendingTotpSecretEncrypted = null; user.pendingTotpExpiresAt = null;
+  }
+  user.failedLoginAttempts = 0; user.lockedUntilIso = null;
+  appendImmutableAuditLog(store, { actorUserId: user.userId, actorUsername: user.username, actorRole: user.roleSlug, actionCode: input.action === 'change_password' ? 'SELF_PASSWORD_CHANGED' : 'MFA_DISABLED', targetType: 'user', targetId: user.userId, summaryBn: input.action === 'change_password' ? 'ব্যবহারকারী পাসওয়ার্ড পরিবর্তন করেছেন।' : 'ব্যবহারকারী 2FA বন্ধ করেছেন।', metadata: {} });
+  writeAdminStore(store); revokeAllUserSessions(user.userId);
+  return { success: true, sessionRevoked: true };
+}
+
 /**
  * Module P: Super Admin Resets User Password or 2FA (Requires Admin 2FA Re-Auth)
  */
@@ -2367,7 +2428,10 @@ export function adminResetUserSecurity(
     target.failedLoginAttempts = 0;
     target.lockedUntilIso = null;
   } else if (input.action === 'reset_2fa') {
+    target.require2fa = false;
     target.totpEnrolled = false;
+    target.pendingTotpSecretEncrypted = null;
+    target.pendingTotpExpiresAt = null;
     target.backupCodeHashes = [];
     target.totpSecretEncrypted = encryptSecretAtRest(generateUniqueTotpSecret());
     target.lastUsedTotpStep = null;

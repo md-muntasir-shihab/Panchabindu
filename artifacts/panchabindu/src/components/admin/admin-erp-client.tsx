@@ -1,4 +1,5 @@
 'use client';
+import { AccountSecurity } from '@/components/security/account-security';
 import { localizedField } from '@/lib/i18n/ui-text';
 
 import { LocalizedText } from '@/components/ui/localized-text';
@@ -221,6 +222,8 @@ type EnrichedOrderRow = Partial<OrderGridRowDTO> & {
 };
 
 interface WorkspaceSnapshotResponse {
+  csrfToken?: string;
+  emergencyStopActive?: boolean;
   siteSettings?: SiteSettingsRecord;
   authorized: boolean;
   requiresFirstLoginGate?: boolean;
@@ -1326,6 +1329,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
   const [newDisplayNameBn, setNewDisplayNameBn] = React.useState('');
   const [newRoleSlug, setNewRoleSlug] =
     React.useState<SystemRoleSlug>('marketing_manager');
+  const [newVendorId, setNewVendorId] = React.useState('');
   const [newMaxDiscountBp, setNewMaxDiscountBp] = React.useState<number>(1000);
   const [createdTempCredentials, setCreatedTempCredentials] = React.useState<{
     username: string;
@@ -1361,6 +1365,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       });
       const data = (await res.json()) as WorkspaceSnapshotResponse;
       if (res.ok && data.authorized) {
+        if (data.csrfToken) window.sessionStorage.setItem('bg_admin_csrf_token', data.csrfToken);
         setSnapshot(data);
         setGateUser(null);
         setWorkspaceLoadFailed(false);
@@ -1395,6 +1400,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       .then(({ ok, data }) => {
         if (!active) return;
         if (ok && data.authorized) {
+          if (data.csrfToken) window.sessionStorage.setItem('bg_admin_csrf_token', data.csrfToken);
           setSnapshot(data);
           setGateUser(null);
           setWorkspaceLoadFailed(false);
@@ -3163,6 +3169,24 @@ ${itemsList}
 
         {/* Workspace Body */}
         <main className="flex-1 max-w-7xl w-full min-w-0 mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6">
+        {isSuperAdmin && <section className="border border-border rounded-[var(--radius-md)] bg-surface p-4 space-y-2" aria-label={locale === 'bn' ? 'জরুরি নিয়ন্ত্রণ' : 'Emergency control'}>
+          <h2 className="font-bold text-sm">{locale === 'bn' ? 'জরুরি কার্যক্রম নিয়ন্ত্রণ' : 'Emergency operations control'}</h2>
+          <p className="text-xs">{snapshot.emergencyStopActive ? (locale === 'bn' ? 'জরুরি বন্ধ চালু: নতুন ব্যবসায়িক কার্যক্রম বন্ধ আছে।' : 'Emergency stop is active: new business operations are blocked.') : (locale === 'bn' ? 'জরুরি বন্ধ চালু করলে নতুন ব্যবসায়িক কার্যক্রম বন্ধ হবে; লগইন ও পুনরুদ্ধার চালু থাকবে।' : 'Activating emergency stop blocks new business operations; sign-in and recovery remain available.')}</p>
+          <Button variant="outline" size="sm" onClick={async () => {
+            const active = !snapshot.emergencyStopActive;
+            if (!window.confirm(active ? (locale === 'bn' ? 'নতুন ব্যবসায়িক কাজ বন্ধ করবেন?' : 'Stop new business operations?') : (locale === 'bn' ? 'ব্যবসায়িক কাজ পুনরায় চালু করবেন?' : 'Resume business operations?'))) return;
+            const reason = window.prompt(locale === 'bn' ? 'কারণ লিখুন (অন্তত ৫ অক্ষর; ব্যক্তিগত তথ্য নয়)' : 'Enter a reason (at least 5 characters; no personal data)')?.trim();
+            if (!reason || reason.length < 5) { setActionFeedback({ type: 'error', text: locale === 'bn' ? 'অন্তত ৫ অক্ষরের কারণ প্রয়োজন।' : 'A reason of at least 5 characters is required.' }); return; }
+            try {
+              const res = await fetch('/api/admin/emergency', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active, reason }) });
+              const data = await res.json() as { success?: boolean; errorBn?: string; errorEn?: string };
+              if (!res.ok || !data.success) { setActionFeedback({ type: 'error', text: (locale === 'bn' ? data.errorBn : data.errorEn) || (locale === 'bn' ? 'পরিবর্তন করা যায়নি।' : 'Unable to change emergency status.') }); return; }
+              await fetchWorkspace();
+              setActionFeedback({ type: 'success', text: active ? (locale === 'bn' ? 'জরুরি বন্ধ চালু হয়েছে।' : 'Emergency stop activated.') : (locale === 'bn' ? 'কার্যক্রম পুনরায় চালু হয়েছে।' : 'Operations resumed.') });
+            } catch { setActionFeedback({ type: 'error', text: locale === 'bn' ? 'নেটওয়ার্ক সমস্যা হয়েছে।' : 'Network error.' }); }
+          }}>{snapshot.emergencyStopActive ? (locale === 'bn' ? 'কার্যক্রম পুনরায় চালু করুন' : 'Resume operations') : (locale === 'bn' ? 'জরুরি বন্ধ চালু করুন' : 'Activate emergency stop')}</Button>
+        </section>}
+        <AccountSecurity locale={locale} csrfKey="bg_admin_csrf_token" />
         {/* Action Feedback Toast Banner */}
         {actionFeedback && (
           <div
@@ -4920,8 +4944,8 @@ ${itemsList}
             <div className="border-b border-border pb-3">
               <h1 className="text-xl font-bold text-ink">
                 {locale === 'bn'
-                  ? 'ইউজার সিকিউরিটি, বাধ্যতামূলক 2FA ও পারমিশন ম্যাট্রিক্স (Module P)'
-                  : 'Users, Mandatory 2FA & Granular Permission Matrix'}
+                  ? 'ইউজার সিকিউরিটি, ঐচ্ছিক 2FA ও পারমিশন ম্যাট্রিক্স (Module P)'
+                  : 'Users, Optional 2FA & Granular Permission Matrix'}
               </h1>
               <p className="text-xs text-muted">
                 <LocalizedText source={"সুপার অ্যাডমিন থেকে নতুন ইউজার তৈরি (ওয়ান-টাইম টেম্পোরারি পাসওয়ার্ডসহ), 2FA রিসেট, কাস্টম রোল এবং অপরিবর্তনীয় অডিট লগ।"} area="admin" />{" "}</p>
@@ -4951,6 +4975,7 @@ ${itemsList}
                           displayNameBn: newDisplayNameBn,
                           displayNameEn: newDisplayNameBn,
                           roleSlug: newRoleSlug,
+                          vendorId: newRoleSlug === 'vendor' ? newVendorId : undefined,
                           maxDiscountBp: newMaxDiscountBp,
                         }),
                       });
@@ -5023,6 +5048,11 @@ ${itemsList}
                         }
                       />
                     </div>
+                    {newRoleSlug === 'vendor' && <label className="block text-xs font-medium">{locale === 'bn' ? 'ভেন্ডর নির্বাচন করুন' : 'Select vendor'}
+                      <select required value={newVendorId} onChange={e => setNewVendorId(e.target.value)} className="w-full min-h-[42px] bg-bg border border-border rounded-[var(--radius-md)]">
+                        <option value="">{locale === 'bn' ? 'ভেন্ডর বেছে নিন' : 'Choose vendor'}</option>
+                        {(snapshot.vendors ?? snapshot.vendorEscrow?.vendors.map(v => v.profile) ?? []).map(v => <option key={v.vendorId} value={v.vendorId}>{locale === 'bn' ? v.businessNameBn : v.businessNameEn}</option>)}
+                      </select></label>}
                     <Button type="submit" variant="primary" size="md">
                       {locale === 'bn' ? 'ইউজার তৈরি ও ওয়ান-টাইম পাসওয়ার্ড জেনারেট করুন' : 'Create User & Generate Temp Password'}
                     </Button>
@@ -5068,7 +5098,7 @@ ${itemsList}
                         </Button>
                         <a
                           href={`https://wa.me/?text=${encodeURIComponent(
-                            `BongoConsign ERP Login\nUsername: ${createdTempCredentials.username}\nTemp Password: ${createdTempCredentials.tempPassword}\nপ্রথম লগইনে পাসওয়ার্ড পরিবর্তন ও 2FA সেটআপ বাধ্যতামূলক।`
+                            `BongoConsign ERP Login\nUsername: ${createdTempCredentials.username}\nTemp Password: ${createdTempCredentials.tempPassword}\nপ্রথম লগইনে পাসওয়ার্ড পরিবর্তন করুন। 2FA আপনার নিরাপত্তা সেটিংসে চালু করা যায়।`
                           )}`}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -5221,6 +5251,16 @@ ${itemsList}
                         </td>
                         {isSuperAdmin && (
                           <td className="p-3 text-right space-x-2">
+                            <Button variant="outline" size="sm" onClick={async () => {
+                              const adminTotpCode = window.prompt(locale === 'bn' ? 'অথেনটিকেটরের নতুন কোড দিন' : 'Enter a fresh authenticator code')?.trim();
+                              if (!adminTotpCode) return;
+                              const res = await fetch('/api/admin/workspace', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation: 'reset_user_security', targetUserId: u.userId, action: 'reset_password', adminTotpCode }) });
+                              const data = await res.json() as { success?: boolean; oneTimeTempPassword?: string; errorBn?: string };
+                              if (!res.ok || !data.success || !data.oneTimeTempPassword) { setActionFeedback({ type: 'error', text: data.errorBn || (locale === 'bn' ? 'পাসওয়ার্ড রিসেট হয়নি।' : 'Password reset failed.') }); return; }
+                              setCreatedTempCredentials({ username: u.username, tempPassword: data.oneTimeTempPassword, roleSlug: u.roleSlug });
+                              setActionFeedback({ type: 'success', text: locale === 'bn' ? 'অস্থায়ী পাসওয়ার্ড উপরের ইউজার বিভাগে দেখানো হয়েছে।' : 'The temporary password is shown in the user section above.' });
+                              await fetchWorkspace();
+                            }}>{locale === 'bn' ? 'পাসওয়ার্ড রিসেট' : 'Reset password'}</Button>
                             {u.require2fa && u.totpEnrolled && <Button
                               variant="outline"
                               size="sm"
@@ -5242,7 +5282,7 @@ ${itemsList}
                                 if (res.ok) {
                                   setActionFeedback({
                                     type: 'success',
-                                    text: `@${u.username}-এর 2FA রিসেট করা হয়েছে (পরবর্তী লগইনে পুনরায় সেটআপ বাধ্যতামূলক)।`,
+                                    text: `@${u.username}-এর 2FA রিসেট করা হয়েছে; ব্যবহারকারী চাইলে আবার চালু করতে পারবেন।`,
                                   });
                                   await fetchWorkspace();
                                 }

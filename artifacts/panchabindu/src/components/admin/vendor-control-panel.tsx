@@ -11,6 +11,8 @@
 // Backed by /api/admin/vendors (super admin only; vendors are refused).
 
 import * as React from 'react';
+import { SupportPanel } from '@/components/vendor/support-panel';
+import { KycPanel } from '@/components/vendor/kyc-panel';
 import {
   BadgeCheck,
   Building2,
@@ -287,6 +289,8 @@ export function VendorControlPanel({ locale: localeProp, onNotify }: VendorContr
         />
       )}
 
+      {subTab === 'requests' && <SupportPanel locale={locale} mode="admin" />}
+      {subTab === 'requests' && <KycPanel locale={locale} mode="admin" />}
       {subTab === 'requests' && (
         <RequestsSection snapshot={snapshot} busy={busy} t={t} post={post} />
       )}
@@ -347,7 +351,7 @@ function DirectorySection({
     payoutAccountNo: '',
     commissionPercent: '',
     holdDays: '',
-    status: 'active',
+    status: 'pending_onboarding',
   });
 
   React.useEffect(() => {
@@ -384,7 +388,6 @@ function DirectorySection({
         escrowHoldDaysOverride: holdDays,
         payoutMethodBn: form.payoutMethodBn.trim() || 'বিকাশ মার্চেন্ট',
         payoutAccountNo: form.payoutAccountNo.trim() || form.contactPhone.trim(),
-        status: form.status,
       },
       { bn: 'নতুন ভেন্ডর তৈরি হয়েছে।', en: 'Vendor created.' }
     );
@@ -394,9 +397,15 @@ function DirectorySection({
   async function submitUpdate(event: React.FormEvent) {
     event.preventDefault();
     if (!selected) return;
+    let activationReason: string | undefined;
+    if (selected.status === 'pending_onboarding' && form.status === 'active') {
+      activationReason = window.prompt(t('অনবোর্ডিং পর্যালোচনার কারণ লিখুন (অন্তত ৫ অক্ষর; ব্যক্তিগত তথ্য নয়)', 'Enter the onboarding review reason (at least 5 characters; no personal data)'))?.trim();
+      if (!activationReason || activationReason.length < 5) return;
+    }
     await post(
       {
         operation: 'update_vendor',
+        activationReason,
         vendorId: selected.vendorId,
         businessNameBn: form.businessNameBn.trim(),
         businessNameEn: form.businessNameEn.trim() || undefined,
@@ -515,12 +524,13 @@ function DirectorySection({
             </label>
             <label className="space-y-1 text-xs font-medium sm:col-span-2">
               <span>{t('অ্যাকাউন্ট স্ট্যাটাস', 'Account status')}</span>
-              <select className={inputCls} value={form.status} onChange={(e) => update('status', e.target.value)}>
+              {selected?.status === 'pending_onboarding' && <p className="text-muted">{t('সক্রিয় করার আগে অনবোর্ডিং উত্তর জমা ও অনুমোদন করুন। নথি/KYC যাচাই আলাদাভাবে নিশ্চিত করুন।', 'Approve the onboarding answers before activation. Verify documents/KYC separately.')}</p>}
+              <select disabled={creating} className={inputCls} value={creating ? 'pending_onboarding' : form.status} onChange={(e) => update('status', e.target.value)}>
                 <option value="active">{t('সক্রিয়', 'Active')}</option>
                 <option value="pending_onboarding">{t('অনবোর্ডিং অপেক্ষমাণ', 'Pending onboarding')}</option>
                 <option value="suspended">{t('স্থগিত (সব কাজ বন্ধ)', 'Suspended (all actions blocked)')}</option>
                 <option value="closing_audit">{t('ক্লোজিং অডিট', 'Closing audit')}</option>
-                <option value="closed">{t('বন্ধ', 'Closed')}</option>
+                {selected?.status === 'closed' && <option value="closed">{t('বন্ধ', 'Closed')}</option>}
               </select>
             </label>
 
@@ -837,10 +847,12 @@ function RequestRow({
 
       <dl className="grid gap-1 text-[11px] sm:grid-cols-2">
         {Object.entries(request.payload).map(([key, value]) => (
-          <div key={key} className="flex gap-1">
+          <div key={key} className="min-w-0 sm:col-span-2">
             <dt className="font-semibold text-muted">{t(FIELD_BN[key] ?? key, key)}:</dt>
-            <dd className="min-w-0 flex-1 truncate text-ink">
-              {typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)}
+            <dd className="min-w-0 whitespace-pre-wrap break-words text-ink">
+              {key === 'answers15' && typeof value === 'object' && value !== null && !Array.isArray(value)
+                ? <dl className="mt-1 space-y-2">{Object.entries(value).map(([question, answer]) => <div key={question}><dt className="font-semibold">{question}</dt><dd className="whitespace-pre-wrap break-words">{String(answer)}</dd></div>)}</dl>
+                : typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)}
             </dd>
           </div>
         ))}

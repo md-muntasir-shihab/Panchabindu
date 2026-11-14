@@ -3,6 +3,7 @@ import { Readable } from 'node:stream';
 import { ApiRequest } from '../../imported/src/lib/http';
 import * as account from '../../imported/app/api/account/orders/route';
 import * as adminAuth from '../../imported/app/api/admin/auth/route';
+import * as emergency from '../../imported/app/api/admin/emergency/route';
 import * as brandMedia from '../../imported/app/api/admin/brand-media/route';
 import * as workspace from '../../imported/app/api/admin/workspace/route';
 import * as abandoned from '../../imported/app/api/cart/abandoned/route';
@@ -21,6 +22,7 @@ import * as inquiry from '../../imported/app/api/storefront/inquiry/route';
 import * as storefront from '../../imported/app/api/storefront/route';
 import * as vendor from '../../imported/app/api/vendor/overview/route';
 import * as vendorWorkspace from '../../imported/app/api/vendor/workspace/route';
+import * as vendorStatement from '../../imported/app/api/vendor/statement/route';
 import * as vendorProducts from '../../imported/app/api/vendor/products/route';
 import * as vendorStock from '../../imported/app/api/vendor/stock/route';
 import * as vendorPriceProposals from '../../imported/app/api/vendor/price-proposals/route';
@@ -28,6 +30,10 @@ import * as vendorPayouts from '../../imported/app/api/vendor/payouts/route';
 import * as vendorProfile from '../../imported/app/api/vendor/profile/route';
 import * as vendorOnboarding from '../../imported/app/api/vendor/onboarding/route';
 import * as adminVendors from '../../imported/app/api/admin/vendors/route';
+import * as vendorKyc from '../../imported/app/api/vendor/kyc/route';
+import * as vendorSupport from '../../imported/app/api/vendor/support/route';
+import * as adminVendorSupport from '../../imported/app/api/admin/vendor-support/route';
+import * as adminKyc from '../../imported/app/api/admin/vendor-kyc/route';
 import * as adminVendorPayouts from '../../imported/app/api/admin/vendor-payouts/route';
 import * as webhook from '../../imported/app/api/webhooks/courier/route';
 import * as courierStatusCron from '../../imported/app/api/cron/courier-status/route';
@@ -68,7 +74,7 @@ function adapt(handler: Handler): RequestHandler {
 export const importedRouter = Router();
 const routes: Array<[string, Record<string, unknown>]> = [
   ['/api/account/orders', account], ['/api/admin/auth', adminAuth],
-  ['/api/admin/brand-media', brandMedia], ['/api/admin/workspace', workspace],
+  ['/api/admin/emergency', emergency], ['/api/admin/brand-media', brandMedia], ['/api/admin/workspace', workspace],
   ['/api/cart/abandoned', abandoned], ['/api/catalog/import', catalogImport],
   ['/api/media/:assetId', mediaAsset], ['/api/media', media],
   ['/api/orders/cancellation-request', cancellation], ['/api/orders/return-request', returns],
@@ -76,9 +82,10 @@ const routes: Array<[string, Record<string, unknown>]> = [
   ['/api/payments/manual-bkash/submissions', payments], ['/api/print/:orderNo', print],
   ['/api/promo/validate', promo], ['/api/reviews', reviews],
   ['/api/storefront/inquiry', inquiry], ['/api/storefront', storefront],
-  ['/api/admin/vendors', adminVendors],
+  ['/api/admin/vendor-support', adminVendorSupport], ['/api/vendor/support', vendorSupport],
+  ['/api/admin/vendors', adminVendors], ['/api/admin/vendor-kyc', adminKyc], ['/api/vendor/kyc', vendorKyc],
   ['/api/admin/vendor-payouts', adminVendorPayouts],
-  ['/api/vendor/overview', vendor], ['/api/vendor/workspace', vendorWorkspace],
+  ['/api/vendor/overview', vendor], ['/api/vendor/workspace', vendorWorkspace], ['/api/vendor/statement', vendorStatement],
   ['/api/vendor/products', vendorProducts], ['/api/vendor/stock', vendorStock],
   ['/api/vendor/price-proposals', vendorPriceProposals], ['/api/vendor/payouts', vendorPayouts],
   ['/api/vendor/profile', vendorProfile], ['/api/vendor/onboarding', vendorOnboarding],

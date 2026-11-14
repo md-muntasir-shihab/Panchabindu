@@ -19,6 +19,8 @@ const suites = {
   ],
   security: [
     'lib/security/phase1-security.test.ts',
+    'lib/security/self-service-security.test.ts',
+    'lib/security/emergency-stop.test.ts',
     'lib/security/customer-route-guards.test.ts',
     'lib/security/backend-endpoints.test.ts',
     'lib/security/phase1-reconciliation.test.ts',
@@ -27,6 +29,7 @@ const suites = {
     'lib/security/workspace-rbac-snapshot.test.ts',
     'lib/security/unit-test-isolation.test.ts',
     'lib/vendor/vendor-routes.test.ts',
+    'lib/vendor/vendor-kyc.test.ts',
   ],
   payments: [
     'lib/advance-courier-mfs.test.ts',

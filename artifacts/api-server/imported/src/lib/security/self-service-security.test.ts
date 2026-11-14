@@ -1,0 +1,53 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { ApiRequest } from '../http';
+import { POST } from '../../../app/api/admin/auth/route';
+import { readAdminStore, writeAdminStore } from '../admin/phase4a-service';
+import { hashPassword, generateTotpCode, verifyAdminSessionToken } from './crypto-session';
+
+const req = (body: object, cookie?: string, csrf?: string) => new ApiRequest('http://localhost/api/admin/auth', { method: 'POST', headers: { host: 'localhost', origin: 'http://localhost', 'content-type': 'application/json', ...(cookie ? { cookie } : {}), ...(csrf ? { 'x-csrf-token': csrf } : {}) }, body: JSON.stringify(body) });
+
+test('self-service MFA setup, backup codes, password and session revocation', async () => {
+  const store = readAdminStore();
+  const user = store.users.find(u => u.roleSlug === 'vendor')!;
+  user.passwordHash = hashPassword('initial test password'); user.mustChangePassword = false; user.temporaryPasswordExpiresAt = null;
+  // An old inactive enrollment must be replaced only after the new code is verified.
+  user.require2fa = false; user.totpEnrolled = true; user.failedLoginAttempts = 0; user.lockedUntilIso = null;
+  writeAdminStore(store);
+  const login = async (password: string, totpCode = '') => POST(req({ action: 'login', username: user.username, password, totpCode }));
+  const initial = await login('initial test password');
+  assert.equal(initial.status, 200, await initial.clone().text());
+  const first = await initial.json() as { csrfToken: string; sessionToken: string };
+  const cookie = `bg_admin_session=${first.sessionToken}`;
+  assert.equal((await POST(req({ action: 'start_mfa', currentPassword: 'initial test password' }, cookie))).status, 403);
+  const start = await POST(req({ action: 'start_mfa', currentPassword: 'initial test password' }, cookie, first.csrfToken));
+  assert.equal(start.status, 200, await start.clone().text());
+  const { setupUri } = await start.json() as { setupUri: string };
+  const secret = new URL(setupUri).searchParams.get('secret')!;
+  assert.ok(secret);
+  const invalid = await POST(req({ action: 'enable_mfa', currentPassword: 'initial test password', totpCode: 'not-a-code' }, cookie, first.csrfToken));
+  assert.equal(invalid.status, 400);
+  const enable = await POST(req({ action: 'enable_mfa', currentPassword: 'initial test password', totpCode: generateTotpCode(secret) }, cookie, first.csrfToken));
+  assert.equal(enable.status, 200, await enable.clone().text());
+  const { recoveryBackupCodes } = await enable.json() as { recoveryBackupCodes: string[] };
+  assert.equal(recoveryBackupCodes.length, 8);
+  assert.equal(verifyAdminSessionToken(first.sessionToken), null);
+  assert.equal((await login('initial test password')).status, 401);
+  const backupLogin = await login('initial test password', recoveryBackupCodes[0]);
+  assert.equal(backupLogin.status, 200, await backupLogin.clone().text());
+  assert.equal((await login('initial test password', recoveryBackupCodes[0])).status, 401);
+  const active = await backupLogin.json() as { csrfToken: string; sessionToken: string };
+  const activeCookie = `bg_admin_session=${active.sessionToken}`;
+  assert.equal((await POST(req({ action: 'disable_mfa', currentPassword: 'wrong', totpCode: recoveryBackupCodes[1] }, activeCookie, active.csrfToken))).status, 400);
+  assert.equal((await POST(req({ action: 'disable_mfa', currentPassword: 'initial test password', totpCode: recoveryBackupCodes[1] }, activeCookie, active.csrfToken))).status, 400);
+  const disable = await POST(req({ action: 'disable_mfa', currentPassword: 'initial test password', totpCode: generateTotpCode(secret, Date.now() + 30_000) }, activeCookie, active.csrfToken));
+  assert.equal(disable.status, 200, await disable.clone().text());
+  assert.equal(verifyAdminSessionToken(active.sessionToken), null);
+  const withoutMfa = await login('initial test password'); assert.equal(withoutMfa.status, 200);
+  const changedSession = await withoutMfa.json() as { csrfToken: string; sessionToken: string };
+  const change = await POST(req({ action: 'change_password', currentPassword: 'initial test password', newPassword: 'another secure password' }, `bg_admin_session=${changedSession.sessionToken}`, changedSession.csrfToken));
+  assert.equal(change.status, 200, await change.clone().text());
+  assert.equal(verifyAdminSessionToken(changedSession.sessionToken), null);
+  assert.equal((await login('initial test password')).status, 401);
+  assert.equal((await login('another secure password')).status, 200);
+});

@@ -332,7 +332,7 @@ export function verifyTotpWithReplayGuard(params: {
 // ============================================================================
 
 export const ADMIN_SESSION_COOKIE_NAME = 'bg_admin_session';
-export const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
+export const ADMIN_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export interface AdminSessionRecord {
   purpose?: 'workspace' | 'enrollment';
@@ -565,7 +565,7 @@ export function revokeAllUserSessions(userId: string): void {
 // ============================================================================
 
 export const CUSTOMER_SESSION_COOKIE_NAME = 'bg_customer_session';
-export const CUSTOMER_SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+export const CUSTOMER_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 export const CUSTOMER_OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
 export const CUSTOMER_OTP_MAX_ATTEMPTS = 5;
 export const CUSTOMER_OTP_RESEND_COOLDOWN_MS = 60 * 1000; // 60 seconds

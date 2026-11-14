@@ -86,6 +86,7 @@ export function AccountClient({
     'tracking' | 'orders' | 'addresses' | 'wishlist'
   >('orders');
 
+  const [deliveryProfile, setDeliveryProfile] = React.useState<{ customerName: string; customerPhone: string; customerEmail: string | null; streetAddress: string; landmark: string } | null>(null);
   const [orderLookupNo, setOrderLookupNo] = React.useState('');
   const [recentOrders, setRecentOrders] = React.useState<string[]>([]);
 
@@ -134,6 +135,7 @@ export function AccountClient({
           authenticated?: boolean;
           customerPhone?: string;
           identifier?: string;
+          deliveryProfile?: { customerName: string; customerPhone: string; customerEmail: string | null; streetAddress: string; landmark: string } | null;
           orders?: PublicOrderTrackingDTO[];
         };
         if (controller.signal.aborted) return;
@@ -141,6 +143,7 @@ export function AccountClient({
           setVerifiedPhone(data.identifier || data.customerPhone);
           setLoginPhone(data.identifier || data.customerPhone);
           setCustomerOrders(Array.isArray(data.orders) ? data.orders : []);
+          setDeliveryProfile(data.deliveryProfile ?? null);
         }
       })
       .catch(() => {
@@ -186,6 +189,7 @@ export function AccountClient({
       if (!response.ok || !data.success) throw new Error('Logout failed');
       setVerifiedPhone(null);
       setCustomerOrders([]);
+      setDeliveryProfile(null);
       setPassword('');
       refreshPageData();
     } catch {
@@ -209,9 +213,9 @@ export function AccountClient({
       const identifier = loginPhone.trim();
       const payload = registering ? { action: 'register', ...(identifier.includes('@') ? { email: identifier } : { phone: identifier }), password } : { action: 'login', identifier, password };
       const res = await fetch('/api/account/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      const data = await res.json() as { success: boolean; errorBn?: string; errorEn?: string; identifier?: string; orders?: PublicOrderTrackingDTO[] };
+      const data = await res.json() as { success: boolean; errorBn?: string; errorEn?: string; identifier?: string; deliveryProfile?: { customerName: string; customerPhone: string; customerEmail: string | null; streetAddress: string; landmark: string } | null; orders?: PublicOrderTrackingDTO[] };
       if (!res.ok || !data.success) setAuthError((locale === 'bn' ? data.errorBn : data.errorEn) ?? (locale === 'bn' ? 'লগইন করা যায়নি।' : 'Unable to sign in.'));
-      else { setVerifiedPhone(data.identifier || identifier); setCustomerOrders(data.orders ?? []); setPassword(''); if (new URLSearchParams(window.location.search).get('returnTo') === 'checkout') navigate('/checkout'); }
+      else { setVerifiedPhone(data.identifier || identifier); setCustomerOrders(data.orders ?? []); setDeliveryProfile(data.deliveryProfile ?? null); setPassword(''); refreshPageData(); if (new URLSearchParams(window.location.search).get('returnTo') === 'checkout') navigate('/checkout'); }
     } catch { setAuthError(locale === 'bn' ? 'নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।' : 'Network error. Please try again.'); }
     finally { setAuthLoading(false); }
   };
@@ -221,7 +225,7 @@ export function AccountClient({
       const res = await fetch('/api/account/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'change_password', currentPassword: password, newPassword }) });
       const data = await res.json() as { success: boolean; errorBn?: string; errorEn?: string };
       if (!res.ok || !data.success) setAuthError((locale === 'bn' ? data.errorBn : data.errorEn) ?? 'Password change failed.');
-      else { setVerifiedPhone(null); setCustomerOrders([]); setPassword(''); setNewPassword(''); setAuthError(locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তিত হয়েছে। আবার লগইন করুন।' : 'Password changed. Please sign in again.'); }
+      else { setVerifiedPhone(null); setCustomerOrders([]); setDeliveryProfile(null); setPassword(''); setNewPassword(''); setAuthError(locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তিত হয়েছে। আবার লগইন করুন।' : 'Password changed. Please sign in again.'); }
     } catch { setAuthError(locale === 'bn' ? 'নেটওয়ার্ক ত্রুটি।' : 'Network error.'); }
     finally { setAuthLoading(false); }
   };
@@ -400,6 +404,11 @@ export function AccountClient({
               </div>
             </div>
 
+            {verifiedPhone && deliveryProfile && <div className="text-xs text-muted space-y-1">
+              <p className="font-bold">{locale === 'bn' ? 'সর্বশেষ অর্ডারের তথ্য' : 'Latest order details'}</p>
+              <p>{deliveryProfile.customerName} · {deliveryProfile.customerPhone}{deliveryProfile.customerEmail ? ` · ${deliveryProfile.customerEmail}` : ''}</p>
+              <p>{deliveryProfile.streetAddress}{deliveryProfile.landmark ? `, ${deliveryProfile.landmark}` : ''}</p>
+            </div>}
             {/* Quick Stats Badges */}
             <div className="grid grid-cols-3 gap-2 sm:gap-3 shrink-0">
               <div className="p-3 border border-border rounded-[var(--radius-md)] bg-bg text-center">

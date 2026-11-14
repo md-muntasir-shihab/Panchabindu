@@ -231,6 +231,7 @@ interface Phase4CPersistentStore {
   messageTemplates: MessageTemplateRecord[];
   messageLogs: MessageDispatchLogRecord[];
   automationKillSwitchActive: boolean;
+  emergencyStopActive?: boolean;
   automationRules: AutomationRuleRecord[];
   automationLogs: AutomationExecutionLogRecord[];
   sheetsSyncHistory: SheetsSyncJobRecord[];
