@@ -45,7 +45,6 @@ export function getStorefrontConfig(settings: { storefront?: StorefrontConfig; t
     navigation: [
       { id: 'home', labelBn: 'হোম', labelEn: 'Home', href: '/', enabled: true },
       { id: 'shop', labelBn: 'কেনাকাটা', labelEn: 'Shop', href: '/shop', enabled: true },
-      { id: 'categories', labelBn: 'ক্যাটাগরি', labelEn: 'Categories', href: '/categories', enabled: true },
       { id: 'contact', labelBn: 'আমাদের পরিচিতি', labelEn: 'Our story', href: '/contact', enabled: true },
     ],
     footerLinks: [
@@ -54,7 +53,9 @@ export function getStorefrontConfig(settings: { storefront?: StorefrontConfig; t
       { id: 'contact', labelBn: 'যোগাযোগ', labelEn: 'Contact', href: '/contact', enabled: true },
     ], socialLinks: [], ...settings.storefront,
   };
-  return storefrontConfigSchema.parse(config);
+  const parsed = storefrontConfigSchema.parse(config);
+  const isRemovedCategoryPage = (href: string) => /^\/categories\/?(?:[?#]|$)/i.test(href);
+  return { ...parsed, navigation: parsed.navigation.filter(link => !isRemovedCategoryPage(link.href)), footerLinks: parsed.footerLinks.filter(link => !isRemovedCategoryPage(link.href)) };
 }
 
 export const storefrontContentSchema = z.object({

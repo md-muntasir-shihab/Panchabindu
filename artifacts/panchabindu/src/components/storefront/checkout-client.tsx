@@ -180,7 +180,7 @@ export function CheckoutClient({
     if (!hasCartItems) return;
     const controller = new AbortController();
     setQuoteError(null);
-    fetch(`/api/page-data?${new URLSearchParams({ path: '/checkout', q: quoteQuery })}`, {
+    fetch(`/api/page-data?${new URLSearchParams({ pagePath: '/checkout', q: quoteQuery })}`, {
       cache: 'no-store', signal: controller.signal,
     }).then(async response => {
       const body = await response.json();

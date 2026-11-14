@@ -121,10 +121,10 @@ export function CategoryDetailClient({
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-[#5A655D]" />
           <Link
-            href="/categories"
+            href="/shop"
             className="hover:text-[var(--store-accent)] transition-colors"
           >
-            {locale === 'bn' ? 'ক্যাটাগরি' : 'Categories'}
+            {locale === 'bn' ? 'কেনাকাটা' : 'Shop'}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-[#5A655D]" />
           <span className="text-[#162119] font-semibold">
@@ -168,10 +168,10 @@ export function CategoryDetailClient({
                   {locale === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories'}
                 </span>
                 <Link
-                  href="/categories"
+                  href="/shop"
                   className="text-[11px] font-semibold text-[var(--store-accent)] hover:underline"
                 >
-                  {locale === 'bn' ? 'ডিরেক্টরি' : 'Directory'}
+                  {locale === 'bn' ? 'সব পণ্য' : 'Shop all'}
                 </Link>
               </div>
 

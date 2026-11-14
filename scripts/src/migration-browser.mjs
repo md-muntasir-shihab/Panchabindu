@@ -23,7 +23,7 @@ try {
   const checkoutLink = page.getByRole('link', { name: /checkout/i });
   const quoteResponse = page.waitForResponse(response => {
     const url = new URL(response.url());
-    return url.pathname === '/api/page-data' && url.searchParams.get('path') === '/checkout' && url.searchParams.has('q');
+    return url.pathname === '/api/page-data' && url.searchParams.get('pagePath') === '/checkout' && url.searchParams.has('q');
   });
   await checkoutLink.click();
   await page.waitForURL('**/checkout', { waitUntil: 'domcontentloaded' });
@@ -51,7 +51,7 @@ try {
   const quoteHeld = new Promise(resolve => { markQuoteHeld = resolve; });
   await page.route('**/api/page-data?**', async route => {
     const url = new URL(route.request().url());
-    if (url.searchParams.get('path') !== '/checkout' || !url.searchParams.has('q')) return route.continue();
+    if (url.searchParams.get('pagePath') !== '/checkout' || !url.searchParams.has('q')) return route.continue();
     if (failNextQuote) {
       failNextQuote = false;
       return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ success: false }) });

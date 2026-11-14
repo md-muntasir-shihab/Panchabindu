@@ -1,4 +1,5 @@
 'use client';
+import { productImageUrl, productImageFallback } from '@/lib/storefront/product-image';
 import { localizedFetch as fetch } from '@/lib/i18n/localized-fetch';
 import { uiText } from '@/lib/i18n/ui-text';
 
@@ -119,10 +120,10 @@ export function ProductDetailClient({
 
   const allImages =
     product.images.length > 0
-      ? product.images
-      : ['https://picsum.photos/seed/fallback/800/1000'];
+      ? product.images.map(productImageUrl)
+      : ['/assets/product-placeholder.svg'];
   const activeImageUrl =
-    allImages[selectedImageIdx] ?? selectedVariant.imageUrl ?? allImages[0];
+    allImages[selectedImageIdx] ?? productImageUrl(selectedVariant.imageUrl);
 
   const category = categories.find((c) => c.id === product.categoryId);
   const displayName = locale === 'bn' ? product.nameBn : product.nameEn;
@@ -236,10 +237,7 @@ export function ProductDetailClient({
                 src={activeImageUrl}
                 alt={displayName}
                 referrerPolicy="no-referrer"
-                onError={(event) => {
-                  event.currentTarget.onerror = null;
-                  event.currentTarget.src = '/assets/product-placeholder.svg';
-                }}
+                onError={productImageFallback}
                 className="object-cover" loading="eager" fetchPriority="high" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
               <div className="absolute top-3.5 left-3.5 flex flex-col gap-1.5">
                 {isOutOfStock ? (
@@ -279,10 +277,7 @@ export function ProductDetailClient({
                       src={imgUrl}
                       alt={`${displayName} thumbnail ${idx + 1}`}
                       referrerPolicy="no-referrer"
-                      onError={(event) => {
-                        event.currentTarget.onerror = null;
-                        event.currentTarget.src = '/assets/product-placeholder.svg';
-                      }}
+                      onError={productImageFallback}
                       className="object-cover" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
                   </button>
                 ))}

@@ -1,4 +1,5 @@
 'use client';
+import { productImageUrl, productImageFallback } from '@/lib/storefront/product-image';
 import { getStorefrontConfig } from '@/lib/storefront/storefront-config';
 import { BrandMark } from './brand-mark';
 import { localizedField } from '@/lib/i18n/ui-text';
@@ -395,7 +396,8 @@ export function StorefrontShell({
                                   {p.images[0] ? (
                                     <div className="w-10 h-12 rounded-lg border border-[#E4E2DC] overflow-hidden shrink-0 bg-[#F2EFE9] relative">
                                       <img
-                                        src={p.images[0]}
+                                        src={productImageUrl(p.images[0])}
+                                        onError={productImageFallback}
                                         alt={locale === 'bn' ? p.nameBn : p.nameEn}
                                         className="object-cover"
                                         referrerPolicy="no-referrer" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
@@ -727,11 +729,11 @@ export function StorefrontShell({
           </Link>
 
           <Link
-            href="/categories"
+            href="/shop"
             className="flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-[#5A655D] hover:text-[#162119] active:scale-95 transition-transform"
           >
             <Grid className="w-4 h-4" aria-hidden="true" />
-            <span>{dict.common.categories}</span>
+            <span>{locale === 'bn' ? 'কেনাকাটা' : 'Shop'}</span>
           </Link>
 
           <button
