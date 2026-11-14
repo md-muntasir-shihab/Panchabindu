@@ -67,3 +67,21 @@ test('Vercel and legacy demo flags cannot unlock production JSON persistence', (
     for (const key of keys) if (prior[key] === undefined) delete process.env[key]; else process.env[key] = prior[key];
   }
 });
+
+test('production defaults to Postgres when mode is unset, without enabling JSON fallback', async () => {
+  const { usesPostgresPersistence } = await import('./runtime-persistence');
+  const keys = ['NODE_ENV', 'PANCHABINDU_PERSISTENCE', 'SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+  const prior = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  try {
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
+    delete process.env.PANCHABINDU_PERSISTENCE;
+    delete process.env.SUPABASE_URL; delete process.env.NEXT_PUBLIC_SUPABASE_URL; delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    assert.equal(usesPostgresPersistence(), true);
+    await assert.rejects(withRuntimePersistence(() => {}), /DATABASE_NOT_CONFIGURED/);
+    process.env.PANCHABINDU_PERSISTENCE = 'json';
+    assert.equal(usesPostgresPersistence(), false);
+    await assert.rejects(withRuntimePersistence(() => {}), /PRODUCTION_DATABASE_REQUIRED/);
+  } finally {
+    for (const key of keys) if (prior[key] === undefined) delete process.env[key]; else process.env[key] = prior[key];
+  }
+});

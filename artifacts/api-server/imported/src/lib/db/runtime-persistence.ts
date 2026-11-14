@@ -23,7 +23,10 @@ const transactions = new AsyncLocalStorage<RuntimeTransaction>();
 let localQueue: Promise<unknown> = Promise.resolve();
 
 export function usesPostgresPersistence(): boolean {
-  return process.env.PANCHABINDU_PERSISTENCE === 'postgres';
+  const configured = process.env.PANCHABINDU_PERSISTENCE?.trim().toLowerCase();
+  // Production never falls back to ephemeral JSON. If no mode was specified,
+  // use the durable database that the deployment initialization requires.
+  return configured === 'postgres' || (!configured && process.env.NODE_ENV === 'production');
 }
 
 export function hasDurableRuntimeContext(): boolean {

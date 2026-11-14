@@ -64,7 +64,11 @@ export function backendRoute<A extends unknown[]>(handler: (...args: A) => Promi
       response.headers.set('Cache-Control', 'private, no-store');
       return await localizedResponse(response, args[0]);
     } catch (error) {
-      const conflict = error instanceof Error && error.message === 'DATABASE_WRITE_CONFLICT';
+      const message = error instanceof Error ? error.message : '';
+      const known = ['DATABASE_WRITE_CONFLICT', 'DATABASE_NOT_CONFIGURED', 'DATABASE_INITIALIZATION_REQUIRED', 'PRODUCTION_DATABASE_REQUIRED', 'DATABASE_COMMIT_FAILED', 'DATABASE_TRANSACTION_REQUIRED'];
+      // Only log a fixed diagnostic code, never credentials or database error details.
+      console.error('[backend-route]', known.includes(message) ? message : 'UNEXPECTED_FAILURE');
+      const conflict = message === 'DATABASE_WRITE_CONFLICT';
       return Response.json({
         success: false,
         code: conflict ? 'WRITE_CONFLICT' : 'SERVICE_UNAVAILABLE',
