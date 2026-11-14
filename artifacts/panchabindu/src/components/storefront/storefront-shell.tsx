@@ -128,6 +128,13 @@ export function StorefrontShell({
 
   const wishlistCount = useWishlistStore((s) => s.productIds.length);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  React.useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const closeOnMobile = () => { if (media.matches) setIsMenuOpen(false); };
+    closeOnMobile();
+    media.addEventListener('change', closeOnMobile);
+    return () => media.removeEventListener('change', closeOnMobile);
+  }, []);
   const [isCategoryAccordionOpen, setIsCategoryAccordionOpen] = React.useState(true);
 
   // Live Instant Search State
@@ -275,13 +282,13 @@ export function StorefrontShell({
       <header className="storefront-header sticky top-0 z-40 border-b border-[#E4E2DC] bg-[#FAF9F5]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-3.5 space-y-2.5 lg:space-y-0">
           <div className="flex items-center justify-between gap-3 sm:gap-6">
-            {/* Mobile Hamburger & Brand Identity */}
+            {/* Tablet navigation menu & brand identity; phones use the bottom bar. */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
                 type="button"
                 onClick={() => setIsMenuOpen(true)}
                 aria-label={locale === 'bn' ? 'মেনু খুলুন' : 'Open menu'}
-                className="xl:hidden p-2 -ml-1 text-[#162119] hover:bg-[#F2EFE9] border border-[#E4E2DC] rounded-lg cursor-pointer touch-target flex items-center justify-center transition-colors"
+                className="hidden md:flex xl:hidden p-2 -ml-1 text-[#162119] hover:bg-[#F2EFE9] border border-[#E4E2DC] rounded-lg cursor-pointer touch-target items-center justify-center transition-colors"
               >
                 <Menu className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -714,6 +721,7 @@ export function StorefrontShell({
       <footer className="border-t border-[#E4E2DC] bg-[#F2EFE9] mt-16 sm:mt-24">
         <div className="max-w-7xl mx-auto px-5 py-12 sm:py-16 grid grid-cols-1 md:grid-cols-12 gap-10">
           <div className="md:col-span-5 space-y-5"><Link href="/" aria-label={brandName}><BrandMark settings={siteSettings} compact /></Link><p className="text-sm text-[#5A655D] leading-7 max-w-sm whitespace-pre-line">{text(config.footerTextBn, config.footerTextEn)}</p><div className="flex flex-col gap-2 text-sm">{siteSettings.supportPhone && <a href={`tel:${siteSettings.supportPhone}`}>{siteSettings.supportPhone}</a>}{siteSettings.supportEmail && <a href={`mailto:${siteSettings.supportEmail}`}>{siteSettings.supportEmail}</a>}<p className="text-xs text-[#5A655D]">{text(siteSettings.aboutContactPage?.helplineHoursBn ?? '', siteSettings.aboutContactPage?.helplineHoursEn ?? '')}</p></div><div className="flex flex-wrap gap-3 text-xs">{config.socialLinks.filter(link => link.enabled).map(link => <a key={link.id} href={link.href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{text(link.labelBn, link.labelEn)}</a>)}</div></div>
+          <div className="md:hidden"><h2 className="text-xs font-semibold uppercase tracking-widest mb-5">{text('আরও পেজ', 'More pages')}</h2><ul className="space-y-3 text-sm text-[#5A655D]">{config.navigation.filter(link => link.enabled).map(link => <li key={link.id}><Link href={link.href} className="inline-flex min-h-[44px] items-center hover:underline underline-offset-4">{text(link.labelBn, link.labelEn)}</Link></li>)}<li><Link href="/order-tracking" className="inline-flex min-h-[44px] items-center hover:underline underline-offset-4">{text('অর্ডার ট্র্যাকিং', 'Order tracking')}</Link></li></ul></div>
           <div className="md:col-span-3"><h2 className="text-xs font-semibold uppercase tracking-widest mb-5">{text('সাথে থাকুন', 'Explore')}</h2><ul className="space-y-3 text-sm text-[#5A655D]">{config.footerLinks.filter(link => link.enabled).map(link => <li key={link.id}><Link className="hover:underline underline-offset-4" href={link.href}>{text(link.labelBn, link.labelEn)}</Link></li>)}</ul></div>
           <div className="md:col-span-4"><h2 className="text-xs font-semibold uppercase tracking-widest mb-5">{text('নীতিমালা', 'Useful information')}</h2><ul className="space-y-3 text-sm text-[#5A655D]">{Object.entries(siteSettings.legalPages).map(([slug, page]) => <li key={slug}><Link href={`/legal/${slug}`} className="hover:underline underline-offset-4">{text(page.titleBn, page.titleEn)}</Link></li>)}</ul></div>
         </div>
@@ -730,7 +738,8 @@ export function StorefrontShell({
           <Link
             href="/"
             onClick={() => onSelectCategory?.(null)}
-            className="flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-[#162119] hover:text-[var(--store-accent)] active:scale-95 transition-transform"
+            aria-current={pathname === '/' ? 'page' : undefined}
+            className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold active:scale-95 transition-transform ${pathname === '/' ? 'text-[var(--store-accent)]' : 'text-[#5A655D] hover:text-[#162119]'}`}
           >
             <Home className="w-4 h-4" aria-hidden="true" />
             <span>{dict.common.home}</span>
@@ -738,7 +747,8 @@ export function StorefrontShell({
 
           <Link
             href="/shop"
-            className="flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-[#5A655D] hover:text-[#162119] active:scale-95 transition-transform"
+            aria-current={pathname === '/shop' ? 'page' : pathname.startsWith('/category/') || pathname.startsWith('/product/') ? 'location' : undefined}
+            className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold active:scale-95 transition-transform ${pathname === '/shop' || pathname.startsWith('/category/') || pathname.startsWith('/product/') ? 'text-[var(--store-accent)]' : 'text-[#5A655D] hover:text-[#162119]'}`}
           >
             <Grid className="w-4 h-4" aria-hidden="true" />
             <span>{locale === 'bn' ? 'কেনাকাটা' : 'Shop'}</span>
@@ -762,7 +772,8 @@ export function StorefrontShell({
 
           <Link
             href="/account"
-            className="flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-[#5A655D] hover:text-[#162119] active:scale-95 transition-transform"
+            aria-current={pathname === '/account' ? 'page' : pathname.startsWith('/order-tracking') ? 'location' : undefined}
+            className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold active:scale-95 transition-transform ${pathname === '/account' || pathname.startsWith('/order-tracking') ? 'text-[var(--store-accent)]' : 'text-[#5A655D] hover:text-[#162119]'}`}
           >
             <User className="w-4 h-4" aria-hidden="true" />
             <span>{dict.common.account}</span>
@@ -926,7 +937,7 @@ export function StorefrontShell({
         </div>
       </ResponsiveSheet>
 
-      {/* 7. Mobile Hamburger Menu Drawer */}
+      {/* Tablet navigation drawer */}
       <ResponsiveSheet
         open={isMenuOpen}
         onOpenChange={setIsMenuOpen}

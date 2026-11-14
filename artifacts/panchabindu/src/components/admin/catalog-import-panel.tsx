@@ -53,7 +53,7 @@ export function CatalogImportPanel({ locale, onComplete }: { locale: Locale; onC
     <div className="mt-4 space-y-3">
       <p className="text-xs text-muted">{bn ? 'সর্বোচ্চ ২০০ পণ্য। প্রিভিউ যাচাই করে সংরক্ষণ করুন। SKU বা পণ্য পুনরাবৃত্তি গ্রহণ করা হবে না; স্টক আলাদাভাবে QC শেষে যোগ করুন।' : 'Up to 200 products. Review the preview before saving. Duplicate SKUs or products are rejected; receive stock separately after QC.'}</p>
       <p className="break-all text-xs text-muted">vendor_id, category_id, name_bn, name_en, public_sku, variant_bn, variant_en, supplier_cost_bdt, supplier_profit_bdt, sale_price_bdt, weight_grams</p>
-      <input type="file" accept=".csv,text/csv" aria-label={bn ? 'CSV ফাইল নির্বাচন করুন' : 'Choose CSV file'} disabled={busy} onChange={async event => {
+      <input className="block w-full min-w-0 max-w-full text-xs" type="file" accept=".csv,text/csv" aria-label={bn ? 'CSV ফাইল নির্বাচন করুন' : 'Choose CSV file'} disabled={busy} onChange={async event => {
         const file = event.currentTarget.files?.[0];
         setPreview(null); setMessage(null);
         if (!file) return;
@@ -61,7 +61,7 @@ export function CatalogImportPanel({ locale, onComplete }: { locale: Locale; onC
         updateCsv(await file.text());
       }} />
       <textarea rows={4} value={csv} disabled={busy} aria-label={bn ? 'CSV তথ্য' : 'CSV contents'} className="w-full rounded border border-border bg-bg p-2 text-xs" onChange={event => updateCsv(event.target.value)} />
-      {headers.length > 0 && <fieldset className="grid gap-2 sm:grid-cols-2"><legend className="mb-2 text-sm font-semibold">{bn ? 'CSV কলাম মিলিয়ে নিন' : 'Map CSV columns'}</legend>{CATALOG_IMPORT_COLUMNS.map(column => <label key={column} className="text-xs">{column}<select className="ml-2 rounded border border-border bg-bg p-2" disabled={busy} value={mapping[column] ?? headers.find(header => header.toLowerCase() === column) ?? ''} onChange={event => { setMapping(current => ({ ...current, [column]: event.target.value })); setPreview(null); }}><option value="">{bn ? 'কলাম নির্বাচন করুন' : 'Choose column'}</option>{headers.map(header => <option key={header} value={header}>{header}</option>)}</select></label>)}</fieldset>}
+      {headers.length > 0 && <fieldset className="grid gap-2 sm:grid-cols-2"><legend className="mb-2 text-sm font-semibold">{bn ? 'CSV কলাম মিলিয়ে নিন' : 'Map CSV columns'}</legend>{CATALOG_IMPORT_COLUMNS.map(column => <label key={column} className="block min-w-0 text-xs break-words">{column}<select className="mt-1 block w-full min-w-0 max-w-full rounded border border-border bg-bg p-2" disabled={busy} value={mapping[column] ?? headers.find(header => header.toLowerCase() === column) ?? ''} onChange={event => { setMapping(current => ({ ...current, [column]: event.target.value })); setPreview(null); }}><option value="">{bn ? 'কলাম নির্বাচন করুন' : 'Choose column'}</option>{headers.map(header => <option key={header} value={header}>{header}</option>)}</select></label>)}</fieldset>}
       <button type="button" disabled={busy || !csv} onClick={() => void submit('preview')} className="rounded border border-border px-3 py-2 text-sm disabled:opacity-50">{bn ? 'যাচাই ও প্রিভিউ' : 'Validate and preview'}</button>
       {preview && <div className="space-y-2 text-sm">
         <p>{bn ? 'মোট সারি:' : 'Rows:'} {formatLocaleNumber(preview.rowCount, locale)}</p>

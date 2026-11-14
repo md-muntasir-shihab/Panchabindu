@@ -366,11 +366,11 @@ export function PrintEnginePanel({
           </div>
 
           {/* Sub-Tab Navigation Switcher */}
-          <div className="inline-flex items-center p-1 bg-surface border border-border rounded-[var(--radius-md)] self-start sm:self-auto">
+          <div className="flex flex-wrap max-w-full items-center gap-1 p-1 bg-surface border border-border rounded-[var(--radius-md)] self-start sm:self-auto">
             <button
               type="button"
               onClick={() => setActiveSubTab('queue')}
-              className={`px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`min-h-11 max-w-full px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                 activeSubTab === 'queue'
                   ? 'bg-ink text-surface shadow-sm'
                   : 'text-muted hover:text-ink'
@@ -384,7 +384,7 @@ export function PrintEnginePanel({
               <button
                 type="button"
                 onClick={() => setActiveSubTab('templates')}
-                className={`px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                className={`min-h-11 max-w-full px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                   activeSubTab === 'templates'
                     ? 'bg-ink text-surface shadow-sm'
                     : 'text-muted hover:text-ink'
@@ -398,7 +398,7 @@ export function PrintEnginePanel({
             <button
               type="button"
               onClick={() => setActiveSubTab('history')}
-              className={`px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`min-h-11 max-w-full px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                 activeSubTab === 'history'
                   ? 'bg-ink text-surface shadow-sm'
                   : 'text-muted hover:text-ink'

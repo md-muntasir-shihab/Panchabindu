@@ -513,7 +513,7 @@ export function Phase7PortalPanel({
           <button
             type="button"
             onClick={() => onRefreshWorkspace()}
-            className="inline-flex h-10 items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 text-xs font-semibold text-[var(--color-ink)] hover:bg-[var(--color-border)]"
+            className="inline-flex min-h-11 py-2 items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 text-xs font-semibold text-[var(--color-ink)] hover:bg-[var(--color-border)]"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             {isBn ? 'ডেটা রিফ্রেশ করুন' : 'Refresh Workspace'}
@@ -598,7 +598,7 @@ export function Phase7PortalPanel({
           <button
             type="button"
             onClick={() => setActiveSubTab('consignment_lots')}
-            className={`inline-flex h-10 items-center gap-2 rounded-md px-4 text-xs font-bold transition-colors ${
+            className={`inline-flex min-h-11 max-w-full items-center gap-2 rounded-md px-4 py-2 text-left text-xs font-bold transition-colors ${
               activeSubTab === 'consignment_lots'
                 ? 'border-b-2 border-[var(--color-ink)] bg-[var(--color-surface)] text-[var(--color-ink)]'
                 : 'text-[var(--color-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)]'
@@ -613,7 +613,7 @@ export function Phase7PortalPanel({
           <button
             type="button"
             onClick={() => setActiveSubTab('price_proposals')}
-            className={`inline-flex h-10 items-center gap-2 rounded-md px-4 text-xs font-bold transition-colors ${
+            className={`inline-flex min-h-11 max-w-full items-center gap-2 rounded-md px-4 py-2 text-left text-xs font-bold transition-colors ${
               activeSubTab === 'price_proposals'
                 ? 'border-b-2 border-[var(--color-ink)] bg-[var(--color-surface)] text-[var(--color-ink)]'
                 : 'text-[var(--color-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)]'
@@ -629,7 +629,7 @@ export function Phase7PortalPanel({
             <button
               type="button"
               onClick={() => setActiveSubTab('flash_and_maturity')}
-              className={`inline-flex h-10 items-center gap-2 rounded-md px-4 text-xs font-bold transition-colors ${
+              className={`inline-flex min-h-11 max-w-full items-center gap-2 rounded-md px-4 py-2 text-left text-xs font-bold transition-colors ${
                 activeSubTab === 'flash_and_maturity'
                   ? 'border-b-2 border-[var(--color-ink)] bg-[var(--color-surface)] text-[var(--color-ink)]'
                   : 'text-[var(--color-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)]'
@@ -646,7 +646,7 @@ export function Phase7PortalPanel({
             <button
               type="button"
               onClick={() => setActiveSubTab('executive_accounting')}
-              className={`inline-flex h-10 items-center gap-2 rounded-md px-4 text-xs font-bold transition-colors ${
+              className={`inline-flex min-h-11 max-w-full items-center gap-2 rounded-md px-4 py-2 text-left text-xs font-bold transition-colors ${
                 activeSubTab === 'executive_accounting'
                   ? 'border-b-2 border-[var(--color-ink)] bg-[var(--color-surface)] text-[var(--color-ink)]'
                   : 'text-[var(--color-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)]'
@@ -662,7 +662,7 @@ export function Phase7PortalPanel({
           <button
             type="button"
             onClick={() => setActiveSubTab('multi_supplier_and_split')}
-            className={`inline-flex h-10 items-center gap-2 rounded-md px-4 text-xs font-bold transition-colors ${
+            className={`inline-flex min-h-11 max-w-full items-center gap-2 rounded-md px-4 py-2 text-left text-xs font-bold transition-colors ${
               activeSubTab === 'multi_supplier_and_split'
                 ? 'border-b-2 border-[var(--color-ink)] bg-[var(--color-surface)] text-[var(--color-ink)]'
                 : 'text-[var(--color-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)]'
@@ -678,7 +678,7 @@ export function Phase7PortalPanel({
             <button
               type="button"
               onClick={() => setActiveSubTab('maker_checker_reversals')}
-              className={`inline-flex h-10 items-center gap-2 rounded-md px-4 text-xs font-bold transition-colors ${
+              className={`inline-flex min-h-11 max-w-full items-center gap-2 rounded-md px-4 py-2 text-left text-xs font-bold transition-colors ${
                 activeSubTab === 'maker_checker_reversals'
                   ? 'border-b-2 border-[var(--color-ink)] bg-[var(--color-surface)] text-[var(--color-ink)]'
                   : 'text-[var(--color-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)]'
@@ -762,7 +762,7 @@ export function Phase7PortalPanel({
               <button
                 type="submit"
                 disabled={busyAction === 'submit-lot'}
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[var(--color-ink)] px-4 text-xs font-bold text-[var(--color-bg)] hover:opacity-90 disabled:opacity-50"
+                className="inline-flex min-h-11 py-2 w-full items-center justify-center gap-2 rounded-md bg-[var(--color-ink)] px-4 text-xs font-bold text-[var(--color-bg)] hover:opacity-90 disabled:opacity-50"
               >
                 <PackagePlus className="h-4 w-4" />
                 {busyAction === 'submit-lot'
@@ -848,7 +848,7 @@ export function Phase7PortalPanel({
                           type="button"
                           disabled={busyAction !== null}
                           onClick={() => handleReviewLot(lot.lotId, 'approve')}
-                          className="inline-flex h-8 items-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)] hover:opacity-90"
+                          className="inline-flex min-h-11 py-2 items-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)] hover:opacity-90"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           <LocalizedText source={"কিউসি পাস ও স্টকে যোগ করুন"} area="admin" />{" "}</button>
@@ -856,7 +856,7 @@ export function Phase7PortalPanel({
                           type="button"
                           disabled={busyAction !== null}
                           onClick={() => handleReviewLot(lot.lotId, 'reject')}
-                          className="inline-flex h-8 items-center gap-1.5 rounded border border-[var(--color-danger)] bg-[var(--color-bg)] px-3 text-xs font-bold text-[var(--color-danger)]"
+                          className="inline-flex min-h-11 py-2 items-center gap-1.5 rounded border border-[var(--color-danger)] bg-[var(--color-bg)] px-3 text-xs font-bold text-[var(--color-danger)]"
                         >
                           <XCircle className="h-3.5 w-3.5" />
                           <LocalizedText source={"চালান রিজেক্ট"} area="admin" />{" "}</button>
@@ -941,7 +941,7 @@ export function Phase7PortalPanel({
               <button
                 type="submit"
                 disabled={busyAction === 'submit-proposal'}
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[var(--color-ink)] px-4 text-xs font-bold text-[var(--color-bg)] hover:opacity-90"
+                className="inline-flex min-h-11 py-2 w-full items-center justify-center gap-2 rounded-md bg-[var(--color-ink)] px-4 text-xs font-bold text-[var(--color-bg)] hover:opacity-90"
               >
                 <ArrowRight className="h-4 w-4" />
                 <LocalizedText source={"মূল্য প্রস্তাব জমা দিন"} area="admin" />{" "}</button>
@@ -1026,7 +1026,7 @@ export function Phase7PortalPanel({
                               'approved'
                             )
                           }
-                          className="inline-flex h-8 items-center gap-1 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
+                          className="inline-flex min-h-11 py-2 items-center gap-1 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
                         >
                           <LocalizedText source={"অনুমোদন (Approve)"} area="admin" />{" "}</button>
                         <button
@@ -1037,7 +1037,7 @@ export function Phase7PortalPanel({
                               'rejected'
                             )
                           }
-                          className="inline-flex h-8 items-center gap-1 rounded border border-[var(--color-danger)] bg-[var(--color-bg)] px-3 text-xs font-bold text-[var(--color-danger)]"
+                          className="inline-flex min-h-11 py-2 items-center gap-1 rounded border border-[var(--color-danger)] bg-[var(--color-bg)] px-3 text-xs font-bold text-[var(--color-danger)]"
                         >
                           <LocalizedText source={"প্রত্যাখ্যান (Reject)"} area="admin" />{" "}</button>
                       </div>
@@ -1121,7 +1121,7 @@ export function Phase7PortalPanel({
                 type="button"
                 disabled={busyAction !== null}
                 onClick={() => handlePromoteMaturedEscrow(false)}
-                className="inline-flex h-10 items-center gap-2 rounded-md bg-[var(--color-ink)] px-4 text-xs font-bold text-[var(--color-bg)]"
+                className="inline-flex min-h-11 py-2 items-center gap-2 rounded-md bg-[var(--color-ink)] px-4 text-xs font-bold text-[var(--color-bg)]"
               >
                 <ShieldCheck className="h-4 w-4" />
                 <LocalizedText source={"মেয়াদোত্তীর্ণ লকড এসক্রো প্রমোট করুন"} area="admin" />{" "}</button>
@@ -1131,7 +1131,7 @@ export function Phase7PortalPanel({
                   type="button"
                   disabled={busyAction !== null}
                   onClick={() => handlePromoteMaturedEscrow(true)}
-                  className="inline-flex h-10 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-border)]"
+                  className="inline-flex min-h-11 py-2 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-border)]"
                 >
                   <LocalizedText source={"সকল লকড এন্ট্রি ফোর্স-ম্যাচিউর করুন (Admin Override)"} area="admin" />{" "}</button>
               )}
@@ -1410,7 +1410,7 @@ export function Phase7PortalPanel({
               <button
                 type="submit"
                 disabled={busyAction === 'upsert-offer'}
-                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
+                className="inline-flex min-h-11 py-2 w-full items-center justify-center gap-2 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
               >
                 <LocalizedText source={"সাপ্লায়ার কনসাইনমেন্ট অফার সংরক্ষণ করুন"} area="admin" />{" "}</button>
             </form>
@@ -1497,7 +1497,7 @@ export function Phase7PortalPanel({
                   <button
                     type="submit"
                     disabled={busyAction === 'split-order'}
-                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
+                    className="inline-flex min-h-11 py-2 w-full items-center justify-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
                   >
                     <LocalizedText source={"অর্ডার স্প্লিট করুন"} area="admin" />{" "}</button>
                 </div>
@@ -1590,7 +1590,7 @@ export function Phase7PortalPanel({
               <button
                 type="submit"
                 disabled={busyAction === 'create-reversal'}
-                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
+                className="inline-flex min-h-11 py-2 w-full items-center justify-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
               >
                 <LocalizedText source={"মেকার হিসেবে রিভার্সাল অনুরোধ জমা দিন"} area="admin" />{" "}</button>
             </form>
@@ -1637,13 +1637,13 @@ export function Phase7PortalPanel({
                     <LocalizedText source={"কারণ:"} area="admin" />{" "}{rev.reasonBn}
                   </p>
                   {rev.status === 'pending_checker_approval' && isSuperAdmin && (
-                    <div className="mt-2.5 flex items-center gap-2">
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         onClick={() =>
                           handleResolveLedgerReversal(rev.reversalId, 'approve')
                         }
-                        className="inline-flex h-8 items-center gap-1 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
+                        className="inline-flex min-h-11 py-2 items-center gap-1 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
                       >
                         <LocalizedText source={"চেকার অনুমোদন ও রিভার্সাল পোস্ট করুন"} area="admin" />{" "}</button>
                       <button
@@ -1651,7 +1651,7 @@ export function Phase7PortalPanel({
                         onClick={() =>
                           handleResolveLedgerReversal(rev.reversalId, 'reject')
                         }
-                        className="inline-flex h-8 items-center gap-1 rounded border border-[var(--color-danger)] px-3 text-xs font-bold text-[var(--color-danger)]"
+                        className="inline-flex min-h-11 py-2 items-center gap-1 rounded border border-[var(--color-danger)] px-3 text-xs font-bold text-[var(--color-danger)]"
                       >
                         <LocalizedText source={"বাতিল"} area="admin" />{" "}</button>
                     </div>
@@ -1742,7 +1742,7 @@ export function Phase7PortalPanel({
                 <button
                   type="submit"
                   disabled={busyAction === 'execute-refund'}
-                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
+                  className="inline-flex min-h-11 py-2 w-full items-center justify-center gap-1.5 rounded bg-[var(--color-ink)] px-3 text-xs font-bold text-[var(--color-bg)]"
                 >
                   <LocalizedText source={"গ্রাহক রিফান্ড কার্যকর ও লেজার পোস্ট করুন"} area="admin" />{" "}</button>
               </form>
