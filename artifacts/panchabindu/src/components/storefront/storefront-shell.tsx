@@ -81,11 +81,19 @@ export function StorefrontShell({
   children,
 }: StorefrontShellProps) {
   const [pathname, navigate] = useLocation();
+  React.useEffect(() => {
+    // Edge-to-edge applies only to storefront pages; do not change admin/vendor viewport behavior.
+    const viewport = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+    if (!viewport) return;
+    const original = viewport.content;
+    viewport.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
+    return () => { viewport.content = original; };
+  }, []);
   const floatingContactPosition = pathname === '/checkout'
-    ? 'bottom-[calc(10.5rem+env(safe-area-inset-bottom))] md:bottom-24 lg:bottom-6'
+    ? 'bottom-[calc(10.5rem+var(--safe-bottom))] md:bottom-[calc(6rem+var(--safe-bottom))] lg:bottom-[calc(1.5rem+var(--safe-bottom))]'
     : pathname.startsWith('/product/')
-      ? 'bottom-[calc(10.5rem+env(safe-area-inset-bottom))] md:bottom-6'
-      : 'bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6';
+      ? 'bottom-[calc(10.5rem+var(--safe-bottom))] md:bottom-[calc(1.5rem+var(--safe-bottom))]'
+      : 'bottom-[calc(5.5rem+var(--safe-bottom))] md:bottom-[calc(1.5rem+var(--safe-bottom))]';
   const [localQuery, setLocalQuery] = React.useState('');
   const searchQuery = controlledSearchChange ? controlledQuery : localQuery;
   const onSearchChange = controlledSearchChange ?? setLocalQuery;
@@ -260,11 +268,11 @@ export function StorefrontShell({
   }
 
   return (
-    <div style={{ '--store-accent': config.accentColor } as React.CSSProperties} className="min-h-[100dvh] flex flex-col min-w-0 storefront-theme bg-[#FAF9F5] text-[#162119] pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
-      {siteSettings.delayBanner.enabled && <div className="bg-[var(--store-accent)] text-white px-4 py-2.5 text-xs"><div className="max-w-7xl mx-auto flex justify-center sm:justify-between items-center gap-5"><p className="leading-relaxed text-center sm:text-left">{text(siteSettings.delayBanner.messageBn, siteSettings.delayBanner.messageEn)}</p>{config.showSupportPhone && siteSettings.supportPhone && <a href={`tel:${siteSettings.supportPhone}`} className="hidden sm:inline-flex gap-2 shrink-0 items-center"><PhoneCall className="w-3.5 h-3.5" />{siteSettings.supportPhone}</a>}</div></div>}
+    <div style={{ '--store-accent': config.accentColor } as React.CSSProperties} className={`min-h-[100dvh] flex flex-col min-w-0 storefront-theme storefront-shell bg-[#FAF9F5] text-[#162119] ${pathname === '/checkout' ? 'pb-[calc(10rem+var(--safe-bottom))] md:pb-24 lg:pb-0' : pathname.startsWith('/product/') ? 'pb-[calc(10rem+var(--safe-bottom))] md:pb-0' : 'pb-[calc(4.5rem+var(--safe-bottom))] md:pb-0'}`}>
+      {siteSettings.delayBanner.enabled && <div className="storefront-delay-banner bg-[var(--store-accent)] text-white px-4 py-2.5 text-xs"><div className="max-w-7xl mx-auto flex justify-center sm:justify-between items-center gap-5"><p className="leading-relaxed text-center sm:text-left">{text(siteSettings.delayBanner.messageBn, siteSettings.delayBanner.messageEn)}</p>{config.showSupportPhone && siteSettings.supportPhone && <a href={`tel:${siteSettings.supportPhone}`} className="hidden sm:inline-flex gap-2 shrink-0 items-center"><PhoneCall className="w-3.5 h-3.5" />{siteSettings.supportPhone}</a>}</div></div>}
 
       {/* 2. Sticky Minimalist Header */}
-      <header className="sticky top-0 z-40 border-b border-[#E4E2DC] bg-[#FAF9F5]/95 backdrop-blur-md">
+      <header className="storefront-header sticky top-0 z-40 border-b border-[#E4E2DC] bg-[#FAF9F5]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-3.5 space-y-2.5 lg:space-y-0">
           <div className="flex items-center justify-between gap-3 sm:gap-6">
             {/* Mobile Hamburger & Brand Identity */}
@@ -709,14 +717,14 @@ export function StorefrontShell({
           <div className="md:col-span-3"><h2 className="text-xs font-semibold uppercase tracking-widest mb-5">{text('সাথে থাকুন', 'Explore')}</h2><ul className="space-y-3 text-sm text-[#5A655D]">{config.footerLinks.filter(link => link.enabled).map(link => <li key={link.id}><Link className="hover:underline underline-offset-4" href={link.href}>{text(link.labelBn, link.labelEn)}</Link></li>)}</ul></div>
           <div className="md:col-span-4"><h2 className="text-xs font-semibold uppercase tracking-widest mb-5">{text('নীতিমালা', 'Useful information')}</h2><ul className="space-y-3 text-sm text-[#5A655D]">{Object.entries(siteSettings.legalPages).map(([slug, page]) => <li key={slug}><Link href={`/legal/${slug}`} className="hover:underline underline-offset-4">{text(page.titleBn, page.titleEn)}</Link></li>)}</ul></div>
         </div>
-        <div className="border-t border-[#E4E2DC] px-5 py-5"><div className="max-w-7xl mx-auto flex flex-wrap justify-between gap-3 text-xs text-[#5A655D]"><span>{text(config.copyrightBn, config.copyrightEn).replaceAll('{year}', String(new Date().getFullYear())).replaceAll('{brand}', brandName)}</span><span>{text(config.footerNoteBn, config.footerNoteEn)}</span></div></div>
+        <div className="storefront-footer-bottom border-t border-[#E4E2DC] px-5 py-5"><div className="max-w-7xl mx-auto flex flex-wrap justify-between gap-3 text-xs text-[#5A655D]"><span>{text(config.copyrightBn, config.copyrightEn).replaceAll('{year}', String(new Date().getFullYear())).replaceAll('{brand}', brandName)}</span><span>{text(config.footerNoteBn, config.footerNoteEn)}</span></div></div>
       </footer>
-      {config.showWhatsApp && siteSettings.whatsappNumber && <a href={`https://wa.me/${siteSettings.whatsappNumber}`} target="_blank" rel="noopener noreferrer" aria-label={text('হোয়াটসঅ্যাপে যোগাযোগ', 'Contact on WhatsApp')} className={`fixed ${floatingContactPosition} right-4 sm:right-5 z-30 min-h-[44px] inline-flex items-center rounded-full bg-[var(--store-accent)] text-white shadow-lg px-4 py-3 text-xs font-semibold`}>WhatsApp ↗</a>}
+      {config.showWhatsApp && siteSettings.whatsappNumber && <a href={`https://wa.me/${siteSettings.whatsappNumber}`} target="_blank" rel="noopener noreferrer" aria-label={text('হোয়াটসঅ্যাপে যোগাযোগ', 'Contact on WhatsApp')} className={`storefront-floating-contact fixed ${floatingContactPosition} z-30 min-h-[44px] inline-flex items-center rounded-full bg-[var(--store-accent)] text-white shadow-lg px-4 py-3 text-xs font-semibold`}>WhatsApp ↗</a>}
 
       {/* 5. Mobile Bottom Tab Bar (<= 768px) */}
       <nav
         aria-label={uiText("Mobile bottom navigation", locale)}
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[#E4E2DC] bg-[#FAF9F5]/95 backdrop-blur safe-bottom"
+        className="storefront-bottom-nav md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[#E4E2DC] bg-[#FAF9F5]/95 backdrop-blur safe-bottom"
       >
         <div className="grid grid-cols-4 h-14">
           <Link

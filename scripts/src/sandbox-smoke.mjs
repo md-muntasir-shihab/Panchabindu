@@ -289,6 +289,90 @@ test('admin browser login, reload and logout render without errors', { timeout: 
   } finally { await browser.close(); }
 });
 
+test('dashboard shows role-scoped status counts and opens matching order filters on mobile and desktop', { timeout: 90_000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/repl/tools/bin/chromium', headless: true, args: ['--no-sandbox'], env: { PATH: process.env.PATH, HOME: fixture, TMPDIR: fixture } });
+  try {
+    for (const width of [375, 1280]) {
+      const context = await browser.newContext({ viewport: { width, height: 844 } });
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
+      await page.goto(`${base}/admin`, { waitUntil: 'domcontentloaded' });
+      await page.getByLabel(/Username/).fill(username);
+      await page.getByLabel(/Password/).fill(fixturePasswords.get(username));
+      await page.locator('form button[type=submit]').click();
+      await page.getByRole('button', { name: /Logout|লগআউট/ }).waitFor();
+      if (await page.getByTitle('বাংলায় পরিবর্তন করুন').count()) await page.getByTitle('বাংলায় পরিবর্তন করুন').click();
+      const summary = page.locator('[aria-label="অর্ডার স্ট্যাটাসের সারসংক্ষেপ"], [aria-label="Order status overview"]');
+      await summary.waitFor();
+      const snapshot = await (await context.request.get(`${base}/api/admin/workspace`)).json();
+      const count = snapshot.orders.filter(order => order.status === 'pending_confirmation').length;
+      const card = summary.getByRole('button', { name: /নিশ্চিতকরণ বাকি|Pending confirmation/ });
+      assert.match(await card.innerText(), new RegExp(String(count).replace(/[0-9]/g, d => `[${d}${'০১২৩৪৫৬৭৮৯'[Number(d)]}]`)));
+      assert.match(await page.locator('main').innerText(), /not connected|সংযুক্ত নয়/);
+      assert.match(await page.locator('main').innerText(), /অপঠিত গ্রাহক বার্তা|Unread customer inquiries/);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `dashboard width ${width}`);
+      await page.getByTitle('Switch to English').click();
+      await page.getByRole('heading', { name: 'Order overview' }).waitFor();
+      await page.getByTitle('বাংলায় পরিবর্তন করুন').click();
+      await card.click();
+      assert.equal(await page.getByLabel('Filter by order status').inputValue(), 'pending_confirmation');
+      if (width === 1280) {
+        await page.locator('input[type=search]').fill('no-matching-order');
+        await page.getByRole('navigation', { name: /Admin ERP Sidebar|অ্যাডমিন/ }).locator('button[title="Today"], button[title="আজকের কাজ"]').click();
+        await page.locator('[aria-label="অর্ডার স্ট্যাটাসের সারসংক্ষেপ"]').getByRole('button', { name: /রিটার্ন প্রক্রিয়াধীন/ }).click();
+        assert.equal(await page.getByLabel('Filter by order status').inputValue(), 'return_initiated');
+        assert.equal(await page.locator('input[type=search]').inputValue(), '');
+      }
+      assert.deepEqual(errors, []);
+      await context.close();
+    }
+  } finally { await browser.close(); }
+});
+
+test('courier receivables distinguish recorded COD from unverified historical payments', { timeout: 90_000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/repl/tools/bin/chromium', headless: true, args: ['--no-sandbox'], env: { PATH: process.env.PATH, HOME: fixture, TMPDIR: fixture } });
+  try {
+    for (const width of [375, 1280]) {
+      const context = await browser.newContext({ viewport: { width, height: 844 } });
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
+      await page.goto(`${base}/admin`, { waitUntil: 'domcontentloaded' });
+      await page.getByLabel(/Username/).fill(username);
+      await page.getByLabel(/Password/).fill(fixturePasswords.get(username));
+      await page.locator('form button[type=submit]').click();
+      await page.getByRole('button', { name: /Logout|লগআউট/ }).waitFor();
+      if (await page.getByTitle('বাংলায় পরিবর্তন করুন').count()) await page.getByTitle('বাংলায় পরিবর্তন করুন').click();
+      if (width < 1024) await page.locator('button[aria-expanded="false"]').filter({ has: page.locator('svg.lucide-menu') }).click();
+      const nav = page.getByRole('navigation', { name: /Admin ERP Sidebar|অ্যাডমিন/ });
+      await nav.locator('button[title="Courier & Rates"], button[title="কুরিয়ার ও রেট"]').click();
+      await page.getByRole('heading', { name: 'কুরিয়ার হিসাব ও অর্ডার' }).waitFor();
+      const main = page.locator('main');
+      assert.match(await main.innerText(), /নিশ্চিত কুরিয়ার পাওনা এখন নির্ণয় করা যাচ্ছে না/);
+      assert.match(await main.innerText(), /পুরোনো রেমিট্যান্স রেকর্ড — যাচাইবিহীন/);
+      assert.doesNotMatch(await main.innerText(), /TRX-STF-998811|পেআউট শিডিউল|প্রাপ্য নিট/);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `courier width ${width}`);
+      await page.getByLabel('কুরিয়ার নির্বাচন').selectOption('steadfast');
+      await page.getByLabel('অর্ডারের অবস্থা').selectOption('delivered');
+      await page.getByLabel('অর্ডার বা ট্র্যাকিং খুঁজুন').fill('no-match-order');
+      await page.getByText('কোনো অর্ডার পাওয়া যায়নি।').waitFor();
+      await page.getByLabel('অর্ডার বা ট্র্যাকিং খুঁজুন').fill('');
+      await page.getByRole('button', { name: 'জেলাভিত্তিক রেট' }).click();
+      await page.getByLabel(/Select district to edit rate|জেলা/).first().waitFor();
+      await page.getByRole('button', { name: 'কুরিয়ারের হিসাব' }).click();
+      await page.getByRole('heading', { name: 'অর্ডারভিত্তিক বিস্তারিত' }).waitFor();
+      await page.getByTitle('Switch to English').click();
+      await page.getByRole('heading', { name: 'Order details' }).waitFor();
+      assert.match(await main.innerText(), /Actual balance: unknown/);
+      assert.deepEqual(errors, []);
+      await context.close();
+    }
+  } finally { await browser.close(); }
+});
+
 test('customer account registration, signed-in checkout and order details work on mobile and desktop', { timeout: 90_000 }, async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/repl/tools/bin/chromium', headless: true, args: ['--no-sandbox'], env: { PATH: process.env.PATH, HOME: fixture, TMPDIR: fixture } });
   try {
@@ -366,6 +450,80 @@ test('customer account registration, signed-in checkout and order details work o
       await page.getByText(order.orderNo, { exact: true }).first().waitFor();
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.getByText(order.orderNo, { exact: true }).first().waitFor();
+      assert.deepEqual(errors, []);
+      await context.close();
+    }
+  } finally { await browser.close(); }
+});
+
+test('storefront safe-area layout keeps controls visible across mobile, landscape, tablet and desktop', { timeout: 120_000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/repl/tools/bin/chromium', headless: true, args: ['--no-sandbox'], env: { PATH: process.env.PATH, HOME: fixture, TMPDIR: fixture } });
+  try {
+    for (const [width, height, inset] of [[320, 700, 18], [375, 812, 24], [844, 390, 24], [768, 1024, 18], [1024, 768, 0], [1440, 900, 0]]) {
+      const context = await browser.newContext({ viewport: { width, height } });
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
+      await page.goto(`${base}/product/sundarbans-raw-khalisha-flower-honey`, { waitUntil: 'domcontentloaded' });
+      await page.locator('.storefront-shell').waitFor();
+      await page.evaluate(value => { for (const edge of ['top', 'right', 'bottom', 'left']) document.documentElement.style.setProperty(`--safe-${edge}`, `${value}px`); }, inset);
+      await page.waitForFunction(() => document.querySelector('meta[name=viewport]').content.includes('viewport-fit=cover'));
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `horizontal overflow ${width}`);
+      const header = await page.locator('.storefront-header > div').boundingBox();
+      assert.ok(header.x >= inset && header.x + header.width <= width - inset + 1 && header.y >= inset - 1, `header safe ${width}`);
+      if (width < 768) {
+        const nav = page.locator('.storefront-bottom-nav');
+        await nav.waitFor();
+        const navBox = await nav.boundingBox();
+        const navButton = await nav.locator('a,button').first().boundingBox();
+        assert.ok(navButton.x >= inset - 1 && navButton.x + navButton.width <= width - inset + 1 && navButton.y + navButton.height <= height - inset + 1, `bottom nav safe ${width}`);
+        const action = page.locator('.storefront-action-bar');
+        const actionBox = await action.boundingBox();
+        assert.ok(actionBox.y + actionBox.height <= navBox.y + 1, `purchase bar not covered ${width}`);
+        for (const button of await action.locator('button').all()) {
+          const box = await button.boundingBox();
+          assert.ok(box.x >= inset && box.x + box.width <= width - inset + 1, `purchase controls safe ${width}`);
+        }
+        await action.locator('button').first().click();
+      } else await page.getByRole('button', { name: /Add to Cart|কার্টে যোগ করুন/i }).first().click();
+      await page.goto(`${base}/checkout`, { waitUntil: 'domcontentloaded' });
+      await page.locator('#checkout-district').waitFor();
+      await page.evaluate(value => { for (const edge of ['top', 'right', 'bottom', 'left']) document.documentElement.style.setProperty(`--safe-${edge}`, `${value}px`); }, inset);
+      if (width < 1024) {
+        const bar = page.locator('.storefront-action-bar');
+        const box = await bar.boundingBox();
+        const button = await bar.locator('button').boundingBox();
+        assert.ok(button.x >= inset && button.x + button.width <= width - inset + 1 && button.y + button.height <= height - inset + 1, `checkout safe ${width}`);
+        if (width < 768) assert.ok(box.y + box.height <= (await page.locator('.storefront-bottom-nav').boundingBox()).y + 1, `checkout/nav do not overlap ${width}`);
+      }
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.waitForTimeout(100);
+      const footer = await page.locator('footer').boundingBox();
+      const fixedTop = width < 1024 ? (await page.locator('.storefront-action-bar').boundingBox()).y : height;
+      assert.ok(footer.y + footer.height <= fixedTop + 2, `footer not hidden behind checkout controls ${width}`);
+      if (width < 768) {
+        await page.locator('.storefront-bottom-nav button').click();
+        const dialog = page.getByRole('dialog');
+        await dialog.waitFor();
+        await page.waitForTimeout(600); // Vaul's opening animation must finish before measuring.
+        const close = await dialog.getByRole('button', { name: /Close panel|প্যানেল বন্ধ করুন/ }).boundingBox();
+        assert.ok(close.x >= inset && close.x + close.width <= width - inset + 1 && close.y >= inset - 1, `drawer safe ${width}`);
+        const checkoutLink = dialog.getByRole('link', { name: /Proceed to Checkout|চেকআউট/ });
+        if (await checkoutLink.count()) { const box = await checkoutLink.boundingBox(); assert.ok(box.y + box.height <= height - inset + 1, `drawer footer safe ${width}`); }
+      }
+      if ([320, 844, 1440].includes(width)) {
+        for (const path of ['/', '/shop', '/account', '/order-tracking', '/contact']) {
+          await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded' });
+          await page.locator('.storefront-shell').waitFor();
+          await page.evaluate(value => { for (const edge of ['top', 'right', 'bottom', 'left']) document.documentElement.style.setProperty(`--safe-${edge}`, `${value}px`); }, inset);
+          const main = await page.locator('.storefront-shell main').boundingBox();
+          assert.ok(main.x >= inset - 1 && main.x + main.width <= width - inset + 1, `${path} safe width ${width}`);
+          assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${path} overflow ${width}`);
+        }
+        await page.goto(`${base}/admin`, { waitUntil: 'domcontentloaded' });
+        assert.doesNotMatch(await page.locator('meta[name=viewport]').getAttribute('content'), /viewport-fit=cover/);
+      }
       assert.deepEqual(errors, []);
       await context.close();
     }

@@ -174,6 +174,7 @@ import { Phase7PortalPanel } from './phase7-portal-panel';
 import type { Phase7WorkspaceOverviewDTO } from '@/lib/admin/phase7-service';
 import { ProductManagementStudioPanel } from './product-studio-panel';
 import { OperationalHelpModal } from './operational-help-modal';
+import { DASHBOARD_STATUSES, summarizeDashboardOrders } from './dashboard-summary';
 
 export interface AdminErpClientProps {
   siteSettings: PublicSafeSiteSettingsDTO;
@@ -841,7 +842,7 @@ function OrderStatusSolidButton({
           });
         }}
         className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer select-none"
-        title={uiText("ডেলিভারি সফল ও সিওডি জমা সম্পন্ন করুন", locale)}
+        title={locale === 'bn' ? 'ডেলিভারি সম্পন্ন চিহ্নিত করুন' : 'Mark delivered'}
       >
         <CheckCircle2 className="w-3.5 h-3.5" />
         <span>{locale === 'bn' ? 'ডেলিভারি সম্পন্ন (Mark Delivered)' : 'Mark Delivered'}</span>
@@ -853,7 +854,7 @@ function OrderStatusSolidButton({
     return (
       <span className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] bg-emerald-600 text-white font-bold text-xs shadow-sm select-none">
         <CheckCircle2 className="w-3.5 h-3.5" />
-        <span>{locale === 'bn' ? 'ডেলিভার্ড (COD জমা)' : 'Delivered (COD Remitted)'}</span>
+        <span>{locale === 'bn' ? 'ডেলিভারি সম্পন্ন' : 'Delivered'}</span>
       </span>
     );
   }
@@ -971,6 +972,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
   const [workspaceLoadFailed, setWorkspaceLoadFailed] = React.useState(false);
   const [snapshot, setSnapshot] =
     React.useState<WorkspaceSnapshotResponse | null>(null);
+  const [snapshotLoadedAt, setSnapshotLoadedAt] = React.useState<Date | null>(null);
   const siteSettings = snapshot?.siteSettings ?? publicSettings;
 
   // Login Form State
@@ -1346,6 +1348,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       if (res.ok && data.authorized) {
         if (data.csrfToken) window.sessionStorage.setItem('bg_admin_csrf_token', data.csrfToken);
         setSnapshot(data);
+        setSnapshotLoadedAt(new Date());
         setGateUser(null);
         setWorkspaceLoadFailed(false);
       } else if (data.requiresFirstLoginGate && data.currentUser) {
@@ -1381,6 +1384,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
         if (ok && data.authorized) {
           if (data.csrfToken) window.sessionStorage.setItem('bg_admin_csrf_token', data.csrfToken);
           setSnapshot(data);
+          setSnapshotLoadedAt(new Date());
           setGateUser(null);
           setWorkspaceLoadFailed(false);
         } else if (data.requiresFirstLoginGate && data.currentUser) {
@@ -2377,6 +2381,26 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
     lowStockVariantsCount: 0,
   };
 
+  const dashboard = summarizeDashboardOrders(orders);
+  const lowStock = products.flatMap(prod => (prod.variants ?? [])
+    .filter(v => v.stockAvailable <= (prod.lowStockThreshold ?? 5))
+    .map(variant => ({ prod, variant })))
+    .sort((a, b) => a.variant.stockAvailable - b.variant.stockAvailable);
+  const openOrderStatus = (status: string) => {
+    setOrderSearch('');
+    setNextActionFilter('ALL');
+    setStatusFilter(status);
+    setSelectedOrderNos([]);
+    setActiveTab('orders_grid');
+  };
+  const openOrderQueue = (action: string) => {
+    setOrderSearch('');
+    setStatusFilter('ALL');
+    setNextActionFilter(action);
+    setSelectedOrderNos([]);
+    setActiveTab('orders_grid');
+  };
+
   // Filtered Orders for Module N (Orders Grid)
   const filteredOrders = orders.filter((ord) => {
     if (statusFilter !== 'ALL' && ord.status !== statusFilter) return false;
@@ -3109,19 +3133,52 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                 </h1>
                 <p className="text-xs text-muted">
                   {locale === 'bn'
-                    ? 'আজকে কাকে কল দিতে হবে, কোন ঠিকানা ঠিক করতে হবে এবং কোন পার্সেল প্যাক বা বুক করতে হবে—এক ট্যাপে সম্পন্ন করুন।'
-                    : 'Review pending calls, fix address issues, verify transactions, and pack/book consignments with one tap.'}
+                    ? 'অনুমতিপ্রাপ্ত অর্ডার ও স্টকের বর্তমান অবস্থা দেখুন এবং বাকি কাজ বেছে নিন।'
+                    : 'Review the current state of orders and stock available to your role, and choose pending work.'}
                 </p>
               </div>
             </div>
+
+            <Card surface="surface" padding="md" className="space-y-3" >
+              <div className="flex flex-wrap justify-between gap-2">
+                <div>
+                  <h2 className="font-bold text-base">{locale === 'bn' ? 'অর্ডারের সারসংক্ষেপ' : 'Order overview'}</h2>
+                  <p className="text-xs text-muted">{locale === 'bn' ? 'সব সময়ের দৃশ্যমান অর্ডার; স্ট্যাটাসে ক্লিক করলে ফিল্টার হবে।' : 'All visible orders, all time. Select a status to filter the order grid.'}</p>
+                </div>
+                <div className="text-xs text-muted">
+                  <span>{locale === 'bn' ? 'মোট অর্ডার: ' : 'Total orders: '}{formatLocaleNumber(dashboard.total, locale)}</span>
+                  {snapshotLoadedAt && <p>{locale === 'bn' ? 'তথ্য নেওয়া হয়েছে: ' : 'Data loaded: '}{snapshotLoadedAt.toLocaleString(locale === 'bn' ? 'bn-BD' : 'en-GB')}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2" aria-label={locale === 'bn' ? 'অর্ডার স্ট্যাটাসের সারসংক্ষেপ' : 'Order status overview'}>
+                {DASHBOARD_STATUSES.map(item => <button key={item.key} type="button" onClick={() => openOrderStatus(item.key)} className="min-h-[72px] text-left p-3 rounded-[var(--radius-md)] border border-border bg-bg hover:border-ink focus-visible:outline-2 focus-visible:outline-ink">
+                  <span className="block text-xs text-muted">{locale === 'bn' ? item.bn : item.en}</span>
+                  <span className="block text-xl font-bold tabular-nums">{formatLocaleNumber(dashboard.statusCounts[item.key] ?? 0, locale)}</span>
+                </button>)}
+              </div>
+            </Card>
+            <div role="note" className="rounded-[var(--radius-md)] border border-border bg-surface p-3 text-xs text-muted space-y-1">
+              <p>{locale === 'bn' ? 'কুরিয়ার বুকিং ও লাইভ ট্র্যাকিং সংযুক্ত নয়; রেমিট্যান্স ও পুরোনো রিটার্ন নিষ্পত্তি বন্ধ।' : 'Courier booking and live tracking are not connected; remittance and legacy return settlement are unavailable.'}</p>
+              {isSuperAdmin && <p>{locale === 'bn' ? `ম্যানুয়াল পেমেন্ট যাচাই অপেক্ষায়: ${formatLocaleNumber((snapshot.manualPaymentSubmissions ?? []).filter(s => s.status === 'pending_verification').length, locale)}টি দাবি। এগুলো প্রাপ্ত টাকা হিসেবে গণ্য নয়।` : `Manual payment claims awaiting verification: ${formatLocaleNumber((snapshot.manualPaymentSubmissions ?? []).filter(s => s.status === 'pending_verification').length, locale)}. Claims are not received funds.`}</p>}
+            </div>
+
+            {isSuperAdmin && <section className="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label={locale === 'bn' ? 'প্রশাসনিক করণীয়' : 'Administrative follow-up'}>
+              <button type="button" onClick={() => setActiveTab('contact_management')} className="min-h-[72px] p-3 text-left border border-border rounded-[var(--radius-md)] bg-bg hover:border-ink">
+                <span className="block text-xs text-muted">{locale === 'bn' ? 'অপঠিত গ্রাহক বার্তা' : 'Unread customer inquiries'}</span>
+                <span className="font-bold text-xl">{formatLocaleNumber((snapshot.inquiries ?? []).filter(i => i.status === 'unread').length, locale)}</span>
+              </button>
+              <button type="button" onClick={() => setActiveTab('vendor_payouts')} className="min-h-[72px] p-3 text-left border border-border rounded-[var(--radius-md)] bg-bg hover:border-ink">
+                <span className="block text-xs text-muted">{locale === 'bn' ? 'পেআউট অনুরোধ ও অনুমোদন (পরিশোধ নয়)' : 'Requested or approved payouts (not paid)'}</span>
+                <span className="font-bold text-xl">{formatLocaleNumber((snapshot.vendorEscrow?.payoutRequests ?? []).filter(p => p.status === 'requested' || p.status === 'approved').length, locale)}</span>
+              </button>
+            </section>}
 
             {/* 6 Operational Metric Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               <button
                 type="button"
                 onClick={() => {
-                  setNextActionFilter('CALL_TO_CONFIRM');
-                  setActiveTab('orders_grid');
+                  openOrderQueue('CALL_TO_CONFIRM');
                 }}
                 className="p-3.5 text-left border border-border rounded-[var(--radius-md)] bg-bg hover:border-ink cursor-pointer space-y-1"
               >
@@ -3134,8 +3191,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
               <button
                 type="button"
                 onClick={() => {
-                  setNextActionFilter('FIX_ADDRESS');
-                  setActiveTab('orders_grid');
+                  openOrderQueue('FIX_ADDRESS');
                 }}
                 className="p-3.5 text-left border border-border rounded-[var(--radius-md)] bg-bg hover:border-ink cursor-pointer space-y-1"
               >
@@ -3148,8 +3204,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
               <button
                 type="button"
                 onClick={() => {
-                  setNextActionFilter('VERIFY_BKASH_TRX');
-                  setActiveTab('orders_grid');
+                  openOrderQueue('VERIFY_BKASH_TRX');
                 }}
                 className="p-3.5 text-left border border-border rounded-[var(--radius-md)] bg-bg hover:border-ink cursor-pointer space-y-1"
               >
@@ -3162,8 +3217,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
               <button
                 type="button"
                 onClick={() => {
-                  setNextActionFilter('READY_TO_PACK');
-                  setActiveTab('orders_grid');
+                  openOrderQueue('READY_TO_PACK');
                 }}
                 className="p-3.5 text-left border border-border rounded-[var(--radius-md)] bg-bg hover:border-ink cursor-pointer space-y-1"
               >
@@ -3176,8 +3230,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
               <button
                 type="button"
                 onClick={() => {
-                  setNextActionFilter('READY_TO_BOOK_COURIER');
-                  setActiveTab('orders_grid');
+                  openOrderQueue('READY_TO_BOOK_COURIER');
                 }}
                 className="p-3.5 text-left border border-border rounded-[var(--radius-md)] bg-bg hover:border-ink cursor-pointer space-y-1"
               >
@@ -3210,7 +3263,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                     : 'Consignment Finance & Operational Glossary (Hover ⓘ):'}
                 </p>
                 <span className="text-[11px] font-mono text-muted">
-                  <LocalizedText source={"Integer Poisha Engine · Double-Entry Balanced"} area="admin" />{" "}</span>
+                  {locale === 'bn' ? 'হিসাবের তথ্য সমন্বয় ও যাচাই সাপেক্ষ' : 'Accounting figures require reconciliation'}{" "}</span>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[var(--radius-sm)] border border-border bg-bg text-ink">
@@ -3259,20 +3312,21 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <h2 className="text-base font-bold text-ink">
                   {locale === 'bn'
-                    ? 'তাৎক্ষণিক অ্যাকশন কিউ (১-ক্লিক প্রসেসিং)'
-                    : 'Immediate Action Queue (1-Click Processing)'}
+                    ? 'করণীয় অর্ডার (সর্বশেষ ৮টি)'
+                    : 'Orders needing attention (latest 8)'}
                 </h2>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setActiveTab('orders_grid')}
+                  onClick={() => openOrderStatus('ALL')}
                 >
-                  {locale === 'bn' ? `সব অর্ডার দেখুন (${orders.length})` : `View All Orders (${orders.length})`}
+                  {locale === 'bn' ? `সব অর্ডার দেখুন (${formatLocaleNumber(orders.length, locale)})` : `View All Orders (${formatLocaleNumber(orders.length, locale)})`}
                 </Button>
               </div>
 
               <div className="divide-y divide-border border border-border rounded-[var(--radius-md)]">
-                {orders.map((ord) => {
+                {dashboard.actionable.length === 0 && <p className="p-4 text-sm text-muted">{locale === 'bn' ? 'এই মুহূর্তে কোনো করণীয় অর্ডার নেই।' : 'No orders currently need attention.'}</p>}
+                {dashboard.actionable.slice(0, 8).map((ord) => {
                   const badgeMeta =
                     NEXT_ACTION_LABELS[ord.nextBestAction ?? 'COMPLETED'];
                   const waConfirmText = encodeURIComponent(
@@ -3351,23 +3405,11 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                           </>
                         )}
 
-                        {ord.nextBestAction === 'VERIFY_BKASH_TRX' &&
-                          !isVendor && (
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() =>
-                                void executeGridAction({
-                                  orderNos: [ord.orderNo!],
-                                  actionType: 'verify_bkash',
-                                })
-                              }
-                            >
-                              {locale === 'bn'
-                                ? `বিকাশ ভেরিফাই (${ord.manualPaymentTrxId})`
-                                : `Verify bKash (${ord.manualPaymentTrxId})`}
-                            </Button>
-                          )}
+                        {ord.nextBestAction === 'VERIFY_BKASH_TRX' && !isVendor && (
+                          <Button variant="outline" size="sm" onClick={() => openOrderQueue('VERIFY_BKASH_TRX')}>
+                            {locale === 'bn' ? 'যাচাইয়ের কিউ দেখুন' : 'Review verification queue'}
+                          </Button>
+                        )}
 
                         {ord.status === 'pending_confirmation' && !isVendor && (
                           <Button
@@ -3429,43 +3471,18 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                     : 'Consignment Stock & Low-Stock Alerts'}
                 </span>
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                {products.map((prod) =>
-                  (prod.variants ?? []).map((v) => {
-                    const isLow =
-                      v.stockAvailable <= (prod.lowStockThreshold ?? 5);
-                    return (
-                      <div
-                        key={v.variantId}
-                        className="p-3 border border-border rounded-[var(--radius-md)] bg-surface space-y-1"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-mono text-muted">
-                            {v.publicSku}
-                          </span>
-                          <Badge status={isLow ? 'warning' : 'success'}>
-                            {locale === 'bn'
-                              ? `স্টক: ${formatLocaleNumber(v.stockAvailable, locale)}`
-                              : `Stock: ${formatLocaleNumber(v.stockAvailable, locale)}`}
-                          </Badge>
-                        </div>
-                        <p className="font-bold text-ink truncate">
-                          {locale === 'bn' ? prod.nameBn : prod.nameEn}
-                        </p>
-                        <p className="text-muted">{locale === 'bn' ? v.titleBn : v.titleEn}</p>
-                        {typeof v.supplierCostPoisha === 'number' && (
-                          <p className="font-mono text-ink pt-1">
-                            {locale === 'bn' ? 'কেনা:' : 'Cost:'}{' '}
-                            {formatPoishaToBdt(v.supplierCostPoisha, locale)} ·{' '}
-                            {locale === 'bn' ? 'বিক্রয়:' : 'Price:'}{' '}
-                            {formatPoishaToBdt(v.salePricePoisha, locale)}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+                <p>{locale === 'bn' ? `কম স্টকের ${formatLocaleNumber(lowStock.length, locale)}টি ভ্যারিয়েন্ট; সর্বোচ্চ ৮টি দেখানো হচ্ছে।` : `${formatLocaleNumber(lowStock.length, locale)} low-stock variants; showing up to 8.`}</p>
+                <Button variant="outline" size="sm" onClick={() => setActiveTab('product_studio')}>{locale === 'bn' ? 'পণ্য দেখুন' : 'View products'}</Button>
               </div>
+              {lowStock.length === 0 ? <p className="text-sm text-muted">{locale === 'bn' ? 'কম স্টকের কোনো ভ্যারিয়েন্ট নেই।' : 'No low-stock variants.'}</p> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                {lowStock.slice(0, 8).map(({ prod, variant: v }) => <div key={v.variantId} className="p-3 border border-border rounded-[var(--radius-md)] bg-surface space-y-1">
+                  <div className="flex items-center justify-between gap-2"><span className="font-mono text-muted">{v.publicSku}</span><Badge status="warning">{locale === 'bn' ? 'স্টক' : 'Stock'}: {formatLocaleNumber(v.stockAvailable, locale)}</Badge></div>
+                  <p className="font-bold text-ink truncate">{locale === 'bn' ? prod.nameBn : prod.nameEn}</p>
+                  <p className="text-muted">{locale === 'bn' ? v.titleBn : v.titleEn}</p>
+                </div>)}
+              </div>}
+
             </Card>
           </section>
         )}
@@ -3639,6 +3656,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                     </option>
                     <option value="delivered">{locale === 'bn' ? 'delivered (ডেলিভার্ড)' : 'Delivered'}</option>
                     <option value="cancelled">{locale === 'bn' ? 'cancelled (বাতিল)' : 'Cancelled'}</option>
+                    <option value="return_initiated">{locale === 'bn' ? 'রিটার্ন প্রক্রিয়াধীন' : 'Return initiated'}</option>
                     <option value="returned">{locale === 'bn' ? 'returned (রিটার্ন)' : 'Returned'}</option>
                   </select>
                 </div>

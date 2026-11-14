@@ -883,8 +883,8 @@ export function ProductDetailClient({
 
       {/* Single Mobile Sticky Purchase Bar (< 768px) */}
       {!isOutOfStock && (
-        <div className="md:hidden fixed bottom-[calc(3.5rem+max(16px,env(safe-area-inset-bottom)))] left-0 right-0 z-30 p-3 bg-[#FAF9F5]/95 backdrop-blur border-t border-[#E4E2DC] flex items-center justify-between gap-3 safe-bottom">
-          <div className="min-w-0 flex-1">
+        <div className="storefront-action-bar md:hidden fixed bottom-[calc(3.5rem+max(16px,var(--safe-bottom)))] left-0 right-0 z-30 p-3 bg-[#FAF9F5]/95 backdrop-blur border-t border-[#E4E2DC] flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1 max-[360px]:hidden">
             <p className="text-xs font-semibold text-[#162119] truncate">{displayName}</p>
             <p className="text-sm font-bold text-[#162119] tabular-nums">
               {formatPoishaToBdt(selectedVariant.salePricePoisha, locale)}

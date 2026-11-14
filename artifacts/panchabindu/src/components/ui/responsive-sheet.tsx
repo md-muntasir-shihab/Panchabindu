@@ -44,8 +44,8 @@ export function ResponsiveSheet({
           aria-describedby={description ? descriptionId : undefined}
           className={
             isMobile
-              ? 'fixed inset-x-0 bottom-0 z-50 mt-20 flex max-h-[92dvh] flex-col rounded-t-[var(--radius-lg)] border-t border-border bg-bg text-ink focus:outline-none safe-bottom'
-              : 'fixed inset-y-0 right-0 z-50 flex w-full max-w-[min(42rem,100vw)] min-w-0 flex-col border-l border-border bg-bg text-ink focus:outline-none'
+              ? 'fixed inset-x-0 bottom-0 z-50 mt-20 flex max-h-[calc(100dvh-max(1.25rem,var(--safe-top)))] flex-col rounded-t-[var(--radius-lg)] border-t border-border bg-bg text-ink focus:outline-none safe-bottom pl-[var(--safe-left)] pr-[var(--safe-right)]'
+              : 'fixed inset-y-0 right-0 z-50 flex w-full max-w-[min(42rem,100vw)] min-w-0 flex-col border-l border-border bg-bg text-ink focus:outline-none pt-[var(--safe-top)] pb-[var(--safe-bottom)] pr-[var(--safe-right)]'
           }
         >
           {isMobile && (
@@ -77,7 +77,7 @@ export function ResponsiveSheet({
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">{children}</div>
 
           {footer && (
-            <div className="border-t border-border bg-surface/50 p-4 sm:px-6 safe-bottom">
+            <div className="border-t border-border bg-surface/50 p-4 sm:px-6">
               {footer}
             </div>
           )}

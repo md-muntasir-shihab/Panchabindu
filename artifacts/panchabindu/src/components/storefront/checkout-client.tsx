@@ -1275,7 +1275,7 @@ export function CheckoutClient({
             </div>
 
             {/* Mobile Sticky Order Confirmation Bar (< 1024px) */}
-            <div className="lg:hidden fixed bottom-[calc(3.5rem+max(16px,env(safe-area-inset-bottom)))] md:bottom-0 left-0 right-0 z-30 p-3 bg-surface/95 backdrop-blur border-t border-border shadow-lg flex items-center justify-between gap-3 safe-bottom">
+            <div className="storefront-action-bar lg:hidden fixed bottom-[calc(3.5rem+max(16px,var(--safe-bottom)))] md:bottom-0 left-0 right-0 z-30 p-3 md:pb-[max(0.75rem,var(--safe-bottom))] bg-surface/95 backdrop-blur border-t border-border shadow-lg flex items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] text-muted">{dict.common.total}</p>
                 <p className="text-sm font-bold text-ink tabular-nums">
