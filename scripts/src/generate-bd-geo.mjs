@@ -1,0 +1,313 @@
+#!/usr/bin/env node
+// Regenerates the Bangladesh geo dataset used by checkout, admin order entry and
+// the Supabase seed from a vetted source snapshot. Never type geo rows by hand.
+//
+// Usage:
+//   node scripts/src/generate-bd-geo.mjs <hierarchy.json>
+//
+// <hierarchy.json> is the downloaded snapshot of
+// https://github.com/mn-sakib/bdAddresses (MIT) —
+// `bangladesh_address_hierarchy_*.json` with `divisions`, `districts`,
+// `upazilas` arrays. The snapshot already contains the five upazilas approved
+// by NICAR on 2026-05-07 (Mokamtola, Matamuhuri, Chandraganj, Ruhia, Bhulli),
+// giving 64 districts and 500 upazilas, plus 108 metropolitan police thanas
+// that are kept in their own list instead of being mixed into upazilas.
+//
+// Outputs (all deterministic):
+//   artifacts/api-server/imported/src/lib/geo/bd-geocode.ts
+//   artifacts/panchabindu/src/lib/geo/bd-geocode.ts   (frontend copy)
+//   artifacts/api-server/supabase/geo/districts.json
+//   artifacts/api-server/supabase/geo/upazilas.json
+//   artifacts/api-server/supabase/geo/thanas.json
+//   artifacts/api-server/supabase/seed.sql            (district + upazila + thana blocks)
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const source = process.argv[2];
+if (!source) throw new Error('Pass the bdAddresses hierarchy snapshot path');
+
+const snapshot = JSON.parse(fs.readFileSync(source, 'utf8'));
+const isNumericId = (value) => /^\d+$/.test(String(value));
+
+const districts = snapshot.districts
+  .map((district) => ({
+    id: Number(district.id),
+    division_id: Number(district.divisionId),
+    name_en: district.name,
+    name_bn: district.bnName,
+    lat: district.lat ?? '',
+    lon: district.lon ?? '',
+    url: district.url ?? '',
+  }))
+  .sort((a, b) => a.id - b.id);
+
+const upazilas = snapshot.upazilas
+  .filter((upazila) => isNumericId(upazila.id))
+  .map((upazila) => ({
+    id: Number(upazila.id),
+    district_id: Number(upazila.districtId),
+    name_en: upazila.name,
+    name_bn: upazila.bnName,
+    url: upazila.url ?? '',
+    is_metropolitan_thana: false,
+  }))
+  .sort((a, b) => a.id - b.id);
+
+// The five upazilas NICAR approved on 2026-05-07 are not in the published
+// snapshot yet (it still lists the 2022 baseline of 494 upazilas). They are
+// appended with ids 495-499 so no existing id moves. Source: Cabinet Division /
+// NICAR 120th meeting — Shibganj (Bogura) split into Mokamtola, Chakaria
+// (Cox's Bazar) split into Matamuhuri, Thakurgaon Sadar split into Ruhia and
+// Bhulli, Lakshmipur Sadar split into Chandraganj.
+const NEW_UPAZILAS_2026 = [
+  { id: 495, district_id: 14, name_en: 'Mokamtola', name_bn: 'মোকামতলা' },
+  { id: 496, district_id: 9, name_en: 'Matamuhuri', name_bn: 'মাতামুহুরী' },
+  { id: 497, district_id: 58, name_en: 'Ruhia', name_bn: 'রুহিয়া' },
+  { id: 498, district_id: 58, name_en: 'Bhulli', name_bn: 'ভুল্লী' },
+  { id: 499, district_id: 7, name_en: 'Chandraganj', name_bn: 'চন্দ্রগঞ্জ' },
+].map((upazila) => ({
+  ...upazila,
+  url: '',
+  is_metropolitan_thana: false,
+}));
+upazilas.push(...NEW_UPAZILAS_2026);
+
+// Metropolitan police thanas (Dhaka, Chattogram, Khulna, Rajshahi, Sylhet,
+// Barishal, Rangpur, Gazipur and Narayanganj) have no numeric upazila id in the
+// source snapshot. They are addressable for delivery, so they get stable ids
+// that sit above the official upazila id space instead of renumbering it.
+const METRO_ID_BASE = 5000;
+const metroThanas = snapshot.upazilas
+  .filter((upazila) => !isNumericId(upazila.id))
+  .map((upazila) => ({
+    district_id: Number(upazila.districtId),
+    name_en: upazila.name,
+    name_bn: upazila.bnName,
+    source_id: upazila.id,
+  }))
+  .sort((a, b) =>
+    a.district_id - b.district_id ||
+    a.name_en.localeCompare(b.name_en, 'en')
+  )
+  .map((thana, index) => ({
+    id: METRO_ID_BASE + index,
+    district_id: thana.district_id,
+    name_en: thana.name_en,
+    name_bn: thana.name_bn,
+    url: '',
+    is_metropolitan_thana: true,
+  }));
+
+if (districts.length !== 64) throw new Error(`Expected 64 districts, got ${districts.length}`);
+if (upazilas.length !== 499) throw new Error(`Expected 499 upazilas (494 baseline + 5 from 2026), got ${upazilas.length}`);
+if (new Set(upazilas.map((row) => row.id)).size !== upazilas.length) {
+  throw new Error('Duplicate upazila ids in source snapshot');
+}
+
+const allUpazilas = [...upazilas, ...metroThanas]
+  .sort((a, b) => a.district_id - b.district_id || a.id - b.id)
+  .map((row, index) => ({ ...row, sort_order: index + 1 }));
+
+const districtIds = new Set(districts.map((district) => district.id));
+for (const row of allUpazilas) {
+  if (!districtIds.has(row.district_id)) {
+    throw new Error(`Upazila/thana ${row.id} references unknown district ${row.district_id}`);
+  }
+}
+
+const header = `// src/lib/geo/bd-geocode.ts
+// Auto-generated by scripts/src/generate-bd-geo.mjs — do not edit by hand.
+//
+// Sources:
+//   - ${districts.length} districts and ${upazilas.length} official upazilas:
+//     bdAddresses hierarchy snapshot (MIT, 2022 baseline of 494 upazilas) plus
+//     the five upazilas approved by NICAR on 2026-05-07 (Mokamtola, Matamuhuri,
+//     Chandraganj, Ruhia, Bhulli) appended with ids 495-499.
+//   - ${metroThanas.length} metropolitan police thanas for Dhaka, Chattogram,
+//     Khulna, Rajshahi, Sylhet, Barishal, Rangpur, Gazipur and Narayanganj.
+// Districts keep the stable ids already seeded in Supabase, so existing orders
+// stay valid; upazilas keep the ids used by existing orders as well.
+`;
+
+const districtRows = districts
+  .map(
+    (district) =>
+      `  { "id": ${district.id}, "division_id": ${district.division_id}, "name_en": ${JSON.stringify(district.name_en)}, "name_bn": ${JSON.stringify(district.name_bn)} },`
+  )
+  .join('\n');
+
+const upazilaRows = allUpazilas
+  .map(
+    (row) =>
+      `  { "id": ${row.id}, "district_id": ${row.district_id}, "name_en": ${JSON.stringify(row.name_en)}, "name_bn": ${JSON.stringify(row.name_bn)}, "is_metropolitan_thana": ${row.is_metropolitan_thana} },`
+  )
+  .join('\n');
+
+const body = `${header}
+export interface BdDistrict {
+  id: number;
+  division_id: number;
+  name_en: string;
+  name_bn: string;
+}
+
+export interface BdUpazila {
+  id: number;
+  district_id: number;
+  name_en: string;
+  name_bn: string;
+  /** True for metropolitan police thanas (Dhaka, Chattogram, ... city areas). */
+  is_metropolitan_thana: boolean;
+}
+
+export const BD_DISTRICTS: readonly BdDistrict[] = [
+${districtRows}
+];
+
+/**
+ * Official upazilas (${upazilas.length}) followed by metropolitan thanas
+ * (${metroThanas.length}). Both are valid delivery destinations, so the checkout,
+ * admin order entry and courier adapters accept any row in this list.
+ */
+export const BD_UPAZILAS: readonly BdUpazila[] = [
+${upazilaRows}
+];
+
+export const BD_GEO_COUNTS = {
+  districts: BD_DISTRICTS.length,
+  upazilas: ${upazilas.length},
+  metropolitanThanas: ${metroThanas.length},
+  thanas: BD_UPAZILAS.length,
+} as const;
+
+export function getUpazilasByDistrict(districtId: number): BdUpazila[] {
+  return BD_UPAZILAS.filter((u) => u.district_id === districtId);
+}
+
+/**
+ * Delivery destinations (official upazilas first, then metropolitan thanas) for
+ * one district. This is what every address picker should list.
+ */
+export function getThanasByDistrict(districtId: number): BdUpazila[] {
+  return getUpazilasByDistrict(districtId);
+}
+
+/** Case-insensitive search over a district's upazilas and metropolitan thanas. */
+export function searchThanasByDistrict(
+  districtId: number,
+  query: string
+): BdUpazila[] {
+  const list = getUpazilasByDistrict(districtId);
+  const needle = query.trim().toLowerCase();
+  if (!needle) return list;
+  return list.filter(
+    (u) =>
+      u.name_en.toLowerCase().includes(needle) || u.name_bn.includes(query.trim())
+  );
+}
+
+export function getDistrictById(districtId: number): BdDistrict | undefined {
+  return BD_DISTRICTS.find((d) => d.id === districtId);
+}
+
+export function getUpazilaById(upazilaId: number): BdUpazila | undefined {
+  return BD_UPAZILAS.find((u) => u.id === upazilaId);
+}
+
+export function findUpazilaByName(
+  districtId: number,
+  query: string
+): BdUpazila | undefined {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return undefined;
+  return getUpazilasByDistrict(districtId).find(
+    (u) => u.name_en.toLowerCase() === needle || u.name_bn === query.trim()
+  );
+}
+
+export interface DistrictDeliveryRateConfig {
+  isInsideDhaka: boolean;
+  base1KgPoisha: number;
+  extraPerKgPoisha: number;
+  bdPostPerKgPoisha: number;
+}
+
+/**
+ * Returns the default delivery rate configuration for any of the 64 districts
+ * (matches the SQL seed in supabase/seed.sql: Dhaka ID 47 = 70 BDT base + 15 BDT/kg;
+ * Outside Dhaka = 130 BDT base + 20 BDT/kg; BD Post = 10 BDT/kg).
+ */
+export function getDistrictDeliveryRates(
+  districtId: number,
+  bdPostDefaultPerKgPoisha = 1000
+): DistrictDeliveryRateConfig {
+  const isInsideDhaka = districtId === 47;
+  return {
+    isInsideDhaka,
+    base1KgPoisha: isInsideDhaka ? 7000 : 13000,
+    extraPerKgPoisha: isInsideDhaka ? 1500 : 2000,
+    bdPostPerKgPoisha: bdPostDefaultPerKgPoisha,
+  };
+}
+`;
+
+for (const target of [
+  'artifacts/api-server/imported/src/lib/geo/bd-geocode.ts',
+  'artifacts/panchabindu/src/lib/geo/bd-geocode.ts',
+]) {
+  fs.writeFileSync(path.join(root, target), body);
+}
+
+const geoDir = path.join(root, 'artifacts/api-server/supabase/geo');
+fs.mkdirSync(geoDir, { recursive: true });
+fs.writeFileSync(path.join(geoDir, 'districts.json'), `${districts.map((row) => JSON.stringify(row)).join('\n')}\n`);
+fs.writeFileSync(path.join(geoDir, 'upazilas.json'), `${upazilas.map((row) => JSON.stringify(row)).join('\n')}\n`);
+fs.writeFileSync(path.join(geoDir, 'thanas.json'), `${metroThanas.map((row) => JSON.stringify(row)).join('\n')}\n`);
+
+const sqlQuote = (value) => `'${String(value).replace(/'/g, "''")}'`;
+const seedDistricts = districts
+  .map(
+    (row) =>
+      `  (${row.id}, ${row.division_id}, ${sqlQuote(row.name_en)}, ${sqlQuote(row.name_bn)}, ${sqlQuote(row.lat)}, ${sqlQuote(row.lon)}, ${sqlQuote(row.url)}, TRUE),`
+  )
+  .join('\n')
+  .replace(/,$/, '');
+const seedUpazilas = allUpazilas
+  .map(
+    (row) =>
+      `  (${row.id}, ${row.district_id}, ${sqlQuote(row.name_en)}, ${sqlQuote(row.name_bn)}, ${sqlQuote(row.url || 'null')}, TRUE),`
+  )
+  .join('\n')
+  .replace(/,$/, '');
+
+const seedFile = path.join(root, 'artifacts/api-server/supabase/seed.sql');
+const seed = fs.readFileSync(seedFile, 'utf8');
+const districtBlock = `INSERT INTO districts (id, division_id, name_en, name_bn, lat, lon, url, is_active)
+VALUES
+${seedDistricts}
+ON CONFLICT (id) DO UPDATE SET
+  name_en = EXCLUDED.name_en,
+  name_bn = EXCLUDED.name_bn,
+  url = EXCLUDED.url;`;
+const upazilaBlock = `INSERT INTO upazilas (id, district_id, name_en, name_bn, url, is_active)
+VALUES
+${seedUpazilas}
+ON CONFLICT (id) DO UPDATE SET
+  name_en = EXCLUDED.name_en,
+  name_bn = EXCLUDED.name_bn,
+  district_id = EXCLUDED.district_id;`;
+
+const districtPattern = /INSERT INTO districts[\s\S]*?;\n/;
+const upazilaPattern = /INSERT INTO upazilas[\s\S]*?;\n/;
+if (!districtPattern.test(seed) || !upazilaPattern.test(seed)) {
+  throw new Error('seed.sql no longer contains the expected district/upazila blocks');
+}
+fs.writeFileSync(seedFile, seed.replace(districtPattern, `${districtBlock}\n`).replace(upazilaPattern, `${upazilaBlock}\n`));
+
+process.stdout.write(
+  `Wrote ${districts.length} districts, ${upazilas.length} upazilas and ${metroThanas.length} metropolitan thanas ` +
+    `(geo module, geo JSON and Supabase seed).\n`
+);

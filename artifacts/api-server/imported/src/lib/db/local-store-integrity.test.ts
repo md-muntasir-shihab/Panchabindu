@@ -6,10 +6,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { readLocalJsonStore, writeLocalJsonStore } from './local-json-store';
 
 function fixture(run: (directory: string) => void): void {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'panchagarh-integrity-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'panchabindu-integrity-'));
   try { run(directory); }
   finally { fs.rmSync(directory, { recursive: true, force: true }); }
 }
@@ -21,8 +22,9 @@ function inChild(code: string): void {
     const env: NodeJS.ProcessEnv = {
       ...Object.fromEntries(names.filter((name) => process.env[name]).map((name) => [name, process.env[name]])),
       NODE_ENV: 'test', CREDENTIALS_ENCRYPTION_KEY: crypto.randomBytes(32).toString('hex'),
+      TSX_TSCONFIG_PATH: fileURLToPath(new URL('../../../../tsconfig.json', import.meta.url)),
     };
-    const loader = fileURLToPath(new URL('../../../scripts/tooling/register-typescript.mjs', import.meta.url));
+    const loader = createRequire(new URL('../../../../../../scripts/package.json', import.meta.url)).resolve('tsx/esm');
     const args = process.execPath.toLowerCase().includes('bun') ? ['-e', code] : ['--import', loader, '-e', code];
     const result = spawnSync(process.execPath, args, {
       cwd: directory, env, encoding: 'utf8', timeout: 30_000,

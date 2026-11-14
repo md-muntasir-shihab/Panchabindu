@@ -344,6 +344,32 @@ interface Phase4BPersistentStore {
   payoutRequests: VendorPayoutRequestRecord[];
   returnResolutions: ReturnResolutionRecord[];
   printCountsByOrderNo?: Record<string, number>;
+  /** Admin-controlled per-vendor capability matrix (vendor panel switches). */
+  vendorControls?: Record<string, VendorControlEntry>;
+  /** Vendor-filed profile / payout-account / onboarding change requests. */
+  vendorRequests?: VendorRequestEntry[] | Record<string, VendorRequestEntry>;
+}
+
+export interface VendorControlEntry {
+  capabilities: Record<string, boolean | number> | object;
+  restrictionNoteBn?: string;
+  updatedAt: string;
+  updatedByUsername: string;
+}
+
+export interface VendorRequestEntry {
+  requestId: string;
+  kind: 'profile_update' | 'onboarding_update';
+  vendorId: string;
+  vendorCode: string;
+  vendorNameBn: string;
+  payload: Record<string, unknown>;
+  status: 'pending_review' | 'approved' | 'rejected';
+  requestedByUsername: string;
+  createdAt: string;
+  reviewedByUsername: string | null;
+  reviewedAt: string | null;
+  reviewNoteBn: string | null;
 }
 
 const PHASE4B_DATA_DIR = path.join(process.cwd(), '.data');
@@ -462,7 +488,7 @@ function getInitialPhase4BStore(): Phase4BPersistentStore {
       vendorCode: 'VND-001',
       businessNameBn: 'রূপগঞ্জ উইভার্স',
       businessNameEn: 'Rupganj Weavers',
-      ownerNameBn: 'হাজী আব্দুল করিম',
+      ownerNameBn: 'মুনতাসির শিহাব',
       contactPhone: '01711901901',
       defaultCommissionBp: 1500, // 15%
       escrowHoldDaysOverride: 7,
@@ -479,7 +505,7 @@ function getInitialPhase4BStore(): Phase4BPersistentStore {
       vendorCode: 'VND-002',
       businessNameBn: 'হাজারীবাগ লেদার ক্রাফট',
       businessNameEn: 'Hazaribagh Leather Craft',
-      ownerNameBn: 'রাশেদুল আলম',
+      ownerNameBn: 'মুনতাসির শিহাব',
       contactPhone: '01811902902',
       defaultCommissionBp: 1800, // 18%
       escrowHoldDaysOverride: 5,
@@ -496,7 +522,7 @@ function getInitialPhase4BStore(): Phase4BPersistentStore {
       vendorCode: 'VND-003',
       businessNameBn: 'সুন্দরবন অর্গানিকস',
       businessNameEn: 'Sundarban Organics',
-      ownerNameBn: 'মনিরুল ইসলাম',
+      ownerNameBn: 'মুনতাসির শিহাব',
       contactPhone: '01911903903',
       defaultCommissionBp: 1200, // 12%
       escrowHoldDaysOverride: 7,
@@ -623,9 +649,15 @@ export function readPhase4BStore(): Phase4BPersistentStore {
     arrays: ['pickupBatches', 'courierRemittanceLedger', 'courierClaims', 'vendors', 'vendorLedger', 'payoutRequests', 'returnResolutions'],
     objects: ['printConfig', 'districtRateOverrides'],
     optionalObjects: ['printCountsByOrderNo'],
+    optionalArraysAndObjects: ['vendorControls', 'vendorRequests'],
   });
   if (parsed) {
-    return { ...parsed, printCountsByOrderNo: parsed.printCountsByOrderNo ?? {} };
+    return {
+      ...parsed,
+      printCountsByOrderNo: parsed.printCountsByOrderNo ?? {},
+      vendorControls: (parsed.vendorControls as Record<string, VendorControlEntry>) ?? {},
+      vendorRequests: (parsed.vendorRequests as VendorRequestEntry[]) ?? [],
+    };
   }
 
   const initial = getInitialPhase4BStore();
@@ -654,6 +686,7 @@ export function generateOrderPrintSlips(
   input: {
     orderNos: string[];
     sortBy?: 'order_no' | 'vendor' | 'courier' | 'district' | 'sku';
+    recordPrint?: boolean;
   }
 ): {
   success: boolean;
@@ -712,13 +745,16 @@ export function generateOrderPrintSlips(
       ord.printCount ?? 0,
       p4bStore.printCountsByOrderNo?.[ord.orderNo] ?? 0
     );
-    ord.printCount = prevPrintCount + 1;
-    p4bStore.printCountsByOrderNo = p4bStore.printCountsByOrderNo ?? {};
-    p4bStore.printCountsByOrderNo[ord.orderNo] = ord.printCount;
+    const printCount = prevPrintCount + (input.recordPrint ? 1 : 0);
+    if (input.recordPrint) {
+      ord.printCount = printCount;
+      p4bStore.printCountsByOrderNo = p4bStore.printCountsByOrderNo ?? {};
+      p4bStore.printCountsByOrderNo[ord.orderNo] = printCount;
+    }
 
     const meta = adminStore.orderMeta[ord.orderNo];
-    const trackingCode = ord.trackingCode ?? `MNL-${ord.orderNo.slice(-6)}`;
-    const consignmentId = ord.consignmentId ?? `CNS-${ord.orderNo}`;
+    const trackingCode = ord.trackingCode ?? '';
+    const consignmentId = ord.consignmentId ?? '';
 
     const customerSafeItems = rawLines.map((l) => {
       const prod = erpState.products.find((p) => p.productId === l.productId);
@@ -730,7 +766,7 @@ export function generateOrderPrintSlips(
         imageUrl:
           variant?.imageUrl ??
           prod?.images[0] ??
-          'https://picsum.photos/seed/bongoslip/120/120',
+          '',
         quantity: l.quantity,
         unitSalePricePoisha: l.snapUnitSalePricePoisha,
         lineSubtotalPoisha: l.lineSubtotalPoisha,
@@ -758,7 +794,7 @@ export function generateOrderPrintSlips(
       courierProvider: ord.courierProvider,
       consignmentId,
       trackingCode,
-      trackingUrl: `https://bongoconsign.bd/order-tracking/${ord.secureTrackingToken ?? ord.orderNo}`,
+      trackingUrl: ord.secureTrackingToken ? `/order-tracking/${encodeURIComponent(ord.secureTrackingToken)}` : '',
       paymentMethod: ord.paymentMethod,
       paymentStatus: ord.paymentStatus,
       subtotalPoisha: ord.subtotalPoisha,
@@ -795,19 +831,17 @@ export function generateOrderPrintSlips(
           vendorBusinessName:
             vendor?.businessNameBn ?? prod?.vendorBusinessName ?? 'সাপ্লায়ার',
           vendorContactPhone:
-            ctx.roleSlug === 'vendor' ? undefined : vendor?.contactPhone ?? '01711901901',
+            ctx.roleSlug === 'vendor' ? undefined : vendor?.contactPhone ?? '',
           vendorPayoutMethodBn:
             ctx.roleSlug === 'super_admin' ||
             (ctx.roleSlug === 'vendor' && l.vendorId === ctx.vendorId)
-              ? vendor?.payoutMethodBn ?? 'বিকাশ মার্চেন্ট'
+              ? vendor?.payoutMethodBn ?? ''
               : undefined,
           internalVendorSku: l.internalVendorSku,
           publicSku: l.publicSku,
           productNameBn: l.productNameBn,
           variantTitleBn: l.variantTitleBn,
-          weightGrams: variant?.weightGrams ?? 450,
-          warehouseBinCode: `BIN-${(vendor?.vendorCode ?? 'V1').slice(-2)}-${String(idx + 1).padStart(2, '0')}`,
-          consignmentLotRef: `LOT-${ord.orderNo.slice(4, 10)}`,
+          weightGrams: variant?.weightGrams ?? undefined,
           quantity: l.quantity,
           unitSalePricePoisha: unitSale,
           lineSaleSubtotalPoisha: lineSaleSubtotal,
@@ -879,9 +913,9 @@ export function generateOrderPrintSlips(
         const existing = vendorMap.get(vCode) ?? {
           vendorCode: vCode,
           vendorNameBn: vName,
-          vendorContactPhone: vendor?.contactPhone ?? '01711901901',
-          payoutMethodBn: vendor?.payoutMethodBn ?? 'বিকাশ মার্চেন্ট',
-          payoutAccountNo: vendor?.payoutAccountNo ?? '01711901901',
+          vendorContactPhone: vendor?.contactPhone ?? '',
+          payoutMethodBn: vendor?.payoutMethodBn ?? '',
+          payoutAccountNo: vendor?.payoutAccountNo ?? '',
           itemsCount: 0,
           totalUnits: 0,
           supplierCostPoisha: 0,
@@ -977,8 +1011,8 @@ export function generateOrderPrintSlips(
         ctx.roleSlug === 'vendor' && ctx.maskCustomerPiiForVendor
           ? `${ord.upazilaNameBn}, ${ord.districtNameBn} (মাস্কড)`
           : `${ord.upazilaNameBn}, ${ord.districtNameBn} — ${ord.streetAddress}${ord.landmark ? ` (${ord.landmark})` : ''}`,
-      printCount: ord.printCount,
-      isReprintWarning: prevPrintCount > 0,
+      printCount,
+      isReprintWarning: input.recordPrint ? prevPrintCount > 0 : printCount > 0,
       escrowHoldDays: holdDays,
       estimatedMaturityDaysLabelBn: `ডেলিভারির ${holdDays} দিন পর উত্তোলনযোগ্য (Available)`,
       internalStaffNote:
@@ -1000,16 +1034,18 @@ export function generateOrderPrintSlips(
       district: ord.districtNameBn,
     });
 
-    appendImmutableAuditLog(adminStore, {
-      actorUserId: ctx.userId,
-      actorUsername: ctx.username,
-      actorRole: ctx.roleSlug,
-      actionCode: prevPrintCount > 0 ? 'ORDER_SLIP_REPRINTED' : 'ORDER_SLIP_PRINTED',
-      targetType: 'order',
-      targetId: ord.orderNo,
-      summaryBn: `${ord.orderNo} অর্ডারের স্লিপ প্রিন্ট জেনারেট হয়েছে (প্রিন্ট কাউন্টার: ${ord.printCount})।`,
-      metadata: { printCount: ord.printCount },
-    });
+    if (input.recordPrint) {
+      appendImmutableAuditLog(adminStore, {
+        actorUserId: ctx.userId,
+        actorUsername: ctx.username,
+        actorRole: ctx.roleSlug,
+        actionCode: prevPrintCount > 0 ? 'ORDER_SLIP_REPRINTED' : 'ORDER_SLIP_PRINTED',
+        targetType: 'order',
+        targetId: ord.orderNo,
+        summaryBn: `${ord.orderNo} অর্ডারের প্রিন্ট অনুরোধ করা হয়েছে (কাউন্টার: ${printCount})।`,
+        metadata: { printCount, event: 'print_requested' },
+      });
+    }
   }
 
   // Sort batch according to user selection
@@ -1030,8 +1066,11 @@ export function generateOrderPrintSlips(
     return a.bundle.orderNo.localeCompare(b.bundle.orderNo);
   });
 
-  writeErpState(erpState);
-  writePhase4BStore(p4bStore);
+  if (input.recordPrint) {
+    writeErpState(erpState);
+    writePhase4BStore(p4bStore);
+    writeAdminStore(adminStore);
+  }
 
   return {
     success: true,
@@ -1148,6 +1187,7 @@ export function upsertDistrictDeliveryRateOverride(
   });
 
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
   return { success: true, record: updated };
 }
 
@@ -1253,6 +1293,7 @@ export function createPickupBatchAndManifest(
 
   writeErpState(erpState);
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
 
   return { success: true, batch };
 }
@@ -1314,6 +1355,7 @@ export function confirmBatchHandoverShipped(
 
   writeErpState(erpState);
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
 
   return { success: true, batch };
 }
@@ -1469,6 +1511,7 @@ export function recordCourierRemittanceSettlement(
 
   writeErpState(erpState);
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
 
   return {
     success: true,
@@ -2099,6 +2142,7 @@ export function processFourWayOrderReturn(
 
   writeErpState(erpState);
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
 
   return { success: true, resolution };
 }
@@ -2204,6 +2248,9 @@ export function requestVendorPayout(
   });
 
   writePhase4BStore(p4bStore);
+  // The audit entry lives in the admin store; persisting only the phase-4B
+  // document would drop the payout trail on the floor.
+  writeAdminStore(adminStore);
   return { success: true, payout };
 }
 
@@ -2218,6 +2265,14 @@ export function resolveVendorPayoutRequest(
     rejectionReasonBn?: string;
     paymentTrxId?: string;
     proofUrl?: string;
+    /**
+     * A super admin who raised the payout themselves may still settle it, but
+     * only by recording an explicit override reason. Without this, an
+     * admin-initiated payout (the console's own "initiate payout" flow) could
+     * never be marked paid: maker-checker would refuse every attempt forever.
+     */
+    emergencyOverride?: boolean;
+    emergencyReasonBn?: string;
   }
 ): {
   success: boolean;
@@ -2245,6 +2300,9 @@ export function resolveVendorPayoutRequest(
     const mc = checkMakerCheckerSeparation({
       makerUsername: payout.requestedByUsername,
       checkerCtx: ctx,
+      allowSuperAdminEmergencyOverride: true,
+      emergencyOverride: input.emergencyOverride,
+      emergencyReasonBn: input.emergencyReasonBn,
     });
     if (!mc.allowed) {
       return {
@@ -2294,9 +2352,7 @@ export function resolveVendorPayoutRequest(
     }
     payout.status = 'paid';
     payout.paymentTrxId = input.paymentTrxId.trim();
-    payout.proofUrl =
-      input.proofUrl?.trim() ||
-      'https://picsum.photos/seed/payoutproof/400/300';
+    payout.proofUrl = input.proofUrl?.trim() || null;
     payout.resolvedAt = nowIso;
 
     // Append PAYOUT_DISBURSED audit entry (0 net impact on available since PAYOUT_HOLD already deducted it)
@@ -2330,10 +2386,14 @@ export function resolveVendorPayoutRequest(
     metadata: {
       decision: input.decision,
       paymentTrxId: payout.paymentTrxId,
+      selfApprovalOverrideReasonBn: input.emergencyOverride
+        ? input.emergencyReasonBn
+        : undefined,
     },
   });
 
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
   return { success: true, payout };
 }
 
@@ -2413,6 +2473,7 @@ export function submitVendorOnboarding15Q(
   });
 
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
   return { success: true, vendor: newVendor };
 }
 
@@ -2501,6 +2562,7 @@ export function auditAndCloseVendorContract(
   });
 
   writePhase4BStore(p4bStore);
+  writeAdminStore(adminStore);
   return {
     canClose: true,
     closed: true,

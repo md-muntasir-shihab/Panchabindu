@@ -439,16 +439,49 @@ export function getAccountMetadata(
 
 function verifyMakerCheckerUsers(
   makerUsername: string,
-  checkerUsername: string
-): { allowed: boolean; errorBn?: string } {
+  checkerUsername: string,
+  override?: { active: boolean; reasonBn?: string }
+): { allowed: boolean; errorBn?: string; code?: 'CHECKER_NOT_ELIGIBLE' | 'SELF_APPROVAL' } {
   const account = readAdminStore().users.find(user => user.username === checkerUsername && user.isActive);
-  if (!account || account.mustChangePassword || !account.totpEnrolled || account.roleSlug !== 'super_admin') {
-    return { allowed: false, errorBn: 'আর্থিক অনুমোদনের জন্য সক্রিয় অনুমোদিত অ্যাডমিন প্রয়োজন।' };
+  if (!account) {
+    return {
+      allowed: false,
+      code: 'CHECKER_NOT_ELIGIBLE',
+      errorBn: 'আর্থিক অনুমোদনের জন্য সক্রিয় সুপার অ্যাডমিন অ্যাকাউন্ট খুঁজে পাওয়া যায়নি।',
+    };
+  }
+  if (account.roleSlug !== 'super_admin') {
+    return {
+      allowed: false,
+      code: 'CHECKER_NOT_ELIGIBLE',
+      errorBn: 'শুধু সুপার অ্যাডমিন আর্থিক পোস্টিং অনুমোদন করতে পারেন।',
+    };
+  }
+  if (account.mustChangePassword) {
+    return {
+      allowed: false,
+      code: 'CHECKER_NOT_ELIGIBLE',
+      errorBn: 'প্রথম লগইনের পাসওয়ার্ড পরিবর্তন বাকি থাকায় এই অ্যাডমিন আর্থিক পোস্টিং অনুমোদন করতে পারবেন না।',
+    };
+  }
+  if (!account.totpEnrolled) {
+    return {
+      allowed: false,
+      code: 'CHECKER_NOT_ELIGIBLE',
+      errorBn:
+        'আর্থিক অনুমোদনের জন্য অনুমোদনকারী সুপার অ্যাডমিনের 2FA (TOTP) এনরোলমেন্ট আবশ্যক। সেটিংস → নিরাপত্তা থেকে 2FA চালু করুন, অথবা অন্য একজন 2FA-এনরোলড সুপার অ্যাডমিনকে অনুমোদন করতে দিন।',
+    };
   }
   const checkerCtx: ActorSecurityContext = { ...account };
+  // Eligibility above is never waived. Only the maker/checker separation may be
+  // overridden, by a super admin, with an explicit reason that is written into
+  // the journal description.
   return checkMakerCheckerSeparation({
     makerUsername,
     checkerCtx,
+    allowSuperAdminEmergencyOverride: true,
+    emergencyOverride: override?.active,
+    emergencyReasonBn: override?.reasonBn,
   });
 }
 
@@ -532,6 +565,8 @@ export interface PostBalancedJournalInput {
   makerUsername: string;
   checkerUsername?: string | null;
   requireMakerCheckerApproval?: boolean;
+  selfApprovalOverride?: boolean;
+  selfApprovalOverrideReasonBn?: string;
   lines: Array<{
     accountCode: GLAccountCode;
     debitPoisha: Poisha;
@@ -682,7 +717,7 @@ export function postDoubleEntryJournal(input: PostBalancedJournalInput): {
     if (!checkerUsername) {
       status = 'PENDING_APPROVAL';
     } else {
-      const mc = verifyMakerCheckerUsers(input.makerUsername, checkerUsername);
+      const mc = verifyMakerCheckerUsers(input.makerUsername, checkerUsername, { active: Boolean(input.selfApprovalOverride), reasonBn: input.selfApprovalOverrideReasonBn });
       if (!mc.allowed) {
         return {
           success: false,
@@ -1002,12 +1037,18 @@ export function postVerifiedManualBkashPaymentJournal(params: {
   makerUsername: string;
   checkerUsername: string;
   idempotencyKey?: string;
+  selfApprovalOverride?: boolean;
+  selfApprovalOverrideReasonBn?: string;
 }): ReturnType<typeof postDoubleEntryJournal> {
   assertIntegerPoisha(params.verifiedAmountPoisha, 'verifiedAmountPoisha');
 
   const mc = verifyMakerCheckerUsers(
     params.makerUsername,
-    params.checkerUsername
+    params.checkerUsername,
+    {
+      active: Boolean(params.selfApprovalOverride),
+      reasonBn: params.selfApprovalOverrideReasonBn,
+    }
   );
   if (!mc.allowed) {
     return {
@@ -1026,10 +1067,14 @@ export function postVerifiedManualBkashPaymentJournal(params: {
     orderNo: params.orderNo,
     referenceId: params.submissionId,
     descriptionBn: `অর্ডার ${params.orderNo}-এর ম্যানুয়াল বিকাশ পেমেন্ট (TrxID: ${params.trxId}) যাচাইকৃত।`,
-    reasonBn: `ম্যানুয়াল বিকাশ TrxID ${params.trxId} যাচাই ও নগদ তহবিলে জমা।`,
+    reasonBn: params.selfApprovalOverride
+      ? `ম্যানুয়াল বিকাশ TrxID ${params.trxId} যাচাই ও নগদ তহবিলে জমা। মেকার-চেকার ওভাররাইড কারণ: ${params.selfApprovalOverrideReasonBn?.trim() || 'উল্লেখ নেই'}`
+      : `ম্যানুয়াল বিকাশ TrxID ${params.trxId} যাচাই ও নগদ তহবিলে জমা।`,
     makerUsername: params.makerUsername,
     checkerUsername: params.checkerUsername,
     requireMakerCheckerApproval: true,
+    selfApprovalOverride: params.selfApprovalOverride,
+    selfApprovalOverrideReasonBn: params.selfApprovalOverrideReasonBn,
     lines: [
       {
         accountCode: '1010',

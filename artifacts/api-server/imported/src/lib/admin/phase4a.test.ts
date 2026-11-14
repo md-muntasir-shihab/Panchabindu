@@ -66,7 +66,8 @@ test('Phase 4A Case 1: Strict Login, First-Login Gate, and Super Admin User Crea
   const rotatedLogin = authenticateAdminUser({
     username: newUsername,
     password: 'NewSecure#2026',
-    totpCode: getCurrentTotpCodeForUser(created.user.userId),
+    // Enrollment consumed the current step; use the next permitted TOTP step.
+    totpCode: getCurrentTotpCodeForUser(created.user.userId, Date.now() + 30_000),
   });
   assert.equal(rotatedLogin.success, true);
 

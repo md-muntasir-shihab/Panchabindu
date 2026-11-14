@@ -10,6 +10,7 @@ interface LocalStoreShape {
   booleans?: readonly string[];
   optionalArrays?: readonly string[];
   optionalObjects?: readonly string[];
+  optionalArraysAndObjects?: readonly string[];
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -52,6 +53,7 @@ function validateStoreShape(value: unknown, shape: LocalStoreShape): void {
       shape.objects?.some((key) => !isObject(value[key])) ||
       shape.booleans?.some((key) => typeof value[key] !== 'boolean') ||
       shape.optionalArrays?.some((key) => key in value && !Array.isArray(value[key])) ||
+      shape.optionalArraysAndObjects?.some((key) => key in value && !Array.isArray(value[key]) && !isObject(value[key])) ||
       shape.optionalObjects?.some((key) => key in value && !isObject(value[key]))) {
     throw new Error('LOCAL_STORE_INVALID: Existing local data requires operator review.');
   }

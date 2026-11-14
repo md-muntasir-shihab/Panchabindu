@@ -84,7 +84,12 @@ async function handlePOST(req: NextRequest) {
       );
     }
 
-    if (session && parsed.data.customerPhone !== session.phone) {
+    // Guest retry keys also protect access to the returned tracking token.
+    if (!session && !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(parsed.data.idempotencyKey)) {
+      return NextResponse.json({ success: false, errorBn: 'নিরাপদ অর্ডার কী প্রয়োজন। পেজটি রিফ্রেশ করুন।' }, { status: 400 });
+    }
+
+    if (session?.phone && parsed.data.customerPhone !== session.phone) {
       return NextResponse.json(
         { success: false, errorBn: 'অর্ডারের ফোন নম্বরটি লগইন করা অ্যাকাউন্টের সঙ্গে মিলতে হবে।' },
         { status: 403 }

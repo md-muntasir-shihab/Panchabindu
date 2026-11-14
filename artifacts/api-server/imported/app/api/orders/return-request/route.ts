@@ -89,7 +89,7 @@ async function handlePOST(req: NextRequest) {
     }
     const res = submitCustomerReturnRequest({
       orderNo: parsed.data.orderNo,
-      verifiedCustomerPhone: customerSession.phone,
+      authenticatedCustomerId: customerSession.customerId,
       reasonCode: parsed.data.reasonCode,
       detailsBn: parsed.data.detailsBn,
     });

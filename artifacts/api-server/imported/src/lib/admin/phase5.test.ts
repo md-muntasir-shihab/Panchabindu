@@ -11,10 +11,10 @@ import {
 } from './phase5-service';
 
 describe('Phase 5 — Pre-Launch Readiness, Security Audit & E2E Lifecycle Verification', () => {
-  it('passes all 12 automated pre-launch security, money math, and operational checks', () => {
+  it('passes all 13 automated pre-launch security, money math, and operational checks', () => {
     const report = runPhase5PreLaunchAudit();
-    assert.equal(report.totalChecks, 12);
-    assert.equal(report.passedChecks, 12);
+    assert.equal(report.totalChecks, 13);
+    assert.equal(report.passedChecks, 13);
     assert.equal(report.failedChecks, 0);
     assert.equal(report.readinessScorePercent, 100);
     assert.equal(report.readyForProduction, false);
@@ -99,7 +99,7 @@ describe('Phase 5 — Pre-Launch Readiness, Security Audit & E2E Lifecycle Verif
     );
   });
 
-  it('provides all 8 PostgreSQL migration manifests with RLS enforcement', () => {
+  it('provides all 10 PostgreSQL migration manifests with RLS enforcement', () => {
     const migrations = getSqlMigrationsManifest();
     assert.equal(migrations.length, 10);
     assert.ok(migrations.every((m) => m.rlsEnforced));

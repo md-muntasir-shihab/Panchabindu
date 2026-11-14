@@ -23,7 +23,7 @@ const transactions = new AsyncLocalStorage<RuntimeTransaction>();
 let localQueue: Promise<unknown> = Promise.resolve();
 
 export function usesPostgresPersistence(): boolean {
-  return process.env.PANCHAGARH_PERSISTENCE === 'postgres';
+  return process.env.PANCHABINDU_PERSISTENCE === 'postgres';
 }
 
 export function hasDurableRuntimeContext(): boolean {

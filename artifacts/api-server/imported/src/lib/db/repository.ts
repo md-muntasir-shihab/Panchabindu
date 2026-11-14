@@ -235,9 +235,14 @@ export interface CustomerInquiryRecord {
   phone: string;
   subject: string;
   message: string;
-  status: 'unread' | 'replied' | 'resolved';
+  status: 'unread' | 'in_progress' | 'replied' | 'resolved';
   createdAt: string;
   adminNotes?: string;
+  priority?: 'low' | 'normal' | 'high';
+  assignedTo?: string | null;
+  updatedAt?: string;
+  revision?: number;
+  activity?: Array<{ at: string; actor: string; status: CustomerInquiryRecord['status']; priority: 'low' | 'normal' | 'high'; assignedTo: string | null; noteChanged: boolean }>;
 }
 
 export interface PublicOrderTrackingItemDTO {
@@ -370,13 +375,13 @@ const DATA_FILE = path.join(DATA_DIR, 'erp-store.json');
 
 function getInitialSeedState(): ErpPersistentState {
   const siteSettings: SiteSettingsRecord = {
-    brandNameBn: 'পঞ্চগড়',
-    brandNameEn: 'Panchagarh',
+    brandNameBn: 'পঞ্চবিন্দু',
+    brandNameEn: 'Panchabindu',
     taglineBn: 'বাংলাদেশের প্রিমিয়াম মাল্টি-ভেন্ডর কনসাইনমেন্ট স্টোর',
     taglineEn: 'Bangladesh Premium Multi-Vendor Consignment Store',
     accentColorHex: '#2563EB',
     supportPhone: '01711002233',
-    supportEmail: 'support@panchagarh.bd',
+    supportEmail: 'support@panchabindu.bd',
     whatsappNumber: '8801711002233',
     freeDeliveryThresholdPoisha: 150000, // 1,500 BDT
     globalFreeDelivery: false,
@@ -1067,27 +1072,17 @@ function getInitialSeedState(): ErpPersistentState {
     },
   ];
 
-  const defaultInquiries: CustomerInquiryRecord[] = [
-    {
-      id: 'inq-1001',
-      name: 'তানভীর আহমেদ',
-      phone: '01712345678',
-      subject: 'জামদানি শাড়ির বাল্ক কনসাইনমেন্ট অর্ডার',
-      message: 'সালামু আলাইকুম। আমার ৫টি জামদানি শাড়ির জরুরি ডেলিভারি লাগবে। আপনারা কি বাল্ক অর্ডার ডিসকাউন্ট দেবেন?',
-      status: 'unread',
-      createdAt: '2026-11-08T05:30:00.000Z',
-    },
-  ];
+  const defaultInquiries: CustomerInquiryRecord[] = [];
 
   const defaultAboutContact: AboutContactPageSettings = {
     titleBn: 'যোগাযোগ ও আমাদের পরিচিতি',
     titleEn: 'Contact & About Us',
     subtitleBn: 'বাংলাদেশের তৃণমূল কারিগর ও গ্রাহকদের মাঝে নির্ভরযোগ্য, কিউসি-যাচাইকৃত কনসাইনমেন্ট প্ল্যাটফর্ম।',
     subtitleEn: 'Reliable, QC-verified consignment platform bridging authentic artisans and valued customers.',
-    storyTitleBn: 'পঞ্চগড় (PANCHAGARH) কীভাবে কাজ করে?',
-    storyTitleEn: 'How PANCHAGARH Works',
-    storyParagraph1Bn: 'পঞ্চগড় একটি আধুনিক মাল্টি-ভেন্ডর কনসাইনমেন্ট কমার্স প্ল্যাটফর্ম। আমরা বাংলাদেশের স্থানীয় তাঁতি, চাষী ও কারিগরদের সাথে সরাসরি কাজ করি। প্রতিটি পণ্য আমাদের নিজস্ব সেন্ট্রাল ওয়্যারহাউসে রিসিভ করে অভিজ্ঞ টিম দ্বারা গুণগত মান (QC) নিশ্চিত করার পর প্যাকেজিং ও ডেলিভারি করা হয়।',
-    storyParagraph1En: 'PANCHAGARH is a transparent consignment commerce platform connecting verified regional artisans with consumers nationwide. Every consignment lot undergoes strict physical quality checks at our central warehouse prior to customer dispatch.',
+    storyTitleBn: 'পঞ্চবিন্দু (PANCHABINDU) কীভাবে কাজ করে?',
+    storyTitleEn: 'How PANCHABINDU Works',
+    storyParagraph1Bn: 'পঞ্চবিন্দু একটি আধুনিক মাল্টি-ভেন্ডর কনসাইনমেন্ট কমার্স প্ল্যাটফর্ম। আমরা বাংলাদেশের স্থানীয় তাঁতি, চাষী ও কারিগরদের সাথে সরাসরি কাজ করি। প্রতিটি পণ্য আমাদের নিজস্ব সেন্ট্রাল ওয়্যারহাউসে রিসিভ করে অভিজ্ঞ টিম দ্বারা গুণগত মান (QC) নিশ্চিত করার পর প্যাকেজিং ও ডেলিভারি করা হয়।',
+    storyParagraph1En: 'PANCHABINDU is a transparent consignment commerce platform connecting verified regional artisans with consumers nationwide. Every consignment lot undergoes strict physical quality checks at our central warehouse prior to customer dispatch.',
     storyParagraph2Bn: 'আমাদের প্রধান লক্ষ্য হলো—ক্রেতা যেন ঘরে বসেই শতভাগ খাঁটি পণ্য পান, এবং প্রান্তিক উৎপাদক যেন তাদের পণ্যের সঠিক ন্যায্যমূল্য ও সঠিক সময়ে পেমেন্ট পান।',
     storyParagraph2En: 'Our mission is simple: ensure authentic provenance and fair trade for suppliers, while guaranteeing pristine product quality and peace of mind for every customer.',
     warehouseAddressBn: 'প্লট ১২, রোড ৪/এ, ধানমন্ডি আ/এ, ঢাকা-১২০৯',
@@ -1548,7 +1543,7 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
   const state = readErpState();
 
   const principal = customerSessionToken ? verifyCustomerSessionToken(customerSessionToken) : null;
-  if (customerSessionToken && (!principal || principal.phone !== input.customerPhone)) {
+  if (customerSessionToken && (!principal || (principal.phone && principal.phone !== input.customerPhone))) {
     return { success: false, errorBn: 'অ্যাকাউন্টের পরিচয় যাচাই ব্যর্থ হয়েছে।' };
   }
   if (!['cod', 'bkash_manual'].includes(input.paymentMethod)) {
@@ -1558,7 +1553,7 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
   // 1. Check Idempotency Key
   const idempotencyKey = principal ? `customer:${principal.customerId}:${input.idempotencyKey}` : input.idempotencyKey;
   const payloadHash = crypto.createHash('sha256').update(JSON.stringify({
-    phone: input.customerPhone, name: input.customerName, district: input.districtId,
+    phone: input.customerPhone, name: input.customerName, ...(input.customerEmail?.trim() ? { email: input.customerEmail.trim() } : {}), district: input.districtId,
     upazila: input.upazilaId, address: input.streetAddress, landmark: input.landmark,
     items: input.items.map(item => ({ variantId: item.variantId, quantity: item.quantity })),
     payment: input.paymentMethod, delivery: input.deliveryMethod, promo: input.promoCode,
@@ -1738,12 +1733,15 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
   const totalPayablePoisha =
     subtotalPoisha - appliedDiscountPoisha + deliveryCalc.finalChargePoisha;
 
-  // Rule 4.7: Unverified Manual bKash submissions NEVER count as paid/advance until verified by an admin checker.
+  // Calculate the requested advance from server-side product settings, just as
+  // the checkout quote does. A submitted transaction is not a verified payment.
+  const requiredDepositPoisha = resolvedLines.reduce((sum, line) => sum +
+    (line.product.requiresAdvanceCourierCharge ? (line.product.customAdvanceDepositPoisha ?? 0) * line.quantity : 0), 0);
   const submittedBkashPoisha =
     input.paymentMethod !== 'cod' && input.manualPaymentTrxId
       ? input.advancePaidPoisha > 0
         ? input.advancePaidPoisha
-        : deliveryCalc.finalChargePoisha
+        : deliveryCalc.finalChargePoisha + requiredDepositPoisha
       : 0;
 
   if (input.paymentMethod !== 'cod' && input.manualPaymentTrxId) {
@@ -1826,6 +1824,7 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
     orderNo,
     customerName: input.customerName,
     customerPhone: input.customerPhone,
+    customerEmail: input.customerEmail?.trim() || null,
     districtId: district.id,
     districtNameBn: district.name_bn,
     upazilaId: upazila.id,
@@ -2315,7 +2314,7 @@ export function upsertAdminProduct(input: {
   const targetSlug = baseSlug || `prod-${Date.now().toString().slice(-6)}`;
 
   const isEditing = Boolean(input.productId);
-  const productId = input.productId || `prod-${Date.now()}-${Math.floor(100 + Math.random() * 899)}`;
+  const productId = input.productId || crypto.randomUUID();
 
   // Never invent a vendor when the registry is missing, invalid or the ID is unknown.
   const p4b = readLocalJsonStore<{
@@ -2358,7 +2357,7 @@ export function upsertAdminProduct(input: {
       return { success: false, errorBn: 'বিক্রয়মূল্য সাপ্লায়ার প্রদেয় ও প্ল্যাটফর্ম মার্জিনের সমান হতে হবে।' };
     }
 
-    const variantId = v.variantId || `var-${Date.now()}-${Math.floor(100 + Math.random() * 899)}`;
+    const variantId = v.variantId || crypto.randomUUID();
     const publicSku = v.publicSku.trim().toUpperCase() || `BG-${targetSlug.slice(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 899)}`;
     const internalVendorSku = v.internalVendorSku?.trim().toUpperCase() || `${vendorCode}-${publicSku}`;
 
@@ -2384,7 +2383,7 @@ export function upsertAdminProduct(input: {
       titleBn: v.titleBn.trim() || 'স্ট্যান্ডার্ড',
       titleEn: v.titleEn?.trim() || v.titleBn.trim() || 'Standard',
       attributes: v.attributes ?? { Version: 'Standard' },
-      imageUrl: v.imageUrl || input.images?.[0] || 'https://picsum.photos/seed/bongo-prod/800/800',
+      imageUrl: v.imageUrl || input.images?.[0] || null,
       supplierCostPoisha: costPoisha,
       supplierProfitPoisha: profitPoisha,
       supplierPayablePoisha: payablePoisha,
@@ -2422,9 +2421,7 @@ export function upsertAdminProduct(input: {
       { labelBn: 'মান নিয়ন্ত্রণ', labelEn: 'Quality QC', valueBn: '১০০% অরিজিনাল ও ভেরিফাইড', valueEn: '100% Original & Verified' }
     ],
     variantAxes: Object.keys(normalizedVariants[0]?.attributes ?? { Version: 'Standard' }),
-    images: input.images && input.images.length > 0 ? input.images : [
-      normalizedVariants[0]?.imageUrl || 'https://picsum.photos/seed/bongo-prod/800/800'
-    ],
+    images: input.images && input.images.length > 0 ? input.images : normalizedVariants[0]?.imageUrl ? [normalizedVariants[0].imageUrl] : [],
     isFeatured: input.isFeatured ?? true,
     isFreeDelivery: input.isFreeDelivery ?? false,
     requiresAdvanceCourierCharge: input.requiresAdvanceCourierCharge ?? false,
@@ -2715,6 +2712,13 @@ export function reviewManualBkashSubmission(
     trxId?: string;
     decision: 'under_review' | 'approved' | 'rejected' | 'reversed';
     reviewNoteBn?: string;
+    /**
+     * Maker-checker blocks self-approval. A super admin reviewing a submission
+     * they entered themselves may still approve it, but only with an explicit
+     * reason that is written to the immutable audit log.
+     */
+    selfApprovalOverride?: boolean;
+    selfApprovalOverrideReasonBn?: string;
   }
 ): {
   success: boolean;
@@ -2760,6 +2764,9 @@ export function reviewManualBkashSubmission(
     const mc = checkMakerCheckerSeparation({
       makerUsername: sub.submittedByUsername,
       checkerCtx,
+      allowSuperAdminEmergencyOverride: true,
+      emergencyOverride: input.selfApprovalOverride,
+      emergencyReasonBn: input.selfApprovalOverrideReasonBn,
     });
     if (!mc.allowed) {
       return {
@@ -2832,6 +2839,8 @@ export function reviewManualBkashSubmission(
     const posting = postVerifiedManualBkashPaymentJournal({ submissionId: sub.submissionId, orderNo: targetOrder.orderNo,
       trxId: sub.trxId, verifiedAmountPoisha: sub.submittedAmountPoisha,
       makerUsername: sub.submittedByUsername, checkerUsername: checkerCtx.username,
+      selfApprovalOverride: input.selfApprovalOverride,
+      selfApprovalOverrideReasonBn: input.selfApprovalOverrideReasonBn,
     });
     if (!posting.success) return { success: false, errorBn: posting.errorBn ?? 'পেমেন্টের জার্নাল পোস্ট করা যায়নি।' };
   }
@@ -2939,7 +2948,7 @@ export function submitCustomerInquiry(input: {
   if (!state.inquiries) state.inquiries = [];
 
   const newInquiry: CustomerInquiryRecord = {
-    id: `inq_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    id: `inq_${crypto.randomUUID()}`,
     name: input.name.trim(),
     phone: input.phone.trim(),
     subject: input.subject?.trim() || 'সাধারণ জিজ্ঞাসা',
@@ -2964,30 +2973,29 @@ export function getCustomerInquiries(): CustomerInquiryRecord[] {
 
 export function updateCustomerInquiryStatus(
   id: string,
-  status: 'unread' | 'replied' | 'resolved',
-  adminNotes?: string
-): { success: boolean; inquiry?: CustomerInquiryRecord; errorBn?: string } {
+  status: CustomerInquiryRecord['status'],
+  adminNotes?: string,
+  options?: { priority?: 'low' | 'normal' | 'high'; assignedTo?: string | null; expectedRevision?: number; actor?: string }
+): { success: boolean; inquiry?: CustomerInquiryRecord; errorBn?: string; conflict?: boolean } {
   const state = readErpState();
-  if (!state.inquiries) state.inquiries = [];
-
-  const target = state.inquiries.find((i) => i.id === id);
-  if (!target) {
-    return {
-      success: false,
-      errorBn: 'বার্তাটি খুঁজে পাওয়া যায়নি।',
-    };
+  const target = (state.inquiries ?? []).find((i) => i.id === id);
+  if (!target) return { success: false, errorBn: 'বার্তাটি খুঁজে পাওয়া যায়নি।' };
+  if (options?.expectedRevision !== undefined && options.expectedRevision !== (target.revision ?? 0)) {
+    return { success: false, conflict: true, errorBn: 'বার্তাটি অন্য কেউ পরিবর্তন করেছেন। হালনাগাদ করে আবার চেষ্টা করুন।' };
   }
-
+  const noteChanged = adminNotes !== undefined && (target.adminNotes ?? '') !== adminNotes.trim();
   target.status = status;
-  if (adminNotes !== undefined) {
-    target.adminNotes = adminNotes;
-  }
-
+  if (adminNotes !== undefined) target.adminNotes = adminNotes.trim();
+  if (options?.priority !== undefined) target.priority = options.priority;
+  if (options?.assignedTo !== undefined) target.assignedTo = options.assignedTo;
+  target.updatedAt = new Date().toISOString();
+  target.revision = (target.revision ?? 0) + 1;
+  target.activity = [...(target.activity ?? []), {
+    at: target.updatedAt, actor: options?.actor ?? 'system', status: target.status,
+    priority: target.priority ?? 'normal', assignedTo: target.assignedTo ?? null, noteChanged,
+  }].slice(-100);
   writeErpState(state);
-  return {
-    success: true,
-    inquiry: target,
-  };
+  return { success: true, inquiry: target };
 }
 
 export function updateAboutContactPageSettings(
@@ -2999,10 +3007,10 @@ export function updateAboutContactPageSettings(
     titleEn: 'Contact & About Us',
     subtitleBn: 'বাংলাদেশের তৃণমূল কারিগর ও গ্রাহকদের মাঝে নির্ভরযোগ্য, কিউসি-যাচাইকৃত কনসাইনমেন্ট প্ল্যাটফর্ম।',
     subtitleEn: 'Reliable, QC-verified consignment platform bridging authentic artisans and valued customers.',
-    storyTitleBn: 'পঞ্চগড় (PANCHAGARH) কীভাবে কাজ করে?',
-    storyTitleEn: 'How PANCHAGARH Works',
-    storyParagraph1Bn: 'পঞ্চগড় একটি আধুনিক মাল্টি-ভেন্ডর কনসাইনমেন্ট কমার্স প্ল্যাটফর্ম। আমরা বাংলাদেশের স্থানীয় তাঁতি, চাষী ও কারিগরদের সাথে সরাসরি কাজ করি। প্রতিটি পণ্য আমাদের নিজস্ব সেন্ট্রাল ওয়্যারহাউসে রিসিভ করে অভিজ্ঞ টিম দ্বারা গুণগত মান (QC) নিশ্চিত করার পর প্যাকেজিং ও ডেলিভারি করা হয়।',
-    storyParagraph1En: 'PANCHAGARH is a transparent consignment commerce platform connecting verified regional artisans with consumers nationwide. Every consignment lot undergoes strict physical quality checks at our central warehouse prior to customer dispatch.',
+    storyTitleBn: 'পঞ্চবিন্দু (PANCHABINDU) কীভাবে কাজ করে?',
+    storyTitleEn: 'How PANCHABINDU Works',
+    storyParagraph1Bn: 'পঞ্চবিন্দু একটি আধুনিক মাল্টি-ভেন্ডর কনসাইনমেন্ট কমার্স প্ল্যাটফর্ম। আমরা বাংলাদেশের স্থানীয় তাঁতি, চাষী ও কারিগরদের সাথে সরাসরি কাজ করি। প্রতিটি পণ্য আমাদের নিজস্ব সেন্ট্রাল ওয়্যারহাউসে রিসিভ করে অভিজ্ঞ টিম দ্বারা গুণগত মান (QC) নিশ্চিত করার পর প্যাকেজিং ও ডেলিভারি করা হয়।',
+    storyParagraph1En: 'PANCHABINDU is a transparent consignment commerce platform connecting verified regional artisans with consumers nationwide. Every consignment lot undergoes strict physical quality checks at our central warehouse prior to customer dispatch.',
     storyParagraph2Bn: 'আমাদের প্রধান লক্ষ্য হলো—ক্রেতা যেন ঘরে বসেই শতভাগ খাঁটি পণ্য পান, এবং প্রান্তিক উৎপাদক যেন তাদের পণ্যের সঠিক ন্যায্যমূল্য ও সঠিক সময়ে পেমেন্ট পান।',
     storyParagraph2En: 'Our mission is simple: ensure authentic provenance and fair trade for suppliers, while guaranteeing pristine product quality and peace of mind for every customer.',
     warehouseAddressBn: 'প্লট ১২, রোড ৪/এ, ধানমন্ডি আ/এ, ঢাকা-১২০৯',

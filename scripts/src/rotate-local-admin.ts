@@ -27,7 +27,7 @@ type LocalAdminUser = {
 process.chdir(apiDirectory);
 process.loadEnvFile(envFile);
 process.env.NODE_ENV = 'development';
-if (process.env.PANCHAGARH_ENABLE_SANDBOX_AUTH !== '1') {
+if (process.env.PANCHABINDU_ENABLE_SANDBOX_AUTH !== '1') {
   throw new Error('Local sandbox authentication is not enabled.');
 }
 
@@ -38,7 +38,7 @@ const [{ readAdminStore, writeAdminStore }, { hashPassword, revokeAllUserSession
   import(securityPath),
 ]);
 
-const adminUsername = 'panchagarh_owner';
+const adminUsername = 'panchabindu_owner';
 const adminPassword = crypto.randomBytes(32).toString('base64url');
 const store = readAdminStore();
 const admin = store.users.find((user: LocalAdminUser) => user.username === 'admin' && user.roleSlug === 'super_admin')
@@ -69,8 +69,8 @@ const updateEnv = (name: string, value: string) => {
   const pattern = new RegExp(`^${name}=.*$`, 'm');
   env = pattern.test(env) ? env.replace(pattern, line) : `${env.trimEnd()}\n${line}\n`;
 };
-updateEnv('PANCHAGARH_SANDBOX_ADMIN_USERNAME', adminUsername);
-updateEnv('PANCHAGARH_SANDBOX_ADMIN_PASSWORD', adminPassword);
+updateEnv('PANCHABINDU_SANDBOX_ADMIN_USERNAME', adminUsername);
+updateEnv('PANCHABINDU_SANDBOX_ADMIN_PASSWORD', adminPassword);
 fs.writeFileSync(envFile, env, { mode: 0o600 });
 fs.chmodSync(envFile, 0o600);
 

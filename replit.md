@@ -1,4 +1,4 @@
-# Panchagarh
+# Panchabindu
 
 Bengali/English multi-vendor storefront and operations app, imported from Vercel and ported to Replit without redesigning the original product.
 
@@ -6,7 +6,7 @@ Bengali/English multi-vendor storefront and operations app, imported from Vercel
 
 Use the artifact-owned workflows:
 
-- `artifacts/panchagarh: web` — React + Vite storefront at `/`.
+- `artifacts/panchabindu: web` — React + Vite storefront at `/`.
 - `artifacts/api-server: API Server` — Express API at `/api`, plus robots, sitemap and web manifest.
 - The canvas/mockup package is pre-existing scaffolding, not part of this storefront.
 
@@ -31,15 +31,15 @@ After applying the migrations and initializing a reviewed runtime database (incl
 - `pnpm --filter @workspace/scripts run test:security` — isolated security/session/customer and endpoint guards, staff RBAC, print privacy and committed workspace permission snapshot.
 - `pnpm --filter @workspace/scripts run test:payments` — isolated manual-MFS validation, inventory integrity, ledger posting, courier signature/replay and notification tests.
 - `pnpm --filter @workspace/scripts run test:quarantine` — isolated flash-sale default-off, data retention, public DTO leak and storefront configuration tests.
-- These two suites create fresh temporary JSON fixtures per file, discard inherited secrets/provider/sandbox configuration, block network calls and remove fixtures afterward. They never use the development `.data/` accounts. See `docs/planning/panchagarh/08-local-test-evidence.md` for scope and snapshot regeneration.
+- These two suites create fresh temporary JSON fixtures per file, discard inherited secrets/provider/sandbox configuration, block network calls and remove fixtures afterward. They never use the development `.data/` accounts. See `docs/planning/panchabindu/08-local-test-evidence.md` for scope and snapshot regeneration.
 - `pnpm --filter @workspace/scripts run test:shopping` — Chromium cart-to-checkout, refresh persistence and mobile catalog checks. Does not place an order. Requires Chromium at `/repl/tools/bin/chromium` or `CHROMIUM_PATH`.
 - `pnpm --filter @workspace/scripts run test:sandbox` — starts an isolated temporary app, checks admin/vendor first login, password change and login screens without TOTP. Requires Chromium at `/repl/tools/bin/chromium` or `CHROMIUM_PATH`. Never reads private login files or uses development accounts; ignores `TEST_APP_URL`, blocks outbound app/browser requests, and removes its process and fixtures afterward.
-- `pnpm --filter @workspace/panchagarh run typecheck` — frontend TypeScript verification.
+- `pnpm --filter @workspace/panchabindu run typecheck` — frontend TypeScript verification.
 - Browser test screenshots go into ignored `generated-artifacts/migration/`.
 
 ## Where things live
 
-- `artifacts/panchagarh/src/` — original frontend components, stores, styles and client routing.
+- `artifacts/panchabindu/src/` — original frontend components, stores, styles and client routing.
 - `artifacts/api-server/imported/` — original server domain logic, types and API handlers, with Next HTTP dependencies replaced by a Web Request/Response boundary.
 - `artifacts/api-server/src/routes/imported.ts` — Express routing for all 20 imported API routes.
 - `artifacts/api-server/src/routes/page-data.ts` — server-side, customer-safe data loaders replacing the original server-rendered pages.
@@ -52,7 +52,7 @@ After applying the migrations and initializing a reviewed runtime database (incl
 The app keeps its original persistence model. **Do not replace Supabase with the scaffold database or silently enable local JSON in production.**
 
 - Development uses the original `.data/` fixtures under the API server working directory. They are ignored by Git.
-- Production deliberately refuses local JSON persistence. It requires `PANCHAGARH_PERSISTENCE=postgres`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, plus the original initialized runtime-state schema. The legacy server-side `NEXT_PUBLIC_SUPABASE_URL` name remains supported.
+- Production deliberately refuses local JSON persistence. It requires `PANCHABINDU_PERSISTENCE=postgres`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, plus the original initialized runtime-state schema. The legacy server-side `NEXT_PUBLIC_SUPABASE_URL` name remains supported.
 - Existing identities require `CREDENTIALS_ENCRYPTION_KEY`. Preserve the same key for existing encrypted credentials; do not rotate or generate a replacement as part of a port.
 - The original production identity, SMS OTP, payment, media storage and courier adapters retain their configuration requirements and fail explicitly when unavailable.
 - `APP_URL` is the configured public origin used by the original CSRF checks. Do not set it to a guessed published URL.
@@ -62,7 +62,7 @@ Use the secure workspace configuration flow for credentials. Never put them in s
 
 ## Private local account testing
 
-For private Replit development testing, run `pnpm --filter @workspace/api-server run sandbox:setup` once. It creates random first-login passwords for `panchagarh_owner` at `/admin` and `rupganj_vendor` at `/vendor`; the private one-time credential file is `artifacts/api-server/.data/LOCAL-LOGIN.txt`. The API development workflow loads the matching private env file from that ignored `.data/` directory. Admin and vendor must change their temporary password at first login; TOTP 2FA is disabled across roles in this local sandbox for now. Production authentication is unchanged. The customer at `/account` signs in using the local sandbox OTP shown in the page; customers have no password.
+For private Replit development testing, run `pnpm --filter @workspace/api-server run sandbox:setup` once. It creates random first-login passwords for `panchabindu_owner` at `/admin` and `rupganj_vendor` at `/vendor`; the private one-time credential file is `artifacts/api-server/.data/LOCAL-LOGIN.txt`. The API development workflow loads the matching private env file from that ignored `.data/` directory. Admin and vendor must change their temporary password at first login; TOTP 2FA is disabled across roles in this local sandbox for now. Production authentication is unchanged. The customer at `/account` signs in using the local sandbox OTP shown in the page; customers have no password.
 
 The bootstrap refuses to overwrite an existing credential file or admin registry. It does not reset or rotate an account. Do not share the credential file or preview link; delete the one-time credential file after both accounts have been set up. These local accounts and JSON fixtures do not grant production access. Production stays fail-closed until the original Supabase runtime and production identity are separately configured.
 

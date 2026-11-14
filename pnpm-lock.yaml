@@ -427,7 +427,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
 
-  artifacts/panchagarh:
+  artifacts/panchabindu:
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0

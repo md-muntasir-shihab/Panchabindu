@@ -1,0 +1,108 @@
+{"id":5000,"district_id":8,"name_en":"Akbar Shah","name_bn":"আকবর শাহ","url":"","is_metropolitan_thana":true}
+{"id":5001,"district_id":8,"name_en":"Bakalia","name_bn":"বাকলিয়া","url":"","is_metropolitan_thana":true}
+{"id":5002,"district_id":8,"name_en":"Bandar (Chittagong Port)","name_bn":"বন্দর","url":"","is_metropolitan_thana":true}
+{"id":5003,"district_id":8,"name_en":"Bayazid Bostami","name_bn":"বায়োজিদ বোস্তামী","url":"","is_metropolitan_thana":true}
+{"id":5004,"district_id":8,"name_en":"Chandgaon","name_bn":"চান্দগাঁও","url":"","is_metropolitan_thana":true}
+{"id":5005,"district_id":8,"name_en":"Chawkbazar","name_bn":"চকবাজার","url":"","is_metropolitan_thana":true}
+{"id":5006,"district_id":8,"name_en":"Double Mooring","name_bn":"ডবল মুরিং","url":"","is_metropolitan_thana":true}
+{"id":5007,"district_id":8,"name_en":"EPZ","name_bn":"ইপিজেড","url":"","is_metropolitan_thana":true}
+{"id":5008,"district_id":8,"name_en":"Halishahar","name_bn":"হালিশহর","url":"","is_metropolitan_thana":true}
+{"id":5009,"district_id":8,"name_en":"Khulshi","name_bn":"খুলশী","url":"","is_metropolitan_thana":true}
+{"id":5010,"district_id":8,"name_en":"Kotwali","name_bn":"কোতোয়ালী","url":"","is_metropolitan_thana":true}
+{"id":5011,"district_id":8,"name_en":"Pahartali","name_bn":"পাহাড়তলী","url":"","is_metropolitan_thana":true}
+{"id":5012,"district_id":8,"name_en":"Panchlaish","name_bn":"পাঁচলাইশ","url":"","is_metropolitan_thana":true}
+{"id":5013,"district_id":8,"name_en":"Patenga","name_bn":"পতেঙ্গা","url":"","is_metropolitan_thana":true}
+{"id":5014,"district_id":8,"name_en":"Sadarghat","name_bn":"সদরঘাট","url":"","is_metropolitan_thana":true}
+{"id":5015,"district_id":15,"name_en":"Airport","name_bn":"বিমানবন্দর","url":"","is_metropolitan_thana":true}
+{"id":5016,"district_id":15,"name_en":"Belpukur","name_bn":"বেলপুকুর","url":"","is_metropolitan_thana":true}
+{"id":5017,"district_id":15,"name_en":"Boalia","name_bn":"বোয়ালিয়া","url":"","is_metropolitan_thana":true}
+{"id":5018,"district_id":15,"name_en":"Chandrima","name_bn":"চন্দ্রিমা","url":"","is_metropolitan_thana":true}
+{"id":5019,"district_id":15,"name_en":"Damkura","name_bn":"দামকুড়া","url":"","is_metropolitan_thana":true}
+{"id":5020,"district_id":15,"name_en":"Karnahar","name_bn":"কর্ণহার","url":"","is_metropolitan_thana":true}
+{"id":5021,"district_id":15,"name_en":"Kashiadanga","name_bn":"কাশিয়াডাঙ্গা","url":"","is_metropolitan_thana":true}
+{"id":5022,"district_id":15,"name_en":"Katakhali","name_bn":"কাটাখালী","url":"","is_metropolitan_thana":true}
+{"id":5023,"district_id":15,"name_en":"Motihar","name_bn":"মতিহার","url":"","is_metropolitan_thana":true}
+{"id":5024,"district_id":15,"name_en":"Rajpara","name_bn":"রাজপাড়া","url":"","is_metropolitan_thana":true}
+{"id":5025,"district_id":15,"name_en":"Shah Makhdum","name_bn":"শাহ মখদুম","url":"","is_metropolitan_thana":true}
+{"id":5026,"district_id":27,"name_en":"Aranghata","name_bn":"আড়ংঘাটা","url":"","is_metropolitan_thana":true}
+{"id":5027,"district_id":27,"name_en":"Daulatpur","name_bn":"দৌলতপুর","url":"","is_metropolitan_thana":true}
+{"id":5028,"district_id":27,"name_en":"Harintana","name_bn":"হরিণটানা","url":"","is_metropolitan_thana":true}
+{"id":5029,"district_id":27,"name_en":"Khalishpur","name_bn":"খালিশপুর","url":"","is_metropolitan_thana":true}
+{"id":5030,"district_id":27,"name_en":"Khan Jahan Ali","name_bn":"খানজাহান আলী","url":"","is_metropolitan_thana":true}
+{"id":5031,"district_id":27,"name_en":"Khulna Sadar","name_bn":"খুলনা সদর","url":"","is_metropolitan_thana":true}
+{"id":5032,"district_id":27,"name_en":"Labanchara","name_bn":"লবণচরা","url":"","is_metropolitan_thana":true}
+{"id":5033,"district_id":27,"name_en":"Sonadanga","name_bn":"সোনাডাঙ্গা","url":"","is_metropolitan_thana":true}
+{"id":5034,"district_id":33,"name_en":"Airport","name_bn":"বিমানবন্দর","url":"","is_metropolitan_thana":true}
+{"id":5035,"district_id":33,"name_en":"Bandar","name_bn":"বন্দর","url":"","is_metropolitan_thana":true}
+{"id":5036,"district_id":33,"name_en":"Kawnia","name_bn":"কাউনিয়া","url":"","is_metropolitan_thana":true}
+{"id":5037,"district_id":36,"name_en":"Airport","name_bn":"বিমানবন্দর","url":"","is_metropolitan_thana":true}
+{"id":5038,"district_id":36,"name_en":"Jalalabad","name_bn":"জালালাবাদ","url":"","is_metropolitan_thana":true}
+{"id":5039,"district_id":36,"name_en":"Kotwali","name_bn":"কোতোয়ালী","url":"","is_metropolitan_thana":true}
+{"id":5040,"district_id":36,"name_en":"Moglabazar","name_bn":"মোগলাবাজার","url":"","is_metropolitan_thana":true}
+{"id":5041,"district_id":36,"name_en":"Shah Paran","name_bn":"শাহপরাণ","url":"","is_metropolitan_thana":true}
+{"id":5042,"district_id":38,"name_en":"Shayestaganj","name_bn":"শায়েস্তাগঞ্জ","url":"","is_metropolitan_thana":true}
+{"id":5043,"district_id":41,"name_en":"Bason","name_bn":"বাসন","url":"","is_metropolitan_thana":true}
+{"id":5044,"district_id":41,"name_en":"Gacha","name_bn":"গাছা","url":"","is_metropolitan_thana":true}
+{"id":5045,"district_id":41,"name_en":"Kashimpur","name_bn":"কাশিমপুর","url":"","is_metropolitan_thana":true}
+{"id":5046,"district_id":41,"name_en":"Konabari","name_bn":"কোনাবাড়ী","url":"","is_metropolitan_thana":true}
+{"id":5047,"district_id":41,"name_en":"Pubail","name_bn":"পুবাইল","url":"","is_metropolitan_thana":true}
+{"id":5048,"district_id":41,"name_en":"Tongi East","name_bn":"টঙ্গী পূর্ব","url":"","is_metropolitan_thana":true}
+{"id":5049,"district_id":41,"name_en":"Tongi West","name_bn":"টঙ্গী পশ্চিম","url":"","is_metropolitan_thana":true}
+{"id":5050,"district_id":43,"name_en":"Fatullah","name_bn":"ফতুল্লা","url":"","is_metropolitan_thana":true}
+{"id":5051,"district_id":43,"name_en":"Siddhirganj","name_bn":"সিদ্ধিরগঞ্জ","url":"","is_metropolitan_thana":true}
+{"id":5052,"district_id":47,"name_en":"Adabor","name_bn":"আদাবর","url":"","is_metropolitan_thana":true}
+{"id":5053,"district_id":47,"name_en":"Airport (Bimanbandar)","name_bn":"বিমানবন্দর","url":"","is_metropolitan_thana":true}
+{"id":5054,"district_id":47,"name_en":"Badda","name_bn":"বাড্ডা","url":"","is_metropolitan_thana":true}
+{"id":5055,"district_id":47,"name_en":"Banani","name_bn":"বনানী","url":"","is_metropolitan_thana":true}
+{"id":5056,"district_id":47,"name_en":"Bangshal","name_bn":"বংশাল","url":"","is_metropolitan_thana":true}
+{"id":5057,"district_id":47,"name_en":"Bhashantek","name_bn":"ভাষানটেক","url":"","is_metropolitan_thana":true}
+{"id":5058,"district_id":47,"name_en":"Bhatara","name_bn":"ভাটারা","url":"","is_metropolitan_thana":true}
+{"id":5059,"district_id":47,"name_en":"Cantonment","name_bn":"ক্যান্টনমেন্ট","url":"","is_metropolitan_thana":true}
+{"id":5060,"district_id":47,"name_en":"Chawkbazar","name_bn":"চকবাজার","url":"","is_metropolitan_thana":true}
+{"id":5061,"district_id":47,"name_en":"Dakshinkhan","name_bn":"দক্ষিণখান","url":"","is_metropolitan_thana":true}
+{"id":5062,"district_id":47,"name_en":"Darus Salam","name_bn":"দারুস সালাম","url":"","is_metropolitan_thana":true}
+{"id":5063,"district_id":47,"name_en":"Demra","name_bn":"ডেমরা","url":"","is_metropolitan_thana":true}
+{"id":5064,"district_id":47,"name_en":"Dhanmondi","name_bn":"ধানমন্ডি","url":"","is_metropolitan_thana":true}
+{"id":5065,"district_id":47,"name_en":"Gandaria","name_bn":"গেন্ডারিয়া","url":"","is_metropolitan_thana":true}
+{"id":5066,"district_id":47,"name_en":"Gulshan","name_bn":"গুলশান","url":"","is_metropolitan_thana":true}
+{"id":5067,"district_id":47,"name_en":"Hatirjheel","name_bn":"হাতিরঝিল","url":"","is_metropolitan_thana":true}
+{"id":5068,"district_id":47,"name_en":"Hazaribagh","name_bn":"হাজারীবাগ","url":"","is_metropolitan_thana":true}
+{"id":5069,"district_id":47,"name_en":"Jatrabari","name_bn":"যাত্রাবাড়ী","url":"","is_metropolitan_thana":true}
+{"id":5070,"district_id":47,"name_en":"Kadamtali","name_bn":"কদমতলী","url":"","is_metropolitan_thana":true}
+{"id":5071,"district_id":47,"name_en":"Kafrul","name_bn":"কাফরুল","url":"","is_metropolitan_thana":true}
+{"id":5072,"district_id":47,"name_en":"Kalabagan","name_bn":"কলাবাগান","url":"","is_metropolitan_thana":true}
+{"id":5073,"district_id":47,"name_en":"Kamrangirchar","name_bn":"কামরাঙ্গীরচর","url":"","is_metropolitan_thana":true}
+{"id":5074,"district_id":47,"name_en":"Khilgaon","name_bn":"খিলগাঁও","url":"","is_metropolitan_thana":true}
+{"id":5075,"district_id":47,"name_en":"Khilkhet","name_bn":"খিলক্ষেত","url":"","is_metropolitan_thana":true}
+{"id":5076,"district_id":47,"name_en":"Kotwali","name_bn":"কোতোয়ালী","url":"","is_metropolitan_thana":true}
+{"id":5077,"district_id":47,"name_en":"Lalbagh","name_bn":"লালবাগ","url":"","is_metropolitan_thana":true}
+{"id":5078,"district_id":47,"name_en":"Mirpur Model","name_bn":"মিরপুর মডেল","url":"","is_metropolitan_thana":true}
+{"id":5079,"district_id":47,"name_en":"Mohammadpur","name_bn":"মোহাম্মদপুর","url":"","is_metropolitan_thana":true}
+{"id":5080,"district_id":47,"name_en":"Motijheel","name_bn":"মতিঝিল","url":"","is_metropolitan_thana":true}
+{"id":5081,"district_id":47,"name_en":"Mugda","name_bn":"মুগদা","url":"","is_metropolitan_thana":true}
+{"id":5082,"district_id":47,"name_en":"New Market","name_bn":"নিউ মার্কেট","url":"","is_metropolitan_thana":true}
+{"id":5083,"district_id":47,"name_en":"Pallabi","name_bn":"পল্লবী","url":"","is_metropolitan_thana":true}
+{"id":5084,"district_id":47,"name_en":"Paltan","name_bn":"পল্টন","url":"","is_metropolitan_thana":true}
+{"id":5085,"district_id":47,"name_en":"Ramna","name_bn":"রমনা","url":"","is_metropolitan_thana":true}
+{"id":5086,"district_id":47,"name_en":"Rampura","name_bn":"রামপুরা","url":"","is_metropolitan_thana":true}
+{"id":5087,"district_id":47,"name_en":"Rupnagar","name_bn":"রূপনগর","url":"","is_metropolitan_thana":true}
+{"id":5088,"district_id":47,"name_en":"Sabujbagh","name_bn":"সবুজবাগ","url":"","is_metropolitan_thana":true}
+{"id":5089,"district_id":47,"name_en":"Shah Ali","name_bn":"শাহ আলী","url":"","is_metropolitan_thana":true}
+{"id":5090,"district_id":47,"name_en":"Shahbagh","name_bn":"শাহবাগ","url":"","is_metropolitan_thana":true}
+{"id":5091,"district_id":47,"name_en":"Shahjahanpur","name_bn":"শাহজাহানপুর","url":"","is_metropolitan_thana":true}
+{"id":5092,"district_id":47,"name_en":"Sher-e-Bangla Nagar","name_bn":"শেরেবাংলা নগর","url":"","is_metropolitan_thana":true}
+{"id":5093,"district_id":47,"name_en":"Shyampur","name_bn":"শ্যামপুর","url":"","is_metropolitan_thana":true}
+{"id":5094,"district_id":47,"name_en":"Sutrapur","name_bn":"সূত্রাপুর","url":"","is_metropolitan_thana":true}
+{"id":5095,"district_id":47,"name_en":"Tejgaon","name_bn":"তেজগাঁও","url":"","is_metropolitan_thana":true}
+{"id":5096,"district_id":47,"name_en":"Tejgaon Industrial Area","name_bn":"তেজগাঁও শিল্পাঞ্চল","url":"","is_metropolitan_thana":true}
+{"id":5097,"district_id":47,"name_en":"Turag","name_bn":"তুরাগ","url":"","is_metropolitan_thana":true}
+{"id":5098,"district_id":47,"name_en":"Uttar Khan","name_bn":"উত্তরখান","url":"","is_metropolitan_thana":true}
+{"id":5099,"district_id":47,"name_en":"Uttara East","name_bn":"উত্তরা পূর্ব","url":"","is_metropolitan_thana":true}
+{"id":5100,"district_id":47,"name_en":"Uttara West","name_bn":"উত্তরা পশ্চিম","url":"","is_metropolitan_thana":true}
+{"id":5101,"district_id":47,"name_en":"Wari","name_bn":"ওয়ারী","url":"","is_metropolitan_thana":true}
+{"id":5102,"district_id":59,"name_en":"Haragach","name_bn":"হারাগাছ","url":"","is_metropolitan_thana":true}
+{"id":5103,"district_id":59,"name_en":"Hazirhat","name_bn":"হাজিরহাট","url":"","is_metropolitan_thana":true}
+{"id":5104,"district_id":59,"name_en":"Kotwali","name_bn":"কোতোয়ালী","url":"","is_metropolitan_thana":true}
+{"id":5105,"district_id":59,"name_en":"Mahiganj","name_bn":"মাহিগঞ্জ","url":"","is_metropolitan_thana":true}
+{"id":5106,"district_id":59,"name_en":"Parshuram","name_bn":"পরশুরাম","url":"","is_metropolitan_thana":true}
+{"id":5107,"district_id":59,"name_en":"Tazhat","name_bn":"তাজহাট","url":"","is_metropolitan_thana":true}

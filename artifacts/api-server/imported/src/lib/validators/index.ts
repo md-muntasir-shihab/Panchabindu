@@ -214,6 +214,7 @@ export const createOrderInputSchema = z
     idempotencyKey: z.string().min(8, 'Idempotency key is required'),
     customerName: z.string().trim().min(2, 'গ্রাহকের নাম কমপক্ষে ২ অক্ষরের হতে হবে').max(120),
     customerPhone: bdPhoneSchema,
+    customerEmail: z.union([z.literal(''), z.string().trim().max(254).email('সঠিক ইমেইল ঠিকানা দিন')]).optional(),
     districtId: z.number().int().positive('জেলা নির্বাচন করুন'),
     upazilaId: z.number().int().positive('উপজেলা নির্বাচন করুন'),
     streetAddress: z
@@ -244,8 +245,8 @@ export const createOrderInputSchema = z
     items: z
       .array(
         z.object({
-          productId: z.string().uuid('সঠিক প্রোডাক্ট আইডি দিন'),
-          variantId: z.string().uuid('সঠিক ভ্যারিয়েন্ট আইডি দিন'),
+          productId: z.union([z.string().uuid(), z.string().regex(/^prod-\d{13}-\d{3}$/)]),
+          variantId: z.union([z.string().uuid(), z.string().regex(/^var-\d{13}-\d{3}$/)]),
           quantity: z.number().int().min(1, 'কমপক্ষে ১টি পণ্য নির্বাচন করুন').max(100),
         })
       )

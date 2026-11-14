@@ -5,7 +5,7 @@ import test from 'node:test';
 
 // Test the built serverless entry without reading inherited database credentials.
 process.env.NODE_ENV = 'production';
-delete process.env.PANCHAGARH_PERSISTENCE;
+delete process.env.PANCHABINDU_PERSISTENCE;
 delete process.env.SUPABASE_URL;
 delete process.env.NEXT_PUBLIC_SUPABASE_URL;
 delete process.env.SUPABASE_SERVICE_ROLE_KEY;

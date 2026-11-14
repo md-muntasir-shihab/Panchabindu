@@ -235,7 +235,7 @@ describe('Phase 6 — Customer Storefront Completion, Facets, Checkout Revalidat
       product: sampleProduct,
       categoryNameEn: categories[0]?.nameEn,
       brandNameEn: siteSettings.brandNameEn,
-      baseUrl: 'https://panchagarh.com',
+      baseUrl: 'https://panchabindu.com',
     });
 
     assert.equal(jsonLd['@type'], 'Product');
@@ -244,12 +244,12 @@ describe('Phase 6 — Customer Storefront Completion, Facets, Checkout Revalidat
     assert.equal(jsonLdStr.includes('supplierCostPoisha'), false);
     assert.equal(jsonLdStr.includes('platformMarginPoisha'), false);
 
-    const sitemapEntries = buildStorefrontSitemapEntries('https://panchagarh.com');
-    assert.ok(sitemapEntries.some((e) => e.url === 'https://panchagarh.com/shop'));
-    assert.ok(sitemapEntries.some((e) => e.url === 'https://panchagarh.com/search'));
+    const sitemapEntries = buildStorefrontSitemapEntries('https://panchabindu.com');
+    assert.ok(sitemapEntries.some((e) => e.url === 'https://panchabindu.com/shop'));
+    assert.ok(sitemapEntries.some((e) => e.url === 'https://panchabindu.com/search'));
     assert.ok(
       sitemapEntries.some((e) =>
-        e.url.startsWith('https://panchagarh.com/product/')
+        e.url.startsWith('https://panchabindu.com/product/')
       )
     );
   });

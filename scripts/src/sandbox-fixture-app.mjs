@@ -9,7 +9,7 @@ import tls from 'node:tls';
 import { createRequire, syncBuiltinESMExports } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
-const fixture = process.env.PANCHAGARH_SANDBOX_FIXTURE;
+const fixture = process.env.PANCHABINDU_SANDBOX_FIXTURE;
 assert.ok(fixture && process.send, 'Start this app through test:sandbox');
 assert.equal(process.cwd(), fixture);
 assert.equal(fs.lstatSync(path.join(fixture, '.data')).isSymbolicLink(), false);
@@ -72,7 +72,7 @@ net.Socket.prototype.connect = denyNetwork;
 syncBuiltinESMExports();
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const web = path.join(root, 'artifacts/panchagarh');
+const web = path.join(root, 'artifacts/panchabindu');
 const require = createRequire(path.join(web, 'package.json'));
 const { createServer } = await import(require.resolve('vite'));
 const { default: app } = await import('../../artifacts/api-server/src/app.ts');

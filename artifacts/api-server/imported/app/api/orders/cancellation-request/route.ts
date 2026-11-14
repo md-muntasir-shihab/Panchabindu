@@ -74,7 +74,7 @@ async function handlePOST(req: NextRequest) {
       );
     }
 
-    if (normalizedPhone !== session.phone) {
+    if (session.phone && normalizedPhone !== session.phone) {
       return NextResponse.json({ success: false, error: { code: 'FORBIDDEN', message: 'আপনার অ্যাকাউন্টের অর্ডার ছাড়া বাতিল করা যাবে না।' }, request_id: requestId }, { status: 403 });
     }
 

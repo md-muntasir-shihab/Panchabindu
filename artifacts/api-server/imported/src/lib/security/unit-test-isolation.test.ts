@@ -9,17 +9,17 @@ import tls from 'node:tls';
 import { getActorSecurityContext, readAdminStore } from '../admin/phase4a-service';
 
 test('runner uses disposable JSON identities without inherited account configuration', () => {
-  const fixture = process.env.PANCHAGARH_UNIT_FIXTURE;
+  const fixture = process.env.PANCHABINDU_UNIT_FIXTURE;
   assert.ok(fixture);
   assert.equal(process.cwd(), fixture);
   assert.equal(fs.realpathSync(path.join(fixture, '.data')), path.join(fixture, '.data'));
   assert.equal(process.env.NODE_ENV, 'test');
-  assert.equal(process.env.PANCHAGARH_PERSISTENCE, 'json');
+  assert.equal(process.env.PANCHABINDU_PERSISTENCE, 'json');
   for (const name of [
     'SESSION_SECRET', 'SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
-    'SMS_API_KEY', 'NODE_OPTIONS', 'PANCHAGARH_ENABLE_SANDBOX_AUTH',
-    'PANCHAGARH_SANDBOX_DISABLE_2FA', 'PANCHAGARH_SANDBOX_ADMIN_USERNAME',
-    'PANCHAGARH_SANDBOX_ADMIN_PASSWORD', 'PANCHAGARH_SANDBOX_VENDOR_PASSWORD',
+    'SMS_API_KEY', 'NODE_OPTIONS', 'PANCHABINDU_ENABLE_SANDBOX_AUTH',
+    'PANCHABINDU_SANDBOX_DISABLE_2FA', 'PANCHABINDU_SANDBOX_ADMIN_USERNAME',
+    'PANCHABINDU_SANDBOX_ADMIN_PASSWORD', 'PANCHABINDU_SANDBOX_VENDOR_PASSWORD',
   ]) assert.equal(process.env[name], undefined, `${name} must not enter fixture processes`);
   assert.ok(readAdminStore().users.length);
   assert.equal(getActorSecurityContext('usr-super-admin')?.require2fa, true);

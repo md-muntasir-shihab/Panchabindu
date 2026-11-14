@@ -42,11 +42,11 @@ function encryptSecret(secret, masterKey) {
 }
 
 function createBootstrapUsers(documents) {
-  const adminPassword = bootstrapPassword('PANCHAGARH_BOOTSTRAP_ADMIN_PASSWORD');
-  const vendorPassword = bootstrapPassword('PANCHAGARH_BOOTSTRAP_VENDOR_PASSWORD');
+  const adminPassword = bootstrapPassword('PANCHABINDU_BOOTSTRAP_ADMIN_PASSWORD');
+  const vendorPassword = bootstrapPassword('PANCHABINDU_BOOTSTRAP_VENDOR_PASSWORD');
   if (!adminPassword && !vendorPassword) return null;
   if (!adminPassword || !vendorPassword) {
-    throw new Error('Both PANCHAGARH_BOOTSTRAP_ADMIN_PASSWORD and PANCHAGARH_BOOTSTRAP_VENDOR_PASSWORD are required together.');
+    throw new Error('Both PANCHABINDU_BOOTSTRAP_ADMIN_PASSWORD and PANCHABINDU_BOOTSTRAP_VENDOR_PASSWORD are required together.');
   }
   const masterKey = requiredEnv('CREDENTIALS_ENCRYPTION_KEY');
   if (masterKey.length < 32 || /^0+$/.test(masterKey) || /placeholder|replace|your-/i.test(masterKey)) {

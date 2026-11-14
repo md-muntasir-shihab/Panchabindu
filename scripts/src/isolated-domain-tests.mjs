@@ -9,6 +9,9 @@ const require = createRequire(import.meta.url);
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const imported = path.join(root, 'artifacts/api-server/imported');
 const suites = {
+  contacts: ['lib/admin/contact-management.test.ts'],
+  audit: ['lib/geo/bd-geocode.test.ts', 'lib/validators/validators.test.ts', 'lib/money.test.ts', 'lib/i18n/ui-text.test.ts', 'lib/admin/phase4c.test.ts', 'lib/admin/phase5.test.ts', 'lib/admin/phase6.test.ts', 'lib/admin/phase7.test.ts', 'lib/db/backend-route.test.ts', 'lib/db/local-store-integrity.test.ts', 'lib/db/runtime-persistence.test.ts', 'lib/db/product-sync.test.ts', 'lib/media/catalog-import.test.ts', 'lib/media/product-image-precheck.test.ts', 'lib/media/product-image.test.ts', 'lib/storefront/phase6-storefront.test.ts'],
+  login: ['lib/security/customer-login-flow.test.ts'],
   checkout: [path.join(root, 'scripts/src/checkout-quote.test.ts')],
   quarantine: [
     'lib/storefront/flash-quarantine.test.ts',
@@ -23,6 +26,7 @@ const suites = {
     'lib/admin/phase4b.test.ts',
     'lib/security/workspace-rbac-snapshot.test.ts',
     'lib/security/unit-test-isolation.test.ts',
+    'lib/vendor/vendor-routes.test.ts',
   ],
   payments: [
     'lib/advance-courier-mfs.test.ts',
@@ -32,13 +36,13 @@ const suites = {
   ],
 };
 const suite = process.argv[2];
-if (!Object.hasOwn(suites, suite)) throw new Error('Choose security, payments, quarantine or checkout');
+if (!Object.hasOwn(suites, suite)) throw new Error(`Choose a suite: ${Object.keys(suites).join(', ')}`);
 
 // One fresh working directory AND process per file: module-level store paths,
 // cached state, sessions and JSON writes cannot reach another suite or real .data.
 let failures = 0;
 for (const file of suites[suite]) {
-  const fixture = mkdtempSync(path.join(tmpdir(), 'panchagarh-unit-'));
+  const fixture = mkdtempSync(path.join(tmpdir(), 'panchabindu-unit-'));
   try {
     mkdirSync(path.join(fixture, '.data'));
     // A legacy coverage assertion reads source relative to cwd. Never link .data.
@@ -55,10 +59,12 @@ for (const file of suites[suite]) {
       env: {
         PATH: process.env.PATH,
         NODE_ENV: 'test',
+        // Security tests exercise the explicitly enabled administrator 2FA policy.
+        ...(suite === 'security' ? { PANCHABINDU_REQUIRE_2FA_BY_DEFAULT: '1' } : {}),
         CREDENTIALS_ENCRYPTION_KEY: 'isolated-unit-fixture-key-not-for-real-accounts-2026',
-        PANCHAGARH_PERSISTENCE: 'json',
+        PANCHABINDU_PERSISTENCE: 'json',
         TSX_TSCONFIG_PATH: path.join(root, 'artifacts/api-server/tsconfig.json'),
-        PANCHAGARH_UNIT_FIXTURE: fixture,
+        PANCHABINDU_UNIT_FIXTURE: fixture,
         UPDATE_RBAC_SNAPSHOT: process.argv.includes('--update-rbac') ? '1' : '0',
       },
       stdio: 'inherit',

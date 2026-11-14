@@ -1,4 +1,4 @@
-import { getStorefrontConfig, storefrontContentSchema } from '@/src/lib/storefront/storefront-config';
+import { getStorefrontConfig, storefrontContentSchema, safeStoreUrl } from '@/src/lib/storefront/storefront-config';
 import { updateStorefrontContent } from '@/src/lib/admin/storefront-settings-service';
 import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/admin/workspace/route.ts
@@ -229,7 +229,10 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
       'log_call_attempt',
       'log_call_status',
       'add_staff_note',
+      'attach_tracking',
     ]),
+    trackingCode: z.string().trim().min(1).optional(),
+    consignmentId: z.string().trim().optional(),
     newStatus: z
       .enum([
         'pending_confirmation',
@@ -260,6 +263,9 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     landmark: z.string().optional(),
     addressOverrideReason: z.string().optional(),
     staffNote: z.string().optional(),
+    // Verifying a TrxID you entered yourself trips maker-checker; a super admin
+    // may override only with an explicit reason, which is audited.
+    selfApprovalOverrideReasonBn: z.string().optional(),
   }),
   z.object({
     operation: z.literal('update_full_order'),
@@ -399,6 +405,7 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
   // Phase 4B Operations
   z.object({
     operation: z.literal('generate_print_slips'),
+    recordPrint: z.boolean().optional(),
     orderNos: z.array(z.string().min(1)).min(1),
     sortBy: z
       .enum(['order_no', 'vendor', 'courier', 'district', 'sku'])
@@ -814,7 +821,7 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
       leadTimeDays: z.number().int().nonnegative().optional(),
       commissionOverrideBp: z.number().int().nullable().optional(),
       status: z.enum(['draft', 'active', 'archived']).optional(),
-      images: z.array(z.string()).optional(),
+      images: z.array(z.string().trim().max(2048).refine(v => Boolean(v) && !v.startsWith('#') && safeStoreUrl(v), 'সঠিক HTTPS ছবির লিংক দিন।')).max(30).optional(),
       specs: z
         .array(
           z.object({
@@ -834,7 +841,7 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
             titleBn: z.string().min(1, 'ভ্যারিয়েন্ট নাম আবশ্যক।'),
             titleEn: z.string().optional(),
             attributes: z.record(z.string(), z.string()).optional(),
-            imageUrl: z.string().nullable().optional(),
+            imageUrl: z.string().trim().max(2048).refine(v => !v || (!v.startsWith('#') && safeStoreUrl(v)), 'সঠিক HTTPS ছবির লিংক দিন।').nullable().optional(),
             supplierCostPoisha: z.number().int().nonnegative(),
             supplierProfitPoisha: z.number().int().nonnegative().optional(),
             supplierPayablePoisha: z.number().int().nonnegative().optional(),
@@ -873,8 +880,11 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
   z.object({
     operation: z.literal('update_inquiry_status'),
     inquiryId: z.string().min(1),
-    status: z.enum(['unread', 'replied', 'resolved']),
-    adminNotes: z.string().optional(),
+    status: z.enum(['unread', 'in_progress', 'replied', 'resolved']),
+    adminNotes: z.string().max(4000).optional(),
+    priority: z.enum(['low', 'normal', 'high']).optional(),
+    assignedTo: z.string().max(100).nullable().optional(),
+    expectedRevision: z.number().int().nonnegative().optional(),
   }),
   z.object({
     operation: z.literal('update_about_contact_settings'),
@@ -911,6 +921,12 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     amountTaka: z.number().positive(),
     autoVerify: z.boolean().optional(),
     reviewNoteBn: z.string().optional(),
+    // The grid's MFS sheet has always sent `noteBn`; accept it instead of
+    // silently dropping the operator's note.
+    noteBn: z.string().optional(),
+    // Auto-verifying your own entry trips maker-checker. A super admin may
+    // proceed only by recording why.
+    selfApprovalOverrideReasonBn: z.string().optional(),
   }),
   z.object({
     operation: z.literal('resolve_customer_refund'),
@@ -1488,12 +1504,27 @@ async function handlePOST(req: NextRequest) {
     }
 
     if (payload.operation === 'update_inquiry_status') {
-      const res = updateCustomerInquiryStatus(
-        payload.inquiryId,
-        payload.status,
-        payload.adminNotes
-      );
-      return NextResponse.json(res, { status: res.success ? 200 : 400 });
+      if (ctx.roleSlug !== 'super_admin') {
+        return NextResponse.json({ success: false, errorBn: 'শুধু সুপার অ্যাডমিন যোগাযোগ বার্তা পরিচালনা করতে পারেন।' }, { status: 403 });
+      }
+      const adminStore = readAdminStore();
+      if (payload.assignedTo && !adminStore.users.some(user => user.username === payload.assignedTo && user.isActive && user.roleSlug === 'super_admin')) {
+        return NextResponse.json({ success: false, errorBn: 'সক্রিয় সুপার অ্যাডমিন নির্বাচন করুন।' }, { status: 400 });
+      }
+      const res = updateCustomerInquiryStatus(payload.inquiryId, payload.status, payload.adminNotes, {
+        priority: payload.priority, assignedTo: payload.assignedTo,
+        expectedRevision: payload.expectedRevision, actor: ctx.username,
+      });
+      if (res.success) {
+        appendImmutableAuditLog(adminStore, {
+          actorUserId: ctx.userId, actorUsername: ctx.username, actorRole: ctx.roleSlug,
+          actionCode: 'CUSTOMER_INQUIRY_UPDATED', targetType: 'system', targetId: payload.inquiryId,
+          summaryBn: 'গ্রাহক যোগাযোগ বার্তার কাজের অবস্থা হালনাগাদ হয়েছে।',
+          metadata: { status: payload.status, priority: payload.priority, assignedTo: payload.assignedTo, noteChanged: res.inquiry?.activity?.at(-1)?.noteChanged ?? false },
+        });
+        writeAdminStore(adminStore);
+      }
+      return NextResponse.json(res, { status: res.success ? 200 : res.conflict ? 409 : 400 });
     }
 
     if (payload.operation === 'update_about_contact_settings') {
@@ -1590,15 +1621,28 @@ async function handlePOST(req: NextRequest) {
       }
 
       // If autoVerify is requested, immediately approve the submission
+      const overrideReason = payload.selfApprovalOverrideReasonBn?.trim();
+      const selfApprovalOverride =
+        Boolean(overrideReason && overrideReason.length >= 5) &&
+        ctx.roleSlug === 'super_admin';
+
       if (payload.autoVerify) {
-        const verifyRes = reviewManualBkashSubmission(ctx, {
-          orderNo: payload.orderNo,
-          trxId: payload.trxId.trim(),
-          decision: 'approved',
-          reviewNoteBn:
-            payload.reviewNoteBn ||
-            `এডমিন (${ctx.username}) দ্বারা সরাসরি ইনপুট ও অনুমোদন সম্পন্ন।`,
-        });
+        const verifyRes = reviewManualBkashSubmission(
+          ctx,
+          {
+            orderNo: payload.orderNo,
+            trxId: payload.trxId.trim(),
+            decision: 'approved',
+            reviewNoteBn:
+              payload.reviewNoteBn ||
+              payload.noteBn ||
+              `এডমিন (${ctx.username}) দ্বারা সরাসরি ইনপুট ও অনুমোদন সম্পন্ন।`,
+            selfApprovalOverride,
+            selfApprovalOverrideReasonBn: selfApprovalOverride
+              ? overrideReason
+              : undefined,
+          }
+        );
 
         if (!verifyRes.success) {
           return NextResponse.json(
@@ -1607,6 +1651,8 @@ async function handlePOST(req: NextRequest) {
               errorBn:
                 verifyRes.errorBn ?? 'পেমেন্ট জমা হয়েছে তবে অনুমোদন করা যায়নি।',
               submission: subRes.submission,
+              // Tell the UI it can offer the override instead of a dead end.
+              makerCheckerBlocked: /মেকার-চেকার/.test(verifyRes.errorBn ?? ''),
             },
             { status: 400 }
           );
@@ -1636,7 +1682,9 @@ async function handlePOST(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        submission: subRes.submission,
+        submission: payload.autoVerify
+          ? { ...subRes.submission, verificationStatus: 'approved' }
+          : subRes.submission,
         order: updatedOrder,
         messageBn: `${payload.provider.toUpperCase()} TrxID (${payload.trxId}) সফলভাবে ${payload.autoVerify ? 'রেকর্ড ও ভেরিফাই' : 'রেকর্ড'} করা হয়েছে।`,
       });

@@ -32,13 +32,20 @@ test('Phase 4B Case 1: A4 3-Part Print Slip DTO Customer-Safety & Role Cost Hidi
   const adminCtx = getActorSecurityContext('usr-super-admin')!;
   const pkgCtx = getActorSecurityContext('usr-packaging-01')!;
 
-  // 1. First print by Super Admin
+  // Loading and refreshing previews must not change the print counter.
+  const preview1 = generateOrderPrintSlips(adminCtx, { orderNos: ['ORD-261106-0001'] });
+  const preview2 = generateOrderPrintSlips(adminCtx, { orderNos: ['ORD-261106-0001'] });
+  assert.equal(preview2.slips[0]!.internalPart3.printCount, preview1.slips[0]!.internalPart3.printCount);
+
+  // 1. First print request by Super Admin
   const firstPrint = generateOrderPrintSlips(adminCtx, {
     orderNos: ['ORD-261106-0001'],
     sortBy: 'order_no',
+    recordPrint: true,
   });
   assert.equal(firstPrint.success, true);
   assert.equal(firstPrint.slips.length, 1);
+  assert.equal(firstPrint.slips[0]!.internalPart3.printCount, preview1.slips[0]!.internalPart3.printCount + 1);
 
   const slip = firstPrint.slips[0]!;
   // Verify Part 1 & Part 2 (customerAndCourierPart) have ZERO vendor identity, vendor SKU, buying cost, or staff notes
@@ -80,6 +87,7 @@ test('Phase 4B Case 1: A4 3-Part Print Slip DTO Customer-Safety & Role Cost Hidi
   const secondPrint = generateOrderPrintSlips(adminCtx, {
     orderNos: ['ORD-261106-0001'],
     sortBy: 'vendor',
+    recordPrint: true,
   });
   assert.equal(secondPrint.success, true);
   const pkgSlip = secondPrint.slips[0]!;

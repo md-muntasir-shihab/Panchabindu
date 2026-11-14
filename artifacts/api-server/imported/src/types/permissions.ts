@@ -104,6 +104,8 @@ export const CUSTOMER_FORBIDDEN_FIELDS: readonly string[] = [
   'estimatedNetProfitPoisha',
   'internal_staff_note',
   'internalStaffNote',
+  'customerEmail',
+  'customer_email',
 ] as const;
 
 /**
@@ -222,6 +224,7 @@ export function sanitizeRecordForRole<T extends Record<string, unknown>>(
       'estimatedNetProfitPoisha',
       'internal_staff_note',
       'internalStaffNote',
+      'customerEmail',
     ];
     for (const field of vendorHidden) {
       delete clone[field];

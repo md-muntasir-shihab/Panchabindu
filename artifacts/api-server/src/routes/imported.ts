@@ -20,6 +20,15 @@ import * as reviews from '../../imported/app/api/reviews/route';
 import * as inquiry from '../../imported/app/api/storefront/inquiry/route';
 import * as storefront from '../../imported/app/api/storefront/route';
 import * as vendor from '../../imported/app/api/vendor/overview/route';
+import * as vendorWorkspace from '../../imported/app/api/vendor/workspace/route';
+import * as vendorProducts from '../../imported/app/api/vendor/products/route';
+import * as vendorStock from '../../imported/app/api/vendor/stock/route';
+import * as vendorPriceProposals from '../../imported/app/api/vendor/price-proposals/route';
+import * as vendorPayouts from '../../imported/app/api/vendor/payouts/route';
+import * as vendorProfile from '../../imported/app/api/vendor/profile/route';
+import * as vendorOnboarding from '../../imported/app/api/vendor/onboarding/route';
+import * as adminVendors from '../../imported/app/api/admin/vendors/route';
+import * as adminVendorPayouts from '../../imported/app/api/admin/vendor-payouts/route';
 import * as webhook from '../../imported/app/api/webhooks/courier/route';
 import * as courierStatusCron from '../../imported/app/api/cron/courier-status/route';
 import { pageData, manifest, sitemap, robots } from './page-data';
@@ -67,8 +76,13 @@ const routes: Array<[string, Record<string, unknown>]> = [
   ['/api/payments/manual-bkash/submissions', payments], ['/api/print/:orderNo', print],
   ['/api/promo/validate', promo], ['/api/reviews', reviews],
   ['/api/storefront/inquiry', inquiry], ['/api/storefront', storefront],
-  ['/api/vendor/overview', vendor], ['/api/webhooks/courier', webhook],
-  ['/api/cron/courier-status', courierStatusCron],
+  ['/api/admin/vendors', adminVendors],
+  ['/api/admin/vendor-payouts', adminVendorPayouts],
+  ['/api/vendor/overview', vendor], ['/api/vendor/workspace', vendorWorkspace],
+  ['/api/vendor/products', vendorProducts], ['/api/vendor/stock', vendorStock],
+  ['/api/vendor/price-proposals', vendorPriceProposals], ['/api/vendor/payouts', vendorPayouts],
+  ['/api/vendor/profile', vendorProfile], ['/api/vendor/onboarding', vendorOnboarding],
+  ['/api/webhooks/courier', webhook], ['/api/cron/courier-status', courierStatusCron],
   ['/api/page-data', { GET: pageData }],
   ['/manifest.webmanifest', { GET: manifest }], ['/sitemap.xml', { GET: sitemap }],
   ['/robots.txt', { GET: robots }],
