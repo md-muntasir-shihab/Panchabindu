@@ -64,6 +64,7 @@ import {
   Sliders,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Menu,
   ExternalLink,
   PhoneMissed,
@@ -962,6 +963,18 @@ function CourierInfoCard({
   );
 }
 
+// Each existing page has exactly one home in the navigation; role filtering still
+// happens on the original items, not on these presentation groups.
+const ADMIN_NAV_GROUPS: Array<{ id: string; bn: string; en: string; keys: AdminTabKey[] }> = [
+  { id: 'overview', bn: 'ওভারভিউ', en: 'Overview', keys: ['today_screen'] },
+  { id: 'orders', bn: 'অর্ডার ও ডেলিভারি', en: 'Orders & Delivery', keys: ['orders_grid', 'smart_order_entry', 'courier_360', 'print_engine'] },
+  { id: 'catalog', bn: 'পণ্য ও ক্যাটালগ', en: 'Products & Catalog', keys: ['product_studio'] },
+  { id: 'vendors', bn: 'ভেন্ডর ও এসক্রো', en: 'Vendors & Escrow', keys: ['vendor_escrow', 'vendor_payouts', 'vendor_control', 'phase7_portal'] },
+  { id: 'finance', bn: 'ফাইন্যান্স', en: 'Finance', keys: ['finance_product360'] },
+  { id: 'operations', bn: 'অপারেশনস ও যোগাযোগ', en: 'Operations & Messaging', keys: ['phase6_ops', 'contact_management', 'messaging_automation'] },
+  { id: 'settings', bn: 'সিস্টেম ও নিরাপত্তা', en: 'System & Security', keys: ['phase5_readiness', 'users_and_rbac', 'control_center'] },
+];
+
 export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientProps) {
   const locale = useLocaleStore((s) => s.adminLocale);
   const toggleLocale = useLocaleStore((s) => s.toggleAdminLocale);
@@ -1011,6 +1024,11 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
 
   // Workspace Navigation & Toast Banner State
   const [activeTab, setActiveTab] = React.useState<AdminTabKey>('today_screen');
+  const [openNavGroups, setOpenNavGroups] = React.useState<string[]>(['overview']);
+  React.useEffect(() => {
+    const group = ADMIN_NAV_GROUPS.find((entry) => entry.keys.includes(activeTab));
+    if (group) setOpenNavGroups((open) => open.includes(group.id) ? open : [...open, group.id]);
+  }, [activeTab]);
   const [helpModalTab, setHelpModalTab] = React.useState<AdminTabKey | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
@@ -2843,58 +2861,53 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
             </div>
           </div>
 
-          {/* Categorized Nav Links */}
-          <nav aria-label={uiText("Admin ERP Sidebar", locale)} className="p-2 space-y-4 text-xs font-medium">
-            {NAV_SECTIONS.map((section) => {
-              const visibleItems = section.items.filter((item) => !item.hidden);
+          {/* Grouped navigation; collapsed desktop mode retains direct icon links. */}
+          <nav aria-label={uiText("Admin ERP Sidebar", locale)} className="p-2 space-y-1 text-xs font-medium">
+            {ADMIN_NAV_GROUPS.map((group) => {
+              const allItems = NAV_SECTIONS.flatMap((section) => section.items);
+              const visibleItems = group.keys.map((key) => allItems.find((item) => item.key === key)).filter((item): item is (typeof allItems)[number] => Boolean(item && !item.hidden));
               if (visibleItems.length === 0) return null;
-
+              const isOpen = openNavGroups.includes(group.id);
+              const hasActive = visibleItems.some((item) => item.key === activeTab);
+              const groupName = locale === 'bn' ? group.bn : group.en;
               return (
-                <div key={section.groupLabelEn} className="space-y-1">
+                <div key={group.id} data-nav-group={group.id} className="rounded-[var(--radius-md)]">
                   {!isSidebarCollapsed && (
-                    <p className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted">
-                      {locale === 'bn' ? section.groupLabelBn : section.groupLabelEn}
-                    </p>
+                    <button
+                      type="button"
+                      aria-expanded={isOpen}
+                      aria-controls={`admin-nav-${group.id}`}
+                      onClick={() => setOpenNavGroups((open) => isOpen ? open.filter((id) => id !== group.id) : [...open, group.id])}
+                      className={`flex min-h-11 w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 text-left font-semibold transition-colors hover:bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink ${hasActive ? 'text-ink bg-bg/70' : 'text-muted'}`}
+                    >
+                      {visibleItems[0].icon}
+                      <span className="min-w-0 flex-1">{groupName}</span>
+                      {hasActive && !isOpen && <span className="h-1.5 w-1.5 rounded-full bg-ink" aria-hidden="true" />}
+                      <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                    </button>
                   )}
-                  <div className="space-y-0.5">
+                  <div id={`admin-nav-${group.id}`} hidden={!isSidebarCollapsed && !isOpen} className={isSidebarCollapsed ? 'space-y-0.5' : 'ml-4 my-1 space-y-0.5 border-l border-border pl-2'}>
                     {visibleItems.map((item) => {
                       const isActive = activeTab === item.key;
                       return (
                         <button
                           key={item.key}
                           type="button"
-                          onClick={() => {
-                            setActiveTab(item.key);
-                            setIsMobileSidebarOpen(false);
-                          }}
+                          onClick={() => { setActiveTab(item.key); setIsMobileSidebarOpen(false); }}
                           title={locale === 'bn' ? item.labelBn : item.labelEn}
                           aria-current={isActive ? 'page' : undefined}
-                          className={`w-full min-h-[40px] flex items-center gap-2.5 px-2.5 py-2 rounded-[var(--radius-md)] transition-all cursor-pointer text-left ${
-                            isActive
-                              ? 'bg-ink text-bg font-bold shadow-xs'
-                              : 'text-ink hover:bg-bg border border-transparent hover:border-border'
+                          className={`w-full min-h-11 flex items-center gap-2.5 px-2.5 py-2 rounded-[var(--radius-md)] transition-colors cursor-pointer text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink ${
+                            isActive ? 'bg-ink text-bg font-bold' : 'text-ink hover:bg-bg border border-transparent hover:border-border'
                           } ${isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'}`}
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="flex items-center gap-2.5 min-w-0">
                             {item.icon}
-                            {!isSidebarCollapsed && (
-                              <span className="truncate">
-                                {locale === 'bn' ? item.labelBn : item.labelEn}
-                              </span>
-                            )}
-                          </div>
+                            {!isSidebarCollapsed && <span className="min-w-0 break-words">{locale === 'bn' ? item.labelBn : item.labelEn}</span>}
+                          </span>
                           {!isSidebarCollapsed && item.badge !== undefined && (
-                            <div className="flex items-center gap-1 shrink-0">
-                              <span
-                                className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full border ${
-                                  isActive
-                                    ? 'border-bg/40 bg-bg text-ink'
-                                    : 'border-border bg-bg text-muted'
-                                }`}
-                              >
-                                {item.badge}
-                              </span>
-                            </div>
+                            <span className={`text-[10px] font-mono px-1.5 rounded-full border shrink-0 ${isActive ? 'border-bg/40 bg-bg text-ink' : 'border-border bg-bg text-muted'}`}>
+                              {item.badge}
+                            </span>
                           )}
                         </button>
                       );
@@ -5218,6 +5231,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                 : orders.map((o) => o.orderNo!).filter(Boolean)
             }
             initialPrintConfig={snapshot.printConfig}
+            siteSettings={siteSettings}
             onRefreshWorkspace={fetchWorkspace}
           />
         )}

@@ -17,6 +17,17 @@ const password = randomBytes(24).toString('hex');
 let fixture, child, base;
 const fixturePasswords = new Map();
 
+// Open the owning accordion before using a sidebar page link.
+async function openAdminNavItem(item) {
+  const group = item.locator('xpath=ancestor::*[@data-nav-group]');
+  const toggle = group.locator('button[aria-expanded]');
+  for (let attempt = 0; attempt < 3 && !(await item.isVisible()); attempt++) {
+    if (await toggle.count() && await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
+    await item.waitFor({ state: 'visible', timeout: 1500 }).catch(() => {});
+  }
+  await item.click();
+}
+
 // Never use TEST_APP_URL or the development launcher: that launcher loads private
 // account configuration. All state and the app process belong to this test run.
 before(async () => {
@@ -250,7 +261,7 @@ test('admin browser login, reload and logout render without errors', { timeout: 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.getByRole('button', { name: /Logout|লগআউট/ }).waitFor({ timeout: 10000 });
     const nav = page.getByRole('navigation', { name: /Admin ERP Sidebar|অ্যাডমিন/ });
-    await nav.locator('button[title="Orders Grid"], button[title="অর্ডার গ্রিড"]').click();
+    await openAdminNavItem(nav.locator('button[title="Orders Grid"], button[title="অর্ডার গ্রিড"]'));
     const row = page.locator('tr').filter({ hasText: 'Fixture Buyer' });
     await row.waitFor();
     await row.locator('button[title*="tracking link"], button[title*="মেসেজ"]').first().click();
@@ -265,7 +276,8 @@ test('admin browser login, reload and logout render without errors', { timeout: 
     const statusData = await statusPage.json();
     assert.equal(statusData.data.props.order?.customerName?.includes('Fixture'), true);
     await page.keyboard.press('Escape');
-    await nav.locator('button[title="Product Studio"], button[title="প্রোডাক্ট স্টুডিও"]').click();
+    await messagePanel.waitFor({ state: 'hidden' });
+    await openAdminNavItem(nav.locator('button[title="Product Studio"], button[title="প্রোডাক্ট স্টুডিও"]'));
     assert.equal(await page.getByRole('heading', { name: /Emergency operations control|জরুরি কার্যক্রম নিয়ন্ত্রণ/ }).count(), 0);
     assert.equal(await page.getByText(/Account security|অ্যাকাউন্ট নিরাপত্তা/, { exact: true }).isVisible(), false);
     assert.equal(await page.getByText(/Active Role:|সক্রিয় রোল:/).count(), 0);
@@ -279,9 +291,9 @@ test('admin browser login, reload and logout render without errors', { timeout: 
     assert.match(await details.innerText(), /do not verify downstream services|কার্যকারিতা নিশ্চিত করে না/);
     assert.doesNotMatch(await details.innerText(), /৳৭০|৳১৩০|বর্তমান সক্রিয় অর্ডারে লাইভ ইউনিট/);
     await details.getByRole('button', { name: /Close|বন্ধ করুন/ }).click();
-    await nav.locator('button[title="Users & Roles"], button[title="ইউজার ও রোল"]').click();
+    await openAdminNavItem(nav.locator('button[title="Users & Roles"], button[title="ইউজার ও রোল"]'));
     await page.getByText(/Account security|অ্যাকাউন্ট নিরাপত্তা/, { exact: true }).waitFor();
-    await nav.locator('button[title="Control Center"], button[title="কন্ট্রোল সেন্টার"]').click();
+    await openAdminNavItem(nav.locator('button[title="Control Center"], button[title="কন্ট্রোল সেন্টার"]'));
     await page.getByRole('heading', { name: /Emergency operations control|জরুরি কার্যক্রম নিয়ন্ত্রণ/ }).waitFor();
     await page.getByRole('button', { name: /Logout|লগআউট/ }).click();
     await page.getByLabel(/Username/).waitFor();
@@ -320,7 +332,7 @@ test('dashboard shows role-scoped status counts and opens matching order filters
       assert.equal(await page.getByLabel('Filter by order status').inputValue(), 'pending_confirmation');
       if (width === 1280) {
         await page.locator('input[type=search]').fill('no-matching-order');
-        await page.getByRole('navigation', { name: /Admin ERP Sidebar|অ্যাডমিন/ }).locator('button[title="Today"], button[title="আজকের কাজ"]').click();
+        await openAdminNavItem(page.getByRole('navigation', { name: /Admin ERP Sidebar|অ্যাডমিন/ }).locator('button[title="Today"], button[title="আজকের কাজ"]'));
         await page.locator('[aria-label="অর্ডার স্ট্যাটাসের সারসংক্ষেপ"]').getByRole('button', { name: /রিটার্ন প্রক্রিয়াধীন/ }).click();
         assert.equal(await page.getByLabel('Filter by order status').inputValue(), 'return_initiated');
         assert.equal(await page.locator('input[type=search]').inputValue(), '');
@@ -348,7 +360,7 @@ test('courier receivables distinguish recorded COD from unverified historical pa
       if (await page.getByTitle('বাংলায় পরিবর্তন করুন').count()) await page.getByTitle('বাংলায় পরিবর্তন করুন').click();
       if (width < 1024) await page.locator('button[aria-expanded="false"]').filter({ has: page.locator('svg.lucide-menu') }).click();
       const nav = page.getByRole('navigation', { name: /Admin ERP Sidebar|অ্যাডমিন/ });
-      await nav.locator('button[title="Courier & Rates"], button[title="কুরিয়ার ও রেট"]').click();
+      await openAdminNavItem(nav.locator('button[title="Courier & Rates"], button[title="কুরিয়ার ও রেট"]'));
       await page.getByRole('heading', { name: 'কুরিয়ার হিসাব ও অর্ডার' }).waitFor();
       const main = page.locator('main');
       assert.match(await main.innerText(), /নিশ্চিত কুরিয়ার পাওনা এখন নির্ণয় করা যাচ্ছে না/);
@@ -585,7 +597,7 @@ test('print preview fits one A4 or thermal page without leaking internal data to
     await page.getByLabel(/Password/).fill(fixturePasswords.get(username));
     await page.locator('form button[type=submit]').click();
     await page.getByRole('button', { name: /Logout|লগআউট/ }).waitFor();
-    await page.locator('nav button[title="Print & Invoice"], nav button[title="প্রিন্ট ও ইনভয়েস"]').click();
+    await openAdminNavItem(page.locator('nav button[title="Print & Invoice"], nav button[title="প্রিন্ট ও ইনভয়েস"]'));
     const selected = page.locator('.print-slips > div');
     await page.locator('button').filter({ hasText: /Select all|সব সিলেক্ট/i }).first().click();
     assert.ok(await selected.count() >= 1);
@@ -680,7 +692,7 @@ test('admin pages and navigation remain usable at mobile, tablet and desktop wid
         const titles = await nav.locator('button[title]').evaluateAll(els => els.map(e => e.title));
         assert.ok(titles.length >= 14);
         for (const title of titles) {
-          await nav.locator('button[title]').evaluateAll((els, name) => els.find(e => e.title === name)?.click(), title);
+          await nav.locator('button[title]').evaluateAll((els, name) => { const item = els.find(e => e.title === name); const toggle = item?.closest('[data-nav-group]')?.querySelector(':scope > button[aria-expanded]'); if (toggle?.getAttribute('aria-expanded') === 'false') toggle.click(); item?.click(); }, title);
           await page.waitForTimeout(80);
           const overflow = await page.locator('main').evaluate(main => {
             const out = [];
@@ -716,7 +728,7 @@ test('small-screen admin catalog, payout filters, print and portal tabs stay rea
     if (await page.getByTitle('বাংলায় পরিবর্তন করুন').count()) await page.getByTitle('বাংলায় পরিবর্তন করুন').click();
     const gotoAdmin = async title => {
       await page.locator('header button[aria-expanded="false"]').first().click();
-      await page.getByRole('navigation', { name: /Admin ERP Sidebar|অ্যাডমিন/ }).locator('button[title]').filter({ hasText: title }).click();
+      await openAdminNavItem(page.getByRole('navigation', { name: /Admin ERP Sidebar|অ্যাডমিন/ }).locator('button[title]').filter({ hasText: title }));
     };
     const assertInViewport = async locator => {
       const box = await locator.boundingBox();
@@ -777,7 +789,7 @@ test('admin nested mobile views audit', { timeout: 120_000 }, async () => {
     ];
     const nav = page.getByRole('navigation', { name: /Admin ERP Sidebar|অ্যাডমিন/ });
     for (const [title, tabs] of groups) {
-      await nav.locator('button[title]').evaluateAll((els, name) => els.find(e => e.title === name)?.click(), title);
+      await nav.locator('button[title]').evaluateAll((els, name) => { const item = els.find(e => e.title === name); const toggle = item?.closest('[data-nav-group]')?.querySelector(':scope > button[aria-expanded]'); if (toggle?.getAttribute('aria-expanded') === 'false') toggle.click(); item?.click(); }, title);
       for (const tab of tabs) {
         const btn = page.getByRole('button', { name: tab }).first();
         await btn.waitFor(); await btn.click(); await page.waitForTimeout(80);
@@ -797,5 +809,164 @@ test('admin nested mobile views audit', { timeout: 120_000 }, async () => {
       }
     }
     assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+});
+
+test('admin navigation groups expand, route and support keyboard and mobile', { timeout: 90_000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/repl/tools/bin/chromium', headless: true, args: ['--no-sandbox'], env: { PATH: process.env.PATH, HOME: fixture, TMPDIR: fixture } });
+  try {
+    for (const width of [375, 1280]) {
+      const page = await browser.newPage({ viewport: { width, height: 800 } });
+      const errors = []; page.on('pageerror', e => errors.push(e.message));
+      await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
+      await page.goto(`${base}/admin`, { waitUntil: 'domcontentloaded' });
+      await page.getByLabel(/Username/).fill(username);
+      await page.getByLabel(/Password/).fill(fixturePasswords.get(username));
+      await page.locator('form button[type=submit]').click();
+      await page.getByRole('button', { name: /Logout|লগআউট/ }).waitFor();
+      if (await page.getByTitle('বাংলায় পরিবর্তন করুন').count()) await page.getByTitle('বাংলায় পরিবর্তন করুন').click();
+      if (width < 1024) await page.locator('header button').filter({ has: page.locator('svg.lucide-menu') }).click();
+      const nav = page.getByRole('navigation', { name: /Admin ERP Sidebar|অ্যাডমিন/ });
+      const expected = {
+        overview: ['আজকের কাজ'], orders: ['অর্ডার গ্রিড', 'নতুন অর্ডার', 'কুরিয়ার ও রেট', 'প্রিন্ট ও ইনভয়েস'],
+        catalog: ['প্রোডাক্ট স্টুডিও'], vendors: ['ভেন্ডর লেজার ও পেআউট', 'পেআউট রেজিস্টার', 'ভেন্ডর অনুমতি', 'ভেন্ডর পোর্টাল ও অ্যাকাউন্টিং'],
+        finance: ['ফাইন্যান্স ও মানি-ম্যাপ'], operations: ['লাইভ অপস ও CRM', 'যোগাযোগ', 'মেসেজিং ও সিঙ্ক'],
+        settings: ['অডিট রিপোর্ট', 'ইউজার ও রোল', 'কন্ট্রোল সেন্টার'],
+      };
+      for (const [group, items] of Object.entries(expected)) {
+        const titles = await nav.locator(`[data-nav-group="${group}"] button[title]`).evaluateAll(els => els.map(el => el.title));
+        assert.deepEqual(titles, items, `page grouping: ${group}`);
+      }
+      const orders = nav.getByRole('button', { name: 'অর্ডার ও ডেলিভারি', exact: true });
+      assert.equal(await orders.getAttribute('aria-expanded'), 'false');
+      await orders.focus(); await page.keyboard.press('Enter');
+      assert.equal(await orders.getAttribute('aria-expanded'), 'true');
+      await page.keyboard.press('Space');
+      assert.equal(await orders.getAttribute('aria-expanded'), 'false');
+      await orders.click();
+      await nav.getByTitle('কুরিয়ার ও রেট').click();
+      await page.getByRole('heading', { name: 'কুরিয়ার হিসাব ও অর্ডার' }).waitFor();
+      if (width < 1024) {
+        assert.equal(await page.locator('header button').filter({ has: page.locator('svg.lucide-menu') }).getAttribute('aria-expanded'), 'false');
+        await page.locator('header button').filter({ has: page.locator('svg.lucide-menu') }).click();
+      }
+      assert.equal(await nav.getByTitle('কুরিয়ার ও রেট').getAttribute('aria-current'), 'page');
+      if (width < 1024) await page.getByRole('button', { name: 'মেনু বন্ধ করুন' }).click();
+      await page.getByTitle('Switch to English').click();
+      if (width < 1024) await page.locator('header button').filter({ has: page.locator('svg.lucide-menu') }).click();
+      assert.equal(await nav.getByRole('button', { name: 'Orders & Delivery', exact: true }).getAttribute('aria-expanded'), 'true');
+      if (width >= 1024) {
+        await page.getByRole('button', { name: 'Collapse sidebar' }).click();
+        await nav.getByTitle('Product Studio').click();
+        await page.getByRole('heading', { name: 'Product & Category Studio' }).first().waitFor();
+        await page.getByRole('button', { name: 'Expand sidebar' }).click();
+        assert.equal(await nav.getByRole('button', { name: 'Products & Catalog', exact: true }).getAttribute('aria-expanded'), 'true');
+        const titles = await nav.locator('button[title]').evaluateAll(els => els.map(el => el.title));
+        for (const title of titles) {
+          const item = nav.locator('button[title]').filter({ hasText: title });
+          await openAdminNavItem(item);
+          assert.equal(await item.getAttribute('aria-current'), 'page', `navigation did not activate ${title}`);
+        }
+      }
+      assert.deepEqual(errors, []);
+      await page.close();
+    }
+  } finally { await browser.close(); }
+});
+
+test('print branding follows saved store identity in A4 and thermal output', { timeout: 90_000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/repl/tools/bin/chromium', headless: true, args: ['--no-sandbox'], env: { PATH: process.env.PATH, HOME: fixture, TMPDIR: fixture } });
+  try {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await context.addInitScript(() => { window.print = () => { document.body.dataset.printInvoked = 'yes'; }; });
+    const page = await context.newPage();
+    const errors = []; page.on('pageerror', e => errors.push(e.message));
+    await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
+    await page.route('**/__print-fixture-logo.png', route => route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=', 'base64') }));
+    await page.goto(`${base}/admin`, { waitUntil: 'domcontentloaded' });
+    await page.getByLabel(/Username/).fill(username);
+    await page.getByLabel(/Password/).fill(fixturePasswords.get(username));
+    await page.locator('form button[type=submit]').click();
+    await page.getByRole('button', { name: /Logout|লগআউট/ }).waitFor();
+    if (await page.getByTitle('বাংলায় পরিবর্তন করুন').count()) await page.getByTitle('বাংলায় পরিবর্তন করুন').click();
+    await openAdminNavItem(page.locator('nav button[title="Control Center"], nav button[title="কন্ট্রোল সেন্টার"]'));
+    await page.locator('#store-brandNameBn').fill('পরীক্ষা ব্র্যান্ড');
+    await page.locator('#store-brandNameEn').fill('Fixture Brand');
+    await page.locator('#store-supportPhone').fill('01700000000');
+    await page.getByText('লোগো, ডিজাইন, মেনু ও SEO', { exact: true }).click();
+    await page.locator('#store-storefront-logoUrl').fill('/__print-fixture-logo.png');
+    await page.getByRole('button', { name: 'স্টোরের পরিবর্তন সেভ করুন' }).click();
+    await page.getByText('স্টোরের সেটিংস সেভ হয়েছে। স্টোর খুলে পরিবর্তন দেখুন।').waitFor();
+    await openAdminNavItem(page.locator('nav button[title="Print & Invoice"], nav button[title="প্রিন্ট ও ইনভয়েস"]'));
+    await page.getByText('কোন কপিতে কী থাকবে').waitFor();
+    const customer = page.locator('.print-customer-part').first();
+    await customer.waitFor();
+    assert.match(await customer.innerText(), /পরীক্ষা ব্র্যান্ড/);
+    assert.match(await customer.innerText(), /01700000000/);
+    const copyColors = await page.locator('.print-slips > div').first().locator('.print-slip-part').evaluateAll(parts => parts.map(part => getComputedStyle(part).borderTopColor));
+    assert.equal(new Set(copyColors).size, 3, 'A4 copies have distinguishable accent colors');
+    const logo = customer.locator('img.print-brand-logo');
+    await logo.waitFor();
+    await page.waitForFunction(() => document.querySelector('.print-brand-logo')?.naturalWidth > 0);
+    assert.equal(await logo.getAttribute('src'), '/__print-fixture-logo.png');
+    await page.locator('button').filter({ hasText: /Deselect|আনসেলেক্ট/i }).first().click();
+    await page.locator('input[type=checkbox]').last().check();
+    await page.getByRole('button', { name: /A4.*প্রিন্ট|A4.*Print/i }).click();
+    let frame = page.frameLocator('iframe[title="Print preview"]');
+    await frame.locator('body[data-print-invoked="yes"]').waitFor({ timeout: 15000 });
+    assert.equal(await frame.locator('.print-brand-logo').count(), 3, 'all A4 copies use the saved logo');
+    assert.match(await frame.locator('.print-customer-part').innerText(), /পরীক্ষা ব্র্যান্ড/);
+    await page.locator('iframe[title="Print preview"]').evaluate(el => el.remove());
+    await page.getByTitle('Switch to English').click();
+    assert.match(await customer.innerText(), /Fixture Brand/);
+    await page.locator('select').filter({ has: page.locator('option[value="thermal_4x6"]') }).selectOption('thermal_4x6');
+    assert.match(await page.locator('.print-thermal-sheet').first().innerText(), /Fixture Brand/);
+    await page.getByRole('button', { name: /থার্মাল স্টিকার প্রিন্ট|Thermal.*Print/i }).click();
+    frame = page.frameLocator('iframe[title="Print preview"]');
+    await frame.locator('body[data-print-invoked="yes"]').waitFor({ timeout: 15000 });
+    assert.equal(await frame.locator('.print-brand-logo').count(), 1);
+    assert.match(await frame.locator('.print-thermal-sheet').innerText(), /Fixture Brand/);
+    assert.equal(await frame.locator('.print-internal-part').count(), 0);
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+});
+
+test('checkout form is usable on mobile and desktop in both languages', { timeout: 120_000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/repl/tools/bin/chromium', headless: true, args: ['--no-sandbox'], env: { PATH: process.env.PATH, HOME: fixture, TMPDIR: fixture } });
+  try {
+    for (const [width, locale] of [[320, 'bn'], [375, 'bn'], [768, 'bn'], [1280, 'bn'], [320, 'en'], [1280, 'en']]) {
+      const context = await browser.newContext({ viewport: { width, height: 812 } });
+      await context.addInitScript(lang => localStorage.setItem('bongoconsign-locale-v2', JSON.stringify({ state: { locale: lang, adminLocale: 'en' }, version: 0 })), locale);
+      const page = await context.newPage();
+      const errors = []; page.on('pageerror', error => errors.push(error.message));
+      await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
+      await page.goto(`${base}/product/sundarbans-raw-khalisha-flower-honey`, { waitUntil: 'domcontentloaded' });
+      await page.getByRole('button', { name: /Add to Cart|কার্টে যোগ করুন/i }).first().click();
+      await page.goto(`${base}/checkout`, { waitUntil: 'domcontentloaded' });
+      await page.locator('#checkout-district').waitFor();
+      await page.getByRole('heading', { name: locale === 'bn' ? 'অর্ডার সম্পন্ন করুন' : 'Complete your order' }).waitFor();
+      assert.equal(await page.locator('form button[type=submit]').first().isDisabled(), true);
+      await page.locator('#checkout-district').selectOption('1');
+      await page.locator('#checkout-upazila').selectOption({ index: 1 });
+      const delivery = page.locator('.checkout-choice[aria-pressed]').first();
+      assert.equal(await delivery.getAttribute('aria-pressed'), 'true');
+      const post = page.getByRole('button', { name: /বাংলাদেশ ডাক বিভাগ|Bangladesh Post Office/ });
+      await post.click();
+      assert.equal(await post.getAttribute('aria-pressed'), 'true');
+      assert.equal(await delivery.getAttribute('aria-pressed'), 'false');
+      await delivery.click();
+      await page.getByLabel(/Full Name|আপনার পূর্ণ নাম/).fill('Responsive Buyer');
+      await page.getByLabel(/Mobile Number|মোবাইল নম্বর/).fill('01712345678');
+      await page.getByLabel(/House, Road|বাড়ি, রোড/).fill('House 12 Road 7 Fixture Area');
+      await page.locator('form button[type=submit]').first().waitFor({ state: 'visible' });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `page overflow ${width} ${locale}`);
+      const overflow = await page.locator('.checkout-page').evaluate(main => Array.from(main.querySelectorAll('input,select,button')).filter(el => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && (r.left < -1 || r.right > innerWidth + 1);
+      }).map(el => el.getAttribute('aria-label') || el.textContent?.trim() || el.tagName));
+      assert.deepEqual(overflow, [], `controls outside viewport ${width} ${locale}`);
+      assert.deepEqual(errors, []);
+      await context.close();
+    }
   } finally { await browser.close(); }
 });

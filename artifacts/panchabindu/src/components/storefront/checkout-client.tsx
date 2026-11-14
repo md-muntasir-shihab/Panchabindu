@@ -427,28 +427,22 @@ export function CheckoutClient({
 
   return (
     <StorefrontShell siteSettings={siteSettings} categories={categories}>
-      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+      <div className="checkout-page max-w-7xl mx-auto px-4 py-5 sm:py-10 space-y-5 sm:space-y-7">
         {sessionStatus === 'error' && (
           <Card className="space-y-3">
             <p role="status" className="text-sm">{locale === 'bn' ? 'চেকআউট প্রস্তুত করা যায়নি। পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।' : 'Checkout could not be prepared. Please refresh and try again.'}</p>
           </Card>
         )}
-        <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="checkout-heading flex flex-wrap items-end justify-between gap-4">
           <div>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-ink mb-1"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>{dict.common.continueShopping}</span>
+            <Link href="/shop" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#53685d] hover:text-[var(--store-accent)]">
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" /><span>{dict.common.continueShopping}</span>
             </Link>
-            <h1 className="text-xl sm:text-2xl font-bold text-ink">
-              {locale === 'bn'
-                ? 'সিঙ্গেল-পেজ চেকআউট ও অর্ডার কনফার্মেশন'
-                : 'Single-Page Checkout & Order Confirmation'}
-            </h1>
+            <p className="checkout-eyebrow">{locale === 'bn' ? 'আপনার অর্ডার' : 'YOUR ORDER'}</p>
+            <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-[#162b20]">{locale === 'bn' ? 'অর্ডার সম্পন্ন করুন' : 'Complete your order'}</h1>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#607268]">{locale === 'bn' ? 'ঠিকানা, ডেলিভারি ও পেমেন্টের তথ্য দিয়ে অর্ডার নিশ্চিত করুন।' : 'Add your delivery details and choose how you would like to pay.'}</p>
           </div>
-          <Badge status="info">{dict.common.codAvailable}</Badge>
+          <div className="checkout-header-note"><ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />{locale === 'bn' ? 'নিরাপদ চেকআউট' : 'Secure checkout'}</div>
         </div>
 
         {hasCartItems && (!quoteReady || quoteError) && (
@@ -474,21 +468,21 @@ export function CheckoutClient({
         ) : !activeDeliveryCalc || !courierChargeCalc || !bdPostChargeCalc ? null : (
           <form
             onSubmit={handleConfirmOrder}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+            className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start"
           >
             {/* Left Column: 3-Step Single-Page Accordion Sections */}
-            <div className="lg:col-span-7 space-y-6 min-w-0">
+            <div className="lg:col-span-7 space-y-4 sm:space-y-5 min-w-0">
               {/* Step 1: Customer & Cascading 64-District -> Upazila Delivery Address */}
-              <Card surface="bg" padding="md" className="space-y-4">
-                <div className="flex items-center justify-between border-b border-border pb-3">
+              <Card surface="bg" padding="md" className="checkout-card space-y-5">
+                <div className="checkout-section-heading flex items-center justify-between gap-3 pb-4">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-[var(--radius-sm)] bg-ink text-bg text-xs font-bold flex items-center justify-center">
-                      ১
+                    <span className="checkout-step-number">
+                      {locale === 'bn' ? '১' : '1'}
                     </span>
                     <h2 className="text-base font-bold text-ink">
                       {locale === 'bn'
                         ? 'গ্রাহকের তথ্য ও ডেলিভারি ঠিকানা'
-                        : '1. Customer Details & Delivery Address'}
+                        : 'Customer details & delivery address'}
                     </h2>
                   </div>
                   <MapPin className="w-4 h-4 text-muted" aria-hidden="true" />
@@ -500,6 +494,7 @@ export function CheckoutClient({
                     placeholder={
                       locale === 'bn' ? 'আপনার পূর্ণ নাম লিখুন' : 'Enter your full name'
                     }
+                    autoComplete="name"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     required
@@ -511,6 +506,7 @@ export function CheckoutClient({
                         : 'Mobile Number (11 Digits) *'
                     }
                     placeholder="017XXXXXXXX / ০১৭XXXXXXXX"
+                    type="tel" autoComplete="tel" inputMode="tel"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     onBlur={() => {
@@ -541,7 +537,7 @@ export function CheckoutClient({
                   setDistrictId(address.districtId); setDistrictConfirmed(true); setUpazilaId(address.upazilaId); setThanaConfirmed(true);
                   setThanaQuery(''); setStreetAddress(address.streetAddress); setLandmark(address.landmark);
                 }}><option value="">{locale === 'bn' ? 'ঠিকানা নির্বাচন করুন' : 'Choose an address'}</option>{savedAddresses.map(a => <option key={a.id} value={a.id}>{a.label} — {a.streetAddress}</option>)}</select></div>}
-                <Input type="email" maxLength={254} label={locale === 'bn' ? 'ইমেইল (ঐচ্ছিক)' : 'Email (optional)'} placeholder="name@example.com" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
+                <Input type="email" autoComplete="email" maxLength={254} label={locale === 'bn' ? 'ইমেইল (ঐচ্ছিক)' : 'Email (optional)'} placeholder="name@example.com" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
                 {/* Cascading 64 District -> Upazila Selectors */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -550,8 +546,8 @@ export function CheckoutClient({
                       className="block text-xs font-medium text-ink"
                     >
                       {locale === 'bn'
-                        ? 'জেলা নির্বাচন করুন (৬৪ জেলা) *'
-                        : 'Select District (64 Districts) *'}
+                        ? 'জেলা *'
+                        : 'District *'}
                     </label>
                     <select
                       id="checkout-district"
@@ -575,8 +571,8 @@ export function CheckoutClient({
                       className="block text-xs font-medium text-ink"
                     >
                       {locale === 'bn'
-                        ? `উপজেলা / থানা নির্বাচন করুন${districtConfirmed ? ` (${formatLocaleNumber(upazilasForDistrict.length, locale)}টি)` : ''} *`
-                        : `Select Upazila / Thana${districtConfirmed ? ` (${upazilasForDistrict.length})` : ''} *`}
+                        ? 'উপজেলা / থানা *'
+                        : 'Upazila / Thana *'}
                     </label>
                     <Input
                       id="checkout-thana-search"
@@ -640,6 +636,7 @@ export function CheckoutClient({
                       ? 'যেমন: বাড়ি ২৪, রোড ৭/এ, ধানমন্ডি আবাসিক এলাকা'
                       : 'e.g. House 24, Road 7/A, Dhanmondi'
                   }
+                  autoComplete="street-address"
                   value={streetAddress}
                   onChange={(e) => setStreetAddress(e.target.value)}
                   required
@@ -711,16 +708,16 @@ export function CheckoutClient({
               </Card>
 
               {/* Step 2: Delivery Method Selection */}
-              <Card surface="bg" padding="md" className="space-y-4">
-                <div className="flex items-center justify-between border-b border-border pb-3">
+              <Card surface="bg" padding="md" className="checkout-card space-y-5">
+                <div className="checkout-section-heading flex items-center justify-between gap-3 pb-4">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-[var(--radius-sm)] bg-ink text-bg text-xs font-bold flex items-center justify-center">
-                      ২
+                    <span className="checkout-step-number">
+                      {locale === 'bn' ? '২' : '2'}
                     </span>
                     <h2 className="text-base font-bold text-ink">
                       {locale === 'bn'
                         ? 'ডেলিভারি মাধ্যম নির্বাচন করুন'
-                        : '2. Select Delivery Method'}
+                        : 'Choose delivery method'}
                     </h2>
                   </div>
                   <Truck className="w-4 h-4 text-muted" aria-hidden="true" />
@@ -730,7 +727,8 @@ export function CheckoutClient({
                   <button
                     type="button"
                     onClick={() => setDeliveryMethod('courier')}
-                    className={`p-3.5 text-left border rounded-[var(--radius-md)] cursor-pointer transition-colors flex items-center justify-between ${
+                    aria-pressed={deliveryMethod === 'courier'}
+                    className={`checkout-choice p-3.5 text-left border rounded-[var(--radius-md)] cursor-pointer transition-colors flex items-center justify-between ${
                       deliveryMethod === 'courier'
                         ? 'border-ink bg-surface ring-1 ring-ink'
                         : 'border-border bg-bg hover:border-ink'
@@ -743,13 +741,7 @@ export function CheckoutClient({
                           : 'Courier Home Delivery'}
                       </p>
                       <p className="text-xs text-muted mt-0.5">
-                        {quote?.isInsideDhaka
-                          ? locale === 'bn'
-                            ? 'ঢাকার ভেতরে ২৪-৪৮ ঘণ্টা'
-                            : 'Inside Dhaka (24-48h)'
-                          : locale === 'bn'
-                          ? 'ঢাকার বাইরে ২-৪ কার্যদিবস'
-                          : 'Outside Dhaka (2-4 Days)'}
+                        {locale === 'bn' ? 'আপনার ঠিকানায় কুরিয়ার ডেলিভারি' : 'Courier delivery to your address'}
                       </p>
                     </div>
                     <span className="text-sm font-bold text-ink tabular-nums">
@@ -765,7 +757,8 @@ export function CheckoutClient({
                   <button
                     type="button"
                     onClick={() => setDeliveryMethod('post_office')}
-                    className={`p-3.5 text-left border rounded-[var(--radius-md)] cursor-pointer transition-colors flex items-center justify-between ${
+                    aria-pressed={deliveryMethod === 'post_office'}
+                    className={`checkout-choice p-3.5 text-left border rounded-[var(--radius-md)] cursor-pointer transition-colors flex items-center justify-between ${
                       deliveryMethod === 'post_office'
                         ? 'border-ink bg-surface ring-1 ring-ink'
                         : 'border-border bg-bg hover:border-ink'
@@ -796,16 +789,16 @@ export function CheckoutClient({
               </Card>
 
               {/* Step 3: Payment Method (COD vs Manual bKash TrxID) */}
-              <Card surface="bg" padding="md" className="space-y-4">
-                <div className="flex items-center justify-between border-b border-border pb-3">
+              <Card surface="bg" padding="md" className="checkout-card space-y-5">
+                <div className="checkout-section-heading flex items-center justify-between gap-3 pb-4">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-[var(--radius-sm)] bg-ink text-bg text-xs font-bold flex items-center justify-center">
-                      ৩
+                    <span className="checkout-step-number">
+                      {locale === 'bn' ? '৩' : '3'}
                     </span>
                     <h2 className="text-base font-bold text-ink">
                       {locale === 'bn'
                         ? 'পেমেন্ট মাধ্যম নির্বাচন করুন'
-                        : '3. Select Payment Method'}
+                        : 'Choose payment method'}
                     </h2>
                   </div>
                   <CreditCard className="w-4 h-4 text-muted" aria-hidden="true" />
@@ -836,7 +829,8 @@ export function CheckoutClient({
                     type="button"
                     disabled={hasItemRequiringAdvance}
                     onClick={() => setPaymentMethod(method.code)}
-                    className={`p-3.5 text-left border rounded-[var(--radius-md)] transition-colors ${
+                    aria-pressed={effectivePaymentMethod === method.code}
+                    className={`checkout-choice p-3.5 text-left border rounded-[var(--radius-md)] transition-colors ${
                       hasItemRequiringAdvance
                         ? 'opacity-50 cursor-not-allowed border-border bg-surface'
                         : effectivePaymentMethod === method.code
@@ -865,7 +859,8 @@ export function CheckoutClient({
                     key={method.code}
                     type="button"
                     onClick={() => setPaymentMethod(method.code)}
-                    className={`p-3.5 text-left border rounded-[var(--radius-md)] cursor-pointer transition-colors ${
+                    aria-pressed={effectivePaymentMethod === method.code}
+                    className={`checkout-choice p-3.5 text-left border rounded-[var(--radius-md)] cursor-pointer transition-colors ${
                       effectivePaymentMethod === method.code
                         ? 'border-[#E2136E] bg-[#E2136E]/5 ring-1 ring-[#E2136E]'
                         : 'border-border bg-bg hover:border-[#E2136E]/60'
@@ -950,8 +945,8 @@ export function CheckoutClient({
                     <Input
                       label={
                         locale === 'bn'
-                          ? 'বিকাশ Transaction ID (TrxID) *'
-                          : 'bKash Transaction ID (TrxID) *'
+                          ? `${selectedPayment.nameBn} ট্রানজ্যাকশন আইডি (TrxID) *`
+                          : `${selectedPayment.nameEn} Transaction ID (TrxID) *`
                       }
                       placeholder={uiText("যেমন: 9K28X91A", locale)}
                       value={manualPaymentTrxId}
@@ -965,7 +960,7 @@ export function CheckoutClient({
 
             {/* Right Column: Order Summary, Promo Code, & Confirm CTA */}
             <div className="lg:col-span-5 min-w-0 space-y-4 lg:sticky lg:top-24">
-              <Card surface="surface" padding="md" className="space-y-4">
+              <Card surface="surface" padding="md" className="checkout-card checkout-summary space-y-4">
                 <h2 className="text-base font-bold text-ink border-b border-border pb-3">
                   {locale === 'bn'
                     ? `অর্ডার সামারি (${formatLocaleNumber(
@@ -1001,7 +996,7 @@ export function CheckoutClient({
                             {name}
                           </p>
                           <p className="text-xs text-muted">{vTitle}</p>
-                          <div className="mt-1.5 flex items-center justify-between">
+                          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
                             <div className="inline-flex items-center border border-border rounded-[var(--radius-sm)]">
                               <button
                                 type="button"
@@ -1012,7 +1007,7 @@ export function CheckoutClient({
                                   )
                                 }
                                 aria-label={uiText("Decrease quantity", locale)}
-                                className="p-1 text-ink hover:bg-surface cursor-pointer"
+                                className="min-h-11 min-w-11 flex items-center justify-center text-ink hover:bg-surface cursor-pointer"
                               >
                                 <Minus className="w-3 h-3" aria-hidden="true" />
                               </button>
@@ -1028,7 +1023,7 @@ export function CheckoutClient({
                                   )
                                 }
                                 aria-label={uiText("Increase quantity", locale)}
-                                className="p-1 text-ink hover:bg-surface cursor-pointer"
+                                className="min-h-11 min-w-11 flex items-center justify-center text-ink hover:bg-surface cursor-pointer"
                               >
                                 <Plus className="w-3 h-3" aria-hidden="true" />
                               </button>
@@ -1044,8 +1039,8 @@ export function CheckoutClient({
                               <button
                                 type="button"
                                 onClick={() => removeItem(item.variantId)}
-                                aria-label={`Remove ${name}`}
-                                className="text-muted hover:text-danger cursor-pointer"
+                                aria-label={locale === 'bn' ? `${name} সরান` : `Remove ${name}`}
+                                className="min-h-11 min-w-11 flex items-center justify-center text-muted hover:text-danger cursor-pointer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                               </button>
@@ -1075,7 +1070,7 @@ export function CheckoutClient({
                       onChange={(e) => setPromoInput(e.target.value)}
                       placeholder="EID10"
                       disabled={Boolean(appliedPromoCode)}
-                      className="flex-1 min-h-[44px] px-3.5 py-2 text-sm font-mono uppercase bg-bg text-ink border border-border rounded-[var(--radius-md)]"
+                      className="flex-1 min-w-0 min-h-[44px] px-3.5 py-2 text-sm font-mono uppercase bg-bg text-ink border border-border rounded-[var(--radius-md)]"
                     />
                     {appliedPromoCode ? (
                       <Button
@@ -1195,51 +1190,11 @@ export function CheckoutClient({
                   )}
                 </div>
 
-                {/* Multi-Vendor Consignment Fulfillment & Separated Order/Payment Status Summary (Phase 6 Section 9.4) */}
-                <div className="p-3 rounded-[var(--radius-md)] border border-border bg-bg space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-ink">
-                      {locale === 'bn'
-                        ? 'কনসাইনমেন্ট ফুলফিলমেন্ট সামারি'
-                        : 'Consignment Fulfillment Summary'}
-                    </span>
-                    <Badge status="info">
-                      {locale === 'bn'
-                        ? `${formatLocaleNumber(cartItems.length, locale)}টি আইটেম`
-                        : `${cartItems.length} Line(s)`}
-                    </Badge>
-                  </div>
-                  <p className="text-[11px] text-muted leading-relaxed">
-                    {locale === 'bn'
-                      ? 'একাধিক কারিগর বা তাঁত হাবের পণ্য থাকলে সেগুলো কেন্দ্রীয় কিউসি (QC) ওয়্যারহাউসে একীভূত করে বা ভেন্ডর ফুলফিলমেন্ট গ্রুপ (VFG) অনুযায়ী পাঠানো হয়।'
-                      : 'Items from multiple artisan hubs are QC-inspected and dispatched via Vendor Fulfillment Groups (VFG).'}
-                  </p>
-                  <div className="pt-1.5 border-t border-border grid grid-cols-2 gap-2 text-[11px]">
-                    <div>
-                      <span className="text-muted block">
-                        {locale === 'bn' ? 'অর্ডার স্ট্যাটাস:' : 'Order Status:'}
-                      </span>
-                      <span className="font-semibold text-ink">
-                        {locale === 'bn'
-                          ? 'ফোন কনফার্মেশন পেন্ডিং'
-                          : 'Pending Call Confirmation'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted block">
-                        {locale === 'bn' ? 'পেমেন্ট স্ট্যাটাস:' : 'Payment Status:'}
-                      </span>
-                      <span className="font-semibold text-ink">
-                        {isManualPayment
-                          ? locale === 'bn'
-                            ? 'বিকাশ TrxID ভেরিফিকেশন পেন্ডিং'
-                            : 'Pending TrxID Verification'
-                          : locale === 'bn'
-                          ? 'ডেলিভারির সময় প্রদেয় (COD)'
-                          : 'Unpaid (Pay on Delivery)'}
-                      </span>
-                    </div>
-                  </div>
+                <div className="checkout-reassurance flex items-start gap-2.5 rounded-xl p-3 text-xs leading-relaxed">
+                  <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+                  <p>{isManualPayment
+                    ? (locale === 'bn' ? 'ম্যানুয়াল পেমেন্টের তথ্য যাচাইয়ের পর প্রাপ্তি নিশ্চিত করা হবে।' : 'Manual payment is confirmed after its details are verified.')
+                    : (locale === 'bn' ? 'অর্ডার দেওয়ার পর আপনার অর্ডারের তথ্য ও অবস্থা দেখতে পারবেন।' : 'After placing your order, you can view its details and status.')}</p>
                 </div>
 
                 {submitError && (
@@ -1257,7 +1212,7 @@ export function CheckoutClient({
                   variant="primary"
                   size="lg"
                   disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus === 'loading' || sessionStatus === 'error'}
-                  className="w-full min-h-[46px] text-sm font-bold shadow-sm"
+                  className="checkout-confirm w-full min-h-[50px] text-sm font-bold"
                   leftIcon={
                     <ShieldCheck className="w-4 h-4" aria-hidden="true" />
                   }
@@ -1275,7 +1230,7 @@ export function CheckoutClient({
             </div>
 
             {/* Mobile Sticky Order Confirmation Bar (< 1024px) */}
-            <div className="storefront-action-bar lg:hidden fixed bottom-[calc(3.5rem+max(16px,var(--safe-bottom)))] md:bottom-0 left-0 right-0 z-30 p-3 md:pb-[max(0.75rem,var(--safe-bottom))] bg-surface/95 backdrop-blur border-t border-border shadow-lg flex items-center justify-between gap-3">
+            <div className="checkout-sticky storefront-action-bar lg:hidden fixed bottom-[calc(3.5rem+max(16px,var(--safe-bottom)))] md:bottom-0 left-0 right-0 z-30 p-3 md:pb-[max(0.75rem,var(--safe-bottom))] bg-surface/95 backdrop-blur border-t border-border shadow-lg flex items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] text-muted">{dict.common.total}</p>
                 <p className="text-sm font-bold text-ink tabular-nums">

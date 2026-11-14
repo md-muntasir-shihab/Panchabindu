@@ -42,6 +42,8 @@ import type {
   PrintTemplateConfig,
 } from '@/lib/admin/phase4b-service';
 import { formatPoishaToBdt } from '@/lib/money';
+import type { PublicSafeSiteSettingsDTO } from '@/lib/db/repository';
+import { safeStoreUrl } from '@/lib/storefront/storefront-config';
 import { formatLocaleNumber } from '@/lib/i18n/dictionaries';
 import { Badge, Button, Card, Input } from '../ui/primitives';
 
@@ -84,12 +86,23 @@ export function Code128BarcodeSvg({ value, height = 42 }: { value: string; heigh
   </div>;
 }
 
+function PrintBrandMark({ name, logoUrl, compact = false }: { name: string; logoUrl?: string; compact?: boolean }) {
+  const [failed, setFailed] = React.useState(false);
+  React.useEffect(() => setFailed(false), [logoUrl]);
+  const usableUrl = logoUrl && safeStoreUrl(logoUrl) && !logoUrl.startsWith('#') ? logoUrl : '';
+  return <span className={`print-brand-mark${compact ? ' print-brand-mark-compact' : ''}`} aria-label={name}>
+    <span className="print-brand-fallback" aria-hidden="true">{Array.from(name.trim())[0] || 'P'}</span>
+    {usableUrl && !failed && <img className="print-brand-logo" src={usableUrl} alt="" onError={() => setFailed(true)} referrerPolicy="no-referrer" />}
+  </span>;
+}
+
 export interface PrintEnginePanelProps {
   locale: 'bn' | 'en';
   isSuperAdmin: boolean;
   isVendor: boolean;
   availableOrderNos: string[];
   initialPrintConfig: PrintTemplateConfig;
+  siteSettings: PublicSafeSiteSettingsDTO;
   onRefreshWorkspace: () => Promise<void>;
 }
 
@@ -102,10 +115,13 @@ export function PrintEnginePanel({
   isVendor,
   availableOrderNos,
   initialPrintConfig,
+  siteSettings,
   onRefreshWorkspace,
 }: PrintEnginePanelProps) {
   // Navigation & Sub-Tabs
   const [activeSubTab, setActiveSubTab] = React.useState<PrintSubTab>('queue');
+  const brandName = (locale === 'bn' ? siteSettings.brandNameBn : siteSettings.brandNameEn) || siteSettings.brandNameBn || siteSettings.brandNameEn;
+  const logoUrl = siteSettings.storefront?.logoUrl;
 
   // Print Queue Controls
   const [selectedOrderNos, setSelectedOrderNos] =
@@ -314,6 +330,9 @@ export function PrintEnginePanel({
       await Promise.all(Array.from(doc.images).map(image => image.complete ? Promise.resolve() : new Promise<void>(resolve => {
         image.onload = image.onerror = () => resolve(); setTimeout(resolve, 2000);
       })));
+      for (const image of Array.from(doc.querySelectorAll<HTMLImageElement>('.print-brand-logo'))) {
+        if (!image.complete || image.naturalWidth === 0) image.remove();
+      }
       if (!CSS.supports('zoom', '1')) throw new Error(locale === 'bn' ? 'এই ব্রাউজারে এক পৃষ্ঠায় ফিট করা সমর্থিত নয়। Chrome বা Edge ব্যবহার করুন।' : 'This browser cannot fit the slip on one page. Use Chrome or Edge.');
       const maxHeightPx = (paperHeightMm - 2) * 96 / 25.4;
       const maxWidthPx = paperWidthMm * 96 / 25.4;
@@ -429,6 +448,19 @@ export function PrintEnginePanel({
          ==================================================================== */}
       {activeSubTab === 'queue' && (
         <div className="space-y-4">
+          <div className="print:hidden rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-slate-900">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div><h2 className="text-sm font-bold">{locale === 'bn' ? 'কোন কপিতে কী থাকবে' : 'What goes on each copy'}</h2>
+                <p className="mt-1 text-xs text-slate-700">{locale === 'bn' ? 'প্রতি অর্ডারে একটি A4 পাতায় নির্বাচিত অংশগুলো থাকে; কেটে আলাদা করুন।' : 'Each order uses one A4 page with the selected sections; cut them apart.'}</p></div>
+              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-900">{locale === 'bn' ? 'স্টোরের ব্র্যান্ডিং সিঙ্ক' : 'Store branding synced'}</span>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3 text-xs leading-relaxed">
+              <div className="rounded-lg border border-emerald-200 bg-white p-3"><strong>{locale === 'bn' ? '১ · গ্রাহক ইনভয়েস' : '1 · Customer invoice'}</strong><p className="mt-1 text-slate-700">{locale === 'bn' ? 'ব্র্যান্ড, গ্রাহক ও ঠিকানা, পণ্য, বিক্রয়মূল্য, ছাড়, ডেলিভারি, পরিশোধ ও বকেয়া। অভ্যন্তরীণ খরচ বা ভেন্ডরের তথ্য নয়।' : 'Brand, customer and address, items, sale prices, discounts, delivery, payment and balance. No internal costs or vendor details.'}</p></div>
+              <div className="rounded-lg border border-sky-200 bg-white p-3"><strong>{locale === 'bn' ? '২ · কুরিয়ার লেবেল' : '2 · Courier label'}</strong><p className="mt-1 text-slate-700">{locale === 'bn' ? 'প্রেরক, প্রাপক, ফোন ও ঠিকানা, কুরিয়ার, অর্ডার/বারকোড এবং সংগ্রহযোগ্য টাকা।' : 'Sender, recipient, phone and address, courier, order/barcode and amount to collect.'}</p></div>
+              <div className="rounded-lg border border-amber-200 bg-white p-3"><strong>{locale === 'bn' ? '৩ · অভ্যন্তরীণ কপি' : '3 · Internal copy'}</strong><p className="mt-1 text-slate-700">{locale === 'bn' ? 'প্যাকিং ও যাচাই, স্টাফ নোট এবং অনুমতি অনুযায়ী ভেন্ডর ও হিসাবের তথ্য। গ্রাহক বা কুরিয়ারকে দেবেন না।' : 'Packing and checks, staff notes, and role-permitted vendor and accounting details. Do not give this to customers or couriers.'}</p></div>
+            </div>
+            <p className="mt-3 text-xs text-slate-700">{locale === 'bn' ? '৪×৬ থার্মাল: শুধু কুরিয়ার লেবেল। লোগো ও নাম স্টোর ডিজাইন সেটিংস থেকে আসে; পরিবর্তন সেভ করে রিলোড করুন। লোগো লোড না হলে নামের প্রথম অক্ষর দেখাবে। রঙ প্রিন্টার ও প্রিন্ট ডায়ালগের ওপর নির্ভর করে—থার্মাল সাধারণত সাদা-কালো।' : '4×6 thermal: courier label only. Logo and name come from store design settings; save changes and reload. If the logo cannot load, the first letter is used. Colors depend on your printer and print dialog; thermal is usually monochrome.'}</p>
+          </div>
           {/* Controls Bar: Search, Sort, Filter, Mode & Action Buttons */}
           <div className="print:hidden space-y-3">
             <Card surface="bg" padding="md" className="space-y-3">
@@ -526,11 +558,11 @@ export function PrintEnginePanel({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => void loadSlips()}
+                    onClick={() => void Promise.all([loadSlips(), onRefreshWorkspace()])}
                     disabled={loadingSlips}
                     leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
                   >
-                    {loadingSlips ? 'লোড হচ্ছে...' : 'রিলোড'}
+                    {loadingSlips ? (locale === 'bn' ? 'লোড হচ্ছে…' : 'Loading…') : (locale === 'bn' ? 'রিলোড' : 'Reload')}
                   </Button>
 
                   <Button
@@ -624,12 +656,13 @@ export function PrintEnginePanel({
                     className="print-thermal-sheet max-w-[101.6mm] mx-auto border-2 border-ink bg-bg text-ink p-4 space-y-3 print:break-after-page"
                   >
                     <div className="flex items-center justify-between border-b border-border pb-2">
-                      <div>
-                        <p className="text-[10px] font-mono uppercase text-muted">
+                      <div className="flex items-center gap-2">
+                        <PrintBrandMark name={brandName} logoUrl={logoUrl} />
+                        <div><p className="text-[10px] font-mono uppercase text-muted">
                           <LocalizedText source={"4x6 THERMAL COURIER STICKER"} area="admin" />{" "}</p>
                         <p className="text-xs font-bold text-ink">
-                          <LocalizedText source={"প্রেরক:"} area="admin" />{" "}{localizedField(p12, "senderBrandNameBn", locale)} ({p12.senderSupportPhone})
-                        </p>
+                          <LocalizedText source={"প্রেরক:"} area="admin" />{" "}{brandName} ({siteSettings.supportPhone})
+                        </p></div>
                       </div>
                       <Badge status="info">{p12.courierProvider.toUpperCase()}</Badge>
                     </div>
@@ -682,11 +715,10 @@ export function PrintEnginePanel({
                   {/* ==========================================================
                       PART 1: CUSTOMER INVOICE (গ্রাহক ইনভয়েস — ZERO COST LEAK)
                      ========================================================== */}
-                  <div className="print-slip-part border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg" style={{ minHeight: `${printConfig.part1HeightMm * heightScale}mm`, display: visibleParts[0] ? undefined : 'none' }}>
+                  <div className="print-slip-part print-customer-part border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg" style={{ minHeight: `${printConfig.part1HeightMm * heightScale}mm`, display: visibleParts[0] ? undefined : 'none' }}>
                     <div className="flex items-start justify-between border-b border-border pb-1.5 gap-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-[var(--radius-sm)] border border-ink bg-ink text-bg flex items-center justify-center font-bold text-sm shrink-0">
-                          <LocalizedText source={"প"} area="admin" />{" "}</div>
+                        <PrintBrandMark name={brandName} logoUrl={logoUrl} />
                         <div>
                           <div className="flex items-center gap-1.5">
                             <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-surface border border-border rounded text-ink">
@@ -696,10 +728,10 @@ export function PrintEnginePanel({
                               <LocalizedText source={"A4 Official Copy"} area="admin" />{" "}</span>
                           </div>
                           <h2 className="text-xs sm:text-sm font-bold text-ink leading-tight mt-0.5">
-                            {localizedField(p12, "senderBrandNameBn", locale)} ({p12.senderBrandNameEn})
+                            {brandName}
                           </h2>
                           <p className="text-[9.5px] text-muted leading-tight">
-                            <LocalizedText source={"হেল্পলাইন:"} area="admin" />{" "}{p12.senderSupportPhone} {" "}<LocalizedText source={"· ইস্যু তারিখ:"} area="admin" />{' '}
+                            <LocalizedText source={"হেল্পলাইন:"} area="admin" />{" "}{siteSettings.supportPhone} {" "}<LocalizedText source={"· ইস্যু তারিখ:"} area="admin" />{' '}
                             {new Date(p12.createdAt).toLocaleDateString('bn-BD')}
                           </p>
                         </div>
@@ -857,15 +889,16 @@ export function PrintEnginePanel({
                   {/* ==========================================================
                       PART 2: COURIER BOX STICKER (কুরিয়ার বক্স স্টিকার)
                      ========================================================== */}
-                  <div className="print-slip-part border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg" style={{ minHeight: `${printConfig.part2HeightMm * heightScale}mm`, display: visibleParts[1] ? undefined : 'none' }}>
+                  <div className="print-slip-part print-courier-part border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg" style={{ minHeight: `${printConfig.part2HeightMm * heightScale}mm`, display: visibleParts[1] ? undefined : 'none' }}>
                     <div className="flex items-center justify-between border-b border-border pb-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <PrintBrandMark name={brandName} logoUrl={logoUrl} compact />
                         <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-surface border border-border rounded text-ink">
                           <LocalizedText source={"PART 2 ·"} area="admin" />{" "}{localizedField(printConfig, "part2TitleBn", locale)}
                         </span>
                         <span className="text-[10px] font-bold text-ink">
-                          <LocalizedText source={"প্রেরক:"} area="admin" />{" "}{localizedField(p12, "senderBrandNameBn", locale)} {" "}<LocalizedText source={"(হেল্পলাইন:"} area="admin" />{' '}
-                          {p12.senderSupportPhone})
+                          <LocalizedText source={"প্রেরক:"} area="admin" />{" "}{brandName} {" "}<LocalizedText source={"(হেল্পলাইন:"} area="admin" />{' '}
+                          {siteSettings.supportPhone})
                         </span>
                       </div>
                       <div className="text-right font-mono text-[10px] tabular-nums">
@@ -931,11 +964,12 @@ export function PrintEnginePanel({
                       PART 3: ADMIN, ACCOUNTS & WAREHOUSE MASTER COPY
                       (পূর্ণাঙ্গ প্রোডাক্ট, সাপ্লায়ার, কেনা দাম, লাভ, মার্জিন ও হিসাব ব্রেকডাউন)
                      ========================================================== */}
-                  <div className="print-slip-part border-2 border-ink rounded-[var(--radius-sm)] p-2.5 bg-surface/60 space-y-2" style={{ minHeight: `${printConfig.part3HeightMm * heightScale}mm`, display: visibleParts[2] ? undefined : 'none' }}>
+                  <div className="print-slip-part print-internal-part border-2 border-ink rounded-[var(--radius-sm)] p-2.5 bg-surface/60 space-y-2" style={{ minHeight: `${printConfig.part3HeightMm * heightScale}mm`, display: visibleParts[2] ? undefined : 'none' }}>
                     {/* Part 3 Header & Operational Telemetry Strip */}
                     <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-border pb-1.5">
                       <div>
                         <div className="flex flex-wrap items-center gap-1.5">
+                          <PrintBrandMark name={brandName} logoUrl={logoUrl} compact />
                           <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-ink text-bg rounded">
                             <LocalizedText source={"PART 3 ·"} area="admin" />{" "}{localizedField(printConfig, "part3TitleBn", locale)}
                           </span>
@@ -1385,7 +1419,7 @@ export function PrintEnginePanel({
                 <option value="thermal_4x6">4 × 6 inch — থার্মাল / Thermal</option>
               </select>
             </label>
-            <p className="text-xs text-muted">{locale === 'bn' ? 'অংশের উচ্চতা ন্যূনতম লক্ষ্য; A4-এ জায়গা কম হলে অনুপাতে কমবে এবং বেশি লেখা পরের পাতায় যাবে, কাটা হবে না।' : 'Part heights are minimum targets, proportionally reduced to fit A4. Overflow continues on another page rather than being clipped.'}</p>
+            <p className="text-xs text-muted">{locale === 'bn' ? 'অংশের উচ্চতা লক্ষ্য হিসেবে ব্যবহৃত হয়। তথ্য স্পষ্টভাবে এক পাতায় না ধরলে প্রিন্ট বন্ধ হবে—কম অংশ বেছে আলাদা কপি প্রিন্ট করুন।' : 'Part heights are targets. If the content cannot fit legibly on one page, printing stops; select fewer parts and print separate copies.'}</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Input
                 label="Part 1 শিরোনাম (গ্রাহক কপি)"
