@@ -29,3 +29,13 @@
 .storefront-theme { --color-primary: var(--store-accent); --color-info: var(--store-accent); }
 .storefront-theme a:focus-visible, .storefront-theme button:focus-visible { outline: 2px solid var(--store-accent); outline-offset: 4px; }
 @media (prefers-reduced-motion: reduce) { .storefront-theme *, .storefront-theme *::before, .storefront-theme *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+
+/* Storefront keeps its existing inner gutters and maximum widths, while the
+   shell and fixed controls respect device cutouts in portrait and landscape. */
+.storefront-shell { padding-left: var(--safe-left); padding-right: var(--safe-right); }
+.storefront-header { padding-top: var(--safe-top); }
+.storefront-delay-banner { padding-top: calc(0.625rem + var(--safe-top)); }
+.storefront-bottom-nav { padding-left: var(--safe-left); padding-right: var(--safe-right); }
+.storefront-floating-contact { right: max(1rem, calc(var(--safe-right) + 1rem)); }
+.storefront-action-bar { padding-left: calc(0.75rem + var(--safe-left)); padding-right: calc(0.75rem + var(--safe-right)); }
+.storefront-footer-bottom { padding-bottom: calc(1.25rem + var(--safe-bottom)); }
