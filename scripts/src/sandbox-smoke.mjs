@@ -203,3 +203,54 @@ test('vendor support and statement work in an isolated browser on mobile and des
     }
   } finally { await browser.close(); }
 });
+
+test('guest checkout address selection and order submission use isolated fixture data', { timeout: 90_000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/repl/tools/bin/chromium', headless: true, args: ['--no-sandbox'], env: { PATH: process.env.PATH, HOME: fixture, TMPDIR: fixture } });
+  try {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const errors = []; page.on('pageerror', error => errors.push(error.message));
+    await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
+    await page.goto(`${base}/product/sundarbans-raw-khalisha-flower-honey`, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: /Add to Cart|কার্টে যোগ করুন/i }).first().click();
+    await page.goto(`${base}/checkout`, { waitUntil: 'domcontentloaded' });
+    await page.locator('#checkout-district').waitFor();
+    assert.equal(await page.locator('#checkout-thana-search').isDisabled(), true);
+    assert.equal(await page.locator('#checkout-upazila').isDisabled(), true);
+    await page.locator('#checkout-district').selectOption('1');
+    assert.equal(await page.locator('#checkout-thana-search').isEnabled(), true);
+    await page.locator('#checkout-upazila').selectOption({ index: 1 });
+    await page.locator('#checkout-district').selectOption('');
+    assert.equal(await page.locator('#checkout-upazila').isDisabled(), true);
+    await page.locator('#checkout-district').selectOption('1');
+    await page.locator('#checkout-upazila').selectOption({ index: 1 });
+    await page.getByLabel(/Full Name|আপনার পূর্ণ নাম/).fill('Fixture Buyer');
+    await page.getByLabel(/Mobile Number|মোবাইল নম্বর/).fill('01712345678');
+    await page.getByLabel(/Street Address|বাড়ি, রোড/).fill('House 12 Road 7 Fixture Area');
+    const orderResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/orders' && response.request().method() === 'POST');
+    await page.locator('form button[type="submit"]').first().click();
+    const response = await orderResponse;
+    assert.equal(response.status(), 200, await response.text());
+    assert.equal((await response.json()).success, true);
+    await page.waitForURL(/order-tracking/);
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+});
+
+test('admin browser login, reload and logout render without errors', { timeout: 60_000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/repl/tools/bin/chromium', headless: true, args: ['--no-sandbox'], env: { PATH: process.env.PATH, HOME: fixture, TMPDIR: fixture } });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const errors = []; page.on('pageerror', error => errors.push(error.message));
+    await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
+    await page.goto(`${base}/admin`, { waitUntil: 'domcontentloaded' });
+    await page.getByLabel(/Username/).fill(username);
+    await page.getByLabel(/Password/).fill(fixturePasswords.get(username));
+    await page.locator('form button[type=submit]').click();
+    await page.getByRole('button', { name: /Logout|লগআউট/ }).waitFor({ timeout: 10000 });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: /Logout|লগআউট/ }).waitFor({ timeout: 10000 });
+    await page.getByRole('button', { name: /Logout|লগআউট/ }).click();
+    await page.getByLabel(/Username/).waitFor();
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+});

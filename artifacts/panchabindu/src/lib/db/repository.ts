@@ -529,9 +529,9 @@ function getInitialSeedState(): ErpPersistentState {
         titleBn: 'আমাদের সম্পর্কে',
         titleEn: 'About Us',
         contentBn:
-          'বঙ্গকনসাইন বাংলাদেশের একটি আধুনিক কনসাইনমেন্ট ই-কমার্স স্টোর। আমাদের প্রতিটি পণ্য ওয়্যারহাউসে যাচাই করার পর গ্রাহকের কাছে পাঠানো হয়।',
+          'পঞ্চবিন্দু বাংলাদেশের একটি আধুনিক কনসাইনমেন্ট ই-কমার্স স্টোর। আমাদের প্রতিটি পণ্য ওয়্যারহাউসে যাচাই করার পর গ্রাহকের কাছে পাঠানো হয়।',
         contentEn:
-          'BongoConsign is a modern consignment e-commerce store in Bangladesh where every item is QC-verified before dispatch.',
+          'Panchabindu is a modern consignment e-commerce store in Bangladesh where every item is QC-verified before dispatch.',
       },
       privacy: {
         titleBn: 'গোপনীয়তা নীতি',
