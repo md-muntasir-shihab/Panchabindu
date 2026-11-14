@@ -98,6 +98,7 @@ for (const [module, read, write, filename] of stores) {
       fs.unlinkSync(file);
       fs.rmdirSync('.data');
       process.env.NODE_ENV = 'production';
+      process.env.PANCHABINDU_PERSISTENCE = 'json';
       assert.throws(() => service.${read}(), /PRODUCTION_PERSISTENCE_GUARD/);
       assert.throws(() => service.${write}({}), /PRODUCTION_PERSISTENCE_GUARD/);
       assert.equal(fs.existsSync('.data'), false);

@@ -13,6 +13,7 @@
   "rewrites": [
     { "source": "/api/cron/courier-status", "destination": "/api/courier-status-cron.mjs" },
     { "source": "/api/vendor/overview", "destination": "/api/vendor-overview.mjs" },
+    { "source": "/api/:group/:path*", "destination": "/api/__gateway?__pb_group=:group&__pb_path=:path*" },
     { "source": "/manifest.webmanifest", "destination": "/api/__metadata/manifest.webmanifest" },
     { "source": "/sitemap.xml", "destination": "/api/__metadata/sitemap.xml" },
     { "source": "/robots.txt", "destination": "/api/__metadata/robots.txt" },
