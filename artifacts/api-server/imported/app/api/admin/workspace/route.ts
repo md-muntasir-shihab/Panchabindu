@@ -25,7 +25,6 @@ import {
 } from '@/src/lib/admin/phase4a-service';
 import {
   auditAndCloseVendorContract,
-  autoRecordOrderDeliveredOrReturned,
   computeCourier360Summary,
   confirmBatchHandoverShipped,
   createPickupBatchAndManifest,
@@ -155,6 +154,8 @@ async function handleGET(req: NextRequest) {
   return NextResponse.json({
     ...snapshot,
     csrfToken: session.csrfToken,
+    // Amounts are claims until approved; keep this sensitive ledger view super-admin only.
+    manualPaymentSubmissions: isSuperAdmin ? (erpState.manualBkashSubmissions ?? []).map(({ orderNo, trxId, provider, submittedAmountPoisha, status, submittedAt }) => ({ orderNo, trxId, provider: provider ?? 'bkash', submittedAmountPoisha, status, submittedAt })) : [],
     emergencyStopActive: isSuperAdmin ? p4c.emergencyStopActive === true : undefined,
     siteSettings: isSuperAdmin ? erpState.siteSettings : sanitizeSiteSettingsForPublic(erpState.siteSettings),
     printConfig: p4b.printConfig,
@@ -920,7 +921,7 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     provider: z.enum(['bkash', 'nagad', 'rocket']),
     senderPhone: z.string().min(11),
     trxId: z.string().min(4),
-    amountTaka: z.number().positive(),
+    amountTaka: z.number().positive().refine(value => Number.isSafeInteger(Math.round(value * 100)) && Math.abs(value * 100 - Math.round(value * 100)) < 1e-7, 'Amount must be in whole poisha'),
     autoVerify: z.boolean().optional(),
     reviewNoteBn: z.string().optional(),
     // The grid's MFS sheet has always sent `noteBn`; accept it instead of
@@ -1041,14 +1042,6 @@ async function handlePOST(req: NextRequest) {
 
     if (payload.operation === 'order_grid_action') {
       const res = executeOrderGridAction(ctx, payload);
-      if (
-        res.success && payload.actionType === 'update_status' &&
-        (payload.newStatus === 'delivered' || payload.newStatus === 'returned')
-      ) {
-        for (const result of res.results) {
-          if (result.ok) autoRecordOrderDeliveredOrReturned(ctx, result.orderNo, payload.newStatus);
-        }
-      }
       return NextResponse.json(res);
     }
 
@@ -1139,22 +1132,22 @@ async function handlePOST(req: NextRequest) {
 
     if (payload.operation === 'create_pickup_batch') {
       const res = createPickupBatchAndManifest(ctx, payload);
-      return NextResponse.json(res, { status: res.success ? 201 : 400 });
+      return NextResponse.json({ ...res, code: res.success ? undefined : 'NOT_INTEGRATED' }, { status: res.success ? 201 : 503 });
     }
 
     if (payload.operation === 'confirm_batch_handover') {
       const res = confirmBatchHandoverShipped(ctx, payload);
-      return NextResponse.json(res, { status: res.success ? 200 : 400 });
+      return NextResponse.json({ ...res, code: res.success ? undefined : 'NOT_INTEGRATED' }, { status: res.success ? 200 : 503 });
     }
 
     if (payload.operation === 'settle_courier_remittance') {
       const res = recordCourierRemittanceSettlement(ctx, payload);
-      return NextResponse.json(res, { status: res.success ? 201 : 400 });
+      return NextResponse.json({ ...res, code: res.success ? undefined : 'UNSAFE_LEGACY_WORKFLOW' }, { status: res.success ? 201 : 503 });
     }
 
     if (payload.operation === 'process_four_way_return') {
       const res = processFourWayOrderReturn(ctx, payload);
-      return NextResponse.json(res, { status: res.success ? 200 : 400 });
+      return NextResponse.json({ ...res, code: res.success ? undefined : 'UNSAFE_LEGACY_WORKFLOW' }, { status: res.success ? 200 : 503 });
     }
 
     if (payload.operation === 'request_vendor_payout') {

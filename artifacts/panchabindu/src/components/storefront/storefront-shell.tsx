@@ -927,7 +927,7 @@ export function StorefrontShell({
         <div className="space-y-5">
           {/* Top Live Order Tracking CTA */}
           <Link
-            href="/order-tracking/ORD-261106-0001"
+            href="/order-tracking"
             onClick={() => setIsMenuOpen(false)}
             className="flex items-center justify-between p-3.5 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] active:scale-98 transition-transform cursor-pointer"
           >
@@ -937,7 +937,7 @@ export function StorefrontShell({
               </div>
               <div>
                 <p className="text-xs sm:text-sm font-bold leading-tight">
-                  {locale === 'bn' ? 'লাইভ অর্ডার ট্র্যাকিং' : 'Live Order Tracking'}
+                  {locale === 'bn' ? 'অর্ডার ট্র্যাকিং' : 'Order Tracking'}
                 </p>
                 <p className="text-[11px] opacity-85 mt-0.5">
                   {locale === 'bn'

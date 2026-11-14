@@ -253,6 +253,7 @@ export function PrintEnginePanel({
 
   const handlePrint = async () => {
     if (!activeSlipsToPrint.length || !printableRef.current) return;
+    let frame: HTMLIFrameElement | null = null;
     setLoadingSlips(true);
     setFeedback(null);
     try {
@@ -265,7 +266,7 @@ export function PrintEnginePanel({
       if (!res.ok || !data.success) throw new Error(data.errorBn || 'প্রিন্ট অনুরোধ ব্যর্থ। / Print request failed.');
       const updates = new Map<string, OrderPrintSlipBundle>(data.slips.map((slip: OrderPrintSlipBundle) => [slip.orderNo, slip]));
       flushSync(() => setSlips(previous => previous.map(slip => updates.get(slip.orderNo) || slip)));
-      const frame = document.createElement('iframe');
+      frame = document.createElement('iframe');
       frame.setAttribute('title', 'Print preview');
       Object.assign(frame.style, { position: 'fixed', width: layoutMode === 'thermal_4x6' ? '101.6mm' : '210mm', height: '297mm', left: '-10000px', top: '0', opacity: '0', border: '0' });
       document.body.appendChild(frame);
@@ -287,32 +288,61 @@ export function PrintEnginePanel({
         });
       });
       const pageStyle = doc.createElement('style');
+      const paperWidthMm = layoutMode === 'thermal_4x6' ? 101.6 : 210;
+      const paperHeightMm = layoutMode === 'thermal_4x6' ? 152.4 : 297;
+      // Apply the same physical layout in the hidden frame and at print time so
+      // measurement is meaningful. Each order is a separate page; never clip data.
       pageStyle.textContent = `@page { size: ${layoutMode === 'thermal_4x6' ? '101.6mm 152.4mm' : 'A4 portrait'}; margin: 0; }
-        @media print {
-          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
-          .print-slips { margin: 0 !important; padding: 0 !important; }
-          .print-a4-sheet, .print-thermal-sheet { box-sizing: border-box; width: ${layoutMode === 'thermal_4x6' ? '101.6mm' : '210mm'} !important; max-width: none !important; height: auto !important; min-height: 0 !important; margin: 0 !important; break-after: page; page-break-after: always; }
-          .print-a4-sheet { display: block !important; padding: 4mm !important; }
-          .print-thermal-sheet { padding: 4mm !important; }
-          .print-a4-sheet:last-child, .print-thermal-sheet:last-child { break-after: auto; page-break-after: auto; }
-          .print-slip-part { box-sizing: border-box; }
-          img { max-width: 100%; }
-        }`;
+        html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+        .print-slips { margin: 0 !important; padding: 0 !important; }
+        .print-a4-sheet, .print-thermal-sheet { box-sizing: border-box; width: calc(${paperWidthMm}mm / var(--print-scale, 1)) !important; zoom: var(--print-scale, 1); max-width: none !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 4mm !important; display: block !important; break-after: page; page-break-after: always; overflow: visible !important; }
+        .print-a4-sheet:last-child, .print-thermal-sheet:last-child { break-after: auto; page-break-after: auto; }
+        .print-slip-part { box-sizing: border-box; min-height: 0 !important; break-inside: avoid; }
+        .print-slips .overflow-x-auto { overflow: visible !important; }
+        .print-slips table { width: 100% !important; table-layout: fixed; overflow-wrap: anywhere; }
+        .print-slips td, .print-slips th { overflow-wrap: anywhere; word-break: break-word; }
+        .print-slips img { max-width: 100%; }
+        @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`;
       doc.head.appendChild(pageStyle);
-      doc.body.appendChild(printableRef.current.cloneNode(true));
+      const printContent = printableRef.current.cloneNode(true) as HTMLElement;
+      // Remove deselected parts from the printable document, not just visually hide them.
+      printContent.querySelectorAll<HTMLElement>('.print-slip-part').forEach(part => { if (part.style.display === 'none') part.remove(); });
+      doc.body.appendChild(printContent);
       for (const image of Array.from(doc.images)) image.loading = 'eager';
       await Promise.all(waits);
       if (doc.fonts) await doc.fonts.ready;
       await Promise.all(Array.from(doc.images).map(image => image.complete ? Promise.resolve() : new Promise<void>(resolve => {
         image.onload = image.onerror = () => resolve(); setTimeout(resolve, 2000);
       })));
-      win.onafterprint = () => frame.remove();
+      if (!CSS.supports('zoom', '1')) throw new Error(locale === 'bn' ? 'এই ব্রাউজারে এক পৃষ্ঠায় ফিট করা সমর্থিত নয়। Chrome বা Edge ব্যবহার করুন।' : 'This browser cannot fit the slip on one page. Use Chrome or Edge.');
+      const maxHeightPx = (paperHeightMm - 2) * 96 / 25.4;
+      const maxWidthPx = paperWidthMm * 96 / 25.4;
+      const sheets = Array.from(doc.querySelectorAll<HTMLElement>('.print-a4-sheet, .print-thermal-sheet'));
+      for (const sheet of sheets) {
+        let scale = 1;
+        for (let attempt = 0; attempt < 6; attempt++) {
+          sheet.style.setProperty('--print-scale', String(scale));
+          const bounds = sheet.getBoundingClientRect();
+          if (bounds.height <= maxHeightPx && bounds.width <= maxWidthPx + 1) break;
+          scale *= Math.min(maxHeightPx / bounds.height, maxWidthPx / bounds.width) * 0.99;
+        }
+        const bounds = sheet.getBoundingClientRect();
+        const protrudes = Array.from(sheet.querySelectorAll<HTMLElement>('*')).some(element => {
+          const rect = element.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0 && (rect.right > bounds.right + 2 || rect.left < bounds.left - 2 || rect.bottom > bounds.bottom + 2);
+        });
+        if (scale < 0.65 || bounds.height > maxHeightPx || bounds.width > maxWidthPx + 1 || protrudes) {
+          throw new Error(locale === 'bn' ? 'এক পৃষ্ঠায় স্পষ্টভাবে দেখানোর জন্য তথ্য বেশি। A4-এ কম অংশ বেছে নিন বা আলাদা কপি প্রিন্ট করুন; কোনো তথ্য কাটা হয়নি।' : 'Too much content to fit legibly on one page. Select fewer A4 parts or print separate copies; no information was clipped.');
+        }
+      }
+      win.onafterprint = () => frame?.remove();
       win.focus();
       win.print();
       // Browsers do not report whether the dialog was cancelled or paper was printed.
       setFeedback(locale === 'bn' ? 'প্রিন্ট অনুরোধ নথিভুক্ত হয়েছে। প্রিন্ট ডায়ালগে কাগজের আকার ও স্কেল যাচাই করুন; বাতিল করলেও অনুরোধের সংখ্যা থাকবে।' : 'Print request recorded. Check paper size and scale in the print dialog; cancelled requests are also counted.');
-      setTimeout(() => frame.remove(), 120000);
+      setTimeout(() => frame?.remove(), 120000);
     } catch (error) {
+      frame?.remove();
       setFeedback(error instanceof Error ? error.message : 'প্রিন্ট ব্যর্থ। / Print failed.');
     } finally { setLoadingSlips(false); }
   };
@@ -471,6 +501,7 @@ export function PrintEnginePanel({
                   <input type="checkbox" checked={visibleParts[index]} onChange={e => setVisibleParts(parts => parts.map((value, i) => i === index ? e.target.checked : value))} /> {label}
                 </label>)}
               </fieldset>}
+              <p className="text-xs text-muted">{locale === 'bn' ? 'প্রতি অর্ডার এক পৃষ্ঠায় ফিট করা হবে। অতি বেশি তথ্য থাকলে লেখা না কেটে পৃথক অংশ প্রিন্ট করতে বলা হবে। ডায়ালগে সঠিক কাগজের আকার ও ১০০% স্কেল বেছে নিন।' : 'Each order is fitted to one page. If it cannot fit legibly, select fewer parts instead of clipping data. Choose the correct paper size and 100% scale in the print dialog.'}</p>
               {/* Row 2: Selection Counters & Direct Print Trigger Buttons */}
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border">
                 <div className="flex items-center gap-2 text-xs">
@@ -793,6 +824,7 @@ export function PrintEnginePanel({
                                 locale
                               )}
                             </span>
+                            <span>{locale === 'bn' ? 'সর্বমোট:' : 'Total:'} <strong>{formatPoishaToBdt(p12.totalPayablePoisha, locale)}</strong></span>
                             {p12.advancePaidPoisha > 0 && (
                               <span>
                                 <LocalizedText source={"অগ্রিম: -"} area="admin" />{" "}{formatPoishaToBdt(
@@ -918,10 +950,10 @@ export function PrintEnginePanel({
                           <LocalizedText source={"গ্রাহক:"} area="admin" />{" "}{p3.customerName ?? p12.customerName} (
                           {p3.customerPhone ?? p12.customerPhone}<LocalizedText source={") · সোর্স:"} area="admin" />{' '}
                           {(p3.orderSource ?? 'storefront').toUpperCase()} {" "}<LocalizedText source={"· কল স্ট্যাটাস:"} area="admin" />{' '}
-                          {p3.callStatus ?? 'confirmed_yes'} {" "}<LocalizedText source={"(চেষ্টা:"} area="admin" />{' '}
-                          {formatLocaleNumber(p3.callAttempts ?? 1, locale)}<LocalizedText source={") · ঝুঁকি:"} area="admin" />{' '}
-                          {p3.fraudRiskTierBn ?? 'নিরাপদ'} {" "}<LocalizedText source={"(স্কোর:"} area="admin" />{' '}
-                          {formatLocaleNumber(p3.addressQualityScore ?? 85, locale)}%)
+                          {p3.callStatus ?? '—'} {" "}<LocalizedText source={"(চেষ্টা:"} area="admin" />{' '}
+                          {p3.callAttempts == null ? '—' : formatLocaleNumber(p3.callAttempts, locale)}<LocalizedText source={") · ঝুঁকি:"} area="admin" />{' '}
+                          {p3.fraudRiskTierBn ?? '—'} {" "}<LocalizedText source={"(স্কোর:"} area="admin" />{' '}
+                          {p3.addressQualityScore == null ? '—' : formatLocaleNumber(p3.addressQualityScore, locale)}%)
                         </p>
                       </div>
 

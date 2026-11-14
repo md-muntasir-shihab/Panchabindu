@@ -103,81 +103,24 @@ test('Phase 4B Case 1: A4 3-Part Print Slip DTO Customer-Safety & Role Cost Hidi
   assert.deepEqual(vendorPrint.slips, []);
 });
 
-test('Phase 4B Case 2: Pickup Batch Creation, Handover Manifest & 1-Click Shipped Transition', () => {
-  const pkgCtx = getActorSecurityContext('usr-packaging-01')!;
-
-  const createdBatch = createPickupBatchAndManifest(pkgCtx, {
-    courierProvider: 'steadfast',
-    orderNos: ['ORD-261106-0001'],
-  });
-  assert.equal(createdBatch.success, true);
-  assert.ok(createdBatch.batch);
-  assert.equal(createdBatch.batch.totalParcels, 1);
-  assert.equal(createdBatch.batch.status, 'ready_for_handover');
-
-  const handedOver = confirmBatchHandoverShipped(pkgCtx, {
-    batchId: createdBatch.batch.batchId,
-    riderName: 'মোঃ সাইফুল ইসলাম',
-    riderPhone: '01755667788',
-  });
-  assert.equal(handedOver.success, true);
-  assert.equal(handedOver.batch?.status, 'handed_over');
-});
-
-test('Phase 4B Case 3: Courier 360 Remittance Settlement, Short-Payment Detector & Pending -> Locked Escrow Promotion', () => {
-  const adminCtx = getActorSecurityContext('usr-super-admin')!;
-
-  // Settle ORD-261106-0001 with a deliberate 50 BDT (5000 poisha) short-payment to verify detector
-  const settlement = recordCourierRemittanceSettlement(adminCtx, {
-    settlementRef: `STF-TEST-${Date.now()}`,
-    courierProvider: 'steadfast',
-    items: [
-      {
-        orderNo: 'ORD-261106-0001',
-        courierFeeDeductedPoisha: 6000, // 60 BDT fee
-        remittedAmountPoisha: 234000, // Expected 2450 - 60 = 2390 BDT, remitted 2340 BDT -> 50 BDT short
-      },
-    ],
-  });
-
-  assert.equal(settlement.success, true);
-  assert.equal(settlement.settledCount, 1);
-  assert.equal(settlement.shortPaymentCount, 1);
-  assert.equal(settlement.records[0]?.isShortPaymentFlagged, true);
-  assert.equal(settlement.records[0]?.shortPaymentPoisha, 5000);
-
-  // Verify Courier 360 summary reflects short payment and honest connection status
-  const c360 = computeCourier360Summary();
-  const steadfastSummary = c360.find((c) => c.provider === 'steadfast')!;
-  assert.ok(steadfastSummary.shortPaymentTotalPoisha >= 5000);
-  assert.equal(
-    steadfastSummary.connectionStatusBadgeBn.includes('Not integrated'),
-    true
-  );
-});
-
-test('Phase 4B Case 4: Four-Way Return Engine (Supplier Defect Proof Guard & Courier Negligence Claim)', () => {
-  const adminCtx = getActorSecurityContext('usr-super-admin')!;
-
-  // 1. Supplier Defect WITHOUT proof URL -> rejected
-  const missingProof = processFourWayOrderReturn(adminCtx, {
-    orderNo: 'ORD-261106-0002',
-    faultType: 'SUPPLIER_DEFECT',
-    proofUrl: '',
-    noteBn: 'সেলাই ছেঁড়া',
-  });
-  assert.equal(missingProof.success, false);
-
-  // 2. Courier Negligence -> Vendor keeps payable, creates Courier Claim automatically
-  const courierFault = processFourWayOrderReturn(adminCtx, {
-    orderNo: 'ORD-261106-0002',
-    faultType: 'COURIER_NEGLIGENCE',
-    proofUrl: 'https://picsum.photos/seed/boxdamaged/400/300',
-    noteBn: 'কুরিয়ার ট্রানজিটে পার্সেল ক্ষতিগ্রস্ত হয়েছে',
-  });
-  assert.equal(courierFault.success, true);
-  assert.equal(courierFault.resolution?.vendorDebitPoisha, 0);
-  assert.ok((courierFault.resolution?.courierClaimPoisha ?? 0) > 0);
+test('legacy courier and return operations fail closed without mutating orders or ledgers', () => {
+  const admin = getActorSecurityContext('usr-super-admin')!;
+  const orders = structuredClone(readErpState());
+  const store = structuredClone(readPhase4BStore());
+  for (let i = 0; i < 2; i++) {
+    assert.equal(createPickupBatchAndManifest(admin, { courierProvider: 'steadfast', orderNos: ['ORD-261106-0001'] }).success, false);
+    assert.equal(confirmBatchHandoverShipped(admin, { batchId: 'unknown', riderName: 'Rider', riderPhone: '01700000000' }).success, false);
+    for (const amount of [0, 234000, 999999]) {
+      assert.equal(recordCourierRemittanceSettlement(admin, { settlementRef: 'same-ref', courierProvider: 'steadfast', items: [{ orderNo: 'ORD-261106-0001', courierFeeDeductedPoisha: 6000, remittedAmountPoisha: amount }] }).success, false);
+    }
+    for (const faultType of ['SUPPLIER_DEFECT', 'COURIER_NEGLIGENCE', 'CUSTOMER_INTACT', 'WAREHOUSE_FAULT'] as const) {
+      assert.equal(processFourWayOrderReturn(admin, { orderNo: 'ORD-261106-0002', faultType, proofUrl: 'https://example.com/proof', noteBn: 'test' }).success, false);
+    }
+    assert.equal(autoRecordOrderDeliveredOrReturned(admin, 'ORD-261106-0002', 'delivered').success, false);
+    assert.equal(autoRecordOrderDeliveredOrReturned(admin, 'ORD-261106-0002', 'returned').success, false);
+  }
+  assert.deepEqual(readErpState(), orders);
+  assert.deepEqual(readPhase4BStore(), store);
 });
 
 test('Phase 4B Case 5: Payout Hold Protection, Approval/Paid Flow, 15Q Onboarding & Contract Closure Guard', () => {
@@ -275,23 +218,10 @@ test('tracking sync fails closed; manual delivery recording remains separately t
   assert.equal(syncRes.syncedCount, 0);
   assert.equal(syncRes.updatedCount, 0);
 
-  // 2. Test autoRecordOrderDeliveredOrReturned on a seeded order
-  const autoRes = autoRecordOrderDeliveredOrReturned(
-    adminCtx,
-    'ORD-261106-0002',
-    'delivered'
-  );
-  assert.equal(autoRes.success, true);
-
-  // 3. Verify that courier remittance ledger contains the auto-created record with COD and courier fee
-  const p4bStore = readPhase4BStore();
-  const remEntry = p4bStore.courierRemittanceLedger.find(
-    (r) => r.orderNo === 'ORD-261106-0002'
-  );
-  assert.ok(remEntry);
-  assert.equal(typeof remEntry.expectedCodPoisha, 'number');
-  assert.equal(typeof remEntry.courierFeeDeductedPoisha, 'number');
-  assert.equal(remEntry.shortPaymentPoisha, 0);
+  const autoRes = autoRecordOrderDeliveredOrReturned(adminCtx, 'ORD-261106-0002', 'delivered');
+  assert.equal(autoRes.success, false);
+  assert.deepEqual(readPhase4BStore().courierRemittanceLedger, before);
+  assert.deepEqual(readErpState().orders, ordersBefore);
 });
 
 

@@ -103,8 +103,8 @@ export const OPERATIONAL_HELP_GUIDE: Record<AdminTabKey, OperationalHelpGuideIte
   product_studio: {
     titleBn: 'প্রোডাক্ট ও ক্যাটাগরি স্টুডিও (Product Studio & Catalog)',
     titleEn: 'Product Studio & Catalog Management',
-    purposeBn: 'মাল্টি-ভ্যারিয়েন্ট ক্যাটালগ, ৩-স্তরীয় পয়সা প্রাইসিং, ক্যাটাগরি ম্যানেজার এবং ৮-মুখী ইকোসিস্টেম লিংকেজ।',
-    purposeEn: 'Catalog creation, multi-variant SKUs, 3-tier Poisha pricing calculator, category manager and 8-way ecosystem linkage.',
+    purposeBn: 'মাল্টি-ভ্যারিয়েন্ট ক্যাটালগ, ৩-স্তরীয় পয়সা প্রাইসিং, ক্যাটাগরি ম্যানেজার এবং পণ্যের সংরক্ষিত সংযোগ তথ্য।',
+    purposeEn: 'Catalog creation, multi-variant SKUs, 3-tier Poisha pricing, category manager and stored product linkage details.',
     workflowBn: [
       '১. নতুন পণ্য যুক্ত করুন বাটনে ক্লিক করে সাপ্লায়ার কস্ট, ভেন্ডর প্রফিট ও রিটেইল সেল প্রাইস লিখুন।',
       '২. পাবলিক SKU (ইনভয়েসের জন্য) এবং ইন্টারনাল SKU (ওয়্যারহাউস প্যাকিং স্লিপের জন্য) সেট করুন।',

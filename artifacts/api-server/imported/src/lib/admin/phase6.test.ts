@@ -8,6 +8,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getActorSecurityContext } from './phase4a-service';
+import { readErpState } from '../db/repository';
+import { readPhase4BStore } from './phase4b-service';
 import {
   computeCustomer360Directory,
   computeVendorPerformanceScorecards,
@@ -72,14 +74,18 @@ test('Phase 6 Case 2: Live Courier Webhook Receiver (HMAC-SHA256) & Bulk CSV Boo
   const sig = computeWebhookHmacSignature(sampleBody, 'test-webhook-secret');
   assert.equal(sig.length, 64);
 
+  const ordersBefore = structuredClone(readErpState());
+  readPhase4BStore(); // initialize optional legacy fields before taking the snapshot
+  const financeBefore = structuredClone(readPhase4BStore());
+  const webhookBefore = structuredClone(readPhase6Store());
   const whRes = processCourierWebhookPayload(adminCtx, {
     provider: 'steadfast',
     orderNo: 'ORD-261106-0002',
     rawStatus: 'delivered',
     signatureHeader: sig,
   });
-  assert.equal(whRes.success, true);
-  assert.equal(whRes.event?.mappedStatus, 'delivered');
+  assert.equal(whRes.success, false);
+  assert.equal(whRes.code, 'NOT_INTEGRATED');
 
   const bookingCsv = generateBulkCourierBookingCsv();
   assert.ok(bookingCsv.includes('Invoice,Recipient_Name,Recipient_Phone'));
@@ -91,9 +97,11 @@ test('Phase 6 Case 2: Live Courier Webhook Receiver (HMAC-SHA256) & Bulk CSV Boo
     csvText:
       'order_no,consignment_id,remitted_bdt,courier_fee_bdt\nORD-261106-0001,CNS-ORD-261106-0001,2300,70',
   });
-  assert.equal(reconRes.success, true);
-  assert.equal(reconRes.result?.settledCount, 1);
-  assert.ok(Number.isInteger(reconRes.result?.totalRemittedPoisha));
+  assert.equal(reconRes.success, false);
+  assert.equal(reconRes.result, undefined);
+  assert.deepEqual(readErpState(), ordersBefore);
+  assert.deepEqual(readPhase4BStore(), financeBefore);
+  assert.deepEqual(readPhase6Store(), webhookBefore);
 
   // Restore ORD-261106-0001 to pending_confirmation so repeated runs of phase4a duplicate guard stay clean
   updateFullOrderDetails(adminCtx, {
