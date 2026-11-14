@@ -16,6 +16,16 @@ interface OperationalHelpGuideItem {
 }
 
 export const OPERATIONAL_HELP_GUIDE: Record<AdminTabKey, OperationalHelpGuideItem> = {
+  contact_management: {
+    titleBn: 'গ্রাহক যোগাযোগ ও বার্তা ব্যবস্থাপনা',
+    titleEn: 'Customer Contact and Inquiry Management',
+    purposeBn: 'কন্টাক্ট ফর্মের বার্তা নিরাপদে পর্যালোচনা ও অনুসরণ করা।',
+    purposeEn: 'Review and track contact form inquiries securely.',
+    workflowBn: ['বার্তা খুঁজে নির্বাচন করুন।', 'দায়িত্বপ্রাপ্ত, অগ্রাধিকার, অবস্থা ও অভ্যন্তরীণ নোট নির্ধারণ করে সংরক্ষণ করুন।', 'প্রয়োজনে কল বা WhatsApp ব্যবহার করে যোগাযোগ করুন।'],
+    workflowEn: ['Search and select an inquiry.', 'Save the assignee, priority, status and internal notes.', 'Contact the customer by phone or WhatsApp as needed.'],
+    rulesBn: ['স্ট্যাটাস পরিবর্তন করলে স্বয়ংক্রিয়ভাবে বার্তা পাঠানো হয় না।', 'শুধু সুপার অ্যাডমিন গ্রাহকের বার্তা দেখতে ও পরিচালনা করতে পারেন।'],
+    rulesEn: ['Changing status does not send a message.', 'Only super admins can view and manage inquiries.'],
+  },
   today_screen: {
     titleBn: 'আজকের অপারেশনাল কমান্ড সেন্টার (Today Command)',
     titleEn: 'Today Operational Command Center',

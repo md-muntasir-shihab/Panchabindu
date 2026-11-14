@@ -880,8 +880,11 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
   z.object({
     operation: z.literal('update_inquiry_status'),
     inquiryId: z.string().min(1),
-    status: z.enum(['unread', 'replied', 'resolved']),
-    adminNotes: z.string().optional(),
+    status: z.enum(['unread', 'in_progress', 'replied', 'resolved']),
+    adminNotes: z.string().max(4000).optional(),
+    priority: z.enum(['low', 'normal', 'high']).optional(),
+    assignedTo: z.string().max(100).nullable().optional(),
+    expectedRevision: z.number().int().nonnegative().optional(),
   }),
   z.object({
     operation: z.literal('update_about_contact_settings'),
@@ -1501,12 +1504,27 @@ async function handlePOST(req: NextRequest) {
     }
 
     if (payload.operation === 'update_inquiry_status') {
-      const res = updateCustomerInquiryStatus(
-        payload.inquiryId,
-        payload.status,
-        payload.adminNotes
-      );
-      return NextResponse.json(res, { status: res.success ? 200 : 400 });
+      if (ctx.roleSlug !== 'super_admin') {
+        return NextResponse.json({ success: false, errorBn: 'শুধু সুপার অ্যাডমিন যোগাযোগ বার্তা পরিচালনা করতে পারেন।' }, { status: 403 });
+      }
+      const adminStore = readAdminStore();
+      if (payload.assignedTo && !adminStore.users.some(user => user.username === payload.assignedTo && user.isActive && user.roleSlug === 'super_admin')) {
+        return NextResponse.json({ success: false, errorBn: 'সক্রিয় সুপার অ্যাডমিন নির্বাচন করুন।' }, { status: 400 });
+      }
+      const res = updateCustomerInquiryStatus(payload.inquiryId, payload.status, payload.adminNotes, {
+        priority: payload.priority, assignedTo: payload.assignedTo,
+        expectedRevision: payload.expectedRevision, actor: ctx.username,
+      });
+      if (res.success) {
+        appendImmutableAuditLog(adminStore, {
+          actorUserId: ctx.userId, actorUsername: ctx.username, actorRole: ctx.roleSlug,
+          actionCode: 'CUSTOMER_INQUIRY_UPDATED', targetType: 'system', targetId: payload.inquiryId,
+          summaryBn: 'গ্রাহক যোগাযোগ বার্তার কাজের অবস্থা হালনাগাদ হয়েছে।',
+          metadata: { status: payload.status, priority: payload.priority, assignedTo: payload.assignedTo, noteChanged: res.inquiry?.activity?.at(-1)?.noteChanged ?? false },
+        });
+        writeAdminStore(adminStore);
+      }
+      return NextResponse.json(res, { status: res.success ? 200 : res.conflict ? 409 : 400 });
     }
 
     if (payload.operation === 'update_about_contact_settings') {

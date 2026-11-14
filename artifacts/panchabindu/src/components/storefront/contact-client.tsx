@@ -125,10 +125,10 @@ export function ContactClient({
         setMessage('');
         window.setTimeout(() => setSubmitted(false), 5000);
       } else {
-        setSubmitError(data.error?.message || 'বার্তা পাঠাতে ত্রুটি ঘটেছে।');
+        setSubmitError(res.status === 429 ? (locale === 'bn' ? 'অনেকবার চেষ্টা করা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।' : 'Too many attempts. Please try again later.') : locale === 'bn' ? (data.error?.message || 'বার্তা পাঠাতে ত্রুটি ঘটেছে।') : 'Could not send the message. Check your name, Bangladeshi phone number and message and try again.');
       }
     } catch {
-      setSubmitError('সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি।');
+      setSubmitError(locale === 'bn' ? 'সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি।' : 'Could not connect to the server.');
     } finally {
       setIsSubmitting(false);
     }
@@ -273,8 +273,8 @@ export function ContactClient({
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>
                     {locale === 'bn'
-                      ? 'আপনার বার্তাটি সফলভাবে পাঠানো হয়েছে। আমাদের টিম দ্রুত আপনার সাথে যোগাযোগ করবে।'
-                      : 'Your message has been received. Our team will contact you shortly.'}
+                      ? 'আপনার বার্তা গ্রহণ করা হয়েছে।'
+                      : 'Your message has been received.'}
                   </span>
                 </div>
               )}
@@ -292,7 +292,7 @@ export function ContactClient({
                   </label>
                   <input
                     type="text"
-                    required
+                    required minLength={2} maxLength={100}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={locale === 'bn' ? 'যেমন: তানভীর আহমেদ' : 'e.g. Tanvir Ahmed'}
@@ -319,7 +319,7 @@ export function ContactClient({
                     {locale === 'bn' ? 'বিষয়' : 'Subject'}
                   </label>
                   <input
-                    type="text"
+                    type="text" maxLength={200}
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder={locale === 'bn' ? 'যেমন: পণ্য সম্পর্কে জিজ্ঞাসা' : 'e.g. Product inquiry'}
@@ -332,7 +332,7 @@ export function ContactClient({
                     {locale === 'bn' ? 'আপনার বার্তা *' : 'Your Message *'}
                   </label>
                   <textarea
-                    required
+                    required minLength={5} maxLength={2000}
                     rows={4}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}

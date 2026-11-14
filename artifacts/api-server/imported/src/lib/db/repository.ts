@@ -235,9 +235,14 @@ export interface CustomerInquiryRecord {
   phone: string;
   subject: string;
   message: string;
-  status: 'unread' | 'replied' | 'resolved';
+  status: 'unread' | 'in_progress' | 'replied' | 'resolved';
   createdAt: string;
   adminNotes?: string;
+  priority?: 'low' | 'normal' | 'high';
+  assignedTo?: string | null;
+  updatedAt?: string;
+  revision?: number;
+  activity?: Array<{ at: string; actor: string; status: CustomerInquiryRecord['status']; priority: 'low' | 'normal' | 'high'; assignedTo: string | null; noteChanged: boolean }>;
 }
 
 export interface PublicOrderTrackingItemDTO {
@@ -1067,17 +1072,7 @@ function getInitialSeedState(): ErpPersistentState {
     },
   ];
 
-  const defaultInquiries: CustomerInquiryRecord[] = [
-    {
-      id: 'inq-1001',
-      name: 'তানভীর আহমেদ',
-      phone: '01712345678',
-      subject: 'জামদানি শাড়ির বাল্ক কনসাইনমেন্ট অর্ডার',
-      message: 'সালামু আলাইকুম। আমার ৫টি জামদানি শাড়ির জরুরি ডেলিভারি লাগবে। আপনারা কি বাল্ক অর্ডার ডিসকাউন্ট দেবেন?',
-      status: 'unread',
-      createdAt: '2026-11-08T05:30:00.000Z',
-    },
-  ];
+  const defaultInquiries: CustomerInquiryRecord[] = [];
 
   const defaultAboutContact: AboutContactPageSettings = {
     titleBn: 'যোগাযোগ ও আমাদের পরিচিতি',
@@ -2951,7 +2946,7 @@ export function submitCustomerInquiry(input: {
   if (!state.inquiries) state.inquiries = [];
 
   const newInquiry: CustomerInquiryRecord = {
-    id: `inq_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    id: `inq_${crypto.randomUUID()}`,
     name: input.name.trim(),
     phone: input.phone.trim(),
     subject: input.subject?.trim() || 'সাধারণ জিজ্ঞাসা',
@@ -2976,30 +2971,29 @@ export function getCustomerInquiries(): CustomerInquiryRecord[] {
 
 export function updateCustomerInquiryStatus(
   id: string,
-  status: 'unread' | 'replied' | 'resolved',
-  adminNotes?: string
-): { success: boolean; inquiry?: CustomerInquiryRecord; errorBn?: string } {
+  status: CustomerInquiryRecord['status'],
+  adminNotes?: string,
+  options?: { priority?: 'low' | 'normal' | 'high'; assignedTo?: string | null; expectedRevision?: number; actor?: string }
+): { success: boolean; inquiry?: CustomerInquiryRecord; errorBn?: string; conflict?: boolean } {
   const state = readErpState();
-  if (!state.inquiries) state.inquiries = [];
-
-  const target = state.inquiries.find((i) => i.id === id);
-  if (!target) {
-    return {
-      success: false,
-      errorBn: 'বার্তাটি খুঁজে পাওয়া যায়নি।',
-    };
+  const target = (state.inquiries ?? []).find((i) => i.id === id);
+  if (!target) return { success: false, errorBn: 'বার্তাটি খুঁজে পাওয়া যায়নি।' };
+  if (options?.expectedRevision !== undefined && options.expectedRevision !== (target.revision ?? 0)) {
+    return { success: false, conflict: true, errorBn: 'বার্তাটি অন্য কেউ পরিবর্তন করেছেন। হালনাগাদ করে আবার চেষ্টা করুন।' };
   }
-
+  const noteChanged = adminNotes !== undefined && (target.adminNotes ?? '') !== adminNotes.trim();
   target.status = status;
-  if (adminNotes !== undefined) {
-    target.adminNotes = adminNotes;
-  }
-
+  if (adminNotes !== undefined) target.adminNotes = adminNotes.trim();
+  if (options?.priority !== undefined) target.priority = options.priority;
+  if (options?.assignedTo !== undefined) target.assignedTo = options.assignedTo;
+  target.updatedAt = new Date().toISOString();
+  target.revision = (target.revision ?? 0) + 1;
+  target.activity = [...(target.activity ?? []), {
+    at: target.updatedAt, actor: options?.actor ?? 'system', status: target.status,
+    priority: target.priority ?? 'normal', assignedTo: target.assignedTo ?? null, noteChanged,
+  }].slice(-100);
   writeErpState(state);
-  return {
-    success: true,
-    inquiry: target,
-  };
+  return { success: true, inquiry: target };
 }
 
 export function updateAboutContactPageSettings(

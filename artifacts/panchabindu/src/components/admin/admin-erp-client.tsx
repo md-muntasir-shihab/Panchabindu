@@ -149,6 +149,7 @@ import { useLocaleStore } from '@/store/use-locale-store';
 import { Badge, Button, Card, EmptyState, InfoTooltip, Input } from '../ui/primitives';
 import { ResponsiveSheet } from '../ui/responsive-sheet';
 import { PrintEnginePanel } from './print-engine-panel';
+import { ContactManagementPanel } from './contact-management-panel';
 import {
   Courier360AndRatesPanel,
   VendorEscrowAndReturnPanel,
@@ -187,6 +188,7 @@ export type AdminTabKey =
   | 'product_studio'
   | 'finance_product360'
   | 'messaging_automation'
+  | 'contact_management'
   | 'control_center'
   | 'users_and_rbac'
   | 'phase5_readiness'
@@ -2762,6 +2764,16 @@ ${itemsList}
       groupLabelBn: '০৯. মেসেজিং',
       groupLabelEn: '09. Messaging',
       items: [
+        {
+          key: 'contact_management',
+          labelBn: 'যোগাযোগ',
+          labelEn: 'Contacts',
+          fullLabelBn: 'গ্রাহক যোগাযোগ ব্যবস্থাপনা',
+          fullLabelEn: 'Customer Contact Management',
+          icon: <MessageSquare className="w-4 h-4 shrink-0" aria-hidden="true" />,
+          hidden: !isSuperAdmin,
+          badge: snapshot.inquiries?.filter(inquiry => inquiry.status === 'unread').length ? String(snapshot.inquiries.filter(inquiry => inquiry.status === 'unread').length) : undefined,
+        },
         {
           key: 'messaging_automation',
           labelBn: 'মেসেজিং ও সিঙ্ক',
@@ -5376,6 +5388,10 @@ ${itemsList}
         {/* ==================================================================
             TAB 10: PHASE 4C — SUPER ADMIN CONTROL CENTER, CREDENTIALS & CRON
            ================================================================== */}
+        {activeTab === 'contact_management' && isSuperAdmin && (
+          <ContactManagementPanel locale={locale} inquiries={snapshot.inquiries ?? []} users={snapshot.users ?? []} onRefreshWorkspace={fetchWorkspace} />
+        )}
+
         {activeTab === 'control_center' && isSuperAdmin && (
           <SuperAdminControlCenterPanel
             siteSettings={snapshot.siteSettings!}
@@ -5383,7 +5399,6 @@ ${itemsList}
             scheduledJobs={snapshot.scheduledJobs ?? []}
             onRefreshWorkspace={fetchWorkspace}
             locale={locale}
-            inquiries={snapshot.inquiries ?? []}
           />
         )}
 

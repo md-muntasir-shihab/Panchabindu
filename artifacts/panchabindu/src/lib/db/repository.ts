@@ -235,9 +235,14 @@ export interface CustomerInquiryRecord {
   phone: string;
   subject: string;
   message: string;
-  status: 'unread' | 'replied' | 'resolved';
+  status: 'unread' | 'in_progress' | 'replied' | 'resolved';
   createdAt: string;
   adminNotes?: string;
+  priority?: 'low' | 'normal' | 'high';
+  assignedTo?: string | null;
+  updatedAt?: string;
+  revision?: number;
+  activity?: Array<{ at: string; actor: string; status: CustomerInquiryRecord['status']; priority: 'low' | 'normal' | 'high'; assignedTo: string | null; noteChanged: boolean }>;
 }
 
 export interface PublicOrderTrackingItemDTO {
@@ -1067,17 +1072,7 @@ function getInitialSeedState(): ErpPersistentState {
     },
   ];
 
-  const defaultInquiries: CustomerInquiryRecord[] = [
-    {
-      id: 'inq-1001',
-      name: 'তানভীর আহমেদ',
-      phone: '01712345678',
-      subject: 'জামদানি শাড়ির বাল্ক কনসাইনমেন্ট অর্ডার',
-      message: 'সালামু আলাইকুম। আমার ৫টি জামদানি শাড়ির জরুরি ডেলিভারি লাগবে। আপনারা কি বাল্ক অর্ডার ডিসকাউন্ট দেবেন?',
-      status: 'unread',
-      createdAt: '2026-11-08T05:30:00.000Z',
-    },
-  ];
+  const defaultInquiries: CustomerInquiryRecord[] = [];
 
   const defaultAboutContact: AboutContactPageSettings = {
     titleBn: 'যোগাযোগ ও আমাদের পরিচিতি',

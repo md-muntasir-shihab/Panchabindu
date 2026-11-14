@@ -9,6 +9,7 @@ const require = createRequire(import.meta.url);
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const imported = path.join(root, 'artifacts/api-server/imported');
 const suites = {
+  contacts: ['lib/admin/contact-management.test.ts'],
   checkout: [path.join(root, 'scripts/src/checkout-quote.test.ts')],
   quarantine: [
     'lib/storefront/flash-quarantine.test.ts',
@@ -33,7 +34,7 @@ const suites = {
   ],
 };
 const suite = process.argv[2];
-if (!Object.hasOwn(suites, suite)) throw new Error('Choose security, payments, quarantine or checkout');
+if (!Object.hasOwn(suites, suite)) throw new Error('Choose contacts, security, payments, quarantine or checkout');
 
 // One fresh working directory AND process per file: module-level store paths,
 // cached state, sessions and JSON writes cannot reach another suite or real .data.

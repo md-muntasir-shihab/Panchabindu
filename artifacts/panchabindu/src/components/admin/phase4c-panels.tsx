@@ -36,7 +36,6 @@ import type { OrderSource } from '@/types/database.types';
 import type { PromoRuleInput } from '@/types/domain';
 import type {
   AboutContactPageSettings,
-  CustomerInquiryRecord,
   SiteSettingsRecord,
 } from '@/lib/db/repository';
 import type {
@@ -1530,7 +1529,6 @@ export interface SuperAdminControlCenterPanelProps {
   scheduledJobs: ScheduledJobRecord[];
   onRefreshWorkspace: () => Promise<void>;
   locale?: SupportedLocale;
-  inquiries?: CustomerInquiryRecord[];
 }
 
 export function SuperAdminControlCenterPanel({
@@ -1539,7 +1537,6 @@ export function SuperAdminControlCenterPanel({
   scheduledJobs,
   onRefreshWorkspace,
   locale = 'en',
-  inquiries = [],
 }: SuperAdminControlCenterPanelProps) {
   const [feedback, setFeedback] = React.useState<{
     type: 'success' | 'error';
@@ -1563,10 +1560,6 @@ export function SuperAdminControlCenterPanel({
   const [helplineHoursBn, setHelplineHoursBn] = React.useState(aboutContact?.helplineHoursBn ?? 'সকাল ৯টা – রাত ১০টা (প্রতিদিন)');
   const [helplineHoursEn, setHelplineHoursEn] = React.useState(aboutContact?.helplineHoursEn ?? '9 AM – 10 PM Everyday');
   const [savingAboutPage, setSavingAboutPage] = React.useState(false);
-
-  // Customer Inquiries Inbox State
-  const [inquiryFilter, setInquiryFilter] = React.useState<'ALL' | 'unread' | 'replied' | 'resolved'>('ALL');
-  const [updatingInquiryId, setUpdatingInquiryId] = React.useState<string | null>(null);
 
   // Branding & Thresholds State
   const [bkashManualNumber, setBkashManualNumber] = React.useState(
@@ -1632,35 +1625,6 @@ export function SuperAdminControlCenterPanel({
       }
     } finally {
       setSavingAboutPage(false);
-    }
-  };
-
-  const handleUpdateInquiryStatus = async (
-    inquiryId: string,
-    newStatus: 'unread' | 'replied' | 'resolved'
-  ) => {
-    setUpdatingInquiryId(inquiryId);
-    setFeedback(null);
-    try {
-      const res = await fetch('/api/admin/workspace', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          operation: 'update_inquiry_status',
-          inquiryId,
-          status: newStatus,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setFeedback({
-          type: 'success',
-          text: 'ইনকোয়ারি বার্তার স্ট্যাটাস পরিবর্তন করা হয়েছে।',
-        });
-        await onRefreshWorkspace();
-      }
-    } finally {
-      setUpdatingInquiryId(null);
     }
   };
 
@@ -2041,152 +2005,6 @@ export function SuperAdminControlCenterPanel({
             </div>
           ))}
         </div>
-      </Card>
-
-      {/* Customer Contact Inquiries Inbox */}
-      <Card surface="surface" padding="md" className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
-          <div>
-            <h2 className="text-sm font-bold text-ink flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-emerald-600" aria-hidden="true" />
-              <span><LocalizedText source={"গ্রাহক ইনকোয়ারি ও ইনবক্স (Customer Inquiry Messages Inbox)"} area="admin" /></span>
-            </h2>
-            <p className="text-xs text-muted mt-0.5">
-              <LocalizedText source={"স্টোরফ্রন্ট কন্টাক্ট ফর্ম থেকে কাস্টমারদের পাঠানো সকল বার্তা ও মেসেজ"} area="admin" />{" "}</p>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Badge status="info">
-              {inquiries.filter((i) => i.status === 'unread').length} {" "}<LocalizedText source={"টি অপঠিত বার্তা"} area="admin" />{" "}</Badge>
-            <div className="flex border border-border rounded-[var(--radius-md)] overflow-hidden text-xs">
-              {(['ALL', 'unread', 'replied', 'resolved'] as const).map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setInquiryFilter(f)}
-                  className={`px-2.5 py-1 text-[11px] font-semibold transition-colors cursor-pointer ${
-                    inquiryFilter === f
-                      ? 'bg-ink text-bg font-bold'
-                      : 'bg-surface text-ink hover:bg-bg'
-                  }`}
-                >
-                  {f === 'ALL'
-                    ? 'সকল'
-                    : f === 'unread'
-                    ? 'অপঠিত'
-                    : f === 'replied'
-                    ? 'উত্তর দেওয়া'
-                    : 'সমাধানকৃত'}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {inquiries.length === 0 ? (
-          <div className="p-6 text-center text-xs text-muted border border-dashed border-border rounded-[var(--radius-md)] bg-bg">
-            <LocalizedText source={"এখনো কোনো কাস্টমার ইনকোয়ারি মেসেজ আসেনি।"} area="admin" />{" "}</div>
-        ) : (
-          <div className="space-y-3">
-            {inquiries
-              .filter((inq) => inquiryFilter === 'ALL' || inq.status === inquiryFilter)
-              .map((inq) => {
-                const cleanPhone = inq.phone.replace(/\D/g, '');
-                const waUrl = `https://wa.me/88${cleanPhone.length === 11 ? cleanPhone : '0' + cleanPhone}`;
-
-                return (
-                  <div
-                    key={inq.id}
-                    className={`p-4 border rounded-[var(--radius-md)] transition-all ${
-                      inq.status === 'unread'
-                        ? 'border-emerald-500/50 bg-emerald-50/20 shadow-2xs'
-                        : 'border-border bg-bg'
-                    }`}
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-2.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-sm text-ink">{inq.name}</span>
-                        <a
-                          href={`tel:${inq.phone}`}
-                          className="font-mono text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline"
-                        >
-                          {inq.phone}
-                        </a>
-                        <span className="text-[11px] text-muted font-mono">
-                          · {new Date(inq.createdAt).toLocaleString('bn-BD')}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          status={
-                            inq.status === 'unread'
-                              ? 'warning'
-                              : inq.status === 'replied'
-                              ? 'info'
-                              : 'success'
-                          }
-                        >
-                          {inq.status === 'unread'
-                            ? 'অপঠিত (Unread)'
-                            : inq.status === 'replied'
-                            ? 'রিপ্লাইড (Replied)'
-                            : 'সমাধানকৃত (Resolved)'}
-                        </Badge>
-
-                        <a
-                          href={waUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-2.5 py-1 rounded-[var(--radius-sm)] bg-emerald-700 text-white font-semibold text-[11px] hover:bg-emerald-800 transition-colors inline-flex items-center gap-1"
-                        >
-                          <span><LocalizedText source={"WhatsApp"} area="admin" /></span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    </div>
-
-                    <div className="pt-2.5 space-y-1.5 text-xs">
-                      <p className="font-bold text-ink"><LocalizedText source={"বিষয়:"} area="admin" />{" "}{inq.subject}</p>
-                      <p className="p-3 border border-border rounded-[var(--radius-sm)] bg-surface text-ink leading-relaxed whitespace-pre-wrap">
-                        {inq.message}
-                      </p>
-
-                      <div className="flex items-center justify-between gap-2 pt-1">
-                        <span className="text-[11px] text-muted">
-                          <LocalizedText source={"স্ট্যাটাস পরিবর্তন করুন:"} area="admin" />{" "}</span>
-                        <div className="flex items-center gap-1.5">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={updatingInquiryId === inq.id}
-                            onClick={() => void handleUpdateInquiryStatus(inq.id, 'unread')}
-                          >
-                            <LocalizedText source={"অপঠিত"} area="admin" />{" "}</Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={updatingInquiryId === inq.id}
-                            onClick={() => void handleUpdateInquiryStatus(inq.id, 'replied')}
-                          >
-                            <LocalizedText source={"রিপ্লাই দেওয়া হয়েছে"} area="admin" />{" "}</Button>
-                          <Button
-                            type="button"
-                            variant="primary"
-                            size="sm"
-                            disabled={updatingInquiryId === inq.id}
-                            onClick={() => void handleUpdateInquiryStatus(inq.id, 'resolved')}
-                          >
-                            <LocalizedText source={"সমাধান"} area="admin" />{" "}</Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        )}
       </Card>
 
       {/* Contact Page & About Us Content Editor */}
