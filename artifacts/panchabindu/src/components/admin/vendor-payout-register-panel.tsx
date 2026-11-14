@@ -448,7 +448,7 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-1">
           <Filter className="h-3.5 w-3.5 text-muted" aria-hidden="true" />
           {(['all', 'requested', 'approved', 'paid', 'rejected'] as StatusFilter[]).map((status) => (
             <button
@@ -456,7 +456,7 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
               type="button"
               onClick={() => setStatusFilter(status)}
               className={cn(
-                'min-h-[36px] rounded-[var(--radius-sm)] border px-2.5 text-[11px] font-semibold transition-colors',
+                'min-h-[44px] rounded-[var(--radius-sm)] border px-2.5 text-[11px] font-semibold transition-colors',
                 statusFilter === status
                   ? 'border-ink bg-ink text-bg'
                   : 'border-border bg-bg text-ink hover:border-ink'

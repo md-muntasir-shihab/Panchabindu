@@ -486,11 +486,11 @@ export function ProductManagementStudioPanel({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handleAddNewProduct}
-            className="flex items-center gap-1.5 px-4 py-2 bg-ink text-bg font-semibold text-xs border border-ink hover:opacity-90 transition-opacity"
+            className="flex min-h-11 items-center gap-1.5 px-4 py-2 bg-ink text-bg font-semibold text-xs border border-ink hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" />
             {isBn ? 'নতুন পণ্য যোগ করুন' : 'Add New Product'}
@@ -510,7 +510,7 @@ export function ProductManagementStudioPanel({
               });
               setIsCategoryModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-2 bg-surface text-ink text-xs font-semibold border border-border hover:bg-bg transition-colors"
+            className="flex min-h-11 items-center gap-1.5 px-3 py-2 bg-surface text-ink text-xs font-semibold border border-border hover:bg-bg transition-colors"
           >
             <Layers className="w-4 h-4 text-muted" />
             {isBn ? 'ক্যাটাগরি যোগ করুন' : 'Add Category'}
@@ -531,11 +531,11 @@ export function ProductManagementStudioPanel({
       )}
 
       {/* Main Sub Tabs */}
-      <div className="flex border-b border-border text-xs font-medium">
+      <div className="flex flex-wrap border-b border-border text-xs font-medium">
         <button
           type="button"
           onClick={() => setActiveTab('products')}
-          className={`px-4 py-2.5 border-b-2 transition-colors ${
+          className={`min-h-11 max-w-full px-4 py-2.5 border-b-2 text-left transition-colors ${
             activeTab === 'products'
               ? 'border-ink text-ink font-bold'
               : 'border-transparent text-muted hover:text-ink'
@@ -546,7 +546,7 @@ export function ProductManagementStudioPanel({
         <button
           type="button"
           onClick={() => setActiveTab('categories')}
-          className={`px-4 py-2.5 border-b-2 transition-colors ${
+          className={`min-h-11 max-w-full px-4 py-2.5 border-b-2 text-left transition-colors ${
             activeTab === 'categories'
               ? 'border-ink text-ink font-bold'
               : 'border-transparent text-muted hover:text-ink'
@@ -557,7 +557,7 @@ export function ProductManagementStudioPanel({
         <button
           type="button"
           onClick={() => setActiveTab('connectivity')}
-          className={`px-4 py-2.5 border-b-2 transition-colors ${
+          className={`min-h-11 max-w-full px-4 py-2.5 border-b-2 text-left transition-colors ${
             activeTab === 'connectivity'
               ? 'border-ink text-ink font-bold'
               : 'border-transparent text-muted hover:text-ink'
@@ -960,7 +960,7 @@ export function ProductManagementStudioPanel({
       {/* PRODUCT ADD / EDIT DRAWER / MODAL */}
       {isEditorOpen && editingProduct && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-end">
-          <div className="w-full max-w-4xl h-[100dvh] bg-surface border-l border-border p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto space-y-6 animate-in slide-in-from-right">
+          <div role="dialog" aria-modal="true" aria-label={isBn ? 'পণ্য সম্পাদক' : 'Product editor'} className="w-full max-w-4xl h-[100dvh] bg-surface border-l border-border p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto space-y-6 animate-in slide-in-from-right">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <div>
                 <h2 className="text-base font-bold text-ink">
@@ -972,7 +972,8 @@ export function ProductManagementStudioPanel({
               <button
                 type="button"
                 onClick={() => setIsEditorOpen(false)}
-                className="p-1 text-muted hover:text-ink transition-colors"
+                aria-label={isBn ? 'পণ্য সম্পাদক বন্ধ করুন' : 'Close product editor'}
+                className="min-h-11 min-w-11 flex items-center justify-center text-muted hover:text-ink transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

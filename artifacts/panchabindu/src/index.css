@@ -39,3 +39,6 @@
 .storefront-floating-contact { right: max(1rem, calc(var(--safe-right) + 1rem)); }
 .storefront-action-bar { padding-left: calc(0.75rem + var(--safe-left)); padding-right: calc(0.75rem + var(--safe-right)); }
 .storefront-footer-bottom { padding-bottom: calc(1.25rem + var(--safe-bottom)); }
+
+/* Subtle active-tab indicator for the app-style mobile navigation. */
+.storefront-bottom-nav [aria-current] { box-shadow: inset 0 2px 0 var(--store-accent); }
