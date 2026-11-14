@@ -35,3 +35,51 @@ test('password registration, normalization, sessions, password change and thrott
   for (let i = 0; i < 10; i++) assert.equal((await POST(req({ action: 'login', identifier: 'unknown@example.com', password: 'wrong' }))).status, 401);
   assert.equal((await POST(req({ action: 'login', identifier: 'unknown@example.com', password: 'wrong' }))).status, 429);
 });
+
+test('email accounts preserve order isolation and can use delivery phone for checkout, returns and carts', async () => {
+  const { POST: checkout } = await import('../../../app/api/orders/route');
+  const { POST: returns } = await import('../../../app/api/orders/return-request/route');
+  const { POST: cancellation } = await import('../../../app/api/orders/cancellation-request/route');
+  const { POST: cart } = await import('../../../app/api/cart/abandoned/route');
+  const { readErpState, writeErpState } = await import('../db/repository');
+  const send = (path: string, body: object, cookie: string) => new ApiRequest(`http://localhost${path}`, { method: 'POST', headers: { origin: 'http://localhost', host: 'localhost', 'content-type': 'application/json', cookie }, body: JSON.stringify(body) });
+  const a = cookieOf(await POST(req({ action: 'register', email: 'audit-a@example.com', password: 'secure password A' })));
+  const b = cookieOf(await POST(req({ action: 'register', email: 'audit-b@example.com', password: 'secure password B' })));
+  const state = readErpState();
+  const product = state.products.find(p => p.status === 'active' && p.variants.length)!;
+  product.variants[0].stockOnHand = product.variants[0].stockAvailable = 20;
+  writeErpState(state);
+  const phone = '01788889999';
+  const input = { customerName: 'Test Customer', customerPhone: phone, districtId: 47, upazilaId: 365, streetAddress: 'Test house road number 25', landmark: 'Test school', deliveryMethod: 'courier', paymentMethod: 'cod', idempotencyKey: 'password-audit-order-01', items: [{ productId: product.productId, variantId: product.variants[0].variantId, quantity: 1 }] };
+  const orderResponse = await checkout(send('/api/orders', input, a));
+  assert.equal(orderResponse.status, 200, await orderResponse.clone().text());
+  const order = (await orderResponse.json()).order;
+  assert.equal((await (await account(a)).json()).orders.some((o: { orderNo: string }) => o.orderNo === order.orderNo), true);
+  assert.equal((await (await account(b)).json()).orders.some((o: { orderNo: string }) => o.orderNo === order.orderNo), false);
+  assert.equal((await cancellation(send('/api/orders/cancellation-request', { orderNo: order.orderNo, customerPhone: phone, reasonBn: 'Test reason' }, b))).status, 404);
+  assert.equal((await returns(send('/api/orders/return-request', { orderNo: order.orderNo, reasonCode: 'quality_defect', detailsBn: 'Test details here' }, b))).status, 404);
+  const cartResponse = await cart(send('/api/cart/abandoned', { customerPhone: phone, districtId: 47, items: [{ variantId: product.variants[0].variantId, quantity: 1 }] }, a));
+  assert.equal(cartResponse.status, 200);
+  assert.equal(readErpState().abandonedCarts.some(c => c.customerPhone === phone), true);
+  const cancelOrder = await checkout(send('/api/orders', { ...input, idempotencyKey: 'password-audit-order-02' }, a));
+  assert.equal(cancelOrder.status, 200, await cancelOrder.clone().text());
+  const cancelOrderNo = (await cancelOrder.json()).order.orderNo;
+  assert.equal((await cancellation(send('/api/orders/cancellation-request', { orderNo: cancelOrderNo, customerPhone: phone, reasonBn: 'Test cancellation' }, a))).status, 200);
+  const updated = readErpState();
+  updated.orders.find(o => o.orderNo === order.orderNo)!.status = 'delivered';
+  writeErpState(updated);
+  assert.equal((await returns(send('/api/orders/return-request', { orderNo: order.orderNo, reasonCode: 'quality_defect', detailsBn: 'Test details here' }, a))).status, 200);
+});
+
+test('failed registration transaction does not leave an account behind', async () => {
+  const fs = await import('node:fs');
+  const file = '.data/erp-store.json';
+  const original = fs.readFileSync(file, 'utf8');
+  try {
+    fs.writeFileSync(file, '{}');
+    const response = await POST(req({ action: 'register', email: 'rollback@example.com', password: 'rollback password' }));
+    assert.equal(response.status, 503);
+  } finally { fs.writeFileSync(file, original); }
+  assert.equal((await POST(req({ action: 'login', identifier: 'rollback@example.com', password: 'rollback password' }))).status, 401);
+  assert.equal((await POST(req({ action: 'register', email: 'rollback@example.com', password: 'rollback password' }))).status, 200);
+});

@@ -36,7 +36,7 @@ async function handlePOST(req: NextRequest) {
       return NextResponse.json({ saved: false }, { status: 400 });
     }
 
-    const res = saveAbandonedCartSnapshot({ ...parsed.data, customerPhone: session.phone });
+    const res = saveAbandonedCartSnapshot({ ...parsed.data, customerPhone: session.phone || parsed.data.customerPhone });
     return NextResponse.json(res);
   } catch {
     return NextResponse.json({ saved: false }, { status: 500 });

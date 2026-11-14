@@ -36,54 +36,50 @@ async function handleGET(req: NextRequest) {
 }
 
 async function handlePOST(req: NextRequest) {
-  try {
-    if (!verifyOriginAndCsrf(req).ok) return NextResponse.json({ success: false, errorBn: 'অনুরোধ অনুমোদিত নয়।' }, { status: 403 });
-    const raw = await req.text();
-    if (!assertJsonBodySize(raw, 16 * 1024).ok) return NextResponse.json({ success: false, errorBn: 'অনুরোধটি অতিরিক্ত বড়।' }, { status: 413 });
-    let body: unknown;
-    try { body = JSON.parse(raw); } catch { return NextResponse.json({ success: false, errorBn: 'অনুরোধের তথ্য সঠিক নয়।' }, { status: 400 }); }
-    const parsed = schema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ success: false, errorBn: parsed.error.issues[0]?.message ?? 'তথ্য সঠিক নয়।' }, { status: 400 });
-    const data = parsed.data;
-    if (data.action === 'logout') {
-      revokeCustomerSession(req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value);
-      const res = NextResponse.json({ success: true }); res.cookies.delete(CUSTOMER_SESSION_COOKIE_NAME); return res;
-    }
-    if (data.action === 'get_orders') {
-      const token = req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
-      const session = verifyCustomerSessionToken(token);
-      if (!session) return NextResponse.json({ success: false, errorBn: 'অ্যাকাউন্টে লগইন করুন।' }, { status: 401 });
-      return NextResponse.json({ success: true, customerPhone: session.phone, orders: getAuthenticatedCustomerOrders(token) });
-    }
-    const ip = getClientIpFromRequest(req);
-    const limit = checkRateLimit(`customer-password-ip:${ip}`, 100, 15 * 60_000);
-    if (!limit.allowed) return NextResponse.json({ success: false, errorBn: 'অনেক চেষ্টা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।' }, { status: 429 });
-    if (data.action === 'change_password') {
-      const token = req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
-      const session = verifyCustomerSessionToken(token);
-      if (!session) return NextResponse.json({ success: false, errorBn: 'অ্যাকাউন্টে লগইন করুন।' }, { status: 401 });
-      if (!checkRateLimit(`customer-password-change:${session.customerId}`, 5, 15 * 60_000).allowed) return NextResponse.json({ success: false, errorBn: 'অনেক চেষ্টা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।' }, { status: 429 });
-      if (!changeCustomerPassword(session, data.currentPassword, data.newPassword)) return NextResponse.json({ success: false, errorBn: 'বর্তমান পাসওয়ার্ড সঠিক নয়।' }, { status: 401 });
-      const res = NextResponse.json({ success: true }); res.cookies.delete(CUSTOMER_SESSION_COOKIE_NAME); return res;
-    }
-    if (data.action === 'register') {
-      if (!checkRateLimit(`customer-register:${ip}`, 20, 60 * 60_000).allowed) return NextResponse.json({ success: false, errorBn: 'অনেক চেষ্টা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।' }, { status: 429 });
-      const phone = data.phone ? normalizeBdPhone(data.phone) : undefined;
-      const email = data.email?.toLowerCase() || undefined;
-      if ((!phone && !email) || (data.phone && !phone) || (email && !z.email().safeParse(email).success)) return NextResponse.json({ success: false, errorBn: 'সঠিক বাংলাদেশি ফোন নম্বর অথবা ইমেইল দিন।' }, { status: 400 });
-      const result = registerPasswordCustomer({ phone: phone || undefined, email, password: data.password });
-      if (!result.success) return NextResponse.json(result, { status: 409 });
-      return sessionResponse(result.sessionToken, result.session, result.identifier);
-    }
-    const identifier = data.identifier.includes('@') ? data.identifier.toLowerCase() : normalizeBdPhone(data.identifier);
-    if (!identifier) return NextResponse.json({ success: false, errorBn: 'নম্বর/ইমেইল বা পাসওয়ার্ড সঠিক নয়।' }, { status: 401 });
-    if (!checkRateLimit(`customer-password-identifier:${identifier}`, 10, 15 * 60_000).allowed) return NextResponse.json({ success: false, errorBn: 'অনেক চেষ্টা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।' }, { status: 429 });
-    const result = loginPasswordCustomer(identifier, data.password);
-    if (!result.success) return NextResponse.json(result, { status: 401 });
-    return sessionResponse(result.sessionToken, result.session, result.identifier);
-  } catch {
-    return NextResponse.json({ success: false, errorBn: 'অ্যাকাউন্টের অনুরোধ সম্পন্ন করা যায়নি।' }, { status: 500 });
+  if (!verifyOriginAndCsrf(req).ok) return NextResponse.json({ success: false, errorBn: 'অনুরোধ অনুমোদিত নয়।' }, { status: 403 });
+  const raw = await req.text();
+  if (!assertJsonBodySize(raw, 16 * 1024).ok) return NextResponse.json({ success: false, errorBn: 'অনুরোধটি অতিরিক্ত বড়।' }, { status: 413 });
+  let body: unknown;
+  try { body = JSON.parse(raw); } catch { return NextResponse.json({ success: false, errorBn: 'অনুরোধের তথ্য সঠিক নয়।' }, { status: 400 }); }
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ success: false, errorBn: parsed.error.issues[0]?.message ?? 'তথ্য সঠিক নয়।' }, { status: 400 });
+  const data = parsed.data;
+  if (data.action === 'logout') {
+    revokeCustomerSession(req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value);
+    const res = NextResponse.json({ success: true }); res.cookies.delete(CUSTOMER_SESSION_COOKIE_NAME); return res;
   }
+  if (data.action === 'get_orders') {
+    const token = req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
+    const session = verifyCustomerSessionToken(token);
+    if (!session) return NextResponse.json({ success: false, errorBn: 'অ্যাকাউন্টে লগইন করুন।' }, { status: 401 });
+    return NextResponse.json({ success: true, customerPhone: session.phone, orders: getAuthenticatedCustomerOrders(token) });
+  }
+  const ip = getClientIpFromRequest(req);
+  const limit = checkRateLimit(`customer-password-ip:${ip}`, 100, 15 * 60_000);
+  if (!limit.allowed) return NextResponse.json({ success: false, errorBn: 'অনেক চেষ্টা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।' }, { status: 429 });
+  if (data.action === 'change_password') {
+    const token = req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
+    const session = verifyCustomerSessionToken(token);
+    if (!session) return NextResponse.json({ success: false, errorBn: 'অ্যাকাউন্টে লগইন করুন।' }, { status: 401 });
+    if (!checkRateLimit(`customer-password-change:${session.customerId}`, 5, 15 * 60_000).allowed) return NextResponse.json({ success: false, errorBn: 'অনেক চেষ্টা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।' }, { status: 429 });
+    if (!changeCustomerPassword(session, data.currentPassword, data.newPassword)) return NextResponse.json({ success: false, errorBn: 'বর্তমান পাসওয়ার্ড সঠিক নয়।' }, { status: 401 });
+    const res = NextResponse.json({ success: true }); res.cookies.delete(CUSTOMER_SESSION_COOKIE_NAME); return res;
+  }
+  if (data.action === 'register') {
+    if (!checkRateLimit(`customer-register:${ip}`, 20, 60 * 60_000).allowed) return NextResponse.json({ success: false, errorBn: 'অনেক চেষ্টা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।' }, { status: 429 });
+    const phone = data.phone ? normalizeBdPhone(data.phone) : undefined;
+    const email = data.email?.toLowerCase() || undefined;
+    if ((!phone && !email) || (data.phone && !phone) || (email && !z.email().safeParse(email).success)) return NextResponse.json({ success: false, errorBn: 'সঠিক বাংলাদেশি ফোন নম্বর অথবা ইমেইল দিন।' }, { status: 400 });
+    const result = registerPasswordCustomer({ phone: phone || undefined, email, password: data.password });
+    if (!result.success) return NextResponse.json(result, { status: 409 });
+    return sessionResponse(result.sessionToken, result.session, result.identifier);
+  }
+  const identifier = data.identifier.includes('@') ? data.identifier.toLowerCase() : normalizeBdPhone(data.identifier);
+  if (!identifier) return NextResponse.json({ success: false, errorBn: 'নম্বর/ইমেইল বা পাসওয়ার্ড সঠিক নয়।' }, { status: 401 });
+  if (!checkRateLimit(`customer-password-identifier:${identifier}`, 10, 15 * 60_000).allowed) return NextResponse.json({ success: false, errorBn: 'অনেক চেষ্টা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।' }, { status: 429 });
+  const result = loginPasswordCustomer(identifier, data.password);
+  if (!result.success) return NextResponse.json(result, { status: 401 });
+  return sessionResponse(result.sessionToken, result.session, result.identifier);
 }
 export const GET = backendRoute(handleGET, { commitAuthFailure: true });
 export const POST = backendRoute(handlePOST, { commitAuthFailure: true });
