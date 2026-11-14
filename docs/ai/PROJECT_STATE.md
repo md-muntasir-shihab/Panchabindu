@@ -1,0 +1,13 @@
+# Project state (2026-11-13)
+
+Source of truth is this workspace, not a different repository: React/Vite client in `artifacts/panchabindu`, Express server and imported Next-style handlers in `artifacts/api-server`, with Vercel gateway rewrites. The runtime adapter stores ten named JSON documents in a Postgres JSONB row with optimistic revision transactions. This is durable compatibility storage, **not** a completed relational migration or Supabase Auth integration. Preserve its ten-document contract and all existing records.
+
+Project-local edits and isolated tests are authorized. Production SQL/writes, destructive operations, deployment, live money or courier actions, secret rotation, external connections and production branch changes require separate authorization. No production change was performed in this milestone.
+
+Customer password accounts and guest checkout exist. New sessions are configured for seven days; existing sessions are not extended. Account delivery information is derived from the latest order owned by immutable customer ID; guest orders are not claimed by phone. Local saved address management remains browser-only.
+
+Vendor and admin share a signed admin session cookie, so switching roles in the same browser replaces the session. New vendor records start pending; a super admin can activate only after all 15 onboarding answers are present and a review reason is recorded. Vendor-submitted answers require approval. Pending vendors may submit onboarding/profile requests but not product, stock, price or payout operations. Existing records remain unchanged. This is not a completed KYC verification workflow.
+
+2FA defaults off for newly created accounts unless the existing explicit policy environment flag is enabled; existing enrolled/policy-bound accounts retain their configuration. User-initiated enrollment, verified activation, password/TOTP disablement, one-use recovery codes and own password change are implemented and locally tested. Safe migration of existing preferences and an admin reset path when no 2FA exists remain **not implemented**. Existing accounts are deliberately preserved rather than silently disabling MFA. Do not expose or delete existing secrets. Global emergency stop is separate from the automation switch: the shared imported API transaction boundary blocks non-security writes, with a super-admin-only audited recovery endpoint. Tested locally only; real database concurrency and deployed behavior remain unverified.
+
+Local test evidence and outstanding work: `docs/audit/repair-matrix.md`, `docs/audit/known-limitations.md`; production rollout requirements: `docs/runbooks/deployment.md`.

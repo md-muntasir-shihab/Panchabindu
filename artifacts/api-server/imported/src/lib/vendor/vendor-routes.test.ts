@@ -14,7 +14,8 @@ import {
   GET as getAdminPayoutRegister,
   POST as postAdminPayouts,
 } from '../../../app/api/admin/vendor-payouts/route';
-import { readAdminStore } from '@/src/lib/admin/phase4a-service';
+import { readAdminStore, writeAdminStore } from '@/src/lib/admin/phase4a-service';
+import { POST as postOnboarding } from '../../../app/api/vendor/onboarding/route';
 
 const ORIGIN = 'http://localhost';
 
@@ -561,4 +562,183 @@ test('rejecting a payout releases the held funds back to the vendor balance', as
 
   // Rejection returns the held amount, so the vendor is whole again.
   assert.equal(withdrawableAfter, withdrawableBefore + 60000);
+});
+
+test('new vendor remains pending, cannot transact before activation and cannot bypass closure audit', async () => {
+  const admin = adminSession();
+  const response = await postAdminVendors(vendorRequest('/api/admin/vendors', {
+    method: 'POST', token: admin.token, csrf: admin.csrf,
+    body: { operation: 'create_vendor', businessNameBn: 'নতুন ব্যবসা', ownerNameBn: 'মালিক', contactPhone: '01712345678', defaultCommissionBp: 1000, escrowHoldDaysOverride: 7, payoutMethodBn: 'বিকাশ', payoutAccountNo: '01712345678', status: 'active' },
+  }));
+  assert.equal(response.status, 201, await response.clone().text());
+  const { vendorId } = await response.json() as { vendorId: string };
+  const { readPhase4BStore } = await import('@/src/lib/admin/phase4b-service');
+  const profile = readPhase4BStore().vendors.find(v => v.vendorId === vendorId)!;
+  assert.equal(profile.status, 'pending_onboarding');
+  assert.deepEqual(profile.onboardingAnswers15, {});
+  const { assertVendorAccountUsable } = await import('@/src/lib/vendor/vendor-workspace-service');
+  assert.equal(assertVendorAccountUsable(profile).ok, false);
+  assert.equal(assertVendorAccountUsable(profile, true).ok, true);
+  const close = await postAdminVendors(vendorRequest('/api/admin/vendors', {
+    method: 'POST', token: admin.token, csrf: admin.csrf,
+    body: { operation: 'update_vendor', vendorId, status: 'closed' },
+  }));
+  assert.equal(close.status, 400);
+  const updateStatus = (status: string, activationReason?: string) => postAdminVendors(vendorRequest('/api/admin/vendors', {
+    method: 'POST', token: admin.token, csrf: admin.csrf,
+    body: { operation: 'update_vendor', vendorId, status, activationReason },
+  }));
+  assert.equal((await updateStatus('active', 'Reviewed onboarding')).status, 400);
+  assert.equal((await updateStatus('suspended')).status, 400);
+  const registry = readAdminStore();
+  const linked = registry.users.find(user => user.userId === 'usr-vendor-001')!;
+  const previousVendor = linked.vendorId;
+  linked.vendorId = vendorId; writeAdminStore(registry);
+  try {
+    const { VENDOR_ONBOARDING_15_QUESTIONS } = await import('@/src/lib/admin/phase4b-service');
+    const vendor = vendorSession();
+    const answers15 = Object.fromEntries(VENDOR_ONBOARDING_15_QUESTIONS.map(q => [q.key, 'Test response']));
+    const submitted = await postOnboarding(vendorRequest('/api/vendor/onboarding', { method: 'POST', token: vendor.token, csrf: vendor.csrf, body: { answers15 } }));
+    assert.equal(submitted.status, 201, await submitted.clone().text());
+    assert.equal((await updateStatus('active', 'Reviewed onboarding')).status, 400);
+    const directory = await getAdminVendors(vendorRequest('/api/admin/vendors', { token: admin.token }));
+    const snapshot = await directory.json() as { requests: Array<{ requestId: string; vendorId: string; kind: string; status: string }> };
+    const pending = snapshot.requests.find(r => r.vendorId === vendorId && r.kind === 'onboarding_update' && r.status === 'pending_review');
+    assert.ok(pending);
+    const decision = await postAdminVendors(vendorRequest('/api/admin/vendors', { method: 'POST', token: admin.token, csrf: admin.csrf, body: { operation: 'decide_vendor_request', requestId: pending.requestId, decision: 'approve' } }));
+    assert.equal(decision.status, 200, await decision.clone().text());
+    assert.equal((await updateStatus('active')).status, 400);
+    assert.equal((await updateStatus('active', 'Reviewed onboarding')).status, 200);
+    assert.equal(readPhase4BStore().vendors.find(v => v.vendorId === vendorId)?.status, 'active');
+    assert.ok(readAdminStore().auditLogs.some(log => log.actionCode === 'VENDOR_PROFILE_UPDATED_BY_ADMIN' && log.metadata?.activationReason === 'Reviewed onboarding'));
+  } finally {
+    const restored = readAdminStore(); restored.users.find(user => user.userId === 'usr-vendor-001')!.vendorId = previousVendor; writeAdminStore(restored);
+  }
+});
+
+
+test('return resolutions are scoped to the signed vendor and omit internal fields', async () => {
+  const { readPhase4BStore, writePhase4BStore } = await import('@/src/lib/admin/phase4b-service');
+  const vendor = vendorSession();
+  const store = readPhase4BStore();
+  const previous = [...store.returnResolutions];
+  const row = { returnId: 'ret-own', orderNo: 'ORDER-OWN', vendorId: vendor.actor.vendorId!, faultType: 'SUPPLIER_DEFECT' as const,
+    quantity: 2, vendorDebitPoisha: 1000, platformLossPoisha: 123, courierClaimPoisha: 456,
+    restockQuantity: 1, proofUrl: 'private-proof', noteBn: 'internal-note', createdAt: '2026-01-01T00:00:00Z' };
+  try {
+    store.returnResolutions = [row, { ...row, returnId: 'ret-other', orderNo: 'ORDER-OTHER', vendorId: 'other-vendor' }];
+    writePhase4BStore(store);
+    const res = await getWorkspace(vendorRequest('/api/vendor/workspace', { token: vendor.token }));
+    assert.equal(res.status, 200);
+    const body = await res.json() as { workspace: { returns: unknown[] } };
+    assert.deepEqual(body.workspace.returns, [{ returnId: 'ret-own', orderNo: 'ORDER-OWN', faultType: 'SUPPLIER_DEFECT', quantity: 2, vendorDebitPoisha: 1000, restockQuantity: 1, createdAt: '2026-01-01T00:00:00Z' }]);
+    for (const secret of ['ORDER-OTHER', 'platformLossPoisha', 'courierClaimPoisha', 'private-proof', 'internal-note']) assert.equal(JSON.stringify(body.workspace.returns).includes(secret), false);
+  } finally {
+    const current = readPhase4BStore(); current.returnResolutions = previous; writePhase4BStore(current);
+  }
+});
+
+test('statement export is tenant scoped, date bounded, spreadsheet safe and never silently truncated', async () => {
+  const { GET: statement } = await import('../../../app/api/vendor/statement/route');
+  const { readPhase4BStore, writePhase4BStore } = await import('@/src/lib/admin/phase4b-service');
+  const vendor = vendorSession(), admin = adminSession();
+  const url = '/api/vendor/statement?from=2026-01-01&to=2026-01-31&vendorId=other';
+  assert.equal((await statement(vendorRequest(url))).status, 401);
+  assert.equal((await statement(vendorRequest(url, { token: admin.token }))).status, 403);
+  assert.equal((await statement(vendorRequest('/api/vendor/statement?from=2026-02-30&to=2026-03-01', { token: vendor.token }))).status, 400);
+  const store = readPhase4BStore(), original = [...store.vendorLedger];
+  const seed = original[0];
+  assert.ok(seed);
+  const own = { ...seed, id: 'own', vendorId: vendor.actor.vendorId!, orderNo: 'OWN', descriptionBn: ' \t=HYPERLINK("evil")', amountPoisha: -100, createdAt: '2026-01-31T23:59:59.999Z' };
+  try {
+    store.vendorLedger = [own, { ...own, id: 'other', vendorId: 'other', orderNo: 'SECRET' }, { ...own, id: 'later', createdAt: '2026-02-01T00:00:00.000Z' }];
+    writePhase4BStore(store);
+    const response = await statement(vendorRequest(url, { token: vendor.token }));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'private, no-store');
+    const csv = await response.text();
+    assert.ok(csv.includes('OWN')); assert.ok(csv.includes('"\' \t=HYPERLINK(""evil"")"'));
+    assert.ok(csv.includes(',-100,')); assert.ok(!csv.includes('SECRET')); assert.ok(!csv.includes('later'));
+    const large = readPhase4BStore(); large.vendorLedger = Array.from({ length: 5001 }, (_, i) => ({ ...own, id: `row-${i}` })); writePhase4BStore(large);
+    const tooMany = await statement(vendorRequest(url, { token: vendor.token }));
+    assert.equal(tooMany.status, 400); assert.equal((await tooMany.json() as { code: string }).code, 'RANGE_TOO_LARGE');
+  } finally { const current = readPhase4BStore(); current.vendorLedger = original; writePhase4BStore(current); }
+});
+
+test('support tickets enforce tenant isolation, CSRF, role boundaries, state and audit', async () => {
+  const vendorApi = await import('../../../app/api/vendor/support/route');
+  const adminApi = await import('../../../app/api/admin/vendor-support/route');
+  const { readPhase4BStore, writePhase4BStore } = await import('@/src/lib/admin/phase4b-service');
+  const vendor = vendorSession(), admin = adminSession();
+  const post = (token: string, csrf: string | undefined, body: unknown) => vendorRequest('/api/vendor/support', { method: 'POST', token, csrf, body });
+  const adminPost = (token: string, csrf: string | undefined, body: unknown) => vendorRequest('/api/admin/vendor-support', { method: 'POST', token, csrf, body });
+  const payload = { action: 'create', subject: 'Need help', text: 'Please help' };
+  assert.equal((await vendorApi.GET(vendorRequest('/api/vendor/support'))).status, 401);
+  assert.equal((await adminApi.GET(vendorRequest('/api/admin/vendor-support', { token: vendor.token }))).status, 403);
+  assert.equal((await vendorApi.POST(post(vendor.token, undefined, payload))).status, 403);
+  assert.equal((await vendorApi.POST(post(vendor.token, vendor.csrf, { ...payload, vendorId: 'other' }))).status, 400);
+  const created = await vendorApi.POST(post(vendor.token, vendor.csrf, payload));
+  assert.equal(created.status, 201);
+  const { ticket } = await created.json() as { ticket: { ticketId: string; vendorId?: string } };
+  assert.equal(ticket.vendorId, undefined);
+  const store = readPhase4BStore();
+  const own = store.supportTickets!.find(row => row.ticketId === ticket.ticketId)!;
+  const other = { ...own, ticketId: 'f59dbb35-c1e9-4af0-adca-c002e32d4d11', vendorId: 'other', subject: 'OTHER SECRET' };
+  store.supportTickets!.push(other); writePhase4BStore(store);
+  const list = await vendorApi.GET(vendorRequest('/api/vendor/support', { token: vendor.token }));
+  assert.equal(JSON.stringify(await list.json()).includes('OTHER SECRET'), false);
+  assert.equal((await vendorApi.POST(post(vendor.token, vendor.csrf, { action: 'reply', ticketId: other.ticketId, text: 'Intrusion' }))).status, 409);
+  assert.equal((await adminApi.POST(adminPost(admin.token, undefined, { action: 'close', ticketId: ticket.ticketId }))).status, 403);
+  assert.equal((await adminApi.POST(adminPost(vendor.token, vendor.csrf, { action: 'close', ticketId: ticket.ticketId }))).status, 403);
+  assert.equal((await adminApi.POST(adminPost(admin.token, admin.csrf, { action: 'reply', ticketId: ticket.ticketId, text: 'We can help' }))).status, 200);
+  assert.equal((await vendorApi.POST(post(vendor.token, vendor.csrf, { action: 'reply', ticketId: ticket.ticketId, text: 'Thanks' }))).status, 200);
+  assert.equal((await adminApi.POST(adminPost(admin.token, admin.csrf, { action: 'close', ticketId: ticket.ticketId }))).status, 200);
+  assert.equal((await vendorApi.POST(post(vendor.token, vendor.csrf, { action: 'reply', ticketId: ticket.ticketId, text: 'Late' }))).status, 409);
+  assert.equal((await adminApi.POST(adminPost(admin.token, admin.csrf, { action: 'close', ticketId: ticket.ticketId }))).status, 409);
+  const audit = readAdminStore().auditLogs.filter(log => log.targetId === ticket.ticketId);
+  assert.deepEqual(new Set(audit.map(log => log.actionCode)), new Set(['VENDOR_SUPPORT_CREATED', 'VENDOR_SUPPORT_REPLIED', 'VENDOR_SUPPORT_CLOSED']));
+  assert.equal(JSON.stringify(audit).includes('Please help'), false);
+});
+
+test('bucket statement rolls forward own complete ledger and reports recorded paid payouts without secrets', async () => {
+  const { GET: statement } = await import('../../../app/api/vendor/statement/route');
+  const { readPhase4BStore, writePhase4BStore } = await import('@/src/lib/admin/phase4b-service');
+  const vendor = vendorSession(), admin = adminSession();
+  const url = '/api/vendor/statement?from=2026-01-01&to=2026-01-31&format=summary&vendorId=other';
+  assert.equal((await statement(vendorRequest(url))).status, 401);
+  assert.equal((await statement(vendorRequest(url, { token: admin.token }))).status, 403);
+  const store = readPhase4BStore(), oldLedger = store.vendorLedger, oldPayouts = store.payoutRequests;
+  const seed = oldLedger[0], ownId = vendor.actor.vendorId!;
+  const row = { ...seed, vendorId: ownId, createdAt: '2026-01-01T00:00:00.000Z' };
+  const payout = { payoutId: 'paid-test', vendorId: ownId, vendorCode: 'VND-001', vendorNameBn: 'vendor', requestedAmountPoisha: 200, payoutMethodBn: 'manual', payoutAccountNo: '01712345678', status: 'paid' as const, holdLedgerEntryId: 'hold', rejectionReasonBn: null, paymentTrxId: 'TRX-123', proofUrl: 'private-proof', requestedByUsername: 'private-user', requestedAt: '2025-12-30T00:00:00.000Z', resolvedAt: '2026-01-31T23:59:59.999Z' };
+  try {
+    store.vendorLedger = [
+      { ...row, id: 'open', escrowBucket: 'pending', amountPoisha: 1000, createdAt: '2025-12-31T23:59:59.999Z' },
+      { ...row, id: 'offset', escrowBucket: 'pending', amountPoisha: -1000 },
+      { ...row, id: 'locked', escrowBucket: 'locked', amountPoisha: 1000 },
+      { ...row, id: 'adjust', escrowBucket: 'available', amountPoisha: -200, createdAt: '2026-01-31T23:59:59.999Z' },
+      { ...row, id: 'future', escrowBucket: 'available', amountPoisha: 999, createdAt: '2026-02-01T00:00:00.000Z' },
+      { ...row, id: 'other', vendorId: 'other', escrowBucket: 'available', amountPoisha: 98765 },
+    ];
+    store.payoutRequests = [payout, { ...payout, vendorId: 'other', payoutId: 'other-paid' }, { ...payout, payoutId: 'future-paid', resolvedAt: '2026-02-01T00:00:00.000Z' }]; writePhase4BStore(store);
+    const response = await statement(vendorRequest(url, { token: vendor.token })); assert.equal(response.status, 200);
+    const body = await response.json() as { statement: { buckets: unknown[]; ledgerEntryCount: number; payouts: Array<{ payoutId: string; accountMasked: string }> } };
+    assert.deepEqual(body.statement.buckets, [
+      { bucket: 'pending', openingPoisha: 1000, creditsPoisha: 0, debitsPoisha: -1000, closingPoisha: 0 },
+      { bucket: 'locked', openingPoisha: 0, creditsPoisha: 1000, debitsPoisha: 0, closingPoisha: 1000 },
+      { bucket: 'available', openingPoisha: 0, creditsPoisha: 0, debitsPoisha: -200, closingPoisha: -200 },
+    ]);
+    assert.equal(body.statement.ledgerEntryCount, 3);
+    assert.equal(body.statement.payouts.length, 1); assert.equal(body.statement.payouts[0].payoutId, 'paid-test');
+    assert.match(body.statement.payouts[0].accountMasked, /5678$/);
+    for (const secret of ['01712345678', 'other-paid', 'private-proof', 'private-user', '98765']) assert.equal(JSON.stringify(body).includes(secret), false);
+    const broken = readPhase4BStore(); broken.vendorLedger.push({ ...row, id: 'broken', createdAt: 'invalid' }); writePhase4BStore(broken);
+    const bad = await statement(vendorRequest(url, { token: vendor.token })); assert.equal(bad.status, 503);
+    assert.equal((await bad.json() as { code: string }).code, 'INVALID_LEDGER_DATA');
+    const overflow = readPhase4BStore(); overflow.vendorLedger = [
+      { ...row, id: 'max', amountPoisha: Number.MAX_SAFE_INTEGER, escrowBucket: 'available', createdAt: '2025-12-31T00:00:00Z' },
+      { ...row, id: 'one', amountPoisha: 1, escrowBucket: 'available', createdAt: '2025-12-31T00:00:00Z' },
+    ]; writePhase4BStore(overflow);
+    assert.equal((await statement(vendorRequest(url, { token: vendor.token }))).status, 503);
+  } finally { const current = readPhase4BStore(); current.vendorLedger = oldLedger; current.payoutRequests = oldPayouts; writePhase4BStore(current); }
 });

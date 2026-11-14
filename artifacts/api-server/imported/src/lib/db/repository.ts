@@ -2139,6 +2139,19 @@ export function getAuthenticatedCustomerOrders(sessionToken: string | undefined)
   }));
 }
 
+/** Checkout details are derived only from orders belonging to the signed-in principal.
+ * Guest orders are never claimed by phone or email. */
+export function getCustomerLastDeliveryProfile(sessionToken: string | undefined) {
+  const session = verifyCustomerSessionToken(sessionToken);
+  if (!session) return null;
+  const latest = readErpState().orders.filter(order => order.customerId === session.customerId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  if (!latest) return null;
+  return { customerName: latest.customerName, customerPhone: latest.customerPhone,
+    customerEmail: latest.customerEmail ?? null, districtId: latest.districtId,
+    upazilaId: latest.upazilaId, streetAddress: latest.streetAddress, landmark: latest.landmark };
+}
+
 export function customerOwnsOrder(sessionToken: string | undefined, orderNo: string): boolean {
   const session = verifyCustomerSessionToken(sessionToken);
   return Boolean(session && readErpState().orders.some((o) => o.customerId === session.customerId && o.orderNo.toUpperCase() === orderNo.trim().toUpperCase()));

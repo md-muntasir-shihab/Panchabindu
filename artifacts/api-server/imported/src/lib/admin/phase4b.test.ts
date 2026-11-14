@@ -9,6 +9,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getActorSecurityContext } from './phase4a-service';
+import { readErpState } from '../db/repository';
 import {
   auditAndCloseVendorContract,
   autoRecordOrderDeliveredOrReturned,
@@ -150,7 +151,7 @@ test('Phase 4B Case 3: Courier 360 Remittance Settlement, Short-Payment Detector
   const steadfastSummary = c360.find((c) => c.provider === 'steadfast')!;
   assert.ok(steadfastSummary.shortPaymentTotalPoisha >= 5000);
   assert.equal(
-    steadfastSummary.connectionStatusBadgeBn.includes('Manual / CSV Fallback'),
+    steadfastSummary.connectionStatusBadgeBn.includes('Not integrated'),
     true
   );
 });
@@ -261,13 +262,18 @@ test('Phase 4B Case 5: Payout Hold Protection, Approval/Paid Flow, 15Q Onboardin
   assert.equal(cleanClosure.closed, true);
 });
 
-test('Phase 4B Case 6: Live Courier Tracking Sync & Auto Courier Ledger Entry on Delivery', () => {
+test('tracking sync fails closed; manual delivery recording remains separately tested', () => {
   const adminCtx = getActorSecurityContext('usr-super-admin')!;
 
-  // 1. Trigger live courier tracking sync
+  // No provider adapter is active; even direct callers cannot simulate tracking.
+  const before = structuredClone(readPhase4BStore().courierRemittanceLedger);
+  const ordersBefore = structuredClone(readErpState().orders);
   const syncRes = syncAllCourierTrackingStatuses(adminCtx);
-  assert.equal(syncRes.success, true);
-  assert.equal(typeof syncRes.syncedCount, 'number');
+  assert.deepEqual(readPhase4BStore().courierRemittanceLedger, before);
+  assert.deepEqual(readErpState().orders, ordersBefore);
+  assert.equal(syncRes.success, false);
+  assert.equal(syncRes.syncedCount, 0);
+  assert.equal(syncRes.updatedCount, 0);
 
   // 2. Test autoRecordOrderDeliveredOrReturned on a seeded order
   const autoRes = autoRecordOrderDeliveredOrReturned(
@@ -288,3 +294,14 @@ test('Phase 4B Case 6: Live Courier Tracking Sync & Auto Courier Ledger Entry on
   assert.equal(remEntry.shortPaymentPoisha, 0);
 });
 
+
+
+test('courier credential presence does not claim a live connection', () => {
+  const old = process.env.STEADFAST_API_KEY;
+  try {
+    process.env.STEADFAST_API_KEY = 'fixture-not-a-credential';
+    const row = computeCourier360Summary().find(item => item.provider === 'steadfast')!;
+    assert.equal(row.apiConnected, false);
+    assert.match(row.connectionStatusBadgeBn, /Not integrated/);
+  } finally { if (old === undefined) delete process.env.STEADFAST_API_KEY; else process.env.STEADFAST_API_KEY = old; }
+});

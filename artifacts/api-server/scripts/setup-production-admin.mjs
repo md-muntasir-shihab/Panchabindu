@@ -49,7 +49,7 @@ export async function setupProductionAdmin({ env = process.env, fetchImpl = fetc
   const user = {
     userId: crypto.randomUUID(), username: 'admin', internalEmailAlias: 'admin@internal.bongoconsign.local',
     displayNameBn: 'সুপার অ্যাডমিন', displayNameEn: 'Super Admin', roleSlug: 'super_admin', vendorId: null,
-    passwordHash: passwordHash(password), mustChangePassword: true, totpEnrolled: false, require2fa: true,
+    passwordHash: passwordHash(password), mustChangePassword: true, totpEnrolled: false, require2fa: false,
     totpSecretEncrypted: encryptedSecret(secret, masterKey), lastUsedTotpStep: null, backupCodeHashes: [],
     maxDiscountBp: 5000, maskCustomerPiiForVendor: false, isActive: true, failedLoginAttempts: 0,
     lockedUntilIso: null, lastLoginAt: null, createdAt: now,

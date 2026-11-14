@@ -8,6 +8,9 @@
 // Admin controls every capability via /api/admin/vendors (capability matrix,
 // commission, escrow hold, suspension, request approval).
 
+import { SupportPanel } from '@/components/vendor/support-panel';
+import { KycPanel } from '@/components/vendor/kyc-panel';
+import { AccountSecurity } from '@/components/security/account-security';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   AlertTriangle,
@@ -38,6 +41,7 @@ import {
   DashboardTab,
   EarningsTab,
   OrdersTab,
+  ReturnsTab,
   PayoutsTab,
   ProductsTab,
   ProfileTab,
@@ -59,6 +63,8 @@ type TabKey =
   | 'products'
   | 'stock'
   | 'orders'
+  | 'returns'
+  | 'support'
   | 'earnings'
   | 'payouts'
   | 'proposals'
@@ -76,6 +82,8 @@ const TABS: TabDef[] = [
   { key: 'products', labelBn: 'পণ্য ও স্টক', labelEn: 'Products & Stock', icon: <Package className="h-4 w-4" aria-hidden="true" /> },
   { key: 'stock', labelBn: 'চালান (LOT)', labelEn: 'Challans (LOT)', icon: <Truck className="h-4 w-4" aria-hidden="true" /> },
   { key: 'orders', labelBn: 'অর্ডার', labelEn: 'Orders', icon: <ClipboardList className="h-4 w-4" aria-hidden="true" /> },
+  { key: 'support', labelBn: 'সহায়তা', labelEn: 'Support', icon: <ClipboardList className="h-4 w-4" aria-hidden="true" /> },
+  { key: 'returns', labelBn: 'রিটার্ন', labelEn: 'Returns', icon: <ArrowRightLeft className="h-4 w-4" aria-hidden="true" /> },
   { key: 'earnings', labelBn: 'আয় ও এসক্রো', labelEn: 'Earnings & Escrow', icon: <Coins className="h-4 w-4" aria-hidden="true" /> },
   { key: 'payouts', labelBn: 'পেআউট', labelEn: 'Payouts', icon: <Wallet className="h-4 w-4" aria-hidden="true" /> },
   { key: 'proposals', labelBn: 'মূল্য প্রস্তাব', labelEn: 'Price Proposals', icon: <Percent className="h-4 w-4" aria-hidden="true" /> },
@@ -376,8 +384,7 @@ export function VendorClient() {
               )}
               {totpLoginEnabled && (!enrollment || enrollment.require2fa) && (
                 <Input
-                  label={t('অথেনটিকেটর কোড', 'Authenticator code')}
-                  inputMode="numeric"
+                  label={t('অথেনটিকেটর বা রিকভারি কোড (2FA চালু থাকলে)', 'Authenticator or recovery code (if 2FA enabled)')}
                   autoComplete="one-time-code"
                   value={totp}
                   onChange={(e) => setTotp(e.target.value)}
@@ -507,6 +514,8 @@ export function VendorClient() {
           <StockTab workspace={workspace} send={send} busy={busy} t={t} num={num} money={money} />
         )}
         {tab === 'orders' && <OrdersTab workspace={workspace} t={t} num={num} money={money} />}
+        {tab === 'support' && <SupportPanel locale={locale} mode="vendor" />}
+        {tab === 'returns' && <ReturnsTab workspace={workspace} t={t} num={num} money={money} />}
         {tab === 'earnings' && <EarningsTab workspace={workspace} t={t} num={num} money={money} />}
         {tab === 'payouts' && (
           <PayoutsTab workspace={workspace} send={send} busy={busy} t={t} num={num} money={money} />
@@ -515,7 +524,7 @@ export function VendorClient() {
           <ProposalsTab workspace={workspace} send={send} busy={busy} t={t} num={num} money={money} />
         )}
         {tab === 'profile' && (
-          <ProfileTab workspace={workspace} send={send} busy={busy} t={t} num={num} money={money} bn={bn} />
+          <><ProfileTab workspace={workspace} send={send} busy={busy} t={t} num={num} money={money} bn={bn} /><KycPanel locale={locale} mode="vendor" /><AccountSecurity locale={locale} csrfKey={CSRF_KEY} /></>
         )}
 
         <footer className="border-t border-border pt-3 text-[11px] text-muted">

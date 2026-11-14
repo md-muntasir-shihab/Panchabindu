@@ -244,6 +244,7 @@ export interface VendorWorkspaceDTO {
   counters: VendorCountersDTO;
   products: VendorProductDTO[];
   orders: VendorOrderDTO[];
+  returns: Array<{ returnId: string; orderNo: string; faultType: string; quantity: number; vendorDebitPoisha: Poisha; restockQuantity: number; createdAt: string }>;
   ledger: VendorLedgerEntryDTO[];
   payouts: VendorPayoutDTO[];
   lots: VendorLotDTO[];
@@ -306,7 +307,10 @@ export function requireOwnProfile(actor: ActorSecurityContext): VendorProfileRec
   return profile;
 }
 
-export function assertVendorAccountUsable(profile: VendorProfileRecord): { ok: boolean; errorBn?: string } {
+export function assertVendorAccountUsable(profile: VendorProfileRecord, allowOnboarding = false): { ok: boolean; errorBn?: string } {
+  if (profile.status === 'pending_onboarding' && !allowOnboarding) {
+    return { ok: false, errorBn: 'অনবোর্ডিং অনুমোদনের অপেক্ষায় আছে।' };
+  }
   if (profile.status === 'suspended') {
     return { ok: false, errorBn: 'আপনার ভেন্ডর অ্যাকাউন্ট সাময়িকভাবে স্থগিত (Suspended) আছে। অ্যাডমিনের সাথে যোগাযোগ করুন।' };
   }
@@ -581,6 +585,11 @@ export function getVendorWorkspace(actor: ActorSecurityContext): VendorWorkspace
     },
     products: ownProducts.map((product) => toProductDTO(product, erp.categories)),
     orders,
+    returns: p4b.returnResolutions.filter(item => item.vendorId === profile.vendorId).map(item => ({
+      returnId: item.returnId, orderNo: item.orderNo, faultType: item.faultType,
+      quantity: item.quantity, vendorDebitPoisha: item.vendorDebitPoisha,
+      restockQuantity: item.restockQuantity, createdAt: item.createdAt,
+    })).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     ledger,
     payouts,
     lots,
@@ -873,7 +882,7 @@ export function vendorRequestProfileChange(
   input: VendorProfileChangeInput
 ): { success: boolean; errorBn?: string; request?: VendorRequestDTO } {
   const profile = requireOwnProfile(actor);
-  const usable = assertVendorAccountUsable(profile);
+  const usable = assertVendorAccountUsable(profile, true);
   if (!usable.ok) return { success: false, errorBn: usable.errorBn };
   const capabilities = getVendorCapabilities(profile.vendorId);
 
@@ -939,7 +948,7 @@ export function vendorSubmitOnboardingAnswers(
   answers: Record<string, string>
 ): { success: boolean; errorBn?: string } {
   const profile = requireOwnProfile(actor);
-  const usable = assertVendorAccountUsable(profile);
+  const usable = assertVendorAccountUsable(profile, true);
   if (!usable.ok) return { success: false, errorBn: usable.errorBn };
   if (!getVendorCapabilities(profile.vendorId).canSubmitOnboardingAnswers) {
     return capabilityDenied('অনবোর্ডিং ১৫ প্রশ্নের উত্তর');

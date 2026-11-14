@@ -135,10 +135,23 @@ export function CheckoutClient({
     fetch('/api/account/orders', { cache: 'no-store', signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error('Account unavailable');
-        const data = await response.json() as { authenticated?: boolean; customerPhone?: string };
+        const data = await response.json() as { authenticated?: boolean; customerPhone?: string; deliveryProfile?: { customerName: string; customerPhone: string; customerEmail: string | null; districtId: number; upazilaId: number; streetAddress: string; landmark: string } | null };
         if (controller.signal.aborted) return;
         setSessionStatus(data.authenticated ? 'authenticated' : 'anonymous');
-        if (data.authenticated && typeof data.customerPhone === 'string') setCustomerPhone(data.customerPhone);
+        if (data.authenticated) {
+          const profile = data.deliveryProfile;
+          setCustomerPhone(current => current || profile?.customerPhone || data.customerPhone || '');
+          if (profile) {
+            setCustomerName(current => current || profile.customerName);
+            setCustomerEmail(current => current || profile.customerEmail || '');
+            setStreetAddress(current => current || profile.streetAddress);
+            setLandmark(current => current || profile.landmark);
+            if (getDistrictById(profile.districtId) && getThanasByDistrict(profile.districtId).some(t => t.id === profile.upazilaId)) {
+              setDistrictId(profile.districtId); setUpazilaId(profile.upazilaId);
+              setDistrictConfirmed(true); setThanaConfirmed(true);
+            }
+          }
+        }
       })
       .catch(() => {
         if (!controller.signal.aborted) setSessionStatus('error');

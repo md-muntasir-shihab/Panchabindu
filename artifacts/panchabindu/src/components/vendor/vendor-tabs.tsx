@@ -7,6 +7,7 @@
 import { useMemo, useState } from 'react';
 import {
   AlertTriangle,
+  ArrowRightLeft,
   BadgeCheck,
   Boxes,
   CheckCircle2,
@@ -1083,12 +1084,66 @@ export function OrdersTab({ workspace, t, num, money }: TabProps) {
   );
 }
 
+export function ReturnsTab({ workspace, t, num, money }: TabProps) {
+  const faultLabels: Record<string, [string, string]> = {
+    WAREHOUSE_PACKAGING_FAULT: ['প্যাকেজিং সংক্রান্ত', 'Packaging issue'],
+    SUPPLIER_DEFECT: ['সরবরাহকারী ত্রুটি', 'Supplier defect'],
+    COURIER_NEGLIGENCE: ['কুরিয়ার সংক্রান্ত', 'Courier issue'],
+    CUSTOMER_INTACT_RETURN: ['গ্রাহকের সিদ্ধান্ত', 'Customer decision'],
+  };
+  return <div className="space-y-4">
+    <SectionHead title={t('রিটার্ন নিষ্পত্তি', 'Return resolutions')} desc={t('শুধু আপনার পণ্যের নিষ্পত্তিকৃত রিটার্ন এখানে দেখা যায়। নতুন দাবি বা বিরোধ অনলাইনে জমা এখনো চালু নয়।', 'Only resolved returns for your products are shown. Online claims or disputes are not yet available.')} />
+    {workspace.returns.length === 0 ? <EmptyState icon={<ArrowRightLeft className="h-6 w-6" />} title={t('কোনো নিষ্পত্তিকৃত রিটার্ন নেই', 'No resolved returns')} description={t('রিটার্ন নিষ্পত্তি হলে এখানে দেখা যাবে।', 'Resolved returns will appear here.')} /> : workspace.returns.map(item => <Card key={item.returnId} surface="surface" padding="sm" className="space-y-1 text-xs">
+      <p className="font-bold">{t('অর্ডার', 'Order')}: {item.orderNo} · {new Date(item.createdAt).toLocaleDateString()}</p>
+      <p>{t('ধরন', 'Type')}: {faultLabels[item.faultType] ? t(...faultLabels[item.faultType]) : t('অন্যান্য', 'Other')}</p>
+      <p>{t('পরিমাণ', 'Quantity')}: {num(item.quantity)} · {t('পুনরায় স্টকে', 'Restocked')}: {num(item.restockQuantity)}</p>
+      <p>{t('আপনার সমন্বয়', 'Your adjustment')}: {money(item.vendorDebitPoisha)}</p>
+    </Card>)}
+  </div>;
+}
+
 // ===========================================================================
 // 5. EARNINGS & ESCROW
 // ===========================================================================
 
+type LedgerStatement = {
+  from: string; to: string; generatedAt: string; ledgerEntryCount: number;
+  buckets: Array<{ bucket: 'pending' | 'locked' | 'available'; openingPoisha: number; creditsPoisha: number; debitsPoisha: number; closingPoisha: number }>;
+  payouts: Array<{ payoutId: string; amountPoisha: number; method: string; accountMasked: string; transactionId: string | null; requestedAt: string; recordedPaidAt: string }>;
+};
+
 export function EarningsTab({ workspace, t, num, money }: TabProps) {
   const { escrow, ledger, scorecard, profile } = workspace;
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [exportError, setExportError] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [statement, setStatement] = useState<LedgerStatement | null>(null);
+  const [statementError, setStatementError] = useState(false);
+  const [statementLoading, setStatementLoading] = useState(false);
+  async function loadStatement() {
+    setStatementError(false); setStatement(null); setStatementLoading(true);
+    try {
+      const query = new URLSearchParams({ from, to, format: 'summary' });
+      const response = await fetch(`/api/vendor/statement?${query}`, { credentials: 'same-origin', cache: 'no-store' });
+      const body = await response.json() as { success?: boolean; statement?: LedgerStatement };
+      if (!response.ok || !body.success || !body.statement) throw new Error('Statement failed');
+      setStatement(body.statement);
+    } catch { setStatementError(true); } finally { setStatementLoading(false); }
+  }
+
+  async function exportStatement() {
+    setExportError(false); setExporting(true);
+    try {
+      const query = new URLSearchParams({ from, to });
+      const response = await fetch(`/api/vendor/statement?${query}`, { credentials: 'same-origin' });
+      if (!response.ok) throw new Error('Export failed');
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement('a'); link.href = url; link.download = 'vendor-ledger.csv';
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch { setExportError(true); } finally { setExporting(false); }
+  }
   return (
     <div className="space-y-4">
       <SectionHead
@@ -1099,6 +1154,28 @@ export function EarningsTab({ workspace, t, num, money }: TabProps) {
         )}
       />
 
+      <Card surface="surface" padding="sm" className="space-y-3">
+        <h3 className="font-bold">{t('লেজার স্টেটমেন্ট ডাউনলোড', 'Download ledger statement')}</h3>
+        <p className="text-xs text-muted">{t('তারিখ UTC অনুযায়ী। CSV-তে অর্থ পয়সায়; বাকেটের স্থানান্তরসহ পৃথক এন্ট্রি থাকে, এগুলোর যোগফল আয় নয়।', 'Dates use UTC. Amounts are in poisha; entries include bucket transfers, so their sum is not earnings.')}</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="text-xs">{t('শুরুর তারিখ', 'From')}<input className={inputClass} type="date" disabled={statementLoading || exporting} value={from} onChange={e => { setFrom(e.target.value); setStatement(null); setStatementError(false); }} /></label>
+          <label className="text-xs">{t('শেষ তারিখ', 'To')}<input className={inputClass} type="date" disabled={statementLoading || exporting} value={to} onChange={e => { setTo(e.target.value); setStatement(null); setStatementError(false); }} /></label>
+          <Button type="button" variant="secondary" disabled={!from || !to || from > to || statementLoading} onClick={loadStatement}>{statementLoading ? t('লোড হচ্ছে…', 'Loading…') : t('স্টেটমেন্ট দেখুন', 'View statement')}</Button>
+          <Button type="button" variant="outline" disabled={!from || !to || from > to || exporting} onClick={exportStatement}>{exporting ? t('ডাউনলোড হচ্ছে…', 'Downloading…') : t('CSV ডাউনলোড', 'Download CSV')}</Button>
+        </div>
+        {statementError && <p role="alert" className="text-xs text-danger">{t('স্টেটমেন্ট তৈরি হয়নি। তথ্যের অসংগতি, সেশন বা এন্ট্রির সীমা পরীক্ষা করতে সহায়তায় যোগাযোগ করুন।', 'Statement unavailable. Contact support about the session, entry limit or inconsistent records.')}</p>}
+        {statement && <div className="space-y-3">
+          <h4 className="font-bold">{t('লেজার বাকেট স্টেটমেন্ট', 'Ledger bucket statement')} · {statement.from} — {statement.to} (UTC)</h4>
+          <p className="text-xs text-muted">{t('সংরক্ষিত লেজার থেকে হিসাব; ব্যাংক বা পেমেন্ট সেবার সাথে মিলিয়ে দেখা নয়। শুরুর পূর্ববর্তী সব এন্ট্রির যোগফল শুরুর ব্যালেন্স। ঋণাত্মক ব্যালেন্স লুকানো হয় না।', 'Calculated from recorded ledger entries, not reconciled with a bank or payment provider. Opening is the sum of all earlier entries. Negative balances are not hidden.')}</p>
+          <div className="overflow-x-auto"><table className="w-full min-w-[550px] text-left text-xs"><thead><tr><th className="p-2">{t('বাকেট', 'Bucket')}</th><th className="p-2">{t('শুরু', 'Opening')}</th><th className="p-2">{t('যোগ', 'Credits')}</th><th className="p-2">{t('বিয়োগ', 'Debits')}</th><th className="p-2">{t('শেষ', 'Closing')}</th></tr></thead><tbody>{statement.buckets.map(row => <tr key={row.bucket} className="border-t border-border"><th className="p-2">{row.bucket === 'pending' ? t('অপেক্ষমাণ', 'Pending') : row.bucket === 'locked' ? t('লকড', 'Locked') : t('উপলব্ধ', 'Available')}</th><td className="p-2">{money(row.openingPoisha)}</td><td className="p-2">{money(row.creditsPoisha)}</td><td className="p-2">{money(row.debitsPoisha)}</td><td className="p-2">{money(row.closingPoisha)}</td></tr>)}</tbody></table></div>
+          <p className="text-xs">{t('এন্ট্রি', 'Entries')}: {num(statement.ledgerEntryCount)} · {t('তৈরির সময়', 'Generated')}: {new Date(statement.generatedAt).toLocaleString()}</p>
+          <h4 className="font-bold">{t('এই সময়ে অ্যাডমিন কর্তৃক পরিশোধিত হিসেবে নথিভুক্ত পেআউট', 'Payouts recorded as paid by admin during this period')}</h4>
+          <p className="text-xs text-muted">{t('নিচের তথ্য প্রশাসনিক রেকর্ড; এটি টাকা স্থানান্তরের স্বাধীন প্রমাণ নয়। অঙ্ক অনুরোধকৃত পরিমাণ, প্রাপ্ত নিট অর্থ বা ফি নয়।', 'These are administrative records, not independent proof of transfer. Amounts are requested, not net received or fees.')}</p>
+          {statement.payouts.length === 0 ? <p className="text-xs">{t('এই সময়ে কোনো পরিশোধ রেকর্ড নেই।', 'No paid records in this period.')}</p> : <ul className="space-y-2">{statement.payouts.map(payout => <li key={payout.payoutId} className="rounded border border-border p-2 text-xs break-words"><p><strong>{payout.payoutId}</strong> · {money(payout.amountPoisha)}</p><p>{payout.method} · {payout.accountMasked}</p><p>{t('নথিভুক্ত পরিশোধ', 'Recorded paid')}: {new Date(payout.recordedPaidAt).toLocaleString()} · {t('লেনদেন রেফারেন্স', 'Transaction reference')}: {payout.transactionId || '—'}</p></li>)}</ul>}
+        </div>}
+        {exportError && <p role="alert" className="text-xs text-danger">{t('ডাউনলোড করা যায়নি। সেশন পরীক্ষা করুন অথবা ছোট তারিখসীমা বেছে নিন (সর্বোচ্চ ৫,০০০ এন্ট্রি)।', 'Download failed. Check your session or choose a shorter range (maximum 5,000 entries).')}</p>}
+        <p className="text-xs text-muted">{t('নিচের তালিকায় সর্বোচ্চ ২০০টি এন্ট্রি; CSV নির্বাচিত সময়ের সব এন্ট্রি দেখায়।', 'The list below shows up to 200 entries; CSV includes all entries in the selected period.')}</p>
+      </Card>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Kpi label={t('Pending', 'Pending')} value={money(escrow.pendingPoisha)} hint={t('ডেলিভারির অপেক্ষায়', 'Awaiting delivery')} />
         <Kpi label={t('Locked (হোল্ড)', 'Locked (hold)')} value={money(escrow.lockedPoisha)} hint={`${profile.escrowHoldDaysOverride ?? workspace.rules.globalEscrowHoldDays} ${t('দিনের হোল্ড', 'day hold')}`} tone="warning" />

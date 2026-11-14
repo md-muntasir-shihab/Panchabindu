@@ -1,5 +1,7 @@
 # Panchabindu
 
+> **Current status (2026-11-13):** Some historical instructions below are outdated. Customer password login and guest checkout exist; this workspace is Vite/React plus an Express gateway, not a Next.js runtime. Runtime JSONB compatibility persistence is not a complete relational migration. See `docs/ai/PROJECT_STATE.md` and `docs/audit/known-limitations.md`. Optional self-service 2FA is API-tested locally but existing-account migration is incomplete; a global emergency switch is implemented and API-tested locally but is not production-verified. No production migration or deployment is authorized by this note.
+
 Bengali/English multi-vendor storefront and operations app, imported from Vercel and ported to Replit without redesigning the original product.
 
 ## Run & Operate

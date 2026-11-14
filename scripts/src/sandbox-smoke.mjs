@@ -15,6 +15,7 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const username = 'sandbox_fixture_owner';
 const password = randomBytes(24).toString('hex');
 let fixture, child, base;
+const fixturePasswords = new Map();
 
 // Never use TEST_APP_URL or the development launcher: that launcher loads private
 // account configuration. All state and the app process belong to this test run.
@@ -83,7 +84,7 @@ test('fixture admin and vendor sign in and complete first login without TOTP', {
       const settings = await client.get('/api/admin/auth');
       assert.equal(settings.status(), 200);
       assert.deepEqual(await settings.json(), {
-        twoFactorLoginEnabled: false,
+        twoFactorLoginEnabled: true,
         defaultAdminUsername: username,
       });
       const response = await client.post('/api/admin/auth', {
@@ -97,6 +98,7 @@ test('fixture admin and vendor sign in and complete first login without TOTP', {
       assert.equal(body.requiresFirstLoginGate, true);
       assert.equal(body.totpSetupUri, undefined);
       const changedPassword = randomBytes(24).toString('hex');
+      fixturePasswords.set(account, changedPassword);
       const completion = await client.post('/api/admin/auth', {
         headers: { 'x-csrf-token': body.csrfToken },
         data: {
@@ -155,12 +157,49 @@ test('isolated admin and vendor screens make authenticator codes optional', { ti
     await page.getByLabel(/Username/).waitFor();
     await page.waitForFunction((expected) =>
       document.querySelector('form input')?.value === expected &&
-      document.querySelectorAll('form input').length === 2, username);
+      document.querySelectorAll('form input').length === 3 &&
+      !document.querySelectorAll('form input')[2].required, username);
 
     await page.goto(`${base}/vendor`, { waitUntil: 'domcontentloaded' });
     await page.getByLabel(/Username/).waitFor();
-    await page.waitForFunction(() => document.querySelectorAll('form input').length === 2);
+    await page.waitForFunction(() => document.querySelectorAll('form input').length === 3 && !document.querySelectorAll('form input')[2].required);
   } finally {
     await browser.close();
   }
+});
+
+
+test('vendor support and statement work in an isolated browser on mobile and desktop', { timeout: 90_000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/repl/tools/bin/chromium', headless: true, args: ['--no-sandbox'], env: { PATH: process.env.PATH, HOME: fixture, TMPDIR: fixture } });
+  try {
+    for (const width of [375, 1280]) {
+      const context = await browser.newContext({ viewport: { width, height: 800 } });
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
+      await page.goto(`${base}/vendor`, { waitUntil: 'domcontentloaded' });
+      await page.getByLabel(/Username|ইউজারনেম/).fill('rupganj_vendor');
+      await page.getByLabel(/Password|পাসওয়ার্ড/).fill(fixturePasswords.get('rupganj_vendor'));
+      await page.locator('form button[type=submit]').click();
+      await page.getByRole('navigation', { name: /Vendor panel navigation|ভেন্ডর প্যানেল মেনু/ }).waitFor();
+      // Exercise both locales without depending on a persisted locale setting.
+      const english = page.getByRole('button', { name: 'English', exact: true });
+      if (await english.count()) await english.click();
+      await page.getByRole('button', { name: 'Support', exact: true }).click();
+      const panel = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Vendor support' }) });
+      await panel.getByLabel('Subject').fill(`Fixture ${width}`);
+      await panel.getByLabel('Message', { exact: true }).fill('Need help with this test');
+      await panel.getByRole('button', { name: 'Create ticket' }).click();
+      await panel.getByRole('heading', { name: `Fixture ${width}` }).waitFor();
+      await page.getByRole('button', { name: 'Earnings & Escrow', exact: true }).click();
+      await page.getByLabel('From', { exact: true }).fill('2026-01-01');
+      await page.getByLabel('To', { exact: true }).fill('2026-12-31');
+      await page.getByRole('button', { name: 'View statement' }).click();
+      await page.getByRole('heading', { name: /Ledger bucket statement/ }).waitFor();
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, `viewport ${width} has page-level overflow`);
+      assert.deepEqual(errors, []);
+      await context.close();
+    }
+  } finally { await browser.close(); }
 });

@@ -1,0 +1,13 @@
+# Vendor support, disputes and relational cutover — implementation gaps
+
+Status: general support tickets have a local implementation described in `docs/vendor-portal-spec.md`. The formal dispute and relational cutover notes below are not implemented or executable migrations. No production migration or write has been performed.
+
+## Support and disputes
+
+General support has vendor-scoped creation and listing, server-derived identity, bounded text, CSRF, per-process rate controls, and audited super-admin reply/closure. Persistent notification delivery, pagination and a full status history are not implemented. A dispute must reference a return, order line or payout belonging to the vendor, without exposing customer information, internal notes or other tenants' records. It must not automatically modify a return resolution, ledger or payout. Define dispute eligibility, deadlines, evidence handling, reopening, escalation and retention before enabling those actions. Vendor and admin interfaces, cross-tenant tests and concurrent update tests are still required. Existing profile/onboarding approval requests are not support tickets and should not be reused as if they provided these semantics.
+
+## Relational conversion
+
+The runtime currently reads and commits ten JSON documents in `erp_runtime_state`; existing migrations 0002–0008 define relational entities such as vendors, orders, order_items, return_cases, payout_requests and immutable vendor_ledger, but they do not make the application use those tables. Runtime IDs include legacy non-UUID values (for example seeded ledger IDs), whereas those relational tables use UUID keys and foreign keys. A direct JSON-to-table copy or a schema-only migration would not be a safe cutover.
+
+Before any production conversion: inventory every document and field, map stable legacy IDs to relational IDs, and establish deterministic conversion and foreign-key ordering; define handling for missing references, legacy enum values and integer-poisha bounds. Take a tested backup and revision-consistent snapshot. Build versioned, restartable staging/backfill scripts that quarantine invalid records rather than invent financial history. Reconcile per-vendor buckets, payout states, order/line totals and balanced general-ledger transactions against the source. Test tenant isolation and service-role/RLS behavior using non-production identities. Implement transactional relational reads/writes and concurrency/idempotency tests, rehearse against an isolated database, then plan a write freeze, final delta reconciliation, verified cutover and rollback. Preserve source and audit records throughout. Production execution requires separate authorization.

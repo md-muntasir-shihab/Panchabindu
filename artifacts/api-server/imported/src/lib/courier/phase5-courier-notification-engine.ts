@@ -1282,7 +1282,8 @@ export function dispatchSecurityOtpNotification(params: {
   writePhase5Store(store);
 
   return {
-    dispatched: !params.simulateGatewayError,
+    // This placeholder never contacts a provider, even without a simulated error.
+    dispatched: false,
     category: 'SECURITY_OTP',
     logRecord,
   };

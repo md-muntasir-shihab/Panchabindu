@@ -263,6 +263,7 @@ export function adminUpdateVendorProfile(
     defaultCommissionBp?: number | null;
     escrowHoldDaysOverride?: number | null;
     status?: VendorStatus;
+    activationReason?: string;
   }
 ): { success: boolean; errorBn?: string } {
   const guard = requireSuperAdmin(actor);
@@ -271,6 +272,14 @@ export function adminUpdateVendorProfile(
   const p4b = readPhase4BStore();
   const vendor = p4b.vendors.find((item) => item.vendorId === input.vendorId);
   if (!vendor) return { success: false, errorBn: 'ভেন্ডর পাওয়া যায়নি।' };
+  if (input.status === 'closed' && vendor.status !== 'closed') return { success: false, errorBn: 'অ্যাকাউন্ট বন্ধ করতে স্টক ও আর্থিক ক্লোজিং অডিট ব্যবহার করুন।' };
+  if (vendor.status === 'closed' && input.status && input.status !== 'closed') return { success: false, errorBn: 'বন্ধ চুক্তি এই পদ্ধতিতে পুনরায় চালু করা যাবে না।' };
+  if (vendor.status === 'pending_onboarding' && input.status && !['pending_onboarding', 'active'].includes(input.status)) return { success: false, errorBn: 'অপেক্ষমাণ ভেন্ডরকে আগে পর্যালোচনা করুন; অ্যাকাউন্ট বন্ধ করতে ক্লোজিং অডিট ব্যবহার করুন।' };
+  if (vendor.status === 'pending_onboarding' && input.status === 'active') {
+    const unanswered = VENDOR_ONBOARDING_15_QUESTIONS.some(q => (vendor.onboardingAnswers15?.[q.key] ?? '').trim().length < 2);
+    if (unanswered) return { success: false, errorBn: 'ভেন্ডরের ১৫টি অনবোর্ডিং উত্তর জমা ও অনুমোদন করা প্রয়োজন।' };
+    if ((input.activationReason ?? '').trim().length < 5) return { success: false, errorBn: 'পর্যালোচনার কারণ অন্তত ৫ অক্ষরে লিখুন।' };
+  }
 
   if (input.contactPhone && !/^01[3-9]\d{8}$/.test(input.contactPhone.trim())) {
     return { success: false, errorBn: 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন।' };
@@ -284,6 +293,7 @@ export function adminUpdateVendorProfile(
     return { success: false, errorBn: 'এসক্রো হোল্ড ১–৩০ দিনের মধ্যে হতে হবে।' };
   }
 
+  const wasPendingActivation = vendor.status === 'pending_onboarding' && input.status === 'active';
   const before = JSON.stringify(vendor);
   if (input.businessNameBn?.trim()) vendor.businessNameBn = input.businessNameBn.trim();
   if (input.businessNameEn?.trim()) vendor.businessNameEn = input.businessNameEn.trim();
@@ -302,7 +312,7 @@ export function adminUpdateVendorProfile(
     'VENDOR_PROFILE_UPDATED_BY_ADMIN',
     vendor.vendorCode,
     `সুপার অ্যাডমিন ${vendor.businessNameBn} (${vendor.vendorCode}) এর প্রোফাইল/শর্তাবলি আপডেট করেছেন।`,
-    { changed: before !== JSON.stringify(vendor), status: vendor.status }
+    { changed: before !== JSON.stringify(vendor), status: vendor.status, ...(wasPendingActivation ? { activationReason: input.activationReason!.trim() } : {}) }
   );
 
   return { success: true };
@@ -399,26 +409,13 @@ export function adminCreateVendor(
     escrowHoldDaysOverride: input.escrowHoldDaysOverride,
     payoutMethodBn: input.payoutMethodBn,
     payoutAccountNo: input.payoutAccountNo,
-    answers15: Object.fromEntries(
-      VENDOR_ONBOARDING_15_QUESTIONS.map((question) => [
-        question.key,
-        'অ্যাডমিন প্যানেল থেকে অনবোর্ড করা হয়েছে',
-      ])
-    ),
-  });
+    answers15: {},
+  }, { draft: true });
 
   if (!result.success || !result.vendor) {
     return { success: false, errorBn: result.errorBn ?? 'ভেন্ডর তৈরি করা যায়নি।' };
   }
 
-  if (input.status && input.status !== result.vendor.status) {
-    const p4b = readPhase4BStore();
-    const stored = p4b.vendors.find((vendor) => vendor.vendorId === result.vendor!.vendorId);
-    if (stored) {
-      stored.status = input.status;
-      writePhase4BStore(p4b);
-    }
-  }
 
   return { success: true, vendorCode: result.vendor.vendorCode, vendorId: result.vendor.vendorId };
 }

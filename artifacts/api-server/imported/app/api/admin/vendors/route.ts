@@ -86,6 +86,7 @@ const bodySchema = z.discriminatedUnion('operation', [
   z.object({
     operation: z.literal('update_vendor'),
     vendorId: z.string().min(1),
+    activationReason: z.string().trim().min(5).max(400).optional(),
     businessNameBn: z.string().trim().min(2).optional(),
     businessNameEn: z.string().trim().min(2).optional(),
     ownerNameBn: z.string().trim().min(2).optional(),

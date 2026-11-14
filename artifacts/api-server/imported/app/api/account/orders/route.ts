@@ -1,9 +1,9 @@
 import { backendRoute } from '@/src/lib/db/backend-route';
 import { ApiRequest as NextRequest, ApiResponse as NextResponse } from '@/src/lib/http';
 import { z } from 'zod';
-import { getAuthenticatedCustomerOrders } from '@/src/lib/db/repository';
+import { getAuthenticatedCustomerOrders, getCustomerLastDeliveryProfile } from '@/src/lib/db/repository';
 import {
-  assertJsonBodySize, checkRateLimit, CUSTOMER_SESSION_COOKIE_NAME, getClientIpFromRequest,
+  assertJsonBodySize, checkRateLimit, CUSTOMER_SESSION_COOKIE_NAME, CUSTOMER_SESSION_TTL_MS, getClientIpFromRequest,
   registerPasswordCustomer, loginPasswordCustomer, getCustomerSessionProfile, changeCustomerPassword,
   revokeCustomerSession, verifyCustomerSessionToken, verifyOriginAndCsrf,
 } from '@/src/lib/security/crypto-session';
@@ -19,9 +19,9 @@ const schema = z.discriminatedUnion('action', [
 ]);
 
 function sessionResponse(token: string, session: { phone: string }, identifier: string) {
-  const res = NextResponse.json({ success: true, customerPhone: session.phone, identifier, orders: getAuthenticatedCustomerOrders(token) });
+  const res = NextResponse.json({ success: true, customerPhone: session.phone, identifier, deliveryProfile: getCustomerLastDeliveryProfile(token), orders: getAuthenticatedCustomerOrders(token) });
   res.cookies.set(CUSTOMER_SESSION_COOKIE_NAME, token, {
-    httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 24 * 60 * 60,
+    httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: CUSTOMER_SESSION_TTL_MS / 1000,
   });
   return res;
 }
@@ -32,7 +32,7 @@ async function handleGET(req: NextRequest) {
   if (!session) return NextResponse.json({ authenticated: false, orders: [] });
   const profile = getCustomerSessionProfile(session);
   return NextResponse.json({ authenticated: true, customerPhone: session.phone, identifier: profile?.identifier ?? session.phone,
-    customerEmail: profile?.email ?? null, orders: getAuthenticatedCustomerOrders(token) });
+    customerEmail: profile?.email ?? null, deliveryProfile: getCustomerLastDeliveryProfile(token), orders: getAuthenticatedCustomerOrders(token) });
 }
 
 async function handlePOST(req: NextRequest) {

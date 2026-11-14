@@ -11,6 +11,7 @@ test('password registration, normalization, sessions, password change and thrott
   assert.equal(registered.status, 200, await registered.clone().text());
   const cookie = cookieOf(registered);
   assert.match(registered.headers.get('set-cookie')!, /HttpOnly/);
+  assert.match(registered.headers.get('set-cookie')!, /Max-Age=604800/);
   assert.equal((await (await account(cookie)).json()).identifier, 'test@example.com');
   assert.equal((await POST(req({ action: 'register', email: 'test@example.com', password: pass }))).status, 409);
   assert.equal((await POST(req({ action: 'login', identifier: 'TEST@example.com', password: 'wrong' }))).status, 401);
@@ -56,6 +57,12 @@ test('email accounts preserve order isolation and can use delivery phone for che
   const order = (await orderResponse.json()).order;
   assert.equal((await (await account(a)).json()).orders.some((o: { orderNo: string }) => o.orderNo === order.orderNo), true);
   assert.equal((await (await account(b)).json()).orders.some((o: { orderNo: string }) => o.orderNo === order.orderNo), false);
+  const profile = (await (await account(a)).json()).deliveryProfile;
+  assert.equal(profile.customerName, input.customerName);
+  assert.equal(profile.customerPhone, phone);
+  assert.equal(profile.streetAddress, input.streetAddress);
+  assert.equal(profile.districtId, input.districtId);
+  assert.equal((await (await account(b)).json()).deliveryProfile, null);
   assert.equal((await cancellation(send('/api/orders/cancellation-request', { orderNo: order.orderNo, customerPhone: phone, reasonBn: 'Test reason' }, b))).status, 404);
   assert.equal((await returns(send('/api/orders/return-request', { orderNo: order.orderNo, reasonCode: 'quality_defect', detailsBn: 'Test details here' }, b))).status, 404);
   const cartResponse = await cart(send('/api/cart/abandoned', { customerPhone: phone, districtId: 47, items: [{ variantId: product.variants[0].variantId, quantity: 1 }] }, a));
@@ -118,6 +125,7 @@ test('guest checkout requires an unguessable retry key and does not associate or
   const registered = await POST(req({ action: 'register', phone, password: 'secure guest password' }));
   assert.equal(registered.status, 200);
   assert.equal((await (await account(cookieOf(registered))).json()).orders.some((o: { orderNo: string }) => o.orderNo === order.orderNo), false);
+  assert.equal((await (await account(cookieOf(registered))).json()).deliveryProfile, null);
 });
 
 test('scheduled courier endpoint fails closed even with the configured secret', async () => {
@@ -131,4 +139,26 @@ test('scheduled courier endpoint fails closed even with the configured secret', 
     assert.equal(response.status, 503);
     assert.equal((await response.json()).code, 'NOT_INTEGRATED');
   } finally { if (previous === undefined) delete process.env.CRON_SECRET; else process.env.CRON_SECRET = previous; }
+});
+
+test('signed but unverified courier webhook never changes orders or finance', async () => {
+  const { POST: webhook } = await import('../../../app/api/webhooks/courier/route');
+  const { computeWebhookHmacSignature } = await import('../admin/phase6-service');
+  const { readErpState } = await import('../db/repository');
+  const { readPhase4BStore } = await import('../admin/phase4b-service');
+  const previous = process.env.STEADFAST_WEBHOOK_SECRET;
+  process.env.STEADFAST_WEBHOOK_SECRET = 'unit-fixture-not-real-secret';
+  try {
+    const order = readErpState().orders[0]; assert.ok(order);
+    const beforeOrder = structuredClone(order);
+    const beforeLedger = structuredClone(readPhase4BStore().courierRemittanceLedger);
+    const body = JSON.stringify({ provider: 'steadfast', orderNo: order.orderNo, rawStatus: 'delivered', consignmentId: 'fixture-consignment', eventId: 'fixture-event' });
+    const timestamp = String(Date.now());
+    const signature = computeWebhookHmacSignature(body, process.env.STEADFAST_WEBHOOK_SECRET, timestamp);
+    const request = new ApiRequest('http://localhost/api/webhooks/courier', { method: 'POST', headers: { 'content-type': 'application/json', 'x-webhook-signature': signature, 'x-webhook-timestamp': timestamp }, body });
+    const response = await webhook(request);
+    assert.equal(response.status, 503); assert.equal((await response.json() as { code: string }).code, 'NOT_INTEGRATED');
+    assert.deepEqual(readErpState().orders.find(item => item.orderNo === order.orderNo), beforeOrder);
+    assert.deepEqual(readPhase4BStore().courierRemittanceLedger, beforeLedger);
+  } finally { if (previous === undefined) delete process.env.STEADFAST_WEBHOOK_SECRET; else process.env.STEADFAST_WEBHOOK_SECRET = previous; }
 });

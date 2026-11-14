@@ -1,17 +1,12 @@
 import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/webhooks/courier/route.ts
-// Real-Time Courier Webhook Receiver Endpoint (Phase 1 Hardened — Section 4.6)
-// Enforces:
-//   - Fail-closed HMAC-SHA256 verification (rejects when secret or signature is missing/invalid)
-//   - Constant-time signature comparison & timestamp replay window guard
-//   - Event replay / idempotency deduplication
-//   - Least-privilege WEBHOOK_SERVICE_CONTEXT (never impersonates usr-super-admin)
-//   - Logs all rejected webhook attempts to security audit log
+// Courier webhook endpoint: authenticated requests still fail closed until provider integration is verified.
+// It verifies its legacy HMAC envelope but cannot mutate orders until a
+// provider-specific contract and safe order/financial mapping are verified.
 
 import { ApiRequest as NextRequest, ApiResponse as NextResponse } from '@/src/lib/http';
 import { z } from 'zod';
 import {
-  processCourierWebhookPayload,
   recordRejectedCourierWebhookAttempt,
   verifyCourierWebhookHmac,
 } from '@/src/lib/admin/phase6-service';
@@ -20,7 +15,6 @@ import {
   checkRateLimit,
   getClientIpFromRequest,
 } from '@/src/lib/security/crypto-session';
-import { WEBHOOK_SERVICE_CONTEXT } from '@/src/types/permissions';
 
 const courierWebhookBodySchema = z.object({
   provider: z.enum(['steadfast', 'pathao']),
@@ -119,19 +113,12 @@ async function handlePOST(req: NextRequest) {
       );
     }
 
-    const result = processCourierWebhookPayload(WEBHOOK_SERVICE_CONTEXT, {
-      ...payload,
-      signatureHeader,
-      enforceReplayDeduplication: true,
-    });
-
-    return NextResponse.json(result, {
-      status: result.success
-        ? 200
-        : result.code === 'DUPLICATE_EVENT'
-        ? 409
-        : 404,
-    });
+    // This generic payload/signature contract has not been verified against
+    // either provider. A valid signature alone does not prove that an event
+    // matches an existing booking or that its financial effects are safe.
+    // Keep automatic mutations disabled until provider-specific integration
+    // and sandbox reconciliation tests have been completed.
+    return NextResponse.json({ success: false, code: 'NOT_INTEGRATED', errorBn: 'কুরিয়ার ওয়েবহুক সংযোগ চালু নেই।', errorEn: 'Courier webhook integration is not available.' }, { status: 503 });
   } catch {
     return NextResponse.json(
       {

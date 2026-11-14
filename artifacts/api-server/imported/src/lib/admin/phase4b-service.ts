@@ -7,6 +7,7 @@
 //               Payout Request/Hold/Approval Flow, Vendor Statement, 15-Question Onboarding, & Contract Closure Audit
 
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { readLocalJsonStore, writeLocalJsonStore } from '../db/local-json-store';
 import type {
   CourierProvider,
@@ -346,8 +347,33 @@ interface Phase4BPersistentStore {
   printCountsByOrderNo?: Record<string, number>;
   /** Admin-controlled per-vendor capability matrix (vendor panel switches). */
   vendorControls?: Record<string, VendorControlEntry>;
+  kycDocuments?: VendorKycDocument[];
+  supportTickets?: VendorSupportTicket[];
   /** Vendor-filed profile / payout-account / onboarding change requests. */
   vendorRequests?: VendorRequestEntry[] | Record<string, VendorRequestEntry>;
+}
+
+export interface VendorSupportTicket {
+  ticketId: string;
+  vendorId: string;
+  subject: string;
+  status: 'open' | 'closed';
+  createdAt: string;
+  updatedAt: string;
+  messages: Array<{ messageId: string; sender: 'vendor' | 'admin'; text: string; createdAt: string }>;
+}
+
+export interface VendorKycDocument {
+  documentId: string;
+  vendorId: string;
+  category: 'identity' | 'business' | 'other';
+  storagePath: string;
+  status: 'pending_review' | 'approved' | 'rejected';
+  uploadedBy: string;
+  createdAt: string;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
 }
 
 export interface VendorControlEntry {
@@ -649,6 +675,7 @@ export function readPhase4BStore(): Phase4BPersistentStore {
     arrays: ['pickupBatches', 'courierRemittanceLedger', 'courierClaims', 'vendors', 'vendorLedger', 'payoutRequests', 'returnResolutions'],
     objects: ['printConfig', 'districtRateOverrides'],
     optionalObjects: ['printCountsByOrderNo'],
+    optionalArrays: ['kycDocuments', 'supportTickets'],
     optionalArraysAndObjects: ['vendorControls', 'vendorRequests'],
   });
   if (parsed) {
@@ -1589,19 +1616,13 @@ export function computeCourier360Summary(): Courier360ProviderSummary[] {
       }
     }
 
-    // Rule A2 #9: Never show fake API Connected state if live credentials are not configured
-    const hasEnvCredentials =
-      (provider === 'steadfast' && Boolean(process.env.STEADFAST_API_KEY)) ||
-      (provider === 'pathao' && Boolean(process.env.PATHAO_CLIENT_ID)) ||
-      (provider === 'redx' && Boolean(process.env.REDX_ACCESS_TOKEN));
-
+    // Credentials alone do not establish a working courier integration. The
+    // live tracking/booking adapters are disabled, so always report honestly.
     return {
       provider,
       providerLabelBn: labelBn,
-      apiConnected: hasEnvCredentials,
-      connectionStatusBadgeBn: hasEnvCredentials
-        ? 'API Connected'
-        : 'Not Connected — Manual / CSV Fallback Active',
+      apiConnected: false,
+      connectionStatusBadgeBn: 'Not integrated — manual reconciliation only',
       inTransitCount: inTransitOrders.length,
       inTransitCodPoisha: inTransitOrders.reduce(
         (s, o) => s + o.codCollectablePoisha,
@@ -1800,10 +1821,11 @@ export function autoRecordOrderDeliveredOrReturned(
 export { getLiveCourierTrackingUrl } from '@/src/lib/courier/tracking-urls';
 
 /**
- * Module D: Synchronizes active courier tracking statuses across Steadfast, Pathao, RedX.
- * Automatically advances order status, updates audit logs, and writes to courier remittance ledger on delivery.
+ * No provider-backed poller is currently implemented. Fail closed here as well
+ * as at the HTTP boundary so future callers cannot accidentally run the old
+ * simulated state transitions against real orders or finance records.
  */
-export function syncAllCourierTrackingStatuses(ctx: ActorSecurityContext): {
+export function syncAllCourierTrackingStatuses(_ctx: ActorSecurityContext): {
   success: boolean;
   syncedCount: number;
   updatedCount: number;
@@ -1817,91 +1839,8 @@ export function syncAllCourierTrackingStatuses(ctx: ActorSecurityContext): {
     courierEventBn: string;
   }>;
 } {
-  const erpState = readErpState();
-  const adminStore = readAdminStore();
-  const nowIso = new Date().toISOString();
-
-  // Find all orders that have tracking codes or are in transit
-  const trackableOrders = erpState.orders.filter(
-    (o) =>
-      Boolean(o.trackingCode || o.consignmentId) &&
-      o.status !== 'cancelled' &&
-      o.status !== 'returned'
-  );
-
-  const syncedOrders: Array<{
-    orderNo: string;
-    previousStatus: OrderStatus;
-    newStatus: OrderStatus;
-    courierProvider: CourierProvider;
-    trackingCode: string;
-    courierEventBn: string;
-  }> = [];
-
-  for (const ord of trackableOrders) {
-    const prevStatus = ord.status;
-    let nextStatus: OrderStatus = prevStatus;
-    let eventBn = '';
-
-    // Realistic courier lifecycle advancement based on current status and tracking ID
-    if (prevStatus === 'packed') {
-      nextStatus = 'shipped';
-      eventBn = 'কুরিয়ার হাব পার্সেল গ্রহণ করেছে এবং ডেসটিনেশন ব্রাঞ্চে পাঠানো হয়েছে।';
-    } else if (prevStatus === 'shipped') {
-      nextStatus = 'out_for_delivery';
-      eventBn = 'পার্সেল ডেলিভারি ব্রাঞ্চে পৌঁছেছে এবং রাইডার ডেলিভারির জন্য বের হয়েছেন।';
-    } else if (prevStatus === 'out_for_delivery') {
-      nextStatus = 'delivered';
-      eventBn = 'গ্রাহকের নিকট সফলভাবে পার্সেল ডেলিভারি সম্পন্ন ও ক্যাশ অন ডেলিভারি সংগৃহীত হয়েছে।';
-    }
-
-    if (nextStatus !== prevStatus) {
-      ord.status = nextStatus;
-      ord.nextBestAction = deriveNextBestAction(ord);
-
-      appendImmutableAuditLog(adminStore, {
-        actorUserId: ctx.userId || 'usr-super-admin',
-        actorUsername: ctx.username || 'courier_poller',
-        actorRole: ctx.roleSlug || 'super_admin',
-        actionCode: 'COURIER_TRACKING_AUTO_SYNCED',
-        targetType: 'order',
-        targetId: ord.orderNo,
-        summaryBn: `কুরিয়ার ট্র্যাকিং সিঙ্ক: ${ord.orderNo} (${ord.courierProvider} ${ord.trackingCode}) স্ট্যাটাস ${prevStatus} -> ${nextStatus} আপডেট হয়েছে।`,
-        metadata: {
-          previousStatus: prevStatus,
-          newStatus: nextStatus,
-          courierProvider: ord.courierProvider,
-          trackingCode: ord.trackingCode,
-          eventBn,
-        },
-      });
-
-      // If delivered, automatically update courier ledger and escrow
-      if (nextStatus === 'delivered') {
-        autoRecordOrderDeliveredOrReturned(ctx, ord.orderNo, 'delivered', nowIso);
-      }
-
-      syncedOrders.push({
-        orderNo: ord.orderNo,
-        previousStatus: prevStatus,
-        newStatus: nextStatus,
-        courierProvider: ord.courierProvider,
-        trackingCode: ord.trackingCode ?? '',
-        courierEventBn: eventBn,
-      });
-    }
-  }
-
-  writeErpState(erpState);
-  writeAdminStore(adminStore);
-
-  return {
-    success: true,
-    syncedCount: trackableOrders.length,
-    updatedCount: syncedOrders.length,
-    messageBn: `${trackableOrders.length}টি কুরিয়ার ট্র্যাকিং রেকর্ড চেক সম্পন্ন হয়েছে; ${syncedOrders.length}টি অর্ডারের স্ট্যাটাস ও কুরিয়ার খাতা স্বয়ংক্রিয়ভাবে আপডেট করা হয়েছে।`,
-    syncedOrders,
-  };
+  return { success: false, syncedCount: 0, updatedCount: 0,
+    messageBn: 'কুরিয়ার ট্র্যাকিং সংযোগ চালু নেই; কোনো অর্ডার আপডেট করা হয়নি।', syncedOrders: [] };
 }
 
 // ============================================================================
@@ -2412,7 +2351,8 @@ export function submitVendorOnboarding15Q(
     payoutMethodBn: string;
     payoutAccountNo: string;
     answers15: Record<string, string>;
-  }
+  },
+  options?: { draft?: boolean }
 ): {
   success: boolean;
   errorBn?: string;
@@ -2426,7 +2366,7 @@ export function submitVendorOnboarding15Q(
   }
 
   // Verify all 15 questions are answered
-  for (const q of VENDOR_ONBOARDING_15_QUESTIONS) {
+  for (const q of options?.draft ? [] : VENDOR_ONBOARDING_15_QUESTIONS) {
     const ans = input.answers15[q.key];
     if (!ans || ans.trim().length < 2) {
       return {
@@ -2439,11 +2379,12 @@ export function submitVendorOnboarding15Q(
   const p4bStore = readPhase4BStore();
   const adminStore = readAdminStore();
 
-  const nextNum = String(p4bStore.vendors.length + 1).padStart(3, '0');
-  const vendorCode = `VND-${nextNum}`;
+  let nextNumber = p4bStore.vendors.length + 1;
+  while (p4bStore.vendors.some(v => v.vendorCode === `VND-${String(nextNumber).padStart(3, '0')}`)) nextNumber++;
+  const vendorCode = `VND-${String(nextNumber).padStart(3, '0')}`;
 
   const newVendor: VendorProfileRecord = {
-    vendorId: `vnd-${Date.now()}`,
+    vendorId: `vnd-${crypto.randomUUID()}`,
     vendorCode,
     businessNameBn: input.businessNameBn.trim(),
     businessNameEn:
@@ -2454,7 +2395,7 @@ export function submitVendorOnboarding15Q(
     escrowHoldDaysOverride: input.escrowHoldDaysOverride,
     payoutMethodBn: input.payoutMethodBn.trim(),
     payoutAccountNo: input.payoutAccountNo.trim(),
-    status: 'active',
+    status: 'pending_onboarding',
     onboardingAnswers15: input.answers15,
     createdAt: new Date().toISOString(),
   };
@@ -2468,7 +2409,7 @@ export function submitVendorOnboarding15Q(
     actionCode: 'VENDOR_ONBOARDED_15Q',
     targetType: 'system',
     targetId: newVendor.vendorCode,
-    summaryBn: `১৫-প্রশ্নের কনসাইনমেন্ট ফর্ম যাচাই করে নতুন ভেন্ডর ${newVendor.businessNameBn} (${newVendor.vendorCode}) যুক্ত করা হয়েছে।`,
+    summaryBn: `নতুন ভেন্ডর ${newVendor.businessNameBn} (${newVendor.vendorCode}) অনবোর্ডিং অপেক্ষায় যুক্ত করা হয়েছে।`,
     metadata: { vendorCode: newVendor.vendorCode },
   });
 

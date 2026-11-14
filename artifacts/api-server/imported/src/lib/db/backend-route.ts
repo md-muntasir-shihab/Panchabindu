@@ -1,4 +1,4 @@
-import { withRuntimePersistence } from './runtime-persistence';
+import { withRuntimePersistence, readRuntimeDocument } from './runtime-persistence';
 import { uiText } from '../i18n/ui-text';
 import { ApiRequest as NextRequest } from '@/src/lib/http';
 
@@ -42,7 +42,7 @@ export function backendRoute<A extends unknown[]>(handler: (...args: A) => Promi
       const request = args[0];
       if (request instanceof Request && request.body && !['GET', 'HEAD'].includes(request.method)) {
         const pathname = new URL(request.url).pathname;
-        const limit = ['/api/media', '/api/admin/brand-media'].includes(pathname) ? 6 * 1024 * 1024 : pathname === '/api/admin/workspace' ? 512 * 1024 : pathname === '/api/catalog/import' ? 300 * 1024 : 64 * 1024;
+        const limit = ['/api/media', '/api/admin/brand-media', '/api/vendor/kyc'].includes(pathname) ? 6 * 1024 * 1024 : pathname === '/api/admin/workspace' ? 512 * 1024 : pathname === '/api/catalog/import' ? 300 * 1024 : 64 * 1024;
         const reader = request.body.getReader();
         const chunks: Uint8Array[] = [];
         let size = 0;
@@ -60,7 +60,25 @@ export function backendRoute<A extends unknown[]>(handler: (...args: A) => Promi
           method: request.method, headers: request.headers, body: Buffer.concat(chunks), signal: request.signal,
         });
       }
-      const response = await withRuntimePersistence(() => handler(...args), options);
+      const response = await withRuntimePersistence(async () => {
+        const current = args[0];
+        if (current instanceof Request && (!['GET', 'HEAD', 'OPTIONS'].includes(current.method) || (current.method === 'GET' && new URL(current.url).pathname.startsWith('/api/cron/')))) {
+          const state = readRuntimeDocument('erp-phase4c-store.json').value as { emergencyStopActive?: unknown } | null;
+          if (state?.emergencyStopActive !== undefined && typeof state.emergencyStopActive !== 'boolean') throw new Error('INVALID_EMERGENCY_STATE');
+          if (state?.emergencyStopActive === true) {
+            const path = new URL(current.url).pathname;
+            let allowed = path === '/api/admin/auth' || path === '/api/admin/emergency';
+            if (path === '/api/account/orders') {
+              try {
+                const body = await current.clone().json() as { action?: unknown };
+                allowed = ['login', 'logout', 'change_password', 'get_orders'].includes(String(body.action));
+              } catch { allowed = false; }
+            }
+            if (!allowed) return Response.json({ success: false, code: 'EMERGENCY_STOP', errorBn: 'জরুরি রক্ষণাবেক্ষণের কারণে নতুন কার্যক্রম সাময়িকভাবে বন্ধ।', errorEn: 'New operations are temporarily unavailable during emergency maintenance.' }, { status: 503 });
+          }
+        }
+        return handler(...args);
+      }, options);
       response.headers.set('Cache-Control', 'private, no-store');
       return await localizedResponse(response, args[0]);
     } catch (error) {

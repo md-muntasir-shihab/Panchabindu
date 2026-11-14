@@ -193,6 +193,7 @@ export interface VendorWorkspaceDTO {
   };
   products: VendorProductDTO[];
   orders: VendorOrderDTO[];
+  returns: Array<{ returnId: string; orderNo: string; faultType: string; quantity: number; vendorDebitPoisha: number; restockQuantity: number; createdAt: string }>;
   ledger: VendorLedgerEntryDTO[];
   payouts: VendorPayoutDTO[];
   lots: VendorLotDTO[];
