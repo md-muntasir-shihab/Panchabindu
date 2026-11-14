@@ -2549,19 +2549,16 @@ ${itemsList}
 
   // Bulk ship can only touch packed orders that already carry a tracking code —
   // exactly what the state machine demands for packed -> shipped.
-  const bulkShipEligible = React.useMemo(
-    () =>
-      orders
-        .filter(
-          (ord) =>
-            selectedOrderNos.includes(ord.orderNo ?? '') &&
-            ord.status === 'packed' &&
-            Boolean(ord.trackingCode?.trim() || ord.consignmentId?.trim())
-        )
-        .map((ord) => ord.orderNo!)
-        .filter(Boolean),
-    [orders, selectedOrderNos]
-  );
+  // This calculation is below the session/login early returns: it must not
+  // call a Hook, or successful login changes the hook count and crashes React.
+  const bulkShipEligible = orders
+    .filter((ord) =>
+      selectedOrderNos.includes(ord.orderNo ?? '') &&
+      ord.status === 'packed' &&
+      Boolean(ord.trackingCode?.trim() || ord.consignmentId?.trim())
+    )
+    .map((ord) => ord.orderNo!)
+    .filter(Boolean);
 
   // Smart Order Entry Live Profit & Delivery Calculation
   const allVariantsFlat = products.flatMap((p) =>

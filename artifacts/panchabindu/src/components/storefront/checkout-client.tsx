@@ -454,7 +454,7 @@ export function CheckoutClient({
         {hasCartItems && (!quoteReady || quoteError) && (
           <Card className="space-y-3">
             <p role={quoteError ? 'alert' : 'status'} className="text-sm">
-              {!districtConfirmed ? (locale === 'bn' ? 'ডেলিভারি চার্জ দেখতে নিচে জেলা নির্বাচন করুন।' : 'Select a district below to calculate delivery charges.') : quoteError ?? (locale === 'bn' ? 'ডেলিভারি ও পেমেন্টের হিসাব আসছে…' : 'Loading delivery and payment information…')}
+              {quoteError ?? (!districtConfirmed ? (locale === 'bn' ? 'ডেলিভারি চার্জ দেখতে নিচে জেলা নির্বাচন করুন।' : 'Select a district below to calculate delivery charges.') : (locale === 'bn' ? 'ডেলিভারি ও পেমেন্টের হিসাব আসছে…' : 'Loading delivery and payment information…'))}
             </p>
             {quoteError && <Button type="button" variant="outline" onClick={() => {
               setCheckoutResult(null);
@@ -498,7 +498,7 @@ export function CheckoutClient({
                   <Input
                     label={locale === 'bn' ? 'আপনার পূর্ণ নাম *' : 'Full Name *'}
                     placeholder={
-                      locale === 'bn' ? 'যেমন: তানভীর আহমেদ' : 'e.g. Tanvir Ahmed'
+                      locale === 'bn' ? 'আপনার পূর্ণ নাম লিখুন' : 'Enter your full name'
                     }
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
@@ -556,7 +556,7 @@ export function CheckoutClient({
                     <select
                       id="checkout-district"
                       value={districtConfirmed ? districtId : ''}
-                      onChange={(e) => { if (e.target.value) handleDistrictChange(Number(e.target.value)); }}
+                      onChange={(e) => { if (e.target.value) handleDistrictChange(Number(e.target.value)); else { setDistrictConfirmed(false); setThanaConfirmed(false); setThanaQuery(''); } }}
                       required
                       className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-bg text-ink border border-border rounded-[var(--radius-md)] focus:outline-2 focus:outline-ink"
                     >
@@ -575,16 +575,18 @@ export function CheckoutClient({
                       className="block text-xs font-medium text-ink"
                     >
                       {locale === 'bn'
-                        ? `উপজেলা / থানা নির্বাচন করুন (${upazilasForDistrict.length}টি) *`
-                        : `Select Upazila / Thana (${upazilasForDistrict.length}) *`}
+                        ? `উপজেলা / থানা নির্বাচন করুন${districtConfirmed ? ` (${formatLocaleNumber(upazilasForDistrict.length, locale)}টি)` : ''} *`
+                        : `Select Upazila / Thana${districtConfirmed ? ` (${upazilasForDistrict.length})` : ''} *`}
                     </label>
                     <Input
                       id="checkout-thana-search"
                       type="search"
+                      disabled={!districtConfirmed}
+                      aria-label={locale === 'bn' ? 'উপজেলা বা থানা খুঁজুন' : 'Search upazila or thana'}
                       placeholder={
                         locale === 'bn'
-                          ? 'থানার নাম লিখে খুঁজুন (যেমন: ধানমন্ডি)'
-                          : 'Type to search a thana (e.g. Dhanmondi)'
+                          ? (districtConfirmed ? 'থানার নাম লিখে খুঁজুন (যেমন: ধানমন্ডি)' : 'আগে জেলা নির্বাচন করুন')
+                          : (districtConfirmed ? 'Type to search a thana (e.g. Dhanmondi)' : 'Select a district first')
                       }
                       value={thanaQuery}
                       onChange={(e) => {
@@ -621,8 +623,8 @@ export function CheckoutClient({
                     </select>
                     <p className="text-[11px] text-muted">
                       {locale === 'bn'
-                        ? 'উপজেলার বাইরের সিটি এলাকায় থাকলে মেট্রো থানাও নির্বাচন করতে পারবেন।'
-                        : 'Inside a city area you can also pick the metropolitan thana.'}
+                        ? (districtConfirmed ? 'উপজেলার বাইরের সিটি এলাকায় থাকলে মেট্রো থানাও নির্বাচন করতে পারবেন।' : 'প্রথমে জেলা বেছে নিন, তারপর উপজেলা বা থানা নির্বাচন করুন।')
+                        : (districtConfirmed ? 'Inside a city area you can also pick the metropolitan thana.' : 'Select a district first, then choose your upazila or thana.')}
                     </p>
                   </div>
                 </div>
@@ -1133,9 +1135,7 @@ export function CheckoutClient({
                   <div className="flex items-center justify-between">
                     <span className="text-muted">
                       {dict.common.deliveryCharge} (
-                      {locale === 'bn'
-                        ? selectedDistrict.name_bn
-                        : selectedDistrict.name_en}
+                      {districtConfirmed ? (locale === 'bn' ? selectedDistrict.name_bn : selectedDistrict.name_en) : (locale === 'bn' ? 'জেলা নির্বাচন করুন' : 'Choose district')}
                       )
                     </span>
                     <span className="font-semibold text-ink tabular-nums">
