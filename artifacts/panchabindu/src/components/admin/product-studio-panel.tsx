@@ -195,7 +195,7 @@ export function ProductManagementStudioPanel({
   };
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // 8-Way Connectivity Drawer State
+  // Product linkage inspector state
   const [inspectProduct, setInspectProduct] = useState<InternalProductRecord | null>(null);
 
   // Category Editor Modal State
@@ -479,8 +479,8 @@ export function ProductManagementStudioPanel({
               </h1>
               <p className="text-xs text-muted">
                 {isBn
-                  ? 'মাল্টি-ভ্যারিয়েন্ট SKU, ৩-স্তরীয় পয়সা প্রাইসিং, ওয়্যারহাউস স্টক এবং ৮-মুখী ইকোসিস্টেম লিংকেজ'
-                  : 'Multi-variant SKU, 3-tier Poisha pricing, warehouse inventory and 8-way ecosystem linkage'}
+                  ? 'মাল্টি-ভ্যারিয়েন্ট SKU, ৩-স্তরীয় পয়সা প্রাইসিং ও ওয়্যারহাউস স্টক'
+                  : 'Multi-variant SKU, 3-tier Poisha pricing and warehouse inventory'}
               </p>
             </div>
           </div>
@@ -563,7 +563,7 @@ export function ProductManagementStudioPanel({
               : 'border-transparent text-muted hover:text-ink'
           }`}
         >
-          {isBn ? '৮-মুখী কানেক্টিভিটি ও ইকোসিস্টেম ডিটেইলস' : '8-Way Connectivity & Ecosystem Details'}
+          {isBn ? 'পণ্য সংযোগ পর্যালোচনা' : 'Product Linkage Review'}
         </button>
       </div>
 
@@ -817,7 +817,7 @@ export function ProductManagementStudioPanel({
                         <td className="p-3 align-top text-right space-x-1 whitespace-nowrap">
                           <button
                             type="button"
-                            title={isBn ? '৮-মুখী কানেক্টিভিটি দেখুন' : 'View 8-way connectivity'}
+                            title={isBn ? 'পণ্যের সংযোগের তথ্য দেখুন' : 'View product linkage details'}
                             onClick={() => setInspectProduct(p)}
                             className="p-1.5 bg-bg border border-border text-ink hover:border-ink transition-colors"
                           >
@@ -939,134 +939,22 @@ export function ProductManagementStudioPanel({
         </div>
       )}
 
-      {/* TAB 3: 8-WAY CONNECTIVITY OVERVIEW */}
+      {/* These checks describe the current workspace data, not end-to-end integration health. */}
       {activeTab === 'connectivity' && (
-        <div className="space-y-4">
-          <div className="p-4 bg-surface border border-border space-y-2">
-            <h2 className="font-bold text-ink text-sm">
-              {isBn ? '৮-মুখী ইকোসিস্টেম ও কানেক্টিভিটি আর্কিটেকচার' : '8-Way Ecosystem & Connectivity Architecture'}
-            </h2>
-            <p className="text-xs text-muted leading-relaxed">
-              {isBn
-                ? 'একটি পণ্য স্টোরে আপলোড করার পর এটি কীভাবে প্ল্যাটফর্মের অন্যান্য মডিউলের সাথে স্বয়ংক্রিয়ভাবে সংযুক্ত থাকে:'
-                : 'How an uploaded catalog item seamlessly integrates with all operational layers across the platform:'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 bg-surface border border-border space-y-2">
-              <div className="flex items-center gap-2 text-accent">
-                <Building className="w-4 h-4" />
-                <span className="font-bold text-xs text-ink">
-                  {isBn ? '১. ভেন্ডর ও কনসাইনমেন্ট' : '1. Vendor & Consignment'}
-                </span>
-              </div>
-              <p className="text-xs text-muted">
-                {isBn
-                  ? 'প্রতিটি পণ্যের ভেন্ডর প্রোফাইল যুক্ত থাকে। ভেন্ডর ও কনসাইনমেন্ট স্প্লিট রুল স্বয়ংক্রিয়ভাবে প্রদেয় মূল্য নির্ধারণ করে।'
-                  : 'Linked to verified vendor profile. Automated consignment split rules compute supplier cost and payable.'}
-              </p>
-            </div>
-
-            <div className="p-4 bg-surface border border-border space-y-2">
-              <div className="flex items-center gap-2 text-info">
-                <Package className="w-4 h-4" />
-                <span className="font-bold text-xs text-ink">
-                  {isBn ? '২. ওয়্যারহাউস ও স্টক রিজার্ভ' : '2. Warehouse & Stock Reserve'}
-                </span>
-              </div>
-              <p className="text-xs text-muted">
-                {isBn
-                  ? 'অর্ডার নিশ্চিত হলেই অন-হ্যান্ড স্টক থেকে রিজার্ভ স্টকে স্থানান্তরিত হয়। বাতিল হলে রি-স্টক এবং সম্পন্ন হলে বিয়োগ হয়।'
-                  : 'Orders move available stock into reserved pool immediately. Cancelled orders restock; deliveries deduct.'}
-              </p>
-            </div>
-
-            <div className="p-4 bg-surface border border-border space-y-2">
-              <div className="flex items-center gap-2 text-success">
-                <TrendingUp className="w-4 h-4" />
-                <span className="font-bold text-xs text-ink">
-                  {isBn ? '৩. অর্ডার ও সেলস ভেলোসিটি' : '3. Orders & Sales Velocity'}
-                </span>
-              </div>
-              <p className="text-xs text-muted">
-                {isBn
-                  ? 'গ্রিডে কোন কোন অর্ডারে এই পণ্য বুক করা আছে, মোট সেলস ভলিউম এবং ড্রপ-শিপিং রিটার্ন রেট লাইভ ক্যালকুলেট হয়।'
-                  : 'Real-time linkage with order grid, calculating volume velocity and delivery success rates.'}
-              </p>
-            </div>
-
-            <div className="p-4 bg-surface border border-border space-y-2">
-              <div className="flex items-center gap-2 text-warning">
-                <Truck className="w-4 h-4" />
-                <span className="font-bold text-xs text-ink">
-                  {isBn ? '৪. কুরিয়ার ওজন ও চার্জিং স্ল্যাব' : '4. Courier Weight & Slabs'}
-                </span>
-              </div>
-              <p className="text-xs text-muted">
-                {isBn
-                  ? 'ভ্যারিয়েন্টের ওজন (গ্রাম) অনুযায়ী পাঠাও/স্টিডফাস্ট রেট কার্ডে প্রতি কেজি অতিরিক্ত চার্জ এবং প্যাকেজিং খরচ নির্ণয় হয়।'
-                  : 'Computes courier slab weights, extra per-kg charges and packaging subsidies for Pathao & Steadfast.'}
-              </p>
-            </div>
-
-            <div className="p-4 bg-surface border border-border space-y-2">
-              <div className="flex items-center gap-2 text-danger">
-                <Tag className="w-4 h-4" />
-                <span className="font-bold text-xs text-ink">
-                  {isBn ? '৫. ফ্ল্যাশ ডিল মার্জিন গার্ড' : '5. Flash Deal Margin Guard'}
-                </span>
-              </div>
-              <p className="text-xs text-muted">
-                {isBn
-                  ? 'ক্যাম্পেইনে ডিসকাউন্ট দেওয়ার সময় প্ল্যাটফর্ম নিশ্চিত করে যাতে ছাড় কখনোই প্ল্যাটফর্মের মার্জিনের চেয়ে বেশি না হয়।'
-                  : 'Protects supplier cost; promotional discounts are strictly capped within platform margin.'}
-              </p>
-            </div>
-
-            <div className="p-4 bg-surface border border-border space-y-2">
-              <div className="flex items-center gap-2 text-accent">
-                <Wallet className="w-4 h-4" />
-                <span className="font-bold text-xs text-ink">
-                  {isBn ? '৬. এসক্রো পেআউট ব্যালেন্স' : '6. Escrow Payout Balance'}
-                </span>
-              </div>
-              <p className="text-xs text-muted">
-                {isBn
-                  ? 'ডেলিভারি সফল হওয়ার পর লকড এসক্রো ব্যালেন্স ৭২ ঘণ্টায় পরিণত (matured) হয়ে ভেন্ডর পেআউট রিকুয়েস্টের জন্য উন্মুক্ত হয়।'
-                  : 'Upon delivery, locked escrow matures through the hold period into available balance for vendor payout.'}
-              </p>
-            </div>
-
-            <div className="p-4 bg-surface border border-border space-y-2">
-              <div className="flex items-center gap-2 text-ink">
-                <Printer className="w-4 h-4" />
-                <span className="font-bold text-xs text-ink">
-                  {isBn ? '৭. ডুয়াল SKU প্রিন্ট ইঞ্জিন' : '7. Dual SKU Print Engine'}
-                </span>
-              </div>
-              <p className="text-xs text-muted">
-                {isBn
-                  ? 'কাস্টমার ইনভয়েসে শুধুমাত্র পাবলিক SKU দেখায়। ওয়্যারহাউস প্যাকিং স্লিপে ইন্টারনাল ভেন্ডর SKU গোপনভাবে প্রদর্শিত হয়।'
-                  : 'Customer copy renders public SKU only; warehouse packing slips display internal vendor SKU.'}
-              </p>
-            </div>
-
-            <div className="p-4 bg-surface border border-border space-y-2">
-              <div className="flex items-center gap-2 text-warning">
-                <Star className="w-4 h-4" />
-                <span className="font-bold text-xs text-ink">
-                  {isBn ? '৮. রিভিউ ও সোশ্যাল প্রুফ' : '8. Reviews & Social Proof'}
-                </span>
-              </div>
-              <p className="text-xs text-muted">
-                {isBn
-                  ? 'সফল কাস্টমার রিভিউ এবং গড় রেটিং সরাসরি হোমপেজ ও প্রোডাক্ট পেজের ভেরিফায়েড ব্যাজে প্রতিফলিত হয়।'
-                  : 'Verified customer feedback and average ratings directly update storefront badge widgets.'}
-              </p>
-            </div>
-          </div>
-        </div>
+        <section className="space-y-4" aria-label={isBn ? 'পণ্য সংযোগ পর্যালোচনা' : 'Product linkage review'}>
+          <h2 className="font-bold text-ink text-sm">{isBn ? 'পণ্য সংযোগ পর্যালোচনা' : 'Product linkage review'}</h2>
+          <p className="text-xs text-muted">{isBn ? 'বর্তমান তালিকায় ভেন্ডর, ক্যাটাগরি ও ভ্যারিয়েন্টের তথ্য দেখানো হচ্ছে। এটি অর্ডার, স্টক, পেমেন্ট বা কুরিয়ার সংযোগের পূর্ণাঙ্গ পরীক্ষা নয়।' : 'Vendor, category and variant information is checked against the current workspace data. This is not an end-to-end test of orders, stock, payments or couriers.'}</p>
+          {products.length === 0 ? <p className="text-sm text-muted">{isBn ? 'কোনো পণ্য নেই।' : 'No products available.'}</p> : products.map(product => {
+            const vendor = vendors.find(v => v.vendorId === product.vendorId);
+            const category = categories.find(c => c.id === product.categoryId);
+            return <div key={product.productId} className="p-3 border border-border bg-surface space-y-1 text-xs">
+              <p className="font-bold">{isBn ? product.nameBn : product.nameEn}</p>
+              <p>{isBn ? 'ভেন্ডর' : 'Vendor'}: {vendor ? (isBn ? vendor.businessNameBn : vendor.businessNameEn || vendor.businessNameBn) : (isBn ? 'বর্তমান তালিকায় পাওয়া যায়নি' : 'Not available in this view')}</p>
+              <p>{isBn ? 'ক্যাটাগরি' : 'Category'}: {category ? (isBn ? category.nameBn : category.nameEn) : (isBn ? 'বর্তমান তালিকায় পাওয়া যায়নি' : 'Not available in this view')}</p>
+              <p>{isBn ? 'ভ্যারিয়েন্ট' : 'Variants'}: {formatLocaleNumber(product.variants?.length ?? 0, locale)}</p>
+            </div>;
+          })}
+        </section>
       )}
 
       {/* PRODUCT ADD / EDIT DRAWER / MODAL */}
@@ -1670,130 +1558,22 @@ export function ProductManagementStudioPanel({
         </div>
       )}
 
-      {/* 8-WAY CONNECTIVITY DETAILS INSPECTOR MODAL */}
+      {/* Product fields from the current workspace snapshot, not a live integration test. */}
       {inspectProduct && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-3xl bg-surface border border-border p-4 sm:p-6 space-y-6 max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in fade-in">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
-                  <LocalizedText source={"৮-মুখী ৩৬০° ইকোসিস্টেম ম্যাপিং"} area="admin" />{" "}</span>
-                <h2 className="text-base font-bold text-ink">{localizedField(inspectProduct, "nameBn", locale)}</h2>
-                <p className="text-xs text-muted font-mono">{inspectProduct.nameEn}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setInspectProduct(null)}
-                className="p-1 text-muted hover:text-ink"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              {/* 1. Vendor & Escrow */}
-              <div className="p-3 bg-bg border border-border space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-ink">
-                  <Building className="w-4 h-4 text-accent" />
-                  <span><LocalizedText source={"১. ভেন্ডর ও কনসাইনমেন্ট স্প্লিট"} area="admin" /></span>
-                </div>
-                <p className="text-muted"><LocalizedText source={"ভেন্ডর:"} area="admin" />{" "}<span className="text-ink font-semibold">{inspectProduct.vendorBusinessName}</span></p>
-                <p className="text-muted"><LocalizedText source={"ভেন্ডর আইডি:"} area="admin" />{" "}<span className="font-mono text-ink">{inspectProduct.vendorId}</span></p>
-                <p className="text-muted">
-                  <LocalizedText source={"সাপ্লায়ার প্রদেয়:"} area="admin" />{" "}<span className="font-bold text-accent">{formatPoishaToBdt(inspectProduct.variants[0]?.supplierPayablePoisha ?? 0)}</span> {" "}<LocalizedText source={"(ডেলিভারির পর এসক্রোতে জমা)"} area="admin" />{" "}</p>
-              </div>
-
-              {/* 2. Warehouse Stock */}
-              <div className="p-3 bg-bg border border-border space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-ink">
-                  <Package className="w-4 h-4 text-info" />
-                  <span><LocalizedText source={"২. ওয়্যারহাউস স্টক সিনক্রোনাইজেশন"} area="admin" /></span>
-                </div>
-                <p className="text-muted">
-                  <LocalizedText source={"মোট অন-হ্যান্ড স্টক:"} area="admin" />{" "}<span className="text-ink font-bold">{inspectProduct.variants.reduce((s, v) => s + (v.stockOnHand || 0), 0)} {" "}<LocalizedText source={"পিস"} area="admin" /></span>
-                </p>
-                <p className="text-muted">
-                  <LocalizedText source={"রিজার্ভড স্টক (অর্ডারে বুকড):"} area="admin" />{" "}<span className="text-warning font-bold">{inspectProduct.variants.reduce((s, v) => s + (v.stockReserved || 0), 0)} {" "}<LocalizedText source={"পিস"} area="admin" /></span>
-                </p>
-                <p className="text-muted">
-                  <LocalizedText source={"থ্রেশহোল্ড অ্যালার্ট:"} area="admin" />{" "}<span className="font-mono text-ink">{inspectProduct.lowStockThreshold} {" "}<LocalizedText source={"পিস"} area="admin" /></span>
-                </p>
-              </div>
-
-              {/* 3. Orders & Velocity */}
-              <div className="p-3 bg-bg border border-border space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-ink">
-                  <TrendingUp className="w-4 h-4 text-success" />
-                  <span><LocalizedText source={"৩. লাইভ অর্ডার ও সেলস ভেলোসিটি"} area="admin" /></span>
-                </div>
-                <p className="text-muted">
-                  <LocalizedText source={"মোট সফল বিক্রয়:"} area="admin" />{" "}<span className="text-ink font-bold">{inspectProduct.totalSoldCount} {" "}<LocalizedText source={"টি"} area="admin" /></span>
-                </p>
-                <p className="text-muted">
-                  <LocalizedText source={"ফেরত এসেছে:"} area="admin" />{" "}<span className="text-danger font-semibold">{inspectProduct.totalReturnedCount} {" "}<LocalizedText source={"টি"} area="admin" /></span>
-                </p>
-                <p className="text-muted">
-                  <LocalizedText source={"বর্তমান সক্রিয় অর্ডারে লাইভ ইউনিট:"} area="admin" />{" "}<span className="text-success font-bold"><LocalizedText source={"৩ টি"} area="admin" /></span>
-                </p>
-              </div>
-
-              {/* 4. Courier Weight & Slabs */}
-              <div className="p-3 bg-bg border border-border space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-ink">
-                  <Truck className="w-4 h-4 text-warning" />
-                  <span><LocalizedText source={"৪. কুরিয়ার ওজন ও ডেলিভারি স্ল্যাব"} area="admin" /></span>
-                </div>
-                <p className="text-muted">
-                  <LocalizedText source={"পার্সেল ওজন:"} area="admin" />{" "}<span className="font-mono text-ink font-bold">{inspectProduct.variants[0]?.weightGrams ?? 500} {" "}<LocalizedText source={"গ্রাম"} area="admin" /></span>
-                </p>
-                <p className="text-muted">
-                  <LocalizedText source={"ঢাকা সিটি ডেলিভারি ফি:"} area="admin" />{" "}<span className="text-ink font-semibold"><LocalizedText source={"৳৭০"} area="admin" /></span>
-                </p>
-                <p className="text-muted">
-                  <LocalizedText source={"সারা দেশ (৬৪ জেলা):"} area="admin" />{" "}<span className="text-ink font-semibold"><LocalizedText source={"৳১৩০"} area="admin" /></span> {" "}<LocalizedText source={"(১ কেজির নিচে)"} area="admin" />{" "}</p>
-              </div>
-
-              {/* 5. Flash Campaign Safety */}
-              <div className="p-3 bg-bg border border-border space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-ink">
-                  <Tag className="w-4 h-4 text-danger" />
-                  <span><LocalizedText source={"৫. ফ্ল্যাশ ডিল মার্জিন সেফগার্ড"} area="admin" /></span>
-                </div>
-                <p className="text-muted">
-                  <LocalizedText source={"প্ল্যাটফর্ম সুরক্ষিত মার্জিন:"} area="admin" />{" "}<span className="text-success font-bold">+{formatPoishaToBdt(inspectProduct.variants[0]?.platformMarginPoisha ?? 0)}</span>
-                </p>
-                <p className="text-muted">
-                  <LocalizedText source={"সর্বোচ্চ অনুমোদিত ক্যাম্পেইন ছাড়:"} area="admin" />{" "}<span className="text-danger font-bold">{formatPoishaToBdt(inspectProduct.variants[0]?.platformMarginPoisha ?? 0)}</span>
-                </p>
-                <p className="text-[10px] text-muted">
-                  <LocalizedText source={"মার্জিন গার্ড নিয়মে কোনো ক্যাম্পেইন কখনো প্ল্যাটফর্মকে লোকসানে ফেলতে পারবে না।"} area="admin" />{" "}</p>
-              </div>
-
-              {/* 6. Dual SKU & Label Printing */}
-              <div className="p-3 bg-bg border border-border space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-ink">
-                  <Printer className="w-4 h-4 text-ink" />
-                  <span><LocalizedText source={"৬. ডুয়াল SKU প্রিন্ট ইঞ্জিন ম্যাপিং"} area="admin" /></span>
-                </div>
-                <p className="text-muted">
-                  <LocalizedText source={"পাবলিক SKU (ইনভয়েস ও কাস্টমার স্লিপ):"} area="admin" />{" "}<span className="font-mono text-ink font-bold">{inspectProduct.variants[0]?.publicSku}</span>
-                </p>
-                <p className="text-muted">
-                  <LocalizedText source={"ইন্টারনাল SKU (ওয়্যারহাউস পার্ট ৩ স্লিপ):"} area="admin" />{" "}<span className="font-mono text-muted">{inspectProduct.variants[0]?.internalVendorSku}</span>
-                </p>
-                <p className="text-[10px] text-muted">
-                  <LocalizedText source={"বারকোড কোড ১২৮ ফরম্যাটে প্রিন্ট স্লিপে রেন্ডার হয়।"} area="admin" />{" "}</p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setInspectProduct(null)}
-                className="px-4 py-2 bg-ink text-bg font-bold text-xs"
-              >
-                <LocalizedText source={"বন্ধ করুন"} area="admin" />{" "}</button>
-            </div>
+          <div role="dialog" aria-modal="true" aria-label={isBn ? 'পণ্য সংযোগের তথ্য' : 'Product linkage details'} className="w-full max-w-3xl bg-surface border border-border p-4 sm:p-6 space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto">
+            <h2 className="font-bold">{localizedField(inspectProduct, "nameBn", locale)}</h2>
+            <p className="text-xs text-muted">{isBn ? 'এগুলো বর্তমান পণ্যের সংরক্ষিত তথ্য; অন্যান্য সেবার কার্যকারিতা নিশ্চিত করে না।' : 'These are fields from the current product snapshot; they do not verify downstream services.'}</p>
+            <p className="text-sm">{isBn ? 'ভেন্ডর আইডি' : 'Vendor ID'}: {inspectProduct.vendorId}</p>
+            <p className="text-sm">{isBn ? 'ক্যাটাগরি আইডি' : 'Category ID'}: {inspectProduct.categoryId}</p>
+            {inspectProduct.variants.map(variant => <div key={variant.variantId} className="border border-border p-3 text-xs space-y-1">
+              <p className="font-bold">{isBn ? variant.titleBn : variant.titleEn}</p>
+              <p>{isBn ? 'পাবলিক SKU' : 'Public SKU'}: {variant.publicSku}</p>
+              <p>{isBn ? 'অন-হ্যান্ড স্টক' : 'Stock on hand'}: {formatLocaleNumber(variant.stockOnHand, locale)}</p>
+              <p>{isBn ? 'রিজার্ভড স্টক' : 'Reserved stock'}: {formatLocaleNumber(variant.stockReserved, locale)}</p>
+              <p>{isBn ? 'ওজন (গ্রাম)' : 'Weight (grams)'}: {formatLocaleNumber(variant.weightGrams, locale)}</p>
+            </div>)}
+            <button type="button" onClick={() => setInspectProduct(null)} className="px-4 py-2 bg-ink text-bg font-bold text-xs">{isBn ? 'বন্ধ করুন' : 'Close'}</button>
           </div>
         </div>
       )}

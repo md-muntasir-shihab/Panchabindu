@@ -98,7 +98,6 @@ import type {
   RoleDefinitionRecord,
   SanitizedAdminUserDTO,
 } from '@/lib/admin/phase4a-service';
-import { getLiveCourierTrackingUrl } from '@/lib/courier/tracking-urls';
 import type {
   Courier360ProviderSummary,
   CourierClaimRecord,
@@ -222,6 +221,7 @@ type EnrichedOrderRow = Partial<OrderGridRowDTO> & {
 };
 
 interface WorkspaceSnapshotResponse {
+  manualPaymentSubmissions?: Array<{ orderNo: string; trxId: string; provider: 'bkash' | 'nagad' | 'rocket'; submittedAmountPoisha: number; status: string; submittedAt: string }>;
   csrfToken?: string;
   emergencyStopActive?: boolean;
   siteSettings?: SiteSettingsRecord;
@@ -347,28 +347,12 @@ const NEXT_ACTION_LABELS: Record<
   },
 };
 
-function getCourierTrackingUrl(
-  provider?: CourierProvider | null,
-  trackingCode?: string | null,
-  consignmentId?: string | null,
-  orderNo?: string | null
-): string {
-  if (!trackingCode && !consignmentId) {
-    return orderNo ? `/order-tracking?orderNo=${orderNo}` : '#';
-  }
-  const code = trackingCode ?? consignmentId ?? '';
-  switch (provider) {
-    case 'steadfast':
-      return `https://steadfast.com.bd/t/${encodeURIComponent(code)}`;
-    case 'pathao':
-      return `https://pathao.com/courier/tracking/?consignment_id=${encodeURIComponent(consignmentId ?? code)}`;
-    case 'redx':
-      return `https://redx.com.bd/track/${encodeURIComponent(code)}`;
-    case 'bd_post':
-      return `https://www.bdpost.gov.bd/tracking?id=${encodeURIComponent(code)}`;
-    default:
-      return orderNo ? `/order-tracking?orderNo=${orderNo}` : '#';
-  }
+/** Customer-facing order status uses a secret, expiring token, not a sequential order number. */
+function getOrderStatusUrl(order: Partial<OrderGridRowDTO>): string {
+  const token = order.secureTrackingToken?.trim();
+  if (!token || !/^trk_[a-zA-Z0-9]+$/.test(token) || typeof window === 'undefined' ||
+      (order.trackingTokenExpiresAt && Date.parse(order.trackingTokenExpiresAt) <= Date.now())) return '';
+  return `${window.location.origin}/order-tracking/${encodeURIComponent(token)}`;
 }
 
 function getCourierProviderBadgeStyle(provider?: CourierProvider | null): {
@@ -900,12 +884,7 @@ function CourierInfoCard({
 }) {
   const [copied, setCopied] = React.useState(false);
   const badge = getCourierProviderBadgeStyle(ord.courierProvider);
-  const trackingUrl = getCourierTrackingUrl(
-    ord.courierProvider,
-    ord.trackingCode,
-    ord.consignmentId,
-    ord.orderNo
-  );
+  const trackingUrl = getOrderStatusUrl(ord);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -955,15 +934,15 @@ function CourierInfoCard({
               )}
             </button>
           </div>
-          <a
+          {trackingUrl && <a
             href={trackingUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-[11px] text-blue-700 hover:text-blue-900 hover:underline font-bold"
           >
             <ExternalLink className="w-3 h-3" />
-            <span><LocalizedText source={"লাইভ ট্র্যাকিং লিংক"} area="admin" /></span>
-          </a>
+            <span>{locale === 'bn' ? 'অর্ডার স্ট্যাটাস লিংক' : 'Order status link'}</span>
+          </a>}
         </div>
       ) : (
         <div className="flex items-center gap-2 text-muted">
@@ -1282,7 +1261,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
   const [mfsSenderPhone, setMfsSenderPhone] = React.useState('');
   const [mfsTrxId, setMfsTrxId] = React.useState('');
   const [mfsAmountTaka, setMfsAmountTaka] = React.useState('');
-  const [mfsAutoVerify, setMfsAutoVerify] = React.useState(true);
+  const [mfsAutoVerify, setMfsAutoVerify] = React.useState(false);
   const [mfsNoteBn, setMfsNoteBn] = React.useState('');
   // maker-checker: approving your own entry needs an explicit, audited reason.
   const [mfsSelfApprovalBlocked, setMfsSelfApprovalBlocked] = React.useState(false);
@@ -1880,115 +1859,28 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
     ord: EnrichedOrderRow,
     type: 'tracking_link' | 'order_confirmed' | 'delivered' | 'advance_reminder'
   ) => {
-    const custName = ord.customerName || 'সম্মানিত গ্রাহক';
-    const ordNo = ord.orderNo || 'ORD-0000';
-    const totalTaka = Math.round((ord.totalPayablePoisha ?? 0) / 100);
-    const codTaka = Math.round(
-      (ord.codCollectablePoisha ?? ord.totalPayablePoisha ?? 0) / 100
-    );
-    const advanceTaka = Math.round((ord.advancePaidPoisha ?? 0) / 100);
-    const address = `${ord.streetAddress ?? ''}${
-      ord.landmark ? ` (ল্যান্ডমার্ক: ${ord.landmark})` : ''
-    }, ${ord.upazilaNameBn ?? ''}, ${ord.districtNameBn ?? ''}`.trim();
-
-    const itemsList =
-      ord.items && ord.items.length > 0
-        ? ord.items
-            .map((i) => `• ${i.productNameBn} (${i.variantTitleBn}) x ${i.quantity}টি`)
-            .join('\n')
-        : '• কনসাইনমেন্ট পণ্য x ১টি';
-
-    const courierLabel =
-      ord.courierProvider === 'steadfast'
-        ? 'Steadfast Courier'
-        : ord.courierProvider === 'pathao'
-        ? 'Pathao Courier'
-        : ord.courierProvider === 'redx'
-        ? 'RedX Delivery'
-        : ord.courierProvider === 'bd_post'
-        ? 'বাংলাদেশ ডাক বিভাগ (BD Post)'
-        : 'ম্যানুয়াল হোম ডেলিভারি';
-
-    const trackingCode = ord.trackingCode || ord.consignmentId || 'আপডেট হচ্ছে';
-    const trackingUrl = getLiveCourierTrackingUrl(
-      ord.courierProvider ?? 'steadfast',
-      ord.trackingCode,
-      ord.consignmentId,
-      ord.orderNo
-    );
-    const supportPhone = siteSettings.supportPhone || '01700000000';
-    const brandName = siteSettings.brandNameBn || 'বঙ্ককনসাইন';
-
-    if (type === 'delivered') {
-      return `প্রিয় ${custName},
-${brandName}-এ আপনার অর্ডারটি (${ordNo}) সফলভাবে ডেলিভারি সম্পন্ন হয়েছে! 🎉
-
-📦 অর্ডারের বিবরণ:
-${itemsList}
-
-💰 পরিশোধিত মোট: ৳${totalTaka}
-🚚 ডেলিভারি কুরিয়ার: ${courierLabel} (ট্র্যাকিং: ${trackingCode})
-
-পণ্যটি আপনার পছন্দ হয়েছে আশা করি। যেকোনো প্রশ্ন বা মতামত জানাতে আমাদের হেল্পলাইনে যোগাযোগ করতে পারেন: ${supportPhone}
-
-${brandName}-এর সাথে থাকার জন্য আন্তরিক ধন্যবাদ! ❤️`;
-    }
-
-    if (type === 'tracking_link') {
-      return `প্রিয় ${custName},
-আপনার অর্ডারটি (${ordNo}) কুরিয়ারে হস্তান্তর করা হয়েছে এবং আপনার ঠিকানার উদ্দেশ্যে পাঠানো হয়েছে! 🚚
-
-📦 পণ্য বিবরণ:
-${itemsList}
-
-💰 কুরিয়ারকে প্রদেয় ক্যাশ অন ডেলিভারি (COD): ৳${codTaka}
-📍 ডেলিভারি ঠিকানা: ${address}
-
-🚚 কুরিয়ার পার্টনার: ${courierLabel}
-🔖 পার্সেল ট্র্যাকিং আইডি: ${trackingCode}
-🌐 লাইভ ট্র্যাকিং লিংক:
-${trackingUrl}
-(উপরের লিংকে ক্লিক করে সরাসরি আপনার পার্সেলের অবস্থান ও রাইডারের তথ্য দেখতে পারবেন)
-
-ডেলিভারিম্যান পৌঁছানোর আগে আপনাকে ফোন করবেন। যেকোনো প্রয়োজনে: ${supportPhone}
-ধন্যবাদ!`;
-    }
-
-    if (type === 'advance_reminder') {
-      const bkashNum = siteSettings.bkashManualNumber || '01712345678';
-      return `প্রিয় ${custName},
-${brandName}-এ আপনার অর্ডারটি (${ordNo}) প্রসেস করা হচ্ছে।
-
-📦 পণ্য:
-${itemsList}
-💰 মোট মূল্য: ৳${totalTaka}
-ডেলিভারি কনফার্মেশনের জন্য অগ্রিম ডেলিভারি চার্জ (৳${Math.round(
-        (ord.deliveryChargePoisha ?? 7000) / 100
-      )}) নিচের বিকাশ নম্বরে সেন্ড মানি করুন:
-📱 বিকাশ নম্বর: ${bkashNum} (Personal)
-রেফারেন্সে লিখুন: ${ordNo}
-
-টাকা পাঠিয়ে ট্রানজেকশন আইডি (TrxID) আমাদের ইনবক্সে জানান। ধন্যবাদ!`;
-    }
-
-    // Default: order_confirmed
-    return `প্রিয় ${custName},
-${brandName}-এ আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে! ✅
-
-📦 অর্ডার আইডি: ${ordNo}
-🛍️ পণ্য বিবরণ:
-${itemsList}
-
-💰 মোট প্রদেয় (ক্যাশ অন ডেলিভারি): ৳${codTaka}${
-      advanceTaka > 0 ? ` (অগ্রিম পরিশোধিত: ৳${advanceTaka})` : ''
-    }
-📍 ডেলিভারির ঠিকানা: ${address}
-
-🚚 কুরিয়ার: ${courierLabel}
-খুব শীঘ্রই পার্সেলটি প্যাকিং শেষে কুরিয়ারে বুক করা হবে এবং ট্র্যাকিং লিংক এসএমএস/হোয়াটসঅ্যাপে জানিয়ে দেওয়া হবে।
-
-যেকোনো সহায়তায় হেল্পলাইন: ${supportPhone} (সকাল ৯টা - রাত ১০টা)
-ধন্যবাদ আমাদের সাথে কেনাকাটার জন্য!`;
+    const bn = locale === 'bn';
+    const name = ord.customerName || (bn ? 'সম্মানিত গ্রাহক' : 'Valued customer');
+    const brand = (bn ? siteSettings.brandNameBn : siteSettings.brandNameEn) || 'Panchabindu';
+    const number = ord.orderNo || '—';
+    const total = typeof ord.totalPayablePoisha === 'number' ? formatPoishaToBdt(ord.totalPayablePoisha, locale) : '—';
+    const due = typeof ord.codCollectablePoisha === 'number' ? formatPoishaToBdt(ord.codCollectablePoisha, locale) : '—';
+    const statusUrl = getOrderStatusUrl(ord);
+    const items = ord.items?.map(i => `• ${i.productNameBn} (${i.variantTitleBn}) × ${i.quantity}`).join('\n');
+    const greeting = bn ? `প্রিয় ${name},` : `Dear ${name},`;
+    let subject: string;
+    if (type === 'tracking_link') subject = bn ? 'আপনার অর্ডারের বর্তমান অবস্থা দেখুন।' : 'Please check the current status of your order.';
+    else if (type === 'delivered') subject = bn ? 'আপনার অর্ডার সম্পর্কে আমাদের সঙ্গে যোগাযোগ করার জন্য ধন্যবাদ।' : 'Thank you for your order.';
+    else if (type === 'advance_reminder') subject = bn ? 'আপনার অর্ডারের পেমেন্ট বিষয়ে আমাদের সঙ্গে যোগাযোগ করুন।' : 'Please contact us regarding payment for your order.';
+    else subject = bn ? 'আপনার অর্ডারের তথ্য নিচে দেওয়া হলো।' : 'Your order details are below.';
+    const lines = [greeting, '', subject, `${bn ? 'অর্ডার নম্বর' : 'Order number'}: ${number}`];
+    if (items) lines.push(`${bn ? 'পণ্য' : 'Items'}:\n${items}`);
+    lines.push(`${bn ? 'মোট' : 'Total'}: ${total}`, `${bn ? 'বকেয়া' : 'Outstanding'}: ${due}`);
+    if (statusUrl) lines.push(`${bn ? 'অর্ডার স্ট্যাটাস' : 'Order status'}: ${statusUrl}`);
+    else if (type === 'tracking_link') lines.push(bn ? 'নিরাপদ স্ট্যাটাস লিংক বর্তমানে পাওয়া যাচ্ছে না।' : 'A secure status link is currently unavailable.');
+    if (siteSettings.supportPhone) lines.push(`${bn ? 'সহায়তা' : 'Support'}: ${siteSettings.supportPhone}`);
+    lines.push('', bn ? 'ধন্যবাদান্তে,' : 'Kind regards,', brand);
+    return lines.join('\n');
   };
 
   const handleOpenMessageStudio = (
@@ -2021,82 +1913,37 @@ ${itemsList}
     setMessageCopied(false);
   };
 
-  const handleDispatchCustomerMessage = async (
-    channel: 'wa_me' | 'sms_app' | 'copy_clipboard'
-  ) => {
-    if (!activeMessageOrder?.orderNo) return;
-    setMessageSending(true);
-    try {
-      await fetch('/api/admin/workspace', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          operation: 'record_dispatched_message',
-          orderNo: activeMessageOrder.orderNo,
-          eventKey: messageTemplateType,
-          channel,
-          recipientPhone: activeMessageOrder.customerPhone,
-          messageText: messageCustomText,
-        }),
-      });
-
-      const cleanPhone = (activeMessageOrder.customerPhone ?? '').replace(
-        /\D/g,
-        ''
-      );
-      const waPhone = cleanPhone.startsWith('88') ? cleanPhone : `88${cleanPhone}`;
-
-      if (channel === 'wa_me') {
-        const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(
-          messageCustomText
-        )}`;
-        window.open(waUrl, '_blank', 'noopener,noreferrer');
-      } else if (channel === 'sms_app') {
-        const smsUrl = `sms:${
-          activeMessageOrder.customerPhone
-        }?body=${encodeURIComponent(messageCustomText)}`;
-        window.location.href = smsUrl;
-      } else if (channel === 'copy_clipboard') {
-        await navigator.clipboard.writeText(messageCustomText);
+  const handleDispatchCustomerMessage = async (channel: 'wa_me' | 'sms_app' | 'copy_clipboard') => {
+    const text = messageCustomText.trim();
+    if (!text) { setActionFeedback({ type: 'error', text: locale === 'bn' ? 'প্রথমে মেসেজ লিখুন।' : 'Enter a message first.' }); return; }
+    if (channel === 'copy_clipboard') {
+      try {
+        await navigator.clipboard.writeText(text);
         setMessageCopied(true);
         setTimeout(() => setMessageCopied(false), 3000);
-      }
-
-      setActionFeedback({
-        type: 'success',
-        text: `${activeMessageOrder.orderNo}: মেসেজ সফলভাবে রেকর্ড ও পাঠানো হয়েছে।`,
-      });
-      await fetchWorkspace();
-    } catch {
-      setActionFeedback({
-        type: 'error',
-        text: 'মেসেজ লগ করতে সমস্যা হয়েছে।',
-      });
-    } finally {
-      setMessageSending(false);
+        setActionFeedback({ type: 'success', text: locale === 'bn' ? 'মেসেজ কপি হয়েছে; পাঠানো হয়নি।' : 'Message copied; it has not been sent.' });
+      } catch { setActionFeedback({ type: 'error', text: locale === 'bn' ? 'কপি করা যায়নি; লেখা নির্বাচন করে কপি করুন।' : 'Copy failed; select and copy the text manually.' }); }
+      return;
     }
+    const phone = normalizeBdPhone(activeMessageOrder?.customerPhone ?? '');
+    if (!phone) { setActionFeedback({ type: 'error', text: locale === 'bn' ? 'সঠিক গ্রাহক মোবাইল নম্বর প্রয়োজন।' : 'A valid customer mobile number is required.' }); return; }
+    if (channel === 'wa_me') {
+      // Open synchronously in the click gesture: awaiting an API request here is blocked as a popup.
+      window.open(`https://wa.me/88${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    } else {
+      window.location.href = `sms:${phone}?body=${encodeURIComponent(text)}`;
+    }
+    setActionFeedback({ type: 'success', text: locale === 'bn' ? 'মেসেজ অ্যাপ খোলার অনুরোধ করা হয়েছে। সেখানে পাঠানো নিশ্চিত করুন।' : 'Requested the messaging app. Confirm sending there.' });
   };
 
   const handleOpenMfsModal = (ord: EnrichedOrderRow) => {
     setMfsModalOrder(ord);
-    const prov: 'bkash' | 'nagad' | 'rocket' =
-      ord.paymentMethod === 'nagad_manual'
-        ? 'nagad'
-        : ord.paymentMethod === 'rocket_manual'
-        ? 'rocket'
-        : 'bkash';
-    setMfsProvider(prov);
+    setMfsProvider('bkash');
     setMfsSenderPhone(ord.customerPhone || '');
     setMfsTrxId(ord.manualPaymentTrxId || '');
 
-    const advPoisha =
-      Math.max(
-        0,
-        (ord.totalPayablePoisha ?? 0) - (ord.codCollectablePoisha ?? 0)
-      ) || (ord.advancePaidPoisha ?? 0);
-    const advTaka = advPoisha > 0 ? Math.round(advPoisha / 100) : 100;
-    setMfsAmountTaka(String(advTaka));
-    setMfsAutoVerify(true);
+    setMfsAmountTaka('');
+    setMfsAutoVerify(false);
     setMfsNoteBn('');
     setMfsSelfApprovalBlocked(false);
     setMfsOverrideReason('');
@@ -2113,7 +1960,7 @@ ${itemsList}
       return;
     }
     const amt = Number(mfsAmountTaka);
-    if (!amt || amt <= 0) {
+    if (!/^\d+(?:\.\d{1,2})?$/.test(mfsAmountTaka.trim()) || !Number.isSafeInteger(Math.round(amt * 100)) || amt <= 0) {
       setActionFeedback({
         type: 'error',
         text: 'অনুগ্রহ করে সঠিক পেমেন্ট পরিমাণ (টাকা) প্রদান করুন।',
@@ -3166,7 +3013,7 @@ ${itemsList}
 
         {/* Workspace Body */}
         <main className="flex-1 max-w-7xl w-full min-w-0 mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6">
-        {isSuperAdmin && <section className="border border-border rounded-[var(--radius-md)] bg-surface p-4 space-y-2" aria-label={locale === 'bn' ? 'জরুরি নিয়ন্ত্রণ' : 'Emergency control'}>
+        {activeTab === 'control_center' && isSuperAdmin && <section className="border border-border rounded-[var(--radius-md)] bg-surface p-4 space-y-2" aria-label={locale === 'bn' ? 'জরুরি নিয়ন্ত্রণ' : 'Emergency control'}>
           <h2 className="font-bold text-sm">{locale === 'bn' ? 'জরুরি কার্যক্রম নিয়ন্ত্রণ' : 'Emergency operations control'}</h2>
           <p className="text-xs">{snapshot.emergencyStopActive ? (locale === 'bn' ? 'জরুরি বন্ধ চালু: নতুন ব্যবসায়িক কার্যক্রম বন্ধ আছে।' : 'Emergency stop is active: new business operations are blocked.') : (locale === 'bn' ? 'জরুরি বন্ধ চালু করলে নতুন ব্যবসায়িক কার্যক্রম বন্ধ হবে; লগইন ও পুনরুদ্ধার চালু থাকবে।' : 'Activating emergency stop blocks new business operations; sign-in and recovery remain available.')}</p>
           <Button variant="outline" size="sm" onClick={async () => {
@@ -3183,7 +3030,16 @@ ${itemsList}
             } catch { setActionFeedback({ type: 'error', text: locale === 'bn' ? 'নেটওয়ার্ক সমস্যা হয়েছে।' : 'Network error.' }); }
           }}>{snapshot.emergencyStopActive ? (locale === 'bn' ? 'কার্যক্রম পুনরায় চালু করুন' : 'Resume operations') : (locale === 'bn' ? 'জরুরি বন্ধ চালু করুন' : 'Activate emergency stop')}</Button>
         </section>}
-        <AccountSecurity locale={locale} csrfKey="bg_admin_csrf_token" />
+        {snapshot.emergencyStopActive && activeTab !== 'control_center' && (
+          <div role="alert" className="border border-danger bg-surface rounded-[var(--radius-md)] p-3 text-sm text-danger">
+            {locale === 'bn' ? 'জরুরি বন্ধ চালু: নতুন ব্যবসায়িক কার্যক্রম বন্ধ আছে।' : 'Emergency stop is active: new business operations are blocked.'}
+            {isSuperAdmin && <button type="button" className="ml-3 underline" onClick={() => setActiveTab('control_center')}>{locale === 'bn' ? 'কন্ট্রোল সেন্টার' : 'Control Center'}</button>}
+          </div>
+        )}
+        {/* Keep security state mounted while navigating so one-time recovery codes are not lost. */}
+        <div hidden={activeTab !== 'users_and_rbac'}>
+          <AccountSecurity locale={locale} csrfKey="bg_admin_csrf_token" />
+        </div>
         {/* Action Feedback Toast Banner */}
         {actionFeedback && (
           <div
@@ -3212,7 +3068,7 @@ ${itemsList}
         )}
 
         {/* Role Context Strip */}
-        <div className="p-3 border border-border rounded-[var(--radius-md)] bg-surface flex flex-wrap items-center justify-between gap-2 text-xs">
+        {activeTab === 'users_and_rbac' && <div className="p-3 border border-border rounded-[var(--radius-md)] bg-surface flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-ink">
               {locale === 'bn' ? 'সক্রিয় রোল:' : 'Active Role:'}{' '}
@@ -3236,6 +3092,8 @@ ${itemsList}
             {locale === 'bn' ? 'রিফ্রেশ' : 'Refresh'}
           </Button>
         </div>
+
+        }
 
         {/* ==================================================================
             TAB 1: TODAY OPERATIONAL COMMAND SCREEN (MODULE M)
@@ -6197,34 +6055,9 @@ ${itemsList}
                 </div>
               </div>
 
-              {/* Live Tracking Link Preview */}
-              <div className="p-3 rounded bg-surface border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="space-y-0.5">
-                  <p className="text-[11px] text-muted">
-                    <LocalizedText source={"লাইভ পার্সেল ট্র্যাকিং ওয়েব লিংক:"} area="admin" />{" "}</p>
-                  <p className="font-mono text-xs text-ink truncate max-w-md">
-                    {getLiveCourierTrackingUrl(
-                      editCourierProvider,
-                      editTrackingCode,
-                      editConsignmentId,
-                      activeActionOrder.orderNo
-                    )}
-                  </p>
-                </div>
-                <a
-                  href={getLiveCourierTrackingUrl(
-                    editCourierProvider,
-                    editTrackingCode,
-                    editConsignmentId,
-                    activeActionOrder.orderNo
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded bg-bg border border-border text-ink hover:bg-surface font-semibold text-xs inline-flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span><LocalizedText source={"লিংক টেস্ট করুন"} area="admin" /></span>
-                </a>
+              <div className="p-3 rounded bg-surface border border-border text-xs space-y-2">
+                <p>{locale === 'bn' ? 'নিরাপদ অর্ডার স্ট্যাটাস লিংক (কুরিয়ারের লাইভ ট্র্যাকিং নয়):' : 'Secure order status link (not live courier tracking):'}</p>
+                {getOrderStatusUrl(activeActionOrder) ? <a href={getOrderStatusUrl(activeActionOrder)} target="_blank" rel="noopener noreferrer" className="underline break-all">{getOrderStatusUrl(activeActionOrder)}</a> : <p>{locale === 'bn' ? 'নিরাপদ লিংক অনুপস্থিত বা মেয়াদ শেষ।' : 'Secure link unavailable or expired.'}</p>}
               </div>
             </div>
 
@@ -6635,7 +6468,7 @@ ${itemsList}
               </div>
 
               <p className="text-[10px] text-muted text-center pt-1">
-                <LocalizedText source={"মেসেজ পাঠানোর সাথে সাথে সিস্টেম অডিট লগ এবং মেসেজ হিস্টরিতে সময় ও প্রেরকের নাম সংরক্ষিত হবে।"} area="admin" />{" "}</p>
+                {locale === 'bn' ? 'WhatsApp বা SMS অ্যাপে গিয়ে নিজে পাঠাতে হবে। অ্যাপ খোলা বা কপি করা মানে মেসেজ পাঠানো নয়; পাঠানো নিশ্চিত বা লগ করা হয় না।' : 'Send the message in WhatsApp or your SMS app. Opening or copying does not confirm delivery, and is not logged as sent.'}</p>
             </div>
           </div>
         )}
@@ -6859,6 +6692,12 @@ ${itemsList}
               </div>
             )}
 
+            {isSuperAdmin && <section className="p-3 border border-border rounded space-y-2" aria-label={locale === 'bn' ? 'ম্যানুয়াল পেমেন্ট হিসাব' : 'Manual payment history'}>
+              <h4 className="font-bold">{locale === 'bn' ? 'এই অর্ডারের ম্যানুয়াল পেমেন্ট হিসাব' : 'Manual payment history for this order'}</h4>
+              <p className="text-muted">{locale === 'bn' ? 'শুধু অনুমোদিত পরিমাণ যাচাইকৃত; পেন্ডিং অঙ্ক টাকা প্রাপ্তির প্রমাণ নয়।' : 'Only approved amounts are verified; pending amounts do not prove receipt.'}</p>
+              {(snapshot.manualPaymentSubmissions ?? []).filter(s => s.orderNo === mfsModalOrder.orderNo).length === 0 ? <p>{locale === 'bn' ? 'কোনো রেকর্ড নেই।' : 'No records.'}</p> : (snapshot.manualPaymentSubmissions ?? []).filter(s => s.orderNo === mfsModalOrder.orderNo).map(s => <div key={`${s.orderNo}-${s.trxId}`} className="flex flex-wrap gap-x-3 gap-y-1 border-t border-border pt-2"><span>{s.provider.toUpperCase()}</span><span>{s.trxId}</span><span>{formatPoishaToBdt(s.submittedAmountPoisha, locale)}</span><span>{s.status}</span></div>)}
+            </section>}
+
             {/* MFS Input Form Card */}
             <div className="p-3.5 border border-border rounded-[var(--radius-md)] bg-bg space-y-3.5">
               <h4 className="font-bold text-ink flex items-center gap-1.5 text-xs">
@@ -6883,7 +6722,7 @@ ${itemsList}
                     <span><LocalizedText source={"বিকাশ (bKash)"} area="admin" /></span>
                   </button>
                   <button
-                    type="button"
+                    type="button" disabled title={locale === 'bn' ? 'নগদ সংযোগের কাজ এখনো সম্পূর্ণ হয়নি' : 'Nagad support is not yet complete'}
                     onClick={() => setMfsProvider('nagad')}
                     className={`py-2 px-3 rounded-[var(--radius-sm)] border text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
                       mfsProvider === 'nagad'
@@ -6894,7 +6733,7 @@ ${itemsList}
                     <span><LocalizedText source={"নগদ (Nagad)"} area="admin" /></span>
                   </button>
                   <button
-                    type="button"
+                    type="button" disabled title={locale === 'bn' ? 'রকেট সংযোগের কাজ এখনো সম্পূর্ণ হয়নি' : 'Rocket support is not yet complete'}
                     onClick={() => setMfsProvider('rocket')}
                     className={`py-2 px-3 rounded-[var(--radius-sm)] border text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
                       mfsProvider === 'rocket'
@@ -6906,6 +6745,8 @@ ${itemsList}
                   </button>
                 </div>
               </div>
+
+              <p className="text-xs text-warning">{locale === 'bn' ? 'নগদ ও রকেটের হিসাব এখনো চালু নয়। বিকাশ এন্ট্রিও প্রথমে যাচাইবিহীন দাবি হিসেবে জমা হয়।' : 'Nagad and Rocket accounting is not yet enabled. A bKash entry is initially an unverified claim.'}</p>
 
               {/* Sender Phone & Amount */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -6920,43 +6761,14 @@ ${itemsList}
                   <Input
                     label="পরিশোধিত পরিমাণ (টাকা / BDT) *"
                     type="number"
+                    min="0.01"
+                    step="0.01"
                     value={mfsAmountTaka}
                     onChange={(e) => setMfsAmountTaka(e.target.value)}
                     placeholder={uiText("যেমন: 100 বা 170", locale)}
                     required
                   />
-                  {/* Preset Amount Badges */}
-                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    <span className="text-[10px] text-muted"><LocalizedText source={"কুইক অ্যামাউন্ট:"} area="admin" /></span>
-                    <button
-                      type="button"
-                      onClick={() => setMfsAmountTaka('100')}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border hover:bg-bg cursor-pointer"
-                    >
-                      <LocalizedText source={"৳১০০ (ঢাকা ডেলিভারি)"} area="admin" />{" "}</button>
-                    <button
-                      type="button"
-                      onClick={() => setMfsAmountTaka('170')}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border hover:bg-bg cursor-pointer"
-                    >
-                      <LocalizedText source={"৳১৭০ (ঢাকার বাইরে)"} area="admin" />{" "}</button>
-                    {mfsModalOrder && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setMfsAmountTaka(
-                            String(
-                              Math.round(
-                                (mfsModalOrder.totalPayablePoisha ?? 0) / 100
-                              )
-                            )
-                          )
-                        }
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border hover:bg-bg cursor-pointer"
-                      >
-                        <LocalizedText source={"৳"} area="admin" />{Math.round((mfsModalOrder.totalPayablePoisha ?? 0) / 100)} {" "}<LocalizedText source={"(সম্পূর্ণ বিল)"} area="admin" />{" "}</button>
-                    )}
-                  </div>
+                  <p className="text-[10px] text-muted mt-1">{locale === 'bn' ? 'পেমেন্টের প্রকৃত দাবি করা পরিমাণ লিখুন; অনুমোদনের আগে এটি যাচাইকৃত নয়।' : 'Enter the claimed amount; it is not verified until approved.'}</p>
                 </div>
               </div>
 
