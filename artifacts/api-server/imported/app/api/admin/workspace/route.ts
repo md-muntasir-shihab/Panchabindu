@@ -1,4 +1,4 @@
-import { getStorefrontConfig, storefrontContentSchema } from '@/src/lib/storefront/storefront-config';
+import { getStorefrontConfig, storefrontContentSchema, safeStoreUrl } from '@/src/lib/storefront/storefront-config';
 import { updateStorefrontContent } from '@/src/lib/admin/storefront-settings-service';
 import { backendRoute } from '@/src/lib/db/backend-route';
 // app/api/admin/workspace/route.ts
@@ -821,7 +821,7 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
       leadTimeDays: z.number().int().nonnegative().optional(),
       commissionOverrideBp: z.number().int().nullable().optional(),
       status: z.enum(['draft', 'active', 'archived']).optional(),
-      images: z.array(z.string()).optional(),
+      images: z.array(z.string().trim().max(2048).refine(v => Boolean(v) && !v.startsWith('#') && safeStoreUrl(v), 'সঠিক HTTPS ছবির লিংক দিন।')).max(30).optional(),
       specs: z
         .array(
           z.object({
@@ -841,7 +841,7 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
             titleBn: z.string().min(1, 'ভ্যারিয়েন্ট নাম আবশ্যক।'),
             titleEn: z.string().optional(),
             attributes: z.record(z.string(), z.string()).optional(),
-            imageUrl: z.string().nullable().optional(),
+            imageUrl: z.string().trim().max(2048).refine(v => !v || (!v.startsWith('#') && safeStoreUrl(v)), 'সঠিক HTTPS ছবির লিংক দিন।').nullable().optional(),
             supplierCostPoisha: z.number().int().nonnegative(),
             supplierProfitPoisha: z.number().int().nonnegative().optional(),
             supplierPayablePoisha: z.number().int().nonnegative().optional(),

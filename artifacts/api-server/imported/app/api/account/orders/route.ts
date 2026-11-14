@@ -49,9 +49,9 @@ async function handleGET(req: NextRequest) {
   const smsConfigured = isSmsOtpProviderConfigured();
   const providerStatus = smsConfigured
     ? 'INTEGRATED'
-    : process.env.NODE_ENV === 'production'
-    ? 'NOT_INTEGRATED'
-    : 'SANDBOX_TEST_ONLY';
+    : process.env.NODE_ENV !== 'production' && (process.env.NODE_ENV === 'test' || process.env.PANCHABINDU_ENABLE_SANDBOX_AUTH === '1')
+    ? 'SANDBOX_TEST_ONLY'
+    : 'NOT_INTEGRATED';
 
   if (!session) {
     return NextResponse.json(

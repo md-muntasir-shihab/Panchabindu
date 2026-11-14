@@ -4,6 +4,9 @@ import * as React from 'react';
 import { adminFetch } from '@/lib/admin/admin-fetch';
 import type { CustomerInquiryRecord } from '@/lib/db/repository';
 import type { SanitizedAdminUserDTO } from '@/lib/admin/phase4a-service';
+import type { OrderGridRowDTO } from '@/types/domain';
+import { normalizeBdPhone } from '@/lib/validators';
+import { formatPoishaToBdt } from '@/lib/money';
 import { formatLocaleNumber, formatLocaleDateTime } from '@/lib/i18n/dictionaries';
 import { Badge, Button, Card, Input } from '../ui/primitives';
 
@@ -77,13 +80,16 @@ function InquiryEditor({ inquiry, users, locale, onRefresh }: {
   </Card>;
 }
 
-export function ContactManagementPanel({ inquiries, users, locale, onRefreshWorkspace }: {
-  inquiries: CustomerInquiryRecord[]; users: SanitizedAdminUserDTO[]; locale: Locale; onRefreshWorkspace: () => Promise<void>;
+type ContactOrder = Partial<OrderGridRowDTO> & { items?: Array<{ productNameBn: string; variantTitleBn: string; quantity: number; unitSalePricePoisha: number }> };
+export function ContactManagementPanel({ inquiries, orders, users, locale, onRefreshWorkspace }: {
+  inquiries: CustomerInquiryRecord[]; orders: ContactOrder[]; users: SanitizedAdminUserDTO[]; locale: Locale; onRefreshWorkspace: () => Promise<void>;
 }) {
   const [search, setSearch] = React.useState('');
   const [status, setStatus] = React.useState<Status | 'all'>('all');
   const [priority, setPriority] = React.useState<Priority | 'all'>('all');
   const [selected, setSelected] = React.useState<string | null>(null);
+  const [contactPhone, setContactPhone] = React.useState('');
+  const [contactSearch, setContactSearch] = React.useState('');
   const bn = locale === 'bn';
   const filtered = React.useMemo(() => inquiries.filter(item => {
     const q = search.trim().toLocaleLowerCase();
@@ -91,8 +97,31 @@ export function ContactManagementPanel({ inquiries, users, locale, onRefreshWork
       (!q || [item.name, item.phone, item.subject, item.message, item.id].some(value => value.toLocaleLowerCase().includes(q)));
   }).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [inquiries, search, status, priority]);
   const active = inquiries.find(item => item.id === selected);
+  const contacts = React.useMemo(() => {
+    const people = new Map<string, { phone: string; name: string; orders: ContactOrder[]; inquiries: CustomerInquiryRecord[] }>();
+    for (const inquiry of inquiries) {
+      const phone = normalizeBdPhone(inquiry.phone);
+      if (!phone) continue;
+      const person = people.get(phone) ?? { phone, name: inquiry.name, orders: [], inquiries: [] };
+      person.inquiries.push(inquiry); people.set(phone, person);
+    }
+    for (const order of orders) {
+      const phone = normalizeBdPhone(order.customerPhone ?? '');
+      if (!phone) continue;
+      const person = people.get(phone) ?? { phone, name: order.customerName ?? '', orders: [], inquiries: [] };
+      person.orders.push(order); people.set(phone, person);
+    }
+    return [...people.values()].sort((a,b) => a.name.localeCompare(b.name, locale));
+  }, [orders, inquiries, locale]);
+  const contact = contacts.find(person => person.phone === contactPhone);
   return <section className="space-y-4">
     <div><h1 className="text-xl font-bold">{bn ? 'যোগাযোগ ব্যবস্থাপনা' : 'Contact management'}</h1><p className="text-sm text-muted">{bn ? 'কন্টাক্ট ফর্মের বার্তা, দায়িত্ব ও অগ্রগতি এক জায়গায় পরিচালনা করুন।' : 'Manage contact form inquiries, assignments and progress in one place.'}</p></div>
+    <details className="border border-border rounded-xl bg-bg p-4">
+      <summary className="cursor-pointer font-semibold">{bn ? 'সকল যোগাযোগ ও অর্ডার ইতিহাস' : 'All contacts & order history'} ({formatLocaleNumber(contacts.length, locale)})</summary>
+      <p className="text-xs text-muted mt-2">{bn ? 'একই ফোন নম্বরের অর্ডার ও বার্তা একসাথে দেখানো হয়; নম্বর মিললে পরিচয় নিশ্চিত হয় না।' : 'Orders and messages are grouped by phone number; a matching number does not prove identity.'}</p>
+      <div className="grid lg:grid-cols-2 gap-3 mt-3"><div className="space-y-2"><Input label={bn ? 'যোগাযোগ খুঁজুন' : 'Search contacts'} value={contactSearch} onChange={e => setContactSearch(e.target.value)} placeholder={bn ? 'নাম বা ফোন' : 'Name or phone'} /><div className="max-h-72 overflow-auto space-y-1">{contacts.filter(c => `${c.name} ${c.phone}`.toLowerCase().includes(contactSearch.toLowerCase().trim())).map(c => <button type="button" key={c.phone} onClick={() => setContactPhone(c.phone)} className={`w-full text-left border rounded p-2 text-sm ${contactPhone === c.phone ? 'border-ink bg-surface' : 'border-border'}`}>{c.name} · {c.phone}<span className="block text-xs text-muted">{formatLocaleNumber(c.orders.length, locale)} {bn ? 'অর্ডার' : 'orders'} · {formatLocaleNumber(c.inquiries.length, locale)} {bn ? 'বার্তা' : 'messages'}</span></button>)}</div></div>
+      <div className="border border-border rounded p-3 space-y-3 text-sm max-h-[32rem] overflow-auto">{contact ? <><h3 className="font-bold">{contact.name} · {contact.phone}</h3><h4 className="font-semibold">{bn ? 'অর্ডার ইতিহাস' : 'Order history'}</h4>{contact.orders.length === 0 && <p className="text-muted">{bn ? 'অর্ডার নেই' : 'No orders'}</p>}{[...contact.orders].sort((a,b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '')).map(order => <div key={order.orderNo} className="border border-border rounded p-2 space-y-1 break-words"><strong>{order.orderNo}</strong> · {order.createdAt ? formatLocaleDateTime(order.createdAt, locale) : '—'}<p>{bn ? 'অবস্থা' : 'Status'}: {order.status} · {bn ? 'পেমেন্ট' : 'Payment'}: {order.paymentStatus}</p><p>{bn ? 'মোট' : 'Total'}: {formatPoishaToBdt(order.totalPayablePoisha ?? 0, locale)} · COD: {formatPoishaToBdt(order.codCollectablePoisha ?? 0, locale)}</p><p>{order.customerName} · {order.customerEmail || (bn ? 'ইমেইল নেই' : 'No email')}</p><p>{order.districtNameBn}, {order.upazilaNameBn} — {order.streetAddress}{order.landmark ? ` (${order.landmark})` : ''}</p>{order.items?.map((item, index) => <p key={index}>{item.productNameBn} · {item.variantTitleBn} × {formatLocaleNumber(item.quantity, locale)}</p>)}</div>)}<h4 className="font-semibold">{bn ? 'যোগাযোগের ইতিহাস' : 'Inquiry history'}</h4>{contact.inquiries.length === 0 && <p className="text-muted">{bn ? 'বার্তা নেই' : 'No messages'}</p>}{contact.inquiries.map(inquiry => <div key={inquiry.id} className="border border-border rounded p-2 break-words"><strong>{inquiry.subject}</strong> · {label(statusLabels[inquiry.status], locale)}<p className="whitespace-pre-wrap">{inquiry.message}</p><button type="button" className="underline text-xs mt-1" onClick={() => setSelected(inquiry.id)}>{bn ? 'বার্তাটি খুলুন' : 'Open message'}</button></div>)}</> : <p className="text-muted">{bn ? 'ইতিহাস দেখতে যোগাযোগ নির্বাচন করুন।' : 'Select a contact to view history.'}</p>}</div></div>
+    </details>
     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">{([['মোট', 'Total', inquiries.length], ['অপঠিত', 'Unread', inquiries.filter(i => i.status === 'unread').length], ['চলমান', 'In progress', inquiries.filter(i => i.status === 'in_progress').length], ['সমাধান', 'Resolved', inquiries.filter(i => i.status === 'resolved').length]] as const).map(([b, e, n]) => <Card key={e} surface="bg" padding="sm"><p className="text-xs text-muted">{bn ? b : e}</p><strong className="text-xl">{formatLocaleNumber(n, locale)}</strong></Card>)}</div>
     <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)] gap-4 items-start">
       <Card surface="bg" padding="md" className="space-y-3 min-w-0">

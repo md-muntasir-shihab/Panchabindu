@@ -15,7 +15,7 @@ import { CUSTOMER_SESSION_COOKIE_NAME, verifyCustomerSessionToken } from '../../
 const checkoutQuerySchema = z.object({
   districtId: z.number().int().positive(),
   items: z.array(z.object({
-    productId: z.string().uuid(), variantId: z.string().uuid(),
+    productId: z.union([z.string().uuid(), z.string().regex(/^prod-\d{13}-\d{3}$/)]), variantId: z.union([z.string().uuid(), z.string().regex(/^var-\d{13}-\d{3}$/)]),
     quantity: z.number().int().min(1).max(100),
   })).min(1).max(100),
   promoCode: z.string().trim().max(64).optional(),

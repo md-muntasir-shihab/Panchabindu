@@ -11,6 +11,25 @@ import { boundedFormData, processProductImage } from '@/src/lib/media/product-im
 
 export const runtime = 'nodejs';
 
+export const GET = backendRoute(async (request: NextRequest) => {
+  const session = verifyAdminSessionToken(extractAdminSessionTokenFromRequest(request));
+  const actor = session && session.purpose !== 'enrollment' ? getActorSecurityContext(session.userId) : null;
+  if (!actor || actor.roleSlug !== session?.roleSlug || !isFirstLoginGateCleared(actor)) return Response.json({ success: false }, { status: 401 });
+  if (!['super_admin', 'vendor'].includes(actor.roleSlug)) return Response.json({ success: false }, { status: 403 });
+  const productId = new URL(request.url).searchParams.get('productId');
+  const state = readErpState();
+  const product = state.products.find(item => item.productId === productId);
+  if (!product || (actor.roleSlug === 'vendor' && actor.vendorId !== product.vendorId)) return Response.json({ success: false }, { status: 404 });
+  if (!isSupabaseAdminConfigured()) return Response.json({ success: false, code: 'STORAGE_NOT_CONFIGURED' }, { status: 503 });
+  const pending = (state.mediaAssets ?? []).filter(asset => asset.productId === productId && asset.status === 'pending');
+  const bucket = createSupabaseAdminClient().storage.from('product-staging');
+  const assets = await Promise.all(pending.map(async asset => {
+    const result = await bucket.createSignedUrl(asset.stagingPath, 600);
+    return { assetId: asset.assetId, productId: asset.productId, previewUrl: result.data?.signedUrl ?? null };
+  }));
+  return Response.json({ success: true, assets });
+});
+
 export const POST = backendRoute(async (request: NextRequest) => {
   const session = verifyAdminSessionToken(extractAdminSessionTokenFromRequest(request));
   const actor = session && session.purpose !== 'enrollment' ? getActorSecurityContext(session.userId) : null;

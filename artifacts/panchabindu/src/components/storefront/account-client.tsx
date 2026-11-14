@@ -660,7 +660,8 @@ export function AccountClient({
               <Input
                 label={locale === 'bn' ? 'মোবাইল নম্বর' : 'Mobile Number'}
                 value={loginPhone}
-                onChange={(e) => setLoginPhone(e.target.value)}
+                onChange={(e) => { setLoginPhone(e.target.value); setOtpCode(''); setSandboxOtpPreview(null); setOtpSentMessage(null); }}
+                type="tel" autoComplete="tel" inputMode="tel"
                 placeholder="01712345678"
                 required
               />
@@ -682,7 +683,8 @@ export function AccountClient({
               <Input
                 label={locale === 'bn' ? 'ওটিপি কোড (৬ সংখ্যা)' : 'OTP Code (6 Digits)'}
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
+                inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+                onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder={uiText("6-Digit OTP", locale)}
                 required
               />

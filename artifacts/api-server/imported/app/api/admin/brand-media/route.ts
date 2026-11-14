@@ -25,7 +25,7 @@ export const POST = backendRoute(async (request: NextRequest) => {
     const path = `brand/${assetId}.webp`;
     const bucket = createSupabaseAdminClient().storage.from('public-catalog-media');
     const uploaded = await bucket.upload(path, processed.bytes, { contentType: 'image/webp', upsert: false });
-    if (uploaded.error) throw new Error('UPLOAD_FAILED');
+    if (uploaded.error) throw new Error('STORAGE_UPLOAD_FAILED');
     onRuntimeRollback(() => bucket.remove([path]));
     const audit = readAdminStore();
     appendImmutableAuditLog(audit, { actorUserId: actor.userId, actorUsername: actor.username, actorRole: actor.roleSlug,
@@ -33,7 +33,8 @@ export const POST = backendRoute(async (request: NextRequest) => {
       summaryBn: 'সুপার অ্যাডমিন স্টোরের জন্য যাচাইকৃত ছবি আপলোড করেছেন।', metadata: { path, sha256: crypto.createHash('sha256').update(processed.bytes).digest('hex') } });
     writeAdminStore(audit);
     return Response.json({ success: true, url: bucket.getPublicUrl(path).data.publicUrl });
-  } catch {
-    return Response.json({ success: false, code: 'INVALID_IMAGE', errorBn: '৬ এমবির মধ্যে বৈধ JPG, PNG বা WebP ছবি দিন।', errorEn: 'Choose a valid JPG, PNG or WebP image under 6 MB.' }, { status: 422 });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'STORAGE_UPLOAD_FAILED') return Response.json({ success: false, code: 'STORAGE_UPLOAD_FAILED', errorBn: 'স্টোরেজে ছবি সংরক্ষণ করা যায়নি। স্টোরেজ কনফিগারেশন যাচাই করুন।', errorEn: 'Could not save the image. Check storage configuration.' }, { status: 503 });
+    return Response.json({ success: false, code: 'INVALID_IMAGE', errorBn: '৫ এমবির মধ্যে বৈধ JPG, PNG বা WebP ছবি দিন।', errorEn: 'Choose a valid JPG, PNG or WebP image under 5 MB.' }, { status: 422 });
   }
 });

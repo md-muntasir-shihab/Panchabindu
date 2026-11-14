@@ -53,6 +53,7 @@ import { useLocaleStore } from '@/store/use-locale-store';
 import { useCartStore } from '@/store/use-cart-store';
 import { Badge, Button, Card, EmptyState, Input } from '../ui/primitives';
 import { StorefrontShell } from './storefront-shell';
+import type { SavedCustomerAddress } from './account-client';
 
 export interface CheckoutClientProps {
   siteSettings: PublicSafeSiteSettingsDTO;
@@ -75,6 +76,10 @@ export function CheckoutClient({
   // Customer & Address Form State
   const [customerName, setCustomerName] = React.useState('');
   const [customerPhone, setCustomerPhone] = React.useState('');
+  const [customerEmail, setCustomerEmail] = React.useState('');
+  const [savedAddresses, setSavedAddresses] = React.useState<SavedCustomerAddress[]>([]);
+  const [districtConfirmed, setDistrictConfirmed] = React.useState(false);
+  const [thanaConfirmed, setThanaConfirmed] = React.useState(false);
   const [districtId, setDistrictId] = React.useState<number>(47); // Default Dhaka (47)
   // With 500+ upazilas/thanas, typing filters the list instead of scrolling it.
   const [thanaQuery, setThanaQuery] = React.useState('');
@@ -141,9 +146,19 @@ export function CheckoutClient({
     return () => controller.abort();
   }, []);
 
+  React.useEffect(() => {
+    try {
+      const saved: unknown = JSON.parse(localStorage.getItem('bg_saved_addresses') ?? '[]');
+      if (Array.isArray(saved)) setSavedAddresses(saved.filter((a): a is SavedCustomerAddress =>
+        Boolean(a && typeof a.id === 'string' && typeof a.label === 'string' && typeof a.streetAddress === 'string' && typeof a.landmark === 'string' && getDistrictById(a.districtId) && getThanasByDistrict(a.districtId).some(t => t.id === a.upazilaId))));
+    } catch { /* A missing or invalid local address never blocks checkout. */ }
+  }, []);
+
   // Keep upazilaId in sync when districtId changes
   const handleDistrictChange = (newDistrictId: number) => {
     setDistrictId(newDistrictId);
+    setDistrictConfirmed(true);
+    setThanaConfirmed(false);
     setThanaQuery('');
     const list = getThanasByDistrict(newDistrictId);
     if (list[0]) {
@@ -185,7 +200,7 @@ export function CheckoutClient({
 
   const checkoutData = checkoutResult?.data;
   const quote = checkoutData?.quote;
-  const quoteReady = checkoutResult?.key === quoteQuery && !quoteError;
+  const quoteReady = districtConfirmed && checkoutResult?.key === quoteQuery && !quoteError;
   const paymentMethods = checkoutData?.paymentMethods ?? [];
   const hasItemRequiringAdvance = quote?.hasItemRequiringAdvance ?? false;
   const selectedPayment = paymentMethods.find(method => method.code === paymentMethod &&
@@ -292,6 +307,10 @@ export function CheckoutClient({
       );
       return;
     }
+    if (!districtConfirmed || !thanaConfirmed) {
+      setSubmitError(locale === 'bn' ? 'জেলা ও উপজেলা / থানা নির্বাচন করুন।' : 'Please select your district and upazila or thana.');
+      return;
+    }
     if (streetAddress.trim().length < 6) {
       setSubmitError('বাড়ি, রোড ও এলাকার বিস্তারিত ঠিকানা লিখুন।');
       return;
@@ -326,6 +345,7 @@ export function CheckoutClient({
           idempotencyKey,
           customerName: customerName.trim(),
           customerPhone: normalizedPhone,
+          customerEmail: customerEmail.trim() || undefined,
           districtId,
           upazilaId,
           streetAddress: streetAddress.trim(),
@@ -424,7 +444,7 @@ export function CheckoutClient({
         {hasCartItems && (!quoteReady || quoteError) && (
           <Card className="space-y-3">
             <p role={quoteError ? 'alert' : 'status'} className="text-sm">
-              {quoteError ?? (locale === 'bn' ? 'ডেলিভারি ও পেমেন্টের হিসাব আসছে…' : 'Loading delivery and payment information…')}
+              {!districtConfirmed ? (locale === 'bn' ? 'ডেলিভারি চার্জ দেখতে নিচে জেলা নির্বাচন করুন।' : 'Select a district below to calculate delivery charges.') : quoteError ?? (locale === 'bn' ? 'ডেলিভারি ও পেমেন্টের হিসাব আসছে…' : 'Loading delivery and payment information…')}
             </p>
             {quoteError && <Button type="button" variant="outline" onClick={() => {
               setCheckoutResult(null);
@@ -505,6 +525,13 @@ export function CheckoutClient({
                   />
                 </div>
 
+                {savedAddresses.length > 0 && <div className="space-y-1"><label htmlFor="saved-checkout-address" className="text-xs font-medium">{locale === 'bn' ? 'সংরক্ষিত ঠিকানা (শুধু এই ব্রাউজারে)' : 'Saved address (this browser only)'}</label><select id="saved-checkout-address" className="w-full min-h-[44px] border border-border rounded bg-bg px-3" defaultValue="" onChange={e => {
+                  const address = savedAddresses.find(a => a.id === e.target.value);
+                  if (!address) return;
+                  setDistrictId(address.districtId); setDistrictConfirmed(true); setUpazilaId(address.upazilaId); setThanaConfirmed(true);
+                  setThanaQuery(''); setStreetAddress(address.streetAddress); setLandmark(address.landmark);
+                }}><option value="">{locale === 'bn' ? 'ঠিকানা নির্বাচন করুন' : 'Choose an address'}</option>{savedAddresses.map(a => <option key={a.id} value={a.id}>{a.label} — {a.streetAddress}</option>)}</select></div>}
+                <Input type="email" maxLength={254} label={locale === 'bn' ? 'ইমেইল (ঐচ্ছিক)' : 'Email (optional)'} placeholder="name@example.com" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
                 {/* Cascading 64 District -> Upazila Selectors */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -518,12 +545,12 @@ export function CheckoutClient({
                     </label>
                     <select
                       id="checkout-district"
-                      value={districtId}
-                      onChange={(e) =>
-                        handleDistrictChange(Number(e.target.value))
-                      }
+                      value={districtConfirmed ? districtId : ''}
+                      onChange={(e) => { if (e.target.value) handleDistrictChange(Number(e.target.value)); }}
+                      required
                       className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-bg text-ink border border-border rounded-[var(--radius-md)] focus:outline-2 focus:outline-ink"
                     >
+                      <option value="">{locale === 'bn' ? 'জেলা নির্বাচন করুন' : 'Choose district'}</option>
                       {BD_DISTRICTS.map((d) => (
                         <option key={d.id} value={d.id}>
                           {locale === 'bn' ? d.name_bn : d.name_en}
@@ -553,28 +580,21 @@ export function CheckoutClient({
                       onChange={(e) => {
                         const value = e.target.value;
                         setThanaQuery(value);
-                        const needle = value.trim().toLowerCase();
-                        const matches = needle
-                          ? upazilasForDistrict.filter(
-                              (u) =>
-                                u.name_en.toLowerCase().includes(needle) ||
-                                u.name_bn.includes(value.trim())
-                            )
-                          : upazilasForDistrict;
-                        if (matches.length > 0 && !matches.some((u) => u.id === upazilaId)) {
-                          setUpazilaId(matches[0].id);
-                        }
+                        const selected = upazilasForDistrict.find(u => u.id === upazilaId);
+                        if (value.trim() && selected && !`${selected.name_bn} ${selected.name_en}`.toLowerCase().includes(value.trim().toLowerCase())) setThanaConfirmed(false);
                       }}
                       className="min-h-[40px]"
                     />
                     <select
                       id="checkout-upazila"
-                      value={upazilaId}
-                      onChange={(e) => setUpazilaId(Number(e.target.value))}
+                      value={thanaConfirmed && visibleThanas.some(u => u.id === upazilaId) ? upazilaId : ''}
+                      onChange={(e) => { setUpazilaId(Number(e.target.value)); setThanaConfirmed(Boolean(e.target.value)); }}
+                      required disabled={!districtConfirmed}
                       className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-bg text-ink border border-border rounded-[var(--radius-md)] focus:outline-2 focus:outline-ink"
                     >
+                      <option value="">{locale === 'bn' ? 'উপজেলা / থানা নির্বাচন করুন' : 'Choose upazila / thana'}</option>
                       {visibleThanas.length === 0 ? (
-                        <option value={upazilaId}>
+                        <option value="" disabled>
                           {locale === 'bn'
                             ? 'এই নামে কোনো থানা পাওয়া যায়নি'
                             : 'No thana matches that name'}

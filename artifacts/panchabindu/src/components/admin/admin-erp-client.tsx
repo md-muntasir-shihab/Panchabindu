@@ -5389,7 +5389,7 @@ ${itemsList}
             TAB 10: PHASE 4C — SUPER ADMIN CONTROL CENTER, CREDENTIALS & CRON
            ================================================================== */}
         {activeTab === 'contact_management' && isSuperAdmin && (
-          <ContactManagementPanel locale={locale} inquiries={snapshot.inquiries ?? []} users={snapshot.users ?? []} onRefreshWorkspace={fetchWorkspace} />
+          <ContactManagementPanel locale={locale} inquiries={snapshot.inquiries ?? []} orders={orders} users={snapshot.users ?? []} onRefreshWorkspace={fetchWorkspace} />
         )}
 
         {activeTab === 'control_center' && isSuperAdmin && (

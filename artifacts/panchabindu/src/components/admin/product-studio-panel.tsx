@@ -152,6 +152,7 @@ export function ProductManagementStudioPanel({
   const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [imageUrlsDraft, setImageUrlsDraft] = useState('');
   const [stagedImages, setStagedImages] = useState<Array<{ assetId: string; productId: string; previewUrl: string }>>([]);
   const uploadController = React.useRef<AbortController | null>(null);
   React.useEffect(() => () => uploadController.current?.abort(), []);
@@ -168,7 +169,7 @@ export function ProductManagementStudioPanel({
       body.set('file', file);
       const response = await fetch('/api/media', { method: 'POST', body, signal: controller.signal });
       const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(isBn ? 'ছবি আপলোড হয়নি। ফাইল ও স্টোরেজ সংযোগ যাচাই করে আবার চেষ্টা করুন।' : 'Upload failed. Check the file and storage connection, then retry.');
+      if (!response.ok || !data.success) throw new Error(data.code === 'STORAGE_NOT_CONFIGURED' ? (isBn ? 'আপলোড স্টোরেজ কনফিগার করা নেই। সরাসরি HTTPS ছবির লিংক ব্যবহার করুন।' : 'Upload storage is not configured. Use a direct HTTPS image URL.') : (isBn ? 'ছবি আপলোড হয়নি। ফাইল ও স্টোরেজ সংযোগ যাচাই করুন।' : 'Upload failed. Check the file and storage connection.'));
       const previewResponse = await fetch(`/api/media/${data.assetId}`);
       const preview = await previewResponse.json();
       if (!previewResponse.ok || !preview.previewUrl) throw new Error(isBn ? 'ছবির প্রিভিউ পাওয়া যায়নি।' : 'The image preview is unavailable.');
@@ -185,6 +186,7 @@ export function ProductManagementStudioPanel({
       const data = await response.json();
       if (!response.ok || !data.success || !data.url) throw new Error(isBn ? 'ছবির অনুমোদন ব্যর্থ হয়েছে।' : 'Unable to approve this image.');
       setEditingProduct(product => product ? { ...product, images: [...new Set([...product.images, data.url])] } : product);
+      setImageUrlsDraft(current => [...new Set([...current.split(/[,\n]/).map(v => v.trim()).filter(Boolean), data.url])].join('\n'));
       setStagedImages(images => images.filter(image => image.assetId !== assetId));
       await onRefresh();
     } catch (error) { setFeedbackMsg({ type: 'error', text: error instanceof Error ? error.message : 'Approval failed.' }); }
@@ -243,6 +245,7 @@ export function ProductManagementStudioPanel({
 
   // Handle open editor for new product
   const handleAddNewProduct = () => {
+    setImageUrlsDraft('');
     const defaultVendor = vendors[0]?.vendorId ?? '';
     const defaultCat = categories[0]?.id ?? '';
     setEditingProduct({
@@ -266,8 +269,23 @@ export function ProductManagementStudioPanel({
     setIsEditorOpen(true);
   };
 
+  // Recover pending images after closing or reloading the editor.
+  const loadPendingImages = async (productId: string) => {
+    try {
+      const response = await fetch(`/api/media?productId=${encodeURIComponent(productId)}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.success && Array.isArray(data.assets)) setStagedImages(previous => [
+        ...previous.filter(image => image.productId !== productId),
+        ...data.assets.filter((asset: { previewUrl?: string }) => asset.previewUrl),
+      ]);
+    } catch { /* Editing by URL remains available without storage. */ }
+  };
+
   // Handle open editor for existing product
   const handleEditProduct = (prod: InternalProductRecord) => {
+    void loadPendingImages(prod.productId);
+    setImageUrlsDraft((prod.images ?? []).join('\n'));
     setEditingProduct({
       productId: prod.productId,
       vendorId: prod.vendorId,
@@ -283,7 +301,7 @@ export function ProductManagementStudioPanel({
       lowStockThreshold: prod.lowStockThreshold,
       leadTimeDays: prod.leadTimeDays,
       status: prod.status,
-      images: prod.images && prod.images.length > 0 ? [...prod.images] : ['https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80'],
+      images: [...(prod.images ?? [])],
       specs: prod.specs && prod.specs.length > 0 ? [...prod.specs] : [
         { labelBn: 'ম্যাটেরিয়াল', labelEn: 'Material', valueBn: '১০০% পিওর কটন', valueEn: '100% Pure Cotton' },
       ],
@@ -1535,16 +1553,16 @@ export function ProductManagementStudioPanel({
                     <img src={image.previewUrl} alt={isBn ? 'অনুমোদনের অপেক্ষায় ছবি' : 'Image awaiting approval'} className="h-24 w-24 object-contain" />
                     {userRole === 'super_admin' && <button type="button" disabled={isUploading} onClick={() => void approveImage(image.assetId)} className="text-xs underline">{isBn ? 'পর্যালোচনা শেষে অনুমোদন করুন' : 'Review and approve'}</button>}
                   </div>)}</div>
-                  <label className="font-semibold text-ink"><LocalizedText source={"ইমেজ গ্যালারি URL (কমা দিয়ে আলাদা করুন)"} area="admin" /></label>
+                  <label className="font-semibold text-ink"><LocalizedText source={"ইমেজ গ্যালারি URL (প্রতি লাইনে একটি বা কমা দিয়ে আলাদা করুন)"} area="admin" /></label>
                   <textarea
                     rows={2}
-                    value={editingProduct.images.join(', ')}
-                    onChange={(e) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        images: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
-                      })
-                    }
+                    value={imageUrlsDraft}
+                    placeholder={isBn ? 'প্রতি লাইনে একটি HTTPS ছবির লিংক' : 'One HTTPS image URL per line'}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setImageUrlsDraft(value);
+                      setEditingProduct({ ...editingProduct, images: value.split(/[,\n]/).map(s => s.trim()).filter(Boolean) });
+                    }}
                     className="w-full px-3 py-2 bg-bg border border-border text-ink font-mono text-[11px]"
                   />
                   <div className="flex gap-2 overflow-x-auto py-1">

@@ -188,6 +188,7 @@ export interface OrderGridRowDTO {
   orderNo: string;
   customerName: string;
   customerPhone: string;
+  customerEmail?: string | null;
   districtId: number;
   districtNameBn: string;
   upazilaId: number;

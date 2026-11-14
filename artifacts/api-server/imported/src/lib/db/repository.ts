@@ -1553,7 +1553,7 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
   // 1. Check Idempotency Key
   const idempotencyKey = principal ? `customer:${principal.customerId}:${input.idempotencyKey}` : input.idempotencyKey;
   const payloadHash = crypto.createHash('sha256').update(JSON.stringify({
-    phone: input.customerPhone, name: input.customerName, district: input.districtId,
+    phone: input.customerPhone, name: input.customerName, ...(input.customerEmail?.trim() ? { email: input.customerEmail.trim() } : {}), district: input.districtId,
     upazila: input.upazilaId, address: input.streetAddress, landmark: input.landmark,
     items: input.items.map(item => ({ variantId: item.variantId, quantity: item.quantity })),
     payment: input.paymentMethod, delivery: input.deliveryMethod, promo: input.promoCode,
@@ -1821,6 +1821,7 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
     orderNo,
     customerName: input.customerName,
     customerPhone: input.customerPhone,
+    customerEmail: input.customerEmail?.trim() || null,
     districtId: district.id,
     districtNameBn: district.name_bn,
     upazilaId: upazila.id,
@@ -2310,7 +2311,7 @@ export function upsertAdminProduct(input: {
   const targetSlug = baseSlug || `prod-${Date.now().toString().slice(-6)}`;
 
   const isEditing = Boolean(input.productId);
-  const productId = input.productId || `prod-${Date.now()}-${Math.floor(100 + Math.random() * 899)}`;
+  const productId = input.productId || crypto.randomUUID();
 
   // Never invent a vendor when the registry is missing, invalid or the ID is unknown.
   const p4b = readLocalJsonStore<{
@@ -2353,7 +2354,7 @@ export function upsertAdminProduct(input: {
       return { success: false, errorBn: 'বিক্রয়মূল্য সাপ্লায়ার প্রদেয় ও প্ল্যাটফর্ম মার্জিনের সমান হতে হবে।' };
     }
 
-    const variantId = v.variantId || `var-${Date.now()}-${Math.floor(100 + Math.random() * 899)}`;
+    const variantId = v.variantId || crypto.randomUUID();
     const publicSku = v.publicSku.trim().toUpperCase() || `BG-${targetSlug.slice(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 899)}`;
     const internalVendorSku = v.internalVendorSku?.trim().toUpperCase() || `${vendorCode}-${publicSku}`;
 
@@ -2379,7 +2380,7 @@ export function upsertAdminProduct(input: {
       titleBn: v.titleBn.trim() || 'স্ট্যান্ডার্ড',
       titleEn: v.titleEn?.trim() || v.titleBn.trim() || 'Standard',
       attributes: v.attributes ?? { Version: 'Standard' },
-      imageUrl: v.imageUrl || input.images?.[0] || 'https://picsum.photos/seed/bongo-prod/800/800',
+      imageUrl: v.imageUrl || input.images?.[0] || null,
       supplierCostPoisha: costPoisha,
       supplierProfitPoisha: profitPoisha,
       supplierPayablePoisha: payablePoisha,
@@ -2417,9 +2418,7 @@ export function upsertAdminProduct(input: {
       { labelBn: 'মান নিয়ন্ত্রণ', labelEn: 'Quality QC', valueBn: '১০০% অরিজিনাল ও ভেরিফাইড', valueEn: '100% Original & Verified' }
     ],
     variantAxes: Object.keys(normalizedVariants[0]?.attributes ?? { Version: 'Standard' }),
-    images: input.images && input.images.length > 0 ? input.images : [
-      normalizedVariants[0]?.imageUrl || 'https://picsum.photos/seed/bongo-prod/800/800'
-    ],
+    images: input.images && input.images.length > 0 ? input.images : normalizedVariants[0]?.imageUrl ? [normalizedVariants[0].imageUrl] : [],
     isFeatured: input.isFeatured ?? true,
     isFreeDelivery: input.isFreeDelivery ?? false,
     requiresAdvanceCourierCharge: input.requiresAdvanceCourierCharge ?? false,

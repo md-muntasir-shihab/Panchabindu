@@ -19,7 +19,7 @@ export const GET = backendRoute(async (request: NextRequest, context: Context) =
     return Response.json({ success: false }, { status: 404 });
   }
   if (!isSupabaseAdminConfigured()) return Response.json({ success: false, code: 'STORAGE_NOT_CONFIGURED' }, { status: 503 });
-  const result = await createSupabaseAdminClient().storage.from('product-staging').createSignedUrl(asset.stagingPath, 60);
+  const result = await createSupabaseAdminClient().storage.from('product-staging').createSignedUrl(asset.stagingPath, 600);
   if (result.error) return Response.json({ success: false }, { status: 503 });
   return Response.json({ success: true, assetId, status: asset.status, previewUrl: result.data.signedUrl });
 });
