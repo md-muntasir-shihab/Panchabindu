@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 const base = process.env.TEST_APP_URL || 'http://localhost:80';
 async function page(path) {
-  const result = await fetch(`${base}/api/page-data?path=${encodeURIComponent(path)}`);
+  const result = await fetch(`${base}/api/page-data?pagePath=${encodeURIComponent(path)}`);
   const body = await result.json();
   assert.equal(body.success, true, `${path}: ${JSON.stringify(body)}`);
   return { result, data: body.data };
@@ -11,7 +11,7 @@ async function page(path) {
 
 test('all original public and protected page loaders remain reachable', async () => {
   for (const [path, expected] of Object.entries({
-    '/': 'home', '/shop': 'shop', '/search': 'search', '/categories': 'categories',
+    '/': 'home', '/shop': 'shop', '/search': 'search',
     '/checkout': 'checkout', '/account': 'account', '/contact': 'contact',
     '/admin': 'admin', '/vendor': 'vendor', '/order-tracking/invalid-token': 'tracking',
   })) {

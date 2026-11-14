@@ -452,11 +452,6 @@ export function buildStorefrontSitemapEntries(baseUrl: string): Array<{
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/categories`,
-      changeFrequency: 'weekly' as const,
-      priority: 0.85,
-    },
-    {
       url: `${baseUrl}/search`,
       changeFrequency: 'weekly' as const,
       priority: 0.75,

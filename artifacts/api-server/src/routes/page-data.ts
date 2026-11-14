@@ -24,7 +24,7 @@ const checkoutQuerySchema = z.object({
 /** Replaces server-rendered page loaders without sending private repository state to the browser. */
 export const pageData = backendRoute(async (request: ApiRequest) => {
   const url = new URL(request.url);
-  const pathname = (url.searchParams.get('path') || '/').replace(/\/$/, '') || '/';
+  const pathname = (url.searchParams.get('pagePath') || url.searchParams.get('path') || '/').replace(/\/$/, '') || '/';
   const parts = pathname.split('/').filter(Boolean).map(decodeURIComponent);
   const { siteSettings, categories, products } = getPublicStorefrontData();
   const common = { siteSettings, categories };
@@ -39,7 +39,7 @@ export const pageData = backendRoute(async (request: ApiRequest) => {
   if (['product', 'category', 'legal', 'order-tracking'].includes(page) && parts.length !== 2) page = 'not-found';
   else if (parts.length > 1 && !['product', 'category', 'legal', 'order-tracking'].includes(page)) page = 'not-found';
   switch (page) {
-    case 'home': case 'account': case 'categories': break;
+    case 'home': case 'account': break;
     case 'checkout': {
       let input: z.infer<typeof checkoutQuerySchema> | undefined;
       const query = url.searchParams.get('q');

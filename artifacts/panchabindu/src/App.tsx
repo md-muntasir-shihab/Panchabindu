@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { Route, Switch, useLocation, useSearch, Router as WouterRouter } from 'wouter';
+import { Route, Switch, Redirect, useLocation, useSearch, Router as WouterRouter } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
 import NotFound from '@/pages/not-found';
 import LoadingPage from '@/pages/loading';
@@ -8,7 +8,6 @@ import ErrorPage from '@/pages/error-page';
 import LegalPage from '@/pages/legal-page';
 import { HomepageClient } from '@/components/storefront/homepage-client';
 import { AccountClient } from '@/components/storefront/account-client';
-import { CategoriesClient } from '@/components/storefront/categories-client';
 import { CategoryDetailClient } from '@/components/storefront/category-detail-client';
 import { CheckoutClient } from '@/components/storefront/checkout-client';
 import { ContactClient } from '@/components/storefront/contact-client';
@@ -33,7 +32,7 @@ interface PageDataPayload {
 
 async function fetchPageData(path: string, search: string): Promise<PageDataPayload> {
   const sp = new URLSearchParams(search);
-  const qs = new URLSearchParams({ path });
+  const qs = new URLSearchParams({ pagePath: path });
   const q = sp.get('q');
   const category = sp.get('category');
   if (q !== null) qs.set('q', q);
@@ -62,8 +61,6 @@ function renderPage(data: PageDataPayload): ReactNode {
       return <AccountClient {...(p as ComponentProps<typeof AccountClient>)} />;
     case 'admin':
       return <AdminErpClient {...(p as ComponentProps<typeof AdminErpClient>)} />;
-    case 'categories':
-      return <CategoriesClient {...(p as ComponentProps<typeof CategoriesClient>)} />;
     case 'checkout':
       return <CheckoutClient {...(p as ComponentProps<typeof CheckoutClient>)} />;
     case 'contact':
@@ -144,7 +141,7 @@ function Router() {
         <Route path="/" component={KeyedPage} />
         <Route path="/account" component={KeyedPage} />
         <Route path="/admin" component={KeyedPage} />
-        <Route path="/categories" component={KeyedPage} />
+        <Route path="/categories"><Redirect to="/shop" /></Route>
         <Route path="/checkout" component={KeyedPage} />
         <Route path="/contact" component={KeyedPage} />
         <Route path="/search" component={KeyedPage} />

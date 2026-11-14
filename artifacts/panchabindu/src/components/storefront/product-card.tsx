@@ -1,4 +1,5 @@
 'use client';
+import { productImageUrl, productImageFallback } from '@/lib/storefront/product-image';
 
 // src/components/storefront/product-card.tsx
 // Botanical Heritage Calm — Frameless 4:5 Portrait Product Card
@@ -39,8 +40,8 @@ export function ProductCard({ product }: ProductCardProps) {
   const isOutOfStock = totalStock <= 0;
   const isLowStock = !isOutOfStock && totalStock <= product.lowStockThreshold;
 
-  const primaryImage = product.images[0] ?? '/assets/product-placeholder.svg';
-  const secondaryImage = product.images[1] ?? primaryImage;
+  const primaryImage = productImageUrl(product.images[0]);
+  const secondaryImage = product.images[1] ? productImageUrl(product.images[1]) : primaryImage;
   const activeImage = isHovered ? secondaryImage : primaryImage;
 
   const displayName = locale === 'bn' ? product.nameBn : product.nameEn;
@@ -99,10 +100,7 @@ export function ProductCard({ product }: ProductCardProps) {
               src={activeImage}
               alt={displayName}
               referrerPolicy="no-referrer"
-              onError={(event) => {
-                event.currentTarget.onerror = null;
-                event.currentTarget.src = '/assets/product-placeholder.svg';
-              }}
+              onError={productImageFallback}
               className="object-cover transition-transform duration-500 ease-out group-hover:scale-105" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
           </Link>
 
