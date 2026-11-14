@@ -1543,7 +1543,7 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
   const state = readErpState();
 
   const principal = customerSessionToken ? verifyCustomerSessionToken(customerSessionToken) : null;
-  if (customerSessionToken && (!principal || principal.phone !== input.customerPhone)) {
+  if (customerSessionToken && (!principal || (principal.phone && principal.phone !== input.customerPhone))) {
     return { success: false, errorBn: 'অ্যাকাউন্টের পরিচয় যাচাই ব্যর্থ হয়েছে।' };
   }
   if (!['cod', 'bkash_manual'].includes(input.paymentMethod)) {

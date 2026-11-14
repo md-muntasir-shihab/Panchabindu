@@ -584,7 +584,10 @@ export interface CustomerOtpChallengeRecord {
 export interface CustomerPrincipal {
   customerId: string;
   phone: string;
-  phoneConfirmationStatus: 'SANDBOX_TEST_ONLY' | 'VERIFIED';
+  phoneConfirmationStatus: 'SANDBOX_TEST_ONLY' | 'VERIFIED' | 'UNVERIFIED';
+  authMethod?: 'password';
+  email?: string | null;
+  passwordHash?: string;
   isActive: boolean;
 }
 
@@ -833,8 +836,55 @@ export function verifyCustomerSessionToken(
     return null;
   }
   const principal = store.customerPrincipals.find((p) => p.customerId === found.customerId && p.phone === found.phone && p.isActive);
-  if (!principal || (process.env.NODE_ENV === 'production' && principal.phoneConfirmationStatus !== 'VERIFIED')) return null;
+  if (!principal || (process.env.NODE_ENV === 'production' && principal.phoneConfirmationStatus !== 'VERIFIED' && !(principal.authMethod === 'password' && principal.passwordHash))) return null;
   return found;
+}
+
+/** Password accounts have their own immutable principal. Unverified identifiers
+ * must never claim an existing OTP principal or historical orders by phone. */
+const CUSTOMER_DUMMY_PASSWORD_HASH = hashPassword(crypto.randomBytes(24).toString('hex'));
+function issuePasswordSession(store: PersistedSessionStore, principal: CustomerPrincipal) {
+  const now = Date.now();
+  const session: CustomerSessionRecord = { sessionId: crypto.randomBytes(24).toString('hex'), customerId: principal.customerId,
+    phone: principal.phone, createdAt: new Date(now).toISOString(), expiresAt: new Date(now + CUSTOMER_SESSION_TTL_MS).toISOString(), revokedAt: null };
+  store.customerSessions.unshift(session);
+  writeSessionStore(store);
+  return { sessionToken: signSessionId(session.sessionId, 'customer'), session, identifier: principal.email || principal.phone };
+}
+
+export function registerPasswordCustomer(input: { phone?: string; email?: string; password: string }) {
+  const store = readSessionStore();
+  if ((input.phone && store.customerPrincipals.some(p => p.phone === input.phone)) ||
+      (input.email && store.customerPrincipals.some(p => p.email?.toLowerCase() === input.email))) {
+    return { success: false as const, errorBn: 'এই নম্বর বা ইমেইল দিয়ে অ্যাকাউন্ট ইতিমধ্যে রয়েছে। লগইন করুন অথবা সহায়তা নিন।' };
+  }
+  const principal: CustomerPrincipal = { customerId: crypto.randomUUID(), phone: input.phone || '', email: input.email || null,
+    phoneConfirmationStatus: 'UNVERIFIED', authMethod: 'password', passwordHash: hashPassword(input.password), isActive: true };
+  store.customerPrincipals.push(principal);
+  return { success: true as const, ...issuePasswordSession(store, principal) };
+}
+
+export function loginPasswordCustomer(identifier: string, password: string) {
+  const store = readSessionStore();
+  const principal = store.customerPrincipals.find(p => p.authMethod === 'password' && (p.phone === identifier || p.email === identifier));
+  const valid = verifyPassword(password, principal?.passwordHash ?? CUSTOMER_DUMMY_PASSWORD_HASH);
+  if (!principal || !principal.isActive || !valid) return { success: false as const, errorBn: 'নম্বর/ইমেইল বা পাসওয়ার্ড সঠিক নয়।' };
+  return { success: true as const, ...issuePasswordSession(store, principal) };
+}
+
+export function getCustomerSessionProfile(session: CustomerSessionRecord): { identifier: string; email: string | null; phone: string } | null {
+  const principal = readSessionStore().customerPrincipals.find(p => p.customerId === session.customerId && p.isActive);
+  return principal ? { identifier: principal.email || principal.phone, email: principal.email ?? null, phone: principal.phone } : null;
+}
+
+export function changeCustomerPassword(session: CustomerSessionRecord, currentPassword: string, newPassword: string): boolean {
+  const store = readSessionStore();
+  const principal = store.customerPrincipals.find(p => p.customerId === session.customerId && p.authMethod === 'password' && p.isActive);
+  if (!principal || !verifyPassword(currentPassword, principal.passwordHash)) return false;
+  principal.passwordHash = hashPassword(newPassword);
+  for (const current of store.customerSessions) if (current.customerId === principal.customerId) current.revokedAt = new Date().toISOString();
+  writeSessionStore(store);
+  return true;
 }
 
 export function revokeCustomerSession(token: string | undefined | null): void {

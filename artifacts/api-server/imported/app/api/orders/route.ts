@@ -89,7 +89,7 @@ async function handlePOST(req: NextRequest) {
       );
     }
 
-    if (parsed.data.customerPhone !== session.phone) {
+    if (session.phone && parsed.data.customerPhone !== session.phone) {
       return NextResponse.json(
         { success: false, errorBn: 'অর্ডারের ফোন নম্বরটি লগইন করা অ্যাকাউন্টের সঙ্গে মিলতে হবে।' },
         { status: 403 }

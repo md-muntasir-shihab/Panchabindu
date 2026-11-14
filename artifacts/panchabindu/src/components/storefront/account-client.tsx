@@ -8,7 +8,7 @@ import { LocalizedText } from '@/components/ui/localized-text';
 // src/components/storefront/account-client.tsx
 // Professional Customer Account & User ID Dashboard:
 //   - Customer Profile Banner with Avatar, User ID, and Quick Stats
-//   - Tabbed Navigation: Order Tracking, Phone OTP Orders, Saved Addresses, Wishlist
+//   - Tabbed Navigation: Order Tracking, Account Orders, Saved Addresses, Wishlist
 //   - 1-Click Reorder, Address Management, & Live Order Status Lookup
 
 import * as React from 'react';
@@ -89,20 +89,13 @@ export function AccountClient({
   const [orderLookupNo, setOrderLookupNo] = React.useState('');
   const [recentOrders, setRecentOrders] = React.useState<string[]>([]);
 
-  // Phone + OTP Login for Customer Order History (Phase 1 Hardened)
   const [loginPhone, setLoginPhone] = React.useState('');
-  const [otpCode, setOtpCode] = React.useState('');
-  const [otpSentMessage, setOtpSentMessage] = React.useState<string | null>(null);
-  const [sandboxOtpPreview, setSandboxOtpPreview] = React.useState<string | null>(null);
-  const [smsProviderStatus, setSmsProviderStatus] = React.useState<
-    'INTEGRATED' | 'NOT_INTEGRATED' | 'SANDBOX_TEST_ONLY'
-  >('NOT_INTEGRATED');
+  const [password, setPassword] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [registering, setRegistering] = React.useState(false);
   const [verifiedPhone, setVerifiedPhone] = React.useState<string | null>(null);
-  const [customerOrders, setCustomerOrders] = React.useState<
-    PublicOrderTrackingDTO[]
-  >([]);
+  const [customerOrders, setCustomerOrders] = React.useState<PublicOrderTrackingDTO[]>([]);
   const [authLoading, setAuthLoading] = React.useState(false);
-  const [otpRequestLoading, setOtpRequestLoading] = React.useState(false);
   const [authError, setAuthError] = React.useState<string | null>(null);
 
   // Saved Delivery Addresses
@@ -140,14 +133,13 @@ export function AccountClient({
         const data = await response.json() as {
           authenticated?: boolean;
           customerPhone?: string;
-          providerStatus?: 'INTEGRATED' | 'NOT_INTEGRATED' | 'SANDBOX_TEST_ONLY';
+          identifier?: string;
           orders?: PublicOrderTrackingDTO[];
         };
         if (controller.signal.aborted) return;
-        setSmsProviderStatus(data.providerStatus ?? 'NOT_INTEGRATED');
         if (data.authenticated && typeof data.customerPhone === 'string') {
-          setVerifiedPhone(data.customerPhone);
-          setLoginPhone(data.customerPhone);
+          setVerifiedPhone(data.identifier || data.customerPhone);
+          setLoginPhone(data.identifier || data.customerPhone);
           setCustomerOrders(Array.isArray(data.orders) ? data.orders : []);
         }
       })
@@ -194,9 +186,7 @@ export function AccountClient({
       if (!response.ok || !data.success) throw new Error('Logout failed');
       setVerifiedPhone(null);
       setCustomerOrders([]);
-      setOtpCode('');
-      setSandboxOtpPreview(null);
-      setOtpSentMessage(null);
+      setPassword('');
       refreshPageData();
     } catch {
       setAuthError('লগআউট করা যায়নি। আবার চেষ্টা করুন।');
@@ -213,79 +203,27 @@ export function AccountClient({
     }
   };
 
-  const handleRequestOtp = async () => {
-    setAuthError(null);
-    setOtpSentMessage(null);
-    setSandboxOtpPreview(null);
-    setOtpRequestLoading(true);
+  const handlePasswordAuth = async (e: React.FormEvent) => {
+    e.preventDefault(); setAuthError(null); setAuthLoading(true);
     try {
-      const res = await fetch('/api/account/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'request_otp',
-          customerPhone: loginPhone,
-        }),
-      });
-      const data = (await res.json()) as {
-        success: boolean;
-        providerStatus?: 'INTEGRATED' | 'NOT_INTEGRATED' | 'SANDBOX_TEST_ONLY';
-        sandboxOtpPreview?: string;
-        messageBn?: string;
-        errorBn?: string;
-      };
-      if (data.providerStatus) {
-        setSmsProviderStatus(data.providerStatus);
-      }
-      if (!res.ok || !data.success) {
-        setAuthError(data.errorBn ?? 'ওটিপি পাঠানো সম্ভব হয়নি।');
-      } else {
-        setOtpSentMessage(data.messageBn ?? 'ওটিপি কোড জেনারেট হয়েছে।');
-        if (data.sandboxOtpPreview) {
-          setSandboxOtpPreview(data.sandboxOtpPreview);
-          setOtpCode(data.sandboxOtpPreview);
-        }
-      }
-    } catch {
-      setAuthError('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।');
-    } finally {
-      setOtpRequestLoading(false);
-    }
+      const identifier = loginPhone.trim();
+      const payload = registering ? { action: 'register', ...(identifier.includes('@') ? { email: identifier } : { phone: identifier }), password } : { action: 'login', identifier, password };
+      const res = await fetch('/api/account/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json() as { success: boolean; errorBn?: string; errorEn?: string; identifier?: string; orders?: PublicOrderTrackingDTO[] };
+      if (!res.ok || !data.success) setAuthError((locale === 'bn' ? data.errorBn : data.errorEn) ?? (locale === 'bn' ? 'লগইন করা যায়নি।' : 'Unable to sign in.'));
+      else { setVerifiedPhone(data.identifier || identifier); setCustomerOrders(data.orders ?? []); setPassword(''); if (new URLSearchParams(window.location.search).get('returnTo') === 'checkout') navigate('/checkout'); }
+    } catch { setAuthError(locale === 'bn' ? 'নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।' : 'Network error. Please try again.'); }
+    finally { setAuthLoading(false); }
   };
-
-  const handleVerifyPhoneOrders = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError(null);
-    setAuthLoading(true);
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault(); setAuthLoading(true); setAuthError(null);
     try {
-      const res = await fetch('/api/account/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'verify_otp',
-          customerPhone: loginPhone,
-          otpCode,
-        }),
-      });
-      const data = (await res.json()) as {
-        success: boolean;
-        errorBn?: string;
-        customerPhone?: string;
-        orders?: PublicOrderTrackingDTO[];
-      };
-      if (!res.ok || !data.success) {
-        setAuthError(data.errorBn ?? 'ভেরিফিকেশন ব্যর্থ হয়েছে।');
-      } else {
-        setVerifiedPhone(data.customerPhone ?? loginPhone);
-        setCustomerOrders(data.orders ?? []);
-        setOtpSentMessage(null);
-        if (new URLSearchParams(window.location.search).get('returnTo') === 'checkout') navigate('/checkout');
-      }
-    } catch {
-      setAuthError('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।');
-    } finally {
-      setAuthLoading(false);
-    }
+      const res = await fetch('/api/account/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'change_password', currentPassword: password, newPassword }) });
+      const data = await res.json() as { success: boolean; errorBn?: string; errorEn?: string };
+      if (!res.ok || !data.success) setAuthError((locale === 'bn' ? data.errorBn : data.errorEn) ?? 'Password change failed.');
+      else { setVerifiedPhone(null); setCustomerOrders([]); setPassword(''); setNewPassword(''); setAuthError(locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তিত হয়েছে। আবার লগইন করুন।' : 'Password changed. Please sign in again.'); }
+    } catch { setAuthError(locale === 'bn' ? 'নেটওয়ার্ক ত্রুটি।' : 'Network error.'); }
+    finally { setAuthLoading(false); }
   };
 
   const handleSubmitReturnRequest = async (ord: PublicOrderTrackingDTO) => {
@@ -432,7 +370,7 @@ export function AccountClient({
                   {verifiedPhone ? (
                     <Badge status="success">
                       <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
-                      {smsProviderStatus === 'SANDBOX_TEST_ONLY' ? 'Sandbox session' : locale === 'bn' ? 'লগইন করা আছে' : 'Signed in'}
+                      {locale === 'bn' ? 'লগইন করা আছে' : 'Signed in'}
                     </Badge>
                   ) : (
                     <Badge status="neutral">
@@ -443,7 +381,7 @@ export function AccountClient({
 
                 <div className="flex items-center gap-2 text-xs text-muted">
                   <span className="font-mono">
-                    {locale === 'bn' ? 'মোবাইল: ' : 'Phone: '}{verifiedPhone ?? '—'}
+                    {locale === 'bn' ? 'অ্যাকাউন্ট: ' : 'Account: '}{verifiedPhone ?? '—'}
                   </span>
                   <button
                     type="button"
@@ -522,7 +460,7 @@ export function AccountClient({
             }`}
           >
             <Smartphone className="w-4 h-4" aria-hidden="true" />
-            <span>{locale === 'bn' ? 'অর্ডার হিস্ট্রি ও ওটিপি' : 'Order History'}</span>
+            <span>{locale === 'bn' ? 'অর্ডার হিস্ট্রি' : 'Order History'}</span>
             {customerOrders.length > 0 && (
               <Badge status="info">
                 {formatLocaleNumber(customerOrders.length, locale)}
@@ -624,100 +562,24 @@ export function AccountClient({
           </Card>
         )}
 
-        {/* 4. Tab Panel 2: Phone OTP Order History */}
+        {/* 4. Tab Panel 2: Account Order History */}
         {activeTab === 'orders' && (
           <Card surface="bg" padding="md" className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-              <h2 className="text-base sm:text-lg font-bold text-ink flex items-center gap-2">
-                <Smartphone className="w-5 h-5" aria-hidden="true" />
-                <span>
-                  {locale === 'bn'
-                    ? 'মোবাইল ওটিপি দিয়ে লগইন'
-                    : 'Sign in with phone OTP'}
-                </span>
-              </h2>
-              <Badge
-                status={
-                  smsProviderStatus === 'INTEGRATED'
-                    ? 'success'
-                    : smsProviderStatus === 'NOT_INTEGRATED'
-                    ? 'warning'
-                    : 'info'
-                }
-              >
-                {smsProviderStatus === 'INTEGRATED'
-                  ? 'SMS Gateway: Connected'
-                  : smsProviderStatus === 'NOT_INTEGRATED'
-                  ? 'SMS Gateway: NOT_INTEGRATED'
-                  : 'SMS Gateway: NOT_INTEGRATED (Sandbox OTP)'}
-              </Badge>
-            </div>
-
-            <form
-              onSubmit={handleVerifyPhoneOrders}
-              className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"
-            >
-              <Input
-                label={locale === 'bn' ? 'মোবাইল নম্বর' : 'Mobile Number'}
-                value={loginPhone}
-                onChange={(e) => { setLoginPhone(e.target.value); setOtpCode(''); setSandboxOtpPreview(null); setOtpSentMessage(null); }}
-                type="tel" autoComplete="tel" inputMode="tel"
-                placeholder="01712345678"
-                required
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="md"
-                disabled={otpRequestLoading}
-                onClick={handleRequestOtp}
-              >
-                {otpRequestLoading
-                  ? locale === 'bn'
-                    ? 'পাঠানো হচ্ছে...'
-                    : 'Requesting...'
-                  : locale === 'bn'
-                  ? '১. ওটিপি কোড চান'
-                  : '1. Request OTP'}
-              </Button>
-              <Input
-                label={locale === 'bn' ? 'ওটিপি কোড (৬ সংখ্যা)' : 'OTP Code (6 Digits)'}
-                value={otpCode}
-                inputMode="numeric" autoComplete="one-time-code" maxLength={6}
-                onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder={uiText("6-Digit OTP", locale)}
-                required
-              />
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                disabled={authLoading || otpCode.trim().length !== 6}
-              >
-                {authLoading
-                  ? locale === 'bn'
-                    ? 'যাচাই হচ্ছে...'
-                    : 'Verifying...'
-                  : locale === 'bn'
-                  ? '২. যাচাই করে লগইন করুন'
-                  : '2. Verify & Sign In'}
-              </Button>
-            </form>
-
-            {otpSentMessage && (
-              <p className="text-xs font-medium text-ink bg-surface border border-border p-2.5 rounded-[var(--radius-sm)]">
-                {otpSentMessage}
-                {sandboxOtpPreview ? (
-                  <span className="ml-2 font-mono font-bold">
-                    <LocalizedText source={"[Sandbox OTP:"} area="storefront" />{" "}{sandboxOtpPreview}]
-                  </span>
-                ) : null}
-              </p>
-            )}
-
-            {authError && (
-              <p className="text-xs font-medium text-danger">{authError}</p>
-            )}
+            <h2 className="text-lg font-bold">{locale === 'bn' ? 'গ্রাহক অ্যাকাউন্ট' : 'Customer account'}</h2>
+            {!verifiedPhone ? <>
+              <form onSubmit={handlePasswordAuth} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                <Input label={locale === 'bn' ? 'ফোন নম্বর অথবা ইমেইল' : 'Phone number or email'} value={loginPhone} onChange={e => setLoginPhone(e.target.value)} autoComplete="username" required />
+                <Input label={locale === 'bn' ? 'পাসওয়ার্ড' : 'Password'} type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={registering ? 10 : 1} maxLength={128} autoComplete={registering ? 'new-password' : 'current-password'} required />
+                <Button type="submit" disabled={authLoading}>{registering ? (locale === 'bn' ? 'অ্যাকাউন্ট তৈরি করুন' : 'Create account') : (locale === 'bn' ? 'লগইন' : 'Sign in')}</Button>
+              </form>
+              <button type="button" className="text-sm underline" onClick={() => { setRegistering(!registering); setAuthError(null); }}>{registering ? (locale === 'bn' ? 'আগেই অ্যাকাউন্ট আছে? লগইন' : 'Already have an account? Sign in') : (locale === 'bn' ? 'নতুন অ্যাকাউন্ট তৈরি করুন' : 'Create an account')}</button>
+              {registering && <p className="text-xs">{locale === 'bn' ? 'পাসওয়ার্ড অন্তত ১০ অক্ষরের হতে হবে।' : 'Use at least 10 characters for your password.'}</p>}
+            </> : <form onSubmit={handleChangePassword} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+              <Input label={locale === 'bn' ? 'বর্তমান পাসওয়ার্ড' : 'Current password'} type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
+              <Input label={locale === 'bn' ? 'নতুন পাসওয়ার্ড' : 'New password'} type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength={10} maxLength={128} autoComplete="new-password" required />
+              <Button type="submit" variant="outline" disabled={authLoading}>{locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তন' : 'Change password'}</Button>
+            </form>}
+            {authError && <p className="text-xs font-medium text-danger">{authError}</p>}
 
             {verifiedPhone && (
               <div className="space-y-3 pt-3 border-t border-border">
@@ -725,7 +587,7 @@ export function AccountClient({
                   <ShieldCheck className="w-4 h-4" aria-hidden="true" />
                   {locale === 'bn'
                     ? `${verifiedPhone} নম্বরের অর্ডার তালিকা (${customerOrders.length} টি):`
-                    : `Verified Orders for ${verifiedPhone} (${customerOrders.length}):`}
+                    : `Orders for ${verifiedPhone} (${customerOrders.length}):`}
                 </p>
                 {customerOrders.length === 0 ? (
                   <p className="text-xs text-muted">

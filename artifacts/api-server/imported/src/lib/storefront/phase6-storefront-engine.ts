@@ -70,6 +70,7 @@ export interface CustomerReturnRequestInput {
   orderNo: string;
   secureTrackingToken?: string;
   verifiedCustomerPhone?: string;
+  authenticatedCustomerId?: string;
   reasonCode: CustomerReturnReasonCode;
   detailsBn: string;
   proofReferenceUrl?: string;
@@ -307,7 +308,8 @@ export function submitCustomerReturnRequest(
   const phoneMatches =
     Boolean(normInputPhone) && normOrderPhone === normInputPhone;
 
-  if (!tokenMatches && !phoneMatches) {
+  const customerMatches = Boolean(input.authenticatedCustomerId && order.customerId === input.authenticatedCustomerId);
+  if (!tokenMatches && !phoneMatches && !customerMatches) {
     return {
       success: false,
       code: 'UNAUTHORIZED_OWNERSHIP',

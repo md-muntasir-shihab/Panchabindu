@@ -418,9 +418,9 @@ export function CheckoutClient({
         {sessionStatus !== 'authenticated' && (
           <Card className="space-y-3">
             <p role="status" className="text-sm">
-              {sessionStatus === 'loading' ? 'অ্যাকাউন্ট যাচাই হচ্ছে…' : sessionStatus === 'error' ? 'অ্যাকাউন্ট যাচাই করা যায়নি। লগইন পেজ থেকে আবার চেষ্টা করুন।' : 'অর্ডার নিশ্চিত করতে আগে লগইন করুন। আপনার কার্ট সংরক্ষিত থাকবে।'}
+              {sessionStatus === 'loading' ? (locale === 'bn' ? 'অ্যাকাউন্ট যাচাই হচ্ছে…' : 'Checking your account…') : sessionStatus === 'error' ? (locale === 'bn' ? 'অ্যাকাউন্ট যাচাই করা যায়নি। লগইন পেজ থেকে আবার চেষ্টা করুন।' : 'Could not check your account. Please sign in again.') : (locale === 'bn' ? 'অর্ডার নিশ্চিত করতে আগে লগইন করুন। আপনার কার্ট সংরক্ষিত থাকবে।' : 'Sign in before placing your order. Your cart will be saved.')}
             </p>
-            {sessionStatus !== 'loading' && <Link href="/account?tab=orders&returnTo=checkout" className="inline-flex min-h-[44px] items-center font-semibold underline">অ্যাকাউন্টে লগইন করুন</Link>}
+            {sessionStatus !== 'loading' && <Link href="/account?tab=orders&returnTo=checkout" className="inline-flex min-h-[44px] items-center font-semibold underline">{locale === 'bn' ? 'অ্যাকাউন্টে লগইন করুন' : 'Sign in to your account'}</Link>}
           </Card>
         )}
         <div className="flex items-center justify-between border-b border-border pb-4">

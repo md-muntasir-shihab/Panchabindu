@@ -183,8 +183,8 @@ export function OrderTrackingClient({
             description={
               trackingErrorBn ??
               (locale === 'bn'
-                ? 'নিরাপত্তার স্বার্থে শুধুমাত্র সিকিউর ট্র্যাকিং টোকেন (trk_...) অথবা মাই অ্যাকাউন্টে ওটিপি ভেরিফাই করে অর্ডার ট্র্যাক করা যায়।'
-                : 'For customer privacy, public tracking requires your secure tracking token (trk_...) or OTP verification in My Account.')
+                ? 'নিরাপত্তার স্বার্থে শুধুমাত্র সিকিউর ট্র্যাকিং টোকেন (trk_...) অথবা মাই অ্যাকাউন্টে লগইন করে অর্ডার ট্র্যাক করা যায়।'
+                : 'For customer privacy, public tracking requires your secure tracking token (trk_...) or signing in to My Account.')
             }
             actionLabel={dict.common.continueShopping}
             onAction={() => navigate('/')}
