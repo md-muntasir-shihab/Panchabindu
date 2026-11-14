@@ -48,6 +48,7 @@ export interface OrderTrackingClientProps {
   initialOrderNo: string;
   order: PublicOrderTrackingDTO | null;
   trackingErrorBn?: string | null;
+  signedIn?: boolean;
 }
 
 const TRACKING_STEPS: Array<{
@@ -112,6 +113,7 @@ export function OrderTrackingClient({
   initialOrderNo,
   order,
   trackingErrorBn,
+  signedIn = false,
 }: OrderTrackingClientProps) {
   const [, navigate] = useLocation();
   const locale = useLocaleStore((s) => s.locale);
@@ -147,19 +149,20 @@ export function OrderTrackingClient({
             </Link>
             <h1 className="text-xl sm:text-2xl font-bold text-ink">
               {locale === 'bn'
-                ? 'অর্ডার কনফার্মেশন ও লাইভ ট্র্যাকিং'
-                : 'Order Confirmation & Live Tracking'}
+                ? 'অর্ডারের বিস্তারিত'
+                : 'Order details'}
             </h1>
+            <p className="mt-1 text-sm text-muted">{locale === 'bn' ? 'এখানে সাইটে নথিভুক্ত অবস্থা দেখানো হয়; লাইভ কুরিয়ার ট্র্যাকিং সংযুক্ত নয়।' : 'This shows the status recorded by the store; live courier tracking is not connected.'}</p>
           </div>
 
-          <form onSubmit={handleLookupSubmit} className="flex items-center gap-2">
+          <form onSubmit={handleLookupSubmit} className="flex items-center gap-2 w-full sm:w-auto min-w-0">
             <input
               type="text"
               value={lookupInput}
               onChange={(e) => setLookupInput(e.target.value)}
-              placeholder="trk_..."
-              aria-label={uiText("Tracking Token", locale)}
-              className="min-h-[40px] px-3 py-1.5 text-xs font-mono bg-surface text-ink border border-border rounded-[var(--radius-md)]"
+              placeholder={locale === 'bn' ? 'অর্ডার আইডি অথবা trk_...' : 'Order ID or trk_...'}
+              aria-label={locale === 'bn' ? 'অর্ডার আইডি বা ট্র্যাকিং টোকেন' : 'Order ID or tracking token'}
+              className="min-w-0 flex-1 sm:w-56 min-h-[44px] px-3 py-1.5 text-xs font-mono bg-surface text-ink border border-border rounded-[var(--radius-md)]"
             />
             <Button
               type="submit"
@@ -173,29 +176,20 @@ export function OrderTrackingClient({
         </div>
 
         {!order ? (
-          <EmptyState
-            icon={<FileText className="w-6 h-6" aria-hidden="true" />}
-            title={
-              locale === 'bn'
-                ? `ট্র্যাকিং তথ্য "${initialOrderNo}" পাওয়া যায়নি`
-                : `Tracking Reference "${initialOrderNo}" Unavailable`
-            }
-            description={
-              trackingErrorBn ??
-              (locale === 'bn'
-                ? 'নিরাপত্তার স্বার্থে শুধুমাত্র সিকিউর ট্র্যাকিং টোকেন (trk_...) অথবা মাই অ্যাকাউন্টে লগইন করে অর্ডার ট্র্যাক করা যায়।'
-                : 'For customer privacy, public tracking requires your secure tracking token (trk_...) or signing in to My Account.')
-            }
-            actionLabel={dict.common.continueShopping}
-            onAction={() => navigate('/')}
-          />
+          <Card surface="surface" padding="md" className="space-y-3">
+            <h2 className="font-semibold">{!initialOrderNo ? (locale === 'bn' ? 'অর্ডার ট্র্যাক করুন' : 'Track an order') : (locale === 'bn' ? 'অর্ডার পাওয়া যায়নি' : 'Order unavailable')}</h2>
+            <p className="text-sm text-muted">{trackingErrorBn || (locale === 'bn'
+              ? 'অর্ডার আইডি দিয়ে দেখতে অর্ডার করার সময় ব্যবহৃত অ্যাকাউন্টে লগইন করুন। অতিথি অর্ডারের জন্য সিকিউর ট্র্যাকিং লিংক বা টোকেন ব্যবহার করুন।'
+              : 'To track by order ID, sign in to the account used to place the order. For guest orders, use the secure tracking link or token.')}</p>
+            {!signedIn && <Link href={`/account?returnTo=tracking&orderNo=${encodeURIComponent(initialOrderNo)}`} className="inline-flex min-h-[44px] items-center px-4 border border-border rounded-[var(--radius-md)] font-semibold">{locale === 'bn' ? 'লগইন করুন' : 'Sign in'}</Link>}
+          </Card>
         ) : (
           <div className="space-y-6">
             {/* Order Header Banner */}
             <Card surface="surface" padding="md" className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs text-muted">
                       {locale === 'bn' ? 'অর্ডার নম্বর:' : 'Order No:'}
                     </span>
@@ -211,7 +205,7 @@ export function OrderTrackingClient({
                           : 'info'
                       }
                     >
-                      {order.status.toUpperCase()}
+                      {(locale === 'bn' ? { pending_confirmation: 'নিশ্চিতকরণ বাকি', confirmed: 'নিশ্চিত', packed: 'প্যাকিং সম্পন্ন', shipped: 'প্রেরিত', out_for_delivery: 'ডেলিভারির পথে', delivered: 'ডেলিভারি সম্পন্ন', cancelled: 'বাতিল', return_initiated: 'রিটার্ন প্রক্রিয়াধীন', returned: 'ফেরত' } : { pending_confirmation: 'Pending confirmation', confirmed: 'Confirmed', packed: 'Packed', shipped: 'Dispatched', out_for_delivery: 'Out for delivery', delivered: 'Delivered', cancelled: 'Cancelled', return_initiated: 'Return in progress', returned: 'Returned' })[order.status] ?? order.status}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted">
@@ -295,6 +289,8 @@ export function OrderTrackingClient({
               )}
             </Card>
 
+            <Link href="/account?tab=orders" className="inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold underline"><ArrowLeft className="w-4 h-4" aria-hidden="true" />{locale === 'bn' ? 'আমার অর্ডারে ফিরে যান' : 'Back to my orders'}</Link>
+
             {/* Customer Details & Financial Summary */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card surface="bg" padding="md" className="space-y-3">
@@ -362,7 +358,8 @@ export function OrderTrackingClient({
                       {formatPoishaToBdt(order.totalPayablePoisha, locale)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-xs pt-1">
+                  {order.advancePaidPoisha > 0 && <div className="flex justify-between gap-3 text-xs pt-1"><span className="text-muted">{locale === 'bn' ? 'যাচাইকৃত অগ্রিম' : 'Verified advance'}</span><span className="font-semibold tabular-nums">{formatPoishaToBdt(order.advancePaidPoisha, locale)}</span></div>}
+                  <div className="flex justify-between gap-3 text-xs pt-1">
                     <span className="text-muted">
                       {locale === 'bn'
                         ? 'ডেলিভারির সময় পরিশোধযোগ্য (COD):'
@@ -385,7 +382,7 @@ export function OrderTrackingClient({
                 {order.items.map((item, idx) => (
                   <div
                     key={idx}
-                    className="py-2.5 flex items-center justify-between gap-4"
+                    className="py-2.5 flex flex-wrap items-start justify-between gap-3"
                   >
                     <div>
                       <p className="font-semibold text-ink">

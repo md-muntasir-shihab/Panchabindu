@@ -25,7 +25,6 @@ import {
 } from '@/src/lib/admin/phase4a-service';
 import {
   auditAndCloseVendorContract,
-  autoRecordOrderDeliveredOrReturned,
   computeCourier360Summary,
   confirmBatchHandoverShipped,
   createPickupBatchAndManifest,
@@ -1043,14 +1042,6 @@ async function handlePOST(req: NextRequest) {
 
     if (payload.operation === 'order_grid_action') {
       const res = executeOrderGridAction(ctx, payload);
-      if (
-        res.success && payload.actionType === 'update_status' &&
-        (payload.newStatus === 'delivered' || payload.newStatus === 'returned')
-      ) {
-        for (const result of res.results) {
-          if (result.ok) autoRecordOrderDeliveredOrReturned(ctx, result.orderNo, payload.newStatus);
-        }
-      }
       return NextResponse.json(res);
     }
 
@@ -1141,22 +1132,22 @@ async function handlePOST(req: NextRequest) {
 
     if (payload.operation === 'create_pickup_batch') {
       const res = createPickupBatchAndManifest(ctx, payload);
-      return NextResponse.json(res, { status: res.success ? 201 : 400 });
+      return NextResponse.json({ ...res, code: res.success ? undefined : 'NOT_INTEGRATED' }, { status: res.success ? 201 : 503 });
     }
 
     if (payload.operation === 'confirm_batch_handover') {
       const res = confirmBatchHandoverShipped(ctx, payload);
-      return NextResponse.json(res, { status: res.success ? 200 : 400 });
+      return NextResponse.json({ ...res, code: res.success ? undefined : 'NOT_INTEGRATED' }, { status: res.success ? 200 : 503 });
     }
 
     if (payload.operation === 'settle_courier_remittance') {
       const res = recordCourierRemittanceSettlement(ctx, payload);
-      return NextResponse.json(res, { status: res.success ? 201 : 400 });
+      return NextResponse.json({ ...res, code: res.success ? undefined : 'UNSAFE_LEGACY_WORKFLOW' }, { status: res.success ? 201 : 503 });
     }
 
     if (payload.operation === 'process_four_way_return') {
       const res = processFourWayOrderReturn(ctx, payload);
-      return NextResponse.json(res, { status: res.success ? 200 : 400 });
+      return NextResponse.json({ ...res, code: res.success ? undefined : 'UNSAFE_LEGACY_WORKFLOW' }, { status: res.success ? 200 : 503 });
     }
 
     if (payload.operation === 'request_vendor_payout') {

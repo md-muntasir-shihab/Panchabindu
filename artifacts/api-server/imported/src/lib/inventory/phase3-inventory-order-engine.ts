@@ -1154,15 +1154,18 @@ export function computeOrthogonalOrderState(
     } else if (returnedCount > 0) {
       fulfillmentStatus = 'partially_returned';
       shipmentStatus = 'delivered';
-      settlementStatus = 'escrow_locked_hold';
+      settlementStatus = activeGroups.some((g) => g.settlementStatus === 'escrow_locked_hold')
+        ? 'escrow_locked_hold' : 'unsettled';
     } else if (deliveredCount === activeGroups.length) {
       fulfillmentStatus = 'delivered';
       shipmentStatus = 'delivered';
-      settlementStatus = 'escrow_locked_hold';
+      settlementStatus = activeGroups.some((g) => g.settlementStatus === 'escrow_locked_hold')
+        ? 'escrow_locked_hold' : 'unsettled';
     } else if (deliveredCount > 0) {
       fulfillmentStatus = 'partially_delivered';
       shipmentStatus = 'out_for_delivery';
-      settlementStatus = 'escrow_locked_hold';
+      settlementStatus = activeGroups.some((g) => g.settlementStatus === 'escrow_locked_hold')
+        ? 'escrow_locked_hold' : 'unsettled';
     } else if (shippedCount === activeGroups.length) {
       fulfillmentStatus = 'shipped';
       shipmentStatus = 'handed_over_in_transit';
@@ -1763,7 +1766,7 @@ export function executeOrderStateTransition(params: {
       if (params.toState === 'delivered') {
         g.fulfillmentStatus = 'delivered';
         g.shipmentStatus = 'delivered';
-        g.settlementStatus = 'escrow_locked_hold';
+        // Delivery status alone does not prove a vendor settlement or remittance.
       }
       if (params.toState === 'cancelled') {
         g.fulfillmentStatus = 'cancelled';

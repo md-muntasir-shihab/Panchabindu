@@ -27,7 +27,6 @@ import {
   writeAdminStore,
 } from './phase4a-service';
 import {
-  autoRecordOrderDeliveredOrReturned,
   readPhase4BStore,
   recordCourierRemittanceSettlement,
 } from './phase4b-service';
@@ -766,120 +765,11 @@ export function processCourierWebhookPayload(
   }
 ): {
   success: boolean;
-  code?: 'ORDER_NOT_FOUND' | 'DUPLICATE_EVENT';
+  code?: 'ORDER_NOT_FOUND' | 'DUPLICATE_EVENT' | 'NOT_INTEGRATED';
   errorBn?: string;
   event?: CourierWebhookEventRecord;
 } {
-  const erp = readErpState();
-  const store = readPhase6Store();
-  const adminStore = readAdminStore();
-
-  const ord = erp.orders.find(
-    (o) => o.orderNo.toUpperCase() === input.orderNo.trim().toUpperCase()
-  );
-  if (!ord) {
-    return {
-      success: false,
-      code: 'ORDER_NOT_FOUND',
-      errorBn: `অর্ডার ${input.orderNo} খুঁজে পাওয়া যায়নি।`,
-    };
-  }
-
-  const eventKey = input.eventId
-    ? `${input.provider}:${input.eventId.trim()}`
-    : `${input.provider}:${ord.orderNo}:${input.rawStatus}:${input.consignmentId ?? ''}`;
-
-  if (input.enforceReplayDeduplication || input.eventId) {
-    const duplicate = store.webhookEvents.find(
-      (e) => e.signatureVerified && e.eventKey === eventKey
-    );
-    if (duplicate) {
-      return {
-        success: false,
-        code: 'DUPLICATE_EVENT',
-        errorBn: `ডুপ্লিকেট/রিপ্লে ওয়েবহুক ইভেন্ট (${eventKey}) প্রত্যাখ্যান করা হয়েছে।`,
-      };
-    }
-  }
-
-  let mappedStatus: OrderStatus = ord.status;
-  if (
-    input.rawStatus === 'delivered' ||
-    input.rawStatus === 'partial_delivered'
-  ) {
-    mappedStatus = 'delivered';
-  } else if (input.rawStatus === 'returned') {
-    mappedStatus = 'returned';
-  } else if (input.rawStatus === 'in_transit' || input.rawStatus === 'hold') {
-    mappedStatus = 'shipped';
-  }
-
-  ord.status = mappedStatus;
-  ord.courierProvider = input.provider;
-  if (input.consignmentId) {
-    ord.consignmentId = input.consignmentId;
-  }
-  writeErpState(erp);
-
-  let escrowPromoted = false;
-  let remittanceRecorded = false;
-
-  if (mappedStatus === 'delivered' || mappedStatus === 'returned') {
-    const autoRes = autoRecordOrderDeliveredOrReturned(
-      ctx,
-      ord.orderNo,
-      mappedStatus
-    );
-    escrowPromoted = autoRes.escrowPromoted;
-    remittanceRecorded = autoRes.ledgerRecordAdded;
-  }
-
-  const collectedCodPoisha =
-    input.collectedCodPoisha ??
-    (mappedStatus === 'delivered' ? ord.codCollectablePoisha : 0);
-
-  const event: CourierWebhookEventRecord = {
-    webhookId: `whk-${Date.now()}-${Math.floor(100 + Math.random() * 899)}`,
-    eventKey,
-    provider: input.provider,
-    consignmentId:
-      ord.consignmentId ?? input.consignmentId ?? `CNS-${ord.orderNo}`,
-    orderNo: ord.orderNo,
-    rawStatus: input.rawStatus,
-    mappedStatus,
-    collectedCodPoisha,
-    signatureVerified: true,
-    escrowPromoted,
-    remittanceRecorded,
-    rejectedReasonBn: null,
-    summaryBn: `${input.provider.toUpperCase()} ওয়েবহুক (${input.rawStatus} → ${mappedStatus}): অর্ডার ${ord.orderNo} আপডেট হয়েছে${
-      escrowPromoted ? ' এবং ভেন্ডর এসক্রো ৭-দিন হোল্ড বাকেটে প্রমোট হয়েছে' : ''
-    }।`,
-    receivedAt: new Date().toISOString(),
-  };
-
-  store.webhookEvents.unshift(event);
-  writePhase6Store(store);
-
-  appendImmutableAuditLog(adminStore, {
-    actorUserId: ctx.userId,
-    actorUsername: ctx.username,
-    actorRole: ctx.roleSlug,
-    actionCode: 'COURIER_WEBHOOK_PROCESSED',
-    targetType: 'order',
-    targetId: ord.orderNo,
-    summaryBn: event.summaryBn,
-    metadata: {
-      provider: input.provider,
-      rawStatus: input.rawStatus,
-      mappedStatus,
-      collectedCodPoisha,
-      eventKey,
-    },
-  });
-  writeAdminStore(adminStore);
-
-  return { success: true, event };
+  return { success: false, code: 'NOT_INTEGRATED', errorBn: 'যাচাইকৃত কুরিয়ার ওয়েবহুক ইন্টিগ্রেশন চালু নেই; অর্ডার পরিবর্তন করা হয়নি।' };
 }
 
 /**

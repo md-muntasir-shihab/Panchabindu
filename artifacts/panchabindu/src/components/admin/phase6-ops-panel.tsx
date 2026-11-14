@@ -786,11 +786,12 @@ export function Phase6LiveOpsPanel({
 
               <div className="flex items-center justify-between pt-2">
                 <span className="text-[11px] font-mono text-muted">
-                  <LocalizedText source={"Header: x-webhook-signature (HMAC-SHA256 Verified)"} area="admin" />{" "}</span>
+                  ওয়েবহুক ইন্টিগ্রেশন চালু নেই / Webhook integration unavailable{" "}</span>
                 <Button
                   size="sm"
                   variant="primary"
-                  disabled={isBusy}
+                  disabled
+                  title="ওয়েবহুক চালু নেই / Webhook unavailable"
                   onClick={() => void handleSimulateWebhook()}
                 >
                   <Truck className="w-3.5 h-3.5 mr-1.5" />
@@ -883,7 +884,8 @@ export function Phase6LiveOpsPanel({
                 <Button
                   size="sm"
                   variant="primary"
-                  disabled={isBusy}
+                  disabled
+                  title="রেমিট্যান্স রিকনসিলিয়েশন বন্ধ / Remittance reconciliation unavailable"
                   onClick={() => void handleReconcileCsv()}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />

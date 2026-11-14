@@ -36,7 +36,8 @@ export const pageData = backendRoute(async (request: ApiRequest) => {
     contact: 'যোগাযোগ', search: 'পণ্য অনুসন্ধান', shop: 'সকল পণ্য',
     tracking: 'অর্ডার ট্র্যাকিং',
   };
-  if (['product', 'category', 'legal', 'order-tracking'].includes(page) && parts.length !== 2) page = 'not-found';
+  if (['product', 'category', 'legal'].includes(page) && parts.length !== 2) page = 'not-found';
+  else if (page === 'order-tracking' && parts.length > 2) page = 'not-found';
   else if (parts.length > 1 && !['product', 'category', 'legal', 'order-tracking'].includes(page)) page = 'not-found';
   switch (page) {
     case 'home': case 'account': break;
@@ -85,18 +86,20 @@ export const pageData = backendRoute(async (request: ApiRequest) => {
     }
     case 'order-tracking': {
       page = 'tracking';
-      const reference = parts[1].trim();
-      const result = getPublicOrderTrackingByToken(reference);
-      let order = result.allowed ? result.order : null;
-      let trackingErrorBn = result.errorBn || null;
-      if (result.code === 'SEQUENTIAL_ORDER_NO_FORBIDDEN') {
-        const token = request.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
-        if (verifyCustomerSessionToken(token)) {
-          order = getAuthenticatedCustomerOrders(token).find(o => o.orderNo.toUpperCase() === reference.toUpperCase()) || null;
-        }
+      const reference = (parts[1] || '').trim();
+      const sessionToken = request.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
+      const signedIn = Boolean(verifyCustomerSessionToken(sessionToken));
+      let order = null;
+      let trackingErrorBn: string | null = null;
+      if (reference) {
+        const result = getPublicOrderTrackingByToken(reference);
+        order = result.allowed ? result.order ?? null : null;
+        if (result.code === 'SEQUENTIAL_ORDER_NO_FORBIDDEN') {
+          if (signedIn) order = getAuthenticatedCustomerOrders(sessionToken).find(o => o.orderNo.toUpperCase() === reference.toUpperCase()) || null;
+        } else if (!order) trackingErrorBn = result.errorBn || null;
       }
-      if (order) trackingErrorBn = null;
-      props = { ...common, initialOrderNo: reference, order, trackingErrorBn };
+      props = { ...common, initialOrderNo: reference, order, trackingErrorBn, signedIn };
+
       break;
     }
     default: page = 'not-found'; props = {};
@@ -111,7 +114,7 @@ export const pageData = backendRoute(async (request: ApiRequest) => {
       openGraph: { title: `${product.nameBn} | ${siteSettings.brandNameEn}`, description: product.descriptionBn, images: product.images[0] ? [product.images[0]] : [] },
     });
   }
-  return ApiResponse.json({ success: true, data: { page, props, metadata, jsonLd } }, { status: page === 'not-found' ? 404 : 200 });
+  return ApiResponse.json({ success: true, data: { page, props, metadata, jsonLd } }, { status: page === 'not-found' ? 404 : 200, headers: { 'Cache-Control': 'private, no-store' } });
 });
 
 export const manifest = backendRoute(async () => {

@@ -39,6 +39,7 @@ async function fetchPageData(path: string, search: string): Promise<PageDataPayl
   if (category !== null) qs.set('category', category);
   const response = await fetch(`/api/page-data?${qs.toString()}`, {
     credentials: 'include',
+    cache: 'no-store',
     headers: { Accept: 'application/json' },
   });
   let body: { success?: boolean; data?: PageDataPayload } | null = null;
@@ -98,6 +99,7 @@ function PageDataRoute() {
   const search = useSearch();
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['page-data', location, search],
+    gcTime: location.startsWith('/order-tracking') ? 0 : 5 * 60_000,
     queryFn: () => fetchPageData(location, search),
     placeholderData: (prev, prevQuery) =>
       prevQuery && prevQuery.queryKey[1] === location ? prev : undefined,
@@ -149,6 +151,7 @@ function Router() {
         <Route path="/vendor" component={KeyedPage} />
         <Route path="/category/:slug" component={KeyedPage} />
         <Route path="/legal/:slug" component={KeyedPage} />
+        <Route path="/order-tracking" component={KeyedPage} />
         <Route path="/order-tracking/:orderNo" component={KeyedPage} />
         <Route path="/product/:slug" component={KeyedPage} />
         <Route component={NotFound} />

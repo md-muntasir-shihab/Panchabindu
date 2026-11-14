@@ -14,6 +14,7 @@ import { LocalizedText } from '@/components/ui/localized-text';
 import * as React from 'react';
 import { Link } from 'wouter';
 import { useLocation } from 'wouter';
+import { useQueryClient } from '@tanstack/react-query';
 import { usePageDataRefresh } from '@/lib/page-data/context';
 import {
   User,
@@ -74,6 +75,7 @@ export function AccountClient({
 }: AccountClientProps) {
   const [, navigate] = useLocation();
   const refreshPageData = usePageDataRefresh();
+  const queryClient = useQueryClient();
   const locale = useLocaleStore((s) => s.locale);
   const dict = useLocaleStore((s) => s.t());
 
@@ -97,7 +99,10 @@ export function AccountClient({
   const [verifiedPhone, setVerifiedPhone] = React.useState<string | null>(null);
   const [customerOrders, setCustomerOrders] = React.useState<PublicOrderTrackingDTO[]>([]);
   const [authLoading, setAuthLoading] = React.useState(false);
+  const [sessionLoading, setSessionLoading] = React.useState(true);
+  const [sessionRetry, setSessionRetry] = React.useState(0);
   const [authError, setAuthError] = React.useState<string | null>(null);
+  const [authNotice, setAuthNotice] = React.useState<string | null>(null);
 
   // Saved Delivery Addresses
   const [savedAddresses, setSavedAddresses] = React.useState<
@@ -128,6 +133,7 @@ export function AccountClient({
 
   React.useEffect(() => {
     const controller = new AbortController();
+    setSessionLoading(true);
     fetch('/api/account/orders', { cache: 'no-store', signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error('Account unavailable');
@@ -147,8 +153,8 @@ export function AccountClient({
         }
       })
       .catch(() => {
-        if (!controller.signal.aborted) setAuthError('অ্যাকাউন্টের তথ্য লোড করা যায়নি। আবার চেষ্টা করুন।');
-      });
+        if (!controller.signal.aborted) setAuthError(locale === 'bn' ? 'অ্যাকাউন্টের তথ্য লোড করা যায়নি। আবার চেষ্টা করুন।' : 'Could not load your account. Please try again.');
+      }).finally(() => { if (!controller.signal.aborted) setSessionLoading(false); });
     const frame = window.requestAnimationFrame(() => {
       try {
         const recent: unknown = JSON.parse(window.localStorage.getItem('bg_recent_orders') ?? '[]');
@@ -162,7 +168,7 @@ export function AccountClient({
       if (tab === 'orders' || tab === 'addresses' || tab === 'wishlist' || tab === 'tracking') setActiveTab(tab);
     });
     return () => { controller.abort(); window.cancelAnimationFrame(frame); };
-  }, []);
+  }, [sessionRetry, locale]);
 
   const handleCopyUserId = async () => {
     if (!verifiedPhone) return;
@@ -187,7 +193,9 @@ export function AccountClient({
       });
       const data = await response.json() as { success?: boolean };
       if (!response.ok || !data.success) throw new Error('Logout failed');
+      queryClient.removeQueries({ predicate: query => query.queryKey[0] === 'page-data' && String(query.queryKey[1]).startsWith('/order-tracking') });
       setVerifiedPhone(null);
+      setLoginPhone('');
       setCustomerOrders([]);
       setDeliveryProfile(null);
       setPassword('');
@@ -208,24 +216,24 @@ export function AccountClient({
   };
 
   const handlePasswordAuth = async (e: React.FormEvent) => {
-    e.preventDefault(); setAuthError(null); setAuthLoading(true);
+    e.preventDefault(); setAuthError(null); setAuthNotice(null); setAuthLoading(true);
     try {
       const identifier = loginPhone.trim();
       const payload = registering ? { action: 'register', ...(identifier.includes('@') ? { email: identifier } : { phone: identifier }), password } : { action: 'login', identifier, password };
       const res = await fetch('/api/account/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json() as { success: boolean; errorBn?: string; errorEn?: string; identifier?: string; deliveryProfile?: { customerName: string; customerPhone: string; customerEmail: string | null; streetAddress: string; landmark: string } | null; orders?: PublicOrderTrackingDTO[] };
       if (!res.ok || !data.success) setAuthError((locale === 'bn' ? data.errorBn : data.errorEn) ?? (locale === 'bn' ? 'লগইন করা যায়নি।' : 'Unable to sign in.'));
-      else { setVerifiedPhone(data.identifier || identifier); setCustomerOrders(data.orders ?? []); setDeliveryProfile(data.deliveryProfile ?? null); setPassword(''); refreshPageData(); if (new URLSearchParams(window.location.search).get('returnTo') === 'checkout') navigate('/checkout'); }
+      else { queryClient.removeQueries({ predicate: query => query.queryKey[0] === 'page-data' && String(query.queryKey[1]).startsWith('/order-tracking') }); setVerifiedPhone(data.identifier || identifier); setCustomerOrders(data.orders ?? []); setDeliveryProfile(data.deliveryProfile ?? null); setPassword(''); refreshPageData(); const params = new URLSearchParams(window.location.search); if (params.get('returnTo') === 'checkout') navigate('/checkout'); else if (params.get('returnTo') === 'tracking') { const reference = params.get('orderNo') || ''; navigate(reference ? `/order-tracking/${encodeURIComponent(reference)}` : '/order-tracking'); } }
     } catch { setAuthError(locale === 'bn' ? 'নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।' : 'Network error. Please try again.'); }
     finally { setAuthLoading(false); }
   };
   const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault(); setAuthLoading(true); setAuthError(null);
+    e.preventDefault(); setAuthLoading(true); setAuthError(null); setAuthNotice(null);
     try {
       const res = await fetch('/api/account/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'change_password', currentPassword: password, newPassword }) });
       const data = await res.json() as { success: boolean; errorBn?: string; errorEn?: string };
       if (!res.ok || !data.success) setAuthError((locale === 'bn' ? data.errorBn : data.errorEn) ?? 'Password change failed.');
-      else { setVerifiedPhone(null); setCustomerOrders([]); setDeliveryProfile(null); setPassword(''); setNewPassword(''); setAuthError(locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তিত হয়েছে। আবার লগইন করুন।' : 'Password changed. Please sign in again.'); }
+      else { setVerifiedPhone(null); setCustomerOrders([]); setDeliveryProfile(null); setPassword(''); setNewPassword(''); setAuthNotice(locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তিত হয়েছে। আবার লগইন করুন।' : 'Password changed. Please sign in again.'); }
     } catch { setAuthError(locale === 'bn' ? 'নেটওয়ার্ক ত্রুটি।' : 'Network error.'); }
     finally { setAuthLoading(false); }
   };
@@ -346,7 +354,7 @@ export function AccountClient({
 
   return (
     <StorefrontShell siteSettings={siteSettings} categories={categories}>
-      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-8 pb-24 md:pb-12">
+      <div className="max-w-6xl min-w-0 mx-auto px-4 py-5 sm:py-8 space-y-5 sm:space-y-7 pb-24 md:pb-12">
         {/* 1. Customer User ID Header Banner */}
         <Card
           surface="surface"
@@ -354,19 +362,19 @@ export function AccountClient({
           className="border border-border rounded-[var(--radius-lg)] bg-surface shadow-sm"
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
+            <div className="flex items-start min-w-0 gap-3 sm:gap-4">
               <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-ink text-bg flex items-center justify-center font-bold text-xl sm:text-2xl shadow-md shrink-0 border-2 border-border">
                 <User className="w-7 h-7 sm:w-8 sm:h-8" aria-hidden="true" />
               </div>
 
-              <div className="space-y-1">
+              <div className="min-w-0 space-y-2">
                 {verifiedPhone && <Button variant="outline" size="sm" onClick={handleLogout} isLoading={authLoading}>{locale === 'bn' ? 'লগআউট' : 'Log out'}</Button>}
-                <div className="flex items-center gap-2">
-                  <h1 className="text-lg sm:text-2xl font-bold text-ink tracking-tight">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-lg sm:text-2xl font-bold text-ink tracking-tight break-words">
                     {verifiedPhone
                       ? locale === 'bn'
-                        ? `গ্রাহক: ${verifiedPhone}`
-                        : `Customer: ${verifiedPhone}`
+                        ? 'আমার অ্যাকাউন্ট'
+                        : 'My account'
                       : locale === 'bn'
                       ? 'মাই অ্যাকাউন্ট ও ড্যাশবোর্ড'
                       : 'My Account & Dashboard'}
@@ -384,13 +392,13 @@ export function AccountClient({
                 </div>
 
                 <div className="flex items-center gap-2 text-xs text-muted">
-                  <span className="font-mono">
+                  <span className="font-mono break-all min-w-0">
                     {locale === 'bn' ? 'অ্যাকাউন্ট: ' : 'Account: '}{verifiedPhone ?? '—'}
                   </span>
                   <button
                     type="button"
                     onClick={handleCopyUserId}
-                    aria-label={uiText("Copy phone number", locale)}
+                    aria-label={locale === 'bn' ? 'অ্যাকাউন্ট পরিচয় কপি করুন' : 'Copy account identifier'}
                     disabled={!verifiedPhone}
                     className="p-1 hover:text-ink cursor-pointer inline-flex items-center gap-1"
                   >
@@ -404,7 +412,7 @@ export function AccountClient({
               </div>
             </div>
 
-            {verifiedPhone && deliveryProfile && <div className="text-xs text-muted space-y-1">
+            {verifiedPhone && deliveryProfile && <div className="min-w-0 break-words text-xs text-muted space-y-1">
               <p className="font-bold">{locale === 'bn' ? 'সর্বশেষ অর্ডারের তথ্য' : 'Latest order details'}</p>
               <p>{deliveryProfile.customerName} · {deliveryProfile.customerPhone}{deliveryProfile.customerEmail ? ` · ${deliveryProfile.customerEmail}` : ''}</p>
               <p>{deliveryProfile.streetAddress}{deliveryProfile.landmark ? `, ${deliveryProfile.landmark}` : ''}</p>
@@ -416,10 +424,7 @@ export function AccountClient({
                   {locale === 'bn' ? 'মোট অর্ডার' : 'Total Orders'}
                 </p>
                 <p className="text-sm sm:text-base font-bold text-ink tabular-nums mt-0.5">
-                  {formatLocaleNumber(
-                    customerOrders.length,
-                    locale
-                  )}
+                  {verifiedPhone ? formatLocaleNumber(customerOrders.length, locale) : '—'}
                 </p>
               </div>
 
@@ -445,10 +450,11 @@ export function AccountClient({
         </Card>
 
         {/* 2. Dashboard Tab Navigation */}
-        <div className="flex border-b border-border gap-2 overflow-x-auto scrollbar-none pb-0.5">
+        <nav aria-label={locale === 'bn' ? 'অ্যাকাউন্ট মেনু' : 'Account navigation'} className="flex border-b border-border gap-1 overflow-x-auto pb-0.5">
           <button
             type="button"
             onClick={() => setActiveTab('tracking')}
+            aria-current={activeTab === 'tracking' ? 'page' : undefined}
             className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-colors cursor-pointer flex items-center gap-2 ${
               activeTab === 'tracking'
                 ? 'border-ink text-ink bg-surface rounded-t-[var(--radius-md)]'
@@ -456,12 +462,13 @@ export function AccountClient({
             }`}
           >
             <PackageSearch className="w-4 h-4" aria-hidden="true" />
-            <span>{locale === 'bn' ? 'লাইভ ট্র্যাকিং' : 'Live Order Tracking'}</span>
+            <span>{locale === 'bn' ? 'অর্ডার স্ট্যাটাস' : 'Order status'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('orders')}
+            aria-current={activeTab === 'orders' ? 'page' : undefined}
             className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-colors cursor-pointer flex items-center gap-2 ${
               activeTab === 'orders'
                 ? 'border-ink text-ink bg-surface rounded-t-[var(--radius-md)]'
@@ -480,6 +487,7 @@ export function AccountClient({
           <button
             type="button"
             onClick={() => setActiveTab('addresses')}
+            aria-current={activeTab === 'addresses' ? 'page' : undefined}
             className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-colors cursor-pointer flex items-center gap-2 ${
               activeTab === 'addresses'
                 ? 'border-ink text-ink bg-surface rounded-t-[var(--radius-md)]'
@@ -493,6 +501,7 @@ export function AccountClient({
           <button
             type="button"
             onClick={() => setActiveTab('wishlist')}
+            aria-current={activeTab === 'wishlist' ? 'page' : undefined}
             className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-colors cursor-pointer flex items-center gap-2 ${
               activeTab === 'wishlist'
                 ? 'border-ink text-ink bg-surface rounded-t-[var(--radius-md)]'
@@ -507,7 +516,7 @@ export function AccountClient({
               </Badge>
             )}
           </button>
-        </div>
+        </nav>
 
         {/* 3. Tab Panel 1: Order Lookup */}
         {activeTab === 'tracking' && (
@@ -518,14 +527,14 @@ export function AccountClient({
                   <PackageSearch className="w-5 h-5 text-ink" aria-hidden="true" />
                   <span>
                     {locale === 'bn'
-                      ? 'আপনার পার্সেল ট্র্যাক করুন'
-                      : 'Track Your Parcel'}
+                      ? 'অর্ডারের অবস্থা দেখুন'
+                      : 'Check order status'}
                   </span>
                 </h2>
                 <p className="text-xs text-muted">
                   {locale === 'bn'
-                    ? 'অর্ডার নম্বর লিখে রিয়েল-টাইম কুরিয়ার ও পেমেন্ট স্ট্যাটাস দেখুন।'
-                    : 'Enter your Order No for live courier tracking status.'}
+                    ? 'নিরাপদ ট্র্যাকিং টোকেন দিন, অথবা নিজের অর্ডার নম্বর দেখতে অ্যাকাউন্টে লগইন করুন। এখানে কুরিয়ারের লাইভ আপডেট দেখানো হয় না।'
+                    : 'Enter a secure tracking token, or sign in to view your own order number. Live courier updates are not connected.'}
                 </p>
               </div>
 
@@ -537,9 +546,9 @@ export function AccountClient({
                   type="text"
                   value={orderLookupNo}
                   onChange={(e) => setOrderLookupNo(e.target.value)}
-                  placeholder="ORD-261106-0001"
-                  aria-label={uiText("Order Number", locale)}
-                  className="flex-1 sm:w-56 min-h-[44px] px-3.5 py-2 text-sm font-mono uppercase bg-surface text-ink border border-border rounded-[var(--radius-md)] focus:outline-2 focus:outline-ink"
+                  placeholder={locale === 'bn' ? 'trk_... অথবা নিজের অর্ডার নম্বর' : 'trk_... or your order number'}
+                  aria-label={locale === 'bn' ? 'ট্র্যাকিং টোকেন বা অর্ডার নম্বর' : 'Tracking token or order number'}
+                  className="flex-1 min-w-0 sm:w-56 min-h-[44px] px-3.5 py-2 text-sm font-mono bg-surface text-ink border border-border rounded-[var(--radius-md)] focus:outline-2 focus:outline-ink"
                 />
                 <Button
                   type="submit"
@@ -575,34 +584,36 @@ export function AccountClient({
         {activeTab === 'orders' && (
           <Card surface="bg" padding="md" className="space-y-4">
             <h2 className="text-lg font-bold">{locale === 'bn' ? 'গ্রাহক অ্যাকাউন্ট' : 'Customer account'}</h2>
-            {!verifiedPhone ? <>
+            {sessionLoading ? <p role="status" className="text-sm text-muted">{locale === 'bn' ? 'অ্যাকাউন্ট যাচাই হচ্ছে…' : 'Checking your account…'}</p> : !verifiedPhone ? <>
+              <p className="text-sm text-muted">{locale === 'bn' ? 'ফোন নম্বর বা ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন। অতিথি হিসেবে করা অর্ডার স্বয়ংক্রিয়ভাবে যুক্ত হয় না।' : 'Sign in with your phone number or email and password. Guest orders are not linked automatically.'}</p>
               <form onSubmit={handlePasswordAuth} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                 <Input label={locale === 'bn' ? 'ফোন নম্বর অথবা ইমেইল' : 'Phone number or email'} value={loginPhone} onChange={e => setLoginPhone(e.target.value)} autoComplete="username" required />
                 <Input label={locale === 'bn' ? 'পাসওয়ার্ড' : 'Password'} type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={registering ? 10 : 1} maxLength={128} autoComplete={registering ? 'new-password' : 'current-password'} required />
                 <Button type="submit" disabled={authLoading}>{registering ? (locale === 'bn' ? 'অ্যাকাউন্ট তৈরি করুন' : 'Create account') : (locale === 'bn' ? 'লগইন' : 'Sign in')}</Button>
               </form>
-              <button type="button" className="text-sm underline" onClick={() => { setRegistering(!registering); setAuthError(null); }}>{registering ? (locale === 'bn' ? 'আগেই অ্যাকাউন্ট আছে? লগইন' : 'Already have an account? Sign in') : (locale === 'bn' ? 'নতুন অ্যাকাউন্ট তৈরি করুন' : 'Create an account')}</button>
+              <button type="button" className="text-sm underline" onClick={() => { setRegistering(!registering); setPassword(''); setAuthError(null); }}>{registering ? (locale === 'bn' ? 'আগেই অ্যাকাউন্ট আছে? লগইন' : 'Already have an account? Sign in') : (locale === 'bn' ? 'নতুন অ্যাকাউন্ট তৈরি করুন' : 'Create an account')}</button>
               {registering && <p className="text-xs">{locale === 'bn' ? 'পাসওয়ার্ড অন্তত ১০ অক্ষরের হতে হবে।' : 'Use at least 10 characters for your password.'}</p>}
             </> : <form onSubmit={handleChangePassword} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
               <Input label={locale === 'bn' ? 'বর্তমান পাসওয়ার্ড' : 'Current password'} type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
               <Input label={locale === 'bn' ? 'নতুন পাসওয়ার্ড' : 'New password'} type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength={10} maxLength={128} autoComplete="new-password" required />
               <Button type="submit" variant="outline" disabled={authLoading}>{locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তন' : 'Change password'}</Button>
             </form>}
-            {authError && <p className="text-xs font-medium text-danger">{authError}</p>}
+            {authNotice && <p role="status" className="text-sm font-medium text-success">{authNotice}</p>}
+            {authError && <div role="alert" className="text-sm font-medium text-danger space-y-1"><p>{authError}</p>{!verifiedPhone && <button type="button" className="underline" onClick={() => { setAuthError(null); setSessionRetry(n => n + 1); }}>{locale === 'bn' ? 'আবার চেষ্টা করুন' : 'Try again'}</button>}</div>}
 
             {verifiedPhone && (
               <div className="space-y-3 pt-3 border-t border-border">
                 <p className="text-xs font-semibold text-success flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4" aria-hidden="true" />
                   {locale === 'bn'
-                    ? `${verifiedPhone} নম্বরের অর্ডার তালিকা (${customerOrders.length} টি):`
-                    : `Orders for ${verifiedPhone} (${customerOrders.length}):`}
+                    ? `আপনার অর্ডার (${formatLocaleNumber(customerOrders.length, locale)}টি):`
+                    : `Your orders (${formatLocaleNumber(customerOrders.length, locale)}):`}
                 </p>
                 {customerOrders.length === 0 ? (
                   <p className="text-xs text-muted">
                     {locale === 'bn'
-                      ? 'এই নম্বরে কোনো অর্ডার পাওয়া যায়নি।'
-                      : 'No orders found for this phone number.'}
+                      ? 'আপনার অ্যাকাউন্টে কোনো অর্ডার পাওয়া যায়নি।'
+                      : 'No orders found in this account.'}
                   </p>
                 ) : (
                   <div className="space-y-3">
@@ -611,8 +622,8 @@ export function AccountClient({
                         key={ord.orderNo}
                         className="p-3.5 border border-border rounded-[var(--radius-md)] bg-surface flex flex-wrap items-center justify-between gap-3 shadow-2xs"
                       >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
+                        <div className="space-y-1 min-w-0 break-words">
+                          <div className="flex flex-wrap items-center gap-2">
                             <Link
                               href={`/order-tracking/${encodeURIComponent(
                                 ord.secureTrackingToken || ord.orderNo
@@ -638,7 +649,8 @@ export function AccountClient({
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link href={`/order-tracking/${encodeURIComponent(ord.secureTrackingToken || ord.orderNo)}`} className="inline-flex min-h-[44px] items-center px-3 border border-border rounded-[var(--radius-md)] font-semibold">{locale === 'bn' ? 'বিস্তারিত দেখুন' : 'View details'}</Link>
                           {ord.status === 'delivered' && (
                             <Button
                               type="button"
@@ -800,6 +812,7 @@ export function AccountClient({
               </h2>
             </div>
 
+            <p className="text-xs text-muted">{locale === 'bn' ? 'এই ঠিকানাগুলো শুধু এই ব্রাউজারে থাকে; অন্য ডিভাইসে সিঙ্ক হয় না এবং শেয়ার করা ডিভাইসে অন্যরা দেখতে পারেন।' : 'Addresses are stored only in this browser, not synced to other devices, and may be visible to others on a shared device.'}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {savedAddresses.map((addr) => {
                 const dist = getDistrictById(addr.districtId);

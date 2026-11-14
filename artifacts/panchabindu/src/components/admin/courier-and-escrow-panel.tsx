@@ -963,6 +963,7 @@ export function Courier360AndRatesPanel({
               <LocalizedText source={"কুরিয়ার কোম্পানি থেকে ব্যাংকে বা বিকাশ/নগদে টাকা আসার পর এখানে এন্ট্রি দিন। সিস্টেম স্বয়ংক্রিয়ভাবে শর্ট-পেমেন্ট বা ঘাটতি চেক করবে।"} area="admin" />{" "}</p>
           </div>
 
+          <p role="status" className="text-sm text-amber-700">রেমিট্যান্স যাচাই ও লেজার রিকনসিলিয়েশন বর্তমানে বন্ধ। / Remittance reconciliation is unavailable.</p>
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -1052,7 +1053,7 @@ export function Courier360AndRatesPanel({
                     if (found) {
                       const cod = (found.codCollectablePoisha ?? 0) / 100;
                       setRemExpectedCodTaka(String(cod));
-                      setRemReceivedTaka(String(Math.max(0, cod - 60)));
+                      setRemReceivedTaka('');
                     }
                   }}
                   className="w-full min-h-[42px] px-3 py-1.5 bg-bg text-ink border border-border rounded-[var(--radius-md)] font-mono"
@@ -1168,7 +1169,7 @@ export function Courier360AndRatesPanel({
             })()}
 
             <Button
-              type="submit"
+              type="submit" disabled
               variant="primary"
               size="md"
               className="w-full"
@@ -1296,7 +1297,8 @@ export function Courier360AndRatesPanel({
                   </select>
                 </div>
 
-                <Button
+                <p role="status" className="text-sm text-amber-700">কুরিয়ার বুকিং ও ব্যাচ হ্যান্ডওভার চালু নেই। / Courier booking and batch handover unavailable.</p>
+                <Button disabled
                   variant="primary"
                   size="md"
                   className="w-full"
@@ -1402,7 +1404,7 @@ export function Courier360AndRatesPanel({
                             value={riderPhone}
                             onChange={(e) => setRiderPhone(e.target.value)}
                           />
-                          <Button
+                          <Button disabled title="হ্যান্ডওভার বন্ধ / Handover unavailable"
                             variant="primary"
                             size="sm"
                             onClick={async () => {
@@ -2761,6 +2763,7 @@ export function VendorEscrowAndReturnPanel({
             <h2 className="text-base font-bold text-ink flex items-center gap-2 border-b border-border pb-2">
               <RotateCcw className="w-4 h-4" aria-hidden="true" />
               <span><LocalizedText source={"চার-মুখী ড্যামেজ ও রিটার্ন ইঞ্জিন (Four-Way Return Engine)"} area="admin" /></span>
+              <span role="status" className="text-xs text-amber-700">নিষ্পত্তি বন্ধ / Settlement unavailable</span>
             </h2>
 
             {!isVendor ? (
@@ -2864,7 +2867,7 @@ export function VendorEscrowAndReturnPanel({
                     <LocalizedText source={"ভেন্ডরকে ইতিমধ্যে পেআউট দেওয়া হয়ে গেছে (Post-Payout Negative Clawback তৈরি হবে)"} area="admin" />{" "}</span>
                 </label>
 
-                <Button type="submit" variant="primary" size="md" className="w-full">
+                <Button type="submit" disabled title="রিটার্ন নিষ্পত্তি বন্ধ / Return settlement unavailable" variant="primary" size="md" className="w-full">
                   <LocalizedText source={"৪-মুখী রিটার্ন ও লেজার সমন্বয় নিশ্চিত করুন"} area="admin" />{" "}</Button>
               </form>
             ) : (

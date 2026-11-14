@@ -483,7 +483,8 @@ test('Phase 1 Security 4.6: Courier Webhook Fail-Closed HMAC Verification & Repl
     signatureHeader: validSig,
     enforceReplayDeduplication: true,
   });
-  assert.equal(firstEvent.success, true);
+  assert.equal(firstEvent.success, false);
+  assert.equal(firstEvent.code, 'NOT_INTEGRATED');
 
   const replayEvent = processCourierWebhookPayload(WEBHOOK_SERVICE_CONTEXT, {
     provider: 'steadfast',
@@ -494,5 +495,5 @@ test('Phase 1 Security 4.6: Courier Webhook Fail-Closed HMAC Verification & Repl
     enforceReplayDeduplication: true,
   });
   assert.equal(replayEvent.success, false);
-  assert.equal(replayEvent.code, 'DUPLICATE_EVENT');
+  assert.equal(replayEvent.code, 'NOT_INTEGRATED');
 });
