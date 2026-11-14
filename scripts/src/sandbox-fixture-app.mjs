@@ -10,7 +10,8 @@ import { createRequire, syncBuiltinESMExports } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 const fixture = process.env.PANCHABINDU_SANDBOX_FIXTURE;
-assert.ok(fixture && process.send, 'Start this app through test:sandbox');
+assert.ok(fixture && process.send, 'Start this app through the sandbox test or isolated preview launcher');
+const preview = process.env.PANCHABINDU_ISOLATED_PREVIEW === '1';
 assert.equal(process.cwd(), fixture);
 assert.equal(fs.lstatSync(path.join(fixture, '.data')).isSymbolicLink(), false);
 
@@ -76,19 +77,32 @@ const web = path.join(root, 'artifacts/panchabindu');
 const require = createRequire(path.join(web, 'package.json'));
 const { createServer } = await import(require.resolve('vite'));
 const { default: app } = await import('../../artifacts/api-server/src/app.ts');
+const server = http.createServer(app);
 const vite = await createServer({
   configFile: path.join(web, 'vite.config.ts'),
   envFile: false,
   cacheDir: path.join(fixture, 'vite-cache'),
-  server: { middlewareMode: true, hmr: false, watch: null },
+  server: { middlewareMode: true, hmr: { server }, watch: null },
 });
+if (preview) {
+  // Always identify the isolated fixture, including on nested SPA routes.
+  // This is not an authenticated production environment or a real store.
+  app.use(async (req, res, next) => {
+    if (req.method !== 'GET' || req.path === '/api' || req.path.startsWith('/api/') || req.path.startsWith('/@') || !String(req.headers.accept || '').includes('text/html')) return next();
+    try {
+      const template = await fs.promises.readFile(path.join(web, 'index.html'), 'utf8');
+      const banner = '<div role="status" style="position:sticky;top:0;z-index:99999;text-align:center;padding:8px 12px;background:#fff3c4;color:#382a00;font:600 13px/1.4 system-ui,sans-serif">ডেমো প্রিভিউ — নমুনা তথ্য; কোনো অর্ডার বা পেমেন্ট বাস্তব নয়। / Demo preview — sample data; no real orders or payments.</div>';
+      const html = await vite.transformIndexHtml(req.originalUrl, template.replace('<div id="root">', banner + '<div id="root">'));
+      res.status(200).type('html').send(html);
+    } catch (error) { next(error); }
+  });
+}
 app.use(vite.middlewares);
-const server = http.createServer(app);
 await new Promise((resolve, reject) => {
   server.once('error', reject);
-  server.listen(0, '127.0.0.1', resolve);
+  server.listen(preview ? Number(process.env.PANCHABINDU_PREVIEW_PORT) : 0, preview ? '0.0.0.0' : '127.0.0.1', resolve);
 });
-process.env.APP_URL = `http://127.0.0.1:${server.address().port}`;
+if (!preview) process.env.APP_URL = `http://127.0.0.1:${server.address().port}`;
 process.send({ type: 'ready', port: server.address().port });
 
 async function shutdown() {

@@ -42,3 +42,53 @@
 
 /* Subtle active-tab indicator for the app-style mobile navigation. */
 .storefront-bottom-nav [aria-current] { box-shadow: inset 0 2px 0 var(--store-accent); }
+
+/* Print previews use paper-safe colors regardless of the admin theme. */
+.print-slips {
+  --color-bg: #fff;
+  --color-surface: #f3f7f5;
+  --color-border: #c9d8d1;
+  --color-ink: #172b24;
+  --color-muted: #52635c;
+  --color-success: #166534;
+  --color-danger: #9f1239;
+  --color-warning: #92400e;
+}
+.print-a4-sheet, .print-thermal-sheet { background: #fff; color: #172b24; }
+.print-brand-mark {
+  position: relative; display: inline-flex; width: 34px; height: 34px; flex: none;
+  align-items: center; justify-content: center; overflow: hidden;
+  border: 1px solid #b8cec1; border-radius: 7px; background: #fff; color: #14543b;
+}
+.print-brand-mark-compact { width: 24px; height: 24px; border-radius: 5px; }
+.print-brand-mark-compact .print-brand-fallback { font-size: 12px; }
+.print-brand-fallback { font-size: 16px; font-weight: 700; line-height: 1; }
+.print-brand-logo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.print-customer-part { border-color: #6aa78a; border-top: 3px solid #18724e; background: #fff; }
+.print-courier-part { border-color: #84a9c5; border-top: 3px solid #256391; background: #fff; }
+.print-internal-part { border-color: #b68a43; border-top: 3px solid #a86a11; background: #fffaf0; }
+.print-customer-part thead tr { background: #eaf5ee; }
+.print-courier-part .bg-surface { background: #eef6fc; }
+.print-internal-part .bg-surface { background: #fff4df; }
+.print-thermal-sheet { --color-ink: #111; --color-border: #777; --color-muted: #333; --color-surface: #fff; }
+
+/* Checkout is scoped to the storefront; ERP form controls are unaffected. */
+.checkout-page { color: #183127; }
+.checkout-eyebrow { color: var(--store-accent); font-size: 0.7rem; font-weight: 700; letter-spacing: .12em; }
+.checkout-header-note { display: inline-flex; align-items: center; gap: .5rem; color: #365a47; font-size: .75rem; font-weight: 600; border: 1px solid #d6e5da; background: #f1f7f2; border-radius: 999px; padding: .55rem .85rem; }
+.checkout-card { background: #fff; border: 1px solid #e2e9e2; border-radius: 18px; box-shadow: 0 8px 28px rgba(33, 58, 43, .045); }
+.checkout-section-heading { border-bottom: 1px solid #e9eee9; }
+.checkout-step-number { display: flex; flex: none; width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: 12px; background: #e9f3eb; color: var(--store-accent); font-size: .875rem; font-weight: 700; }
+.checkout-card input:not([type="checkbox"]), .checkout-card select { border-color: #d9e3db; background-color: #fcfdfa; border-radius: 10px; min-height: 48px; }
+.checkout-card input:not([type="checkbox"]):focus-visible, .checkout-card select:focus-visible { outline: 2px solid var(--store-accent); outline-offset: 1px; }
+.checkout-choice { min-height: 80px; gap: .75rem; border-color: #dbe6dd; border-radius: 12px; }
+.checkout-choice[aria-pressed="true"] { border-color: var(--store-accent); background: #f0f7f1; box-shadow: inset 0 0 0 1px var(--store-accent); }
+.checkout-choice:focus-visible { outline: 2px solid var(--store-accent); outline-offset: 2px; }
+.checkout-summary { background: #fff; }
+.checkout-reassurance { color: #315b43; background: #eff7f0; }
+.checkout-confirm { border-radius: 12px; }
+.checkout-sticky { background: rgba(255, 255, 255, .97); border-color: #e3eae3; }
+@media (max-width: 639px) {
+  .checkout-card input:not([type="checkbox"]), .checkout-card select { font-size: 16px; }
+  .checkout-header-note { padding: .4rem .7rem; }
+}
