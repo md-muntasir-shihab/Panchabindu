@@ -1,6 +1,6 @@
 {
   "installCommand": "npx --yes pnpm@10.34.9 install --frozen-lockfile",
-  "buildCommand": "npx --yes pnpm@10.34.9 run db:initialize-runtime && PORT=3000 BASE_PATH=/ npx --yes pnpm@10.34.9 run build:vercel",
+  "buildCommand": "if [ \"$VERCEL_ENV\" = production ]; then npx --yes pnpm@10.34.9 run db:initialize-runtime || exit 1; fi; PORT=3000 BASE_PATH=/ npx --yes pnpm@10.34.9 run build:vercel",
   "outputDirectory": "artifacts/panchabindu/dist/public",
   "functions": {
     "api/*.mjs": {
