@@ -496,8 +496,8 @@ export function ShopCatalogClient({
             </p>
           </div>
 
-          {/* Search Input inside Banner for instant refinement */}
-          <div className="w-full md:w-80 space-y-2">
+          {/* Search refinement stays on the search-results page; Shop uses the header. */}
+          {mode === 'search' && <div className="w-full md:w-80 space-y-2">
             <div className="relative">
               <Search
                 className="w-4 h-4 text-[#5A655D] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -530,7 +530,7 @@ export function ShopCatalogClient({
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
         </div>
 
         {/* 3. Main 2-Column Layout: Left Sidebar Filters + Right Product Grid */}

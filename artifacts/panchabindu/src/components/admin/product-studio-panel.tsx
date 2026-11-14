@@ -1,6 +1,7 @@
 'use client';
 import { localizedField } from '@/lib/i18n/ui-text';
 import { uiText } from '@/lib/i18n/ui-text';
+import { productImageUrl, productImageFallback } from '@/lib/storefront/product-image';
 
 import { LocalizedText } from '@/components/ui/localized-text';
 import { CatalogImportPanel } from './catalog-import-panel';
@@ -185,8 +186,8 @@ export function ProductManagementStudioPanel({
       const response = await fetch(`/api/media/${assetId}`, { method: 'POST' });
       const data = await response.json();
       if (!response.ok || !data.success || !data.url) throw new Error(isBn ? 'ছবির অনুমোদন ব্যর্থ হয়েছে।' : 'Unable to approve this image.');
-      setEditingProduct(product => product ? { ...product, images: [...new Set([...product.images, data.url])] } : product);
-      setImageUrlsDraft(current => [...new Set([...current.split(/[,\n]/).map(v => v.trim()).filter(Boolean), data.url])].join('\n'));
+      setEditingProduct(product => product ? { ...product, images: [data.url, ...product.images.filter(image => image !== data.url)] } : product);
+      setImageUrlsDraft(current => [data.url, ...current.split(/[,\n]/).map(v => v.trim()).filter(v => v && v !== data.url)].join('\n'));
       setStagedImages(images => images.filter(image => image.assetId !== assetId));
       await onRefresh();
     } catch (error) { setFeedbackMsg({ type: 'error', text: error instanceof Error ? error.message : 'Approval failed.' }); }
@@ -663,7 +664,7 @@ export function ProductManagementStudioPanel({
                             <div className="w-12 h-12 shrink-0 bg-bg border border-border overflow-hidden">
                               {p.images && p.images[0] ? (
                                 <img
-                                  src={p.images[0]}
+                                  src={productImageUrl(p.images[0])} onError={productImageFallback}
                                   alt={p.nameBn}
                                   className="w-full h-full object-cover"
                                 />
@@ -1569,7 +1570,8 @@ export function ProductManagementStudioPanel({
                     {editingProduct.images.map((img, i) => (
                       <img
                         key={i}
-                        src={img}
+                        src={productImageUrl(img)}
+                        onError={productImageFallback}
                         alt="Preview"
                         className="w-14 h-14 object-cover border border-border"
                       />
