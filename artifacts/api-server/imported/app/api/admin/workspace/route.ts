@@ -405,6 +405,7 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
   // Phase 4B Operations
   z.object({
     operation: z.literal('generate_print_slips'),
+    recordPrint: z.boolean().optional(),
     orderNos: z.array(z.string().min(1)).min(1),
     sortBy: z
       .enum(['order_no', 'vendor', 'courier', 'district', 'sku'])

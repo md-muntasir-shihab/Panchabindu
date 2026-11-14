@@ -686,6 +686,7 @@ export function generateOrderPrintSlips(
   input: {
     orderNos: string[];
     sortBy?: 'order_no' | 'vendor' | 'courier' | 'district' | 'sku';
+    recordPrint?: boolean;
   }
 ): {
   success: boolean;
@@ -744,13 +745,16 @@ export function generateOrderPrintSlips(
       ord.printCount ?? 0,
       p4bStore.printCountsByOrderNo?.[ord.orderNo] ?? 0
     );
-    ord.printCount = prevPrintCount + 1;
-    p4bStore.printCountsByOrderNo = p4bStore.printCountsByOrderNo ?? {};
-    p4bStore.printCountsByOrderNo[ord.orderNo] = ord.printCount;
+    const printCount = prevPrintCount + (input.recordPrint ? 1 : 0);
+    if (input.recordPrint) {
+      ord.printCount = printCount;
+      p4bStore.printCountsByOrderNo = p4bStore.printCountsByOrderNo ?? {};
+      p4bStore.printCountsByOrderNo[ord.orderNo] = printCount;
+    }
 
     const meta = adminStore.orderMeta[ord.orderNo];
-    const trackingCode = ord.trackingCode ?? `MNL-${ord.orderNo.slice(-6)}`;
-    const consignmentId = ord.consignmentId ?? `CNS-${ord.orderNo}`;
+    const trackingCode = ord.trackingCode ?? '';
+    const consignmentId = ord.consignmentId ?? '';
 
     const customerSafeItems = rawLines.map((l) => {
       const prod = erpState.products.find((p) => p.productId === l.productId);
@@ -762,7 +766,7 @@ export function generateOrderPrintSlips(
         imageUrl:
           variant?.imageUrl ??
           prod?.images[0] ??
-          'https://picsum.photos/seed/bongoslip/120/120',
+          '',
         quantity: l.quantity,
         unitSalePricePoisha: l.snapUnitSalePricePoisha,
         lineSubtotalPoisha: l.lineSubtotalPoisha,
@@ -790,7 +794,7 @@ export function generateOrderPrintSlips(
       courierProvider: ord.courierProvider,
       consignmentId,
       trackingCode,
-      trackingUrl: `https://bongoconsign.bd/order-tracking/${ord.secureTrackingToken ?? ord.orderNo}`,
+      trackingUrl: ord.secureTrackingToken ? `/order-tracking/${encodeURIComponent(ord.secureTrackingToken)}` : '',
       paymentMethod: ord.paymentMethod,
       paymentStatus: ord.paymentStatus,
       subtotalPoisha: ord.subtotalPoisha,
@@ -827,19 +831,17 @@ export function generateOrderPrintSlips(
           vendorBusinessName:
             vendor?.businessNameBn ?? prod?.vendorBusinessName ?? 'সাপ্লায়ার',
           vendorContactPhone:
-            ctx.roleSlug === 'vendor' ? undefined : vendor?.contactPhone ?? '01711901901',
+            ctx.roleSlug === 'vendor' ? undefined : vendor?.contactPhone ?? '',
           vendorPayoutMethodBn:
             ctx.roleSlug === 'super_admin' ||
             (ctx.roleSlug === 'vendor' && l.vendorId === ctx.vendorId)
-              ? vendor?.payoutMethodBn ?? 'বিকাশ মার্চেন্ট'
+              ? vendor?.payoutMethodBn ?? ''
               : undefined,
           internalVendorSku: l.internalVendorSku,
           publicSku: l.publicSku,
           productNameBn: l.productNameBn,
           variantTitleBn: l.variantTitleBn,
-          weightGrams: variant?.weightGrams ?? 450,
-          warehouseBinCode: `BIN-${(vendor?.vendorCode ?? 'V1').slice(-2)}-${String(idx + 1).padStart(2, '0')}`,
-          consignmentLotRef: `LOT-${ord.orderNo.slice(4, 10)}`,
+          weightGrams: variant?.weightGrams ?? undefined,
           quantity: l.quantity,
           unitSalePricePoisha: unitSale,
           lineSaleSubtotalPoisha: lineSaleSubtotal,
@@ -911,9 +913,9 @@ export function generateOrderPrintSlips(
         const existing = vendorMap.get(vCode) ?? {
           vendorCode: vCode,
           vendorNameBn: vName,
-          vendorContactPhone: vendor?.contactPhone ?? '01711901901',
-          payoutMethodBn: vendor?.payoutMethodBn ?? 'বিকাশ মার্চেন্ট',
-          payoutAccountNo: vendor?.payoutAccountNo ?? '01711901901',
+          vendorContactPhone: vendor?.contactPhone ?? '',
+          payoutMethodBn: vendor?.payoutMethodBn ?? '',
+          payoutAccountNo: vendor?.payoutAccountNo ?? '',
           itemsCount: 0,
           totalUnits: 0,
           supplierCostPoisha: 0,
@@ -1009,8 +1011,8 @@ export function generateOrderPrintSlips(
         ctx.roleSlug === 'vendor' && ctx.maskCustomerPiiForVendor
           ? `${ord.upazilaNameBn}, ${ord.districtNameBn} (মাস্কড)`
           : `${ord.upazilaNameBn}, ${ord.districtNameBn} — ${ord.streetAddress}${ord.landmark ? ` (${ord.landmark})` : ''}`,
-      printCount: ord.printCount,
-      isReprintWarning: prevPrintCount > 0,
+      printCount,
+      isReprintWarning: input.recordPrint ? prevPrintCount > 0 : printCount > 0,
       escrowHoldDays: holdDays,
       estimatedMaturityDaysLabelBn: `ডেলিভারির ${holdDays} দিন পর উত্তোলনযোগ্য (Available)`,
       internalStaffNote:
@@ -1032,16 +1034,18 @@ export function generateOrderPrintSlips(
       district: ord.districtNameBn,
     });
 
-    appendImmutableAuditLog(adminStore, {
-      actorUserId: ctx.userId,
-      actorUsername: ctx.username,
-      actorRole: ctx.roleSlug,
-      actionCode: prevPrintCount > 0 ? 'ORDER_SLIP_REPRINTED' : 'ORDER_SLIP_PRINTED',
-      targetType: 'order',
-      targetId: ord.orderNo,
-      summaryBn: `${ord.orderNo} অর্ডারের স্লিপ প্রিন্ট জেনারেট হয়েছে (প্রিন্ট কাউন্টার: ${ord.printCount})।`,
-      metadata: { printCount: ord.printCount },
-    });
+    if (input.recordPrint) {
+      appendImmutableAuditLog(adminStore, {
+        actorUserId: ctx.userId,
+        actorUsername: ctx.username,
+        actorRole: ctx.roleSlug,
+        actionCode: prevPrintCount > 0 ? 'ORDER_SLIP_REPRINTED' : 'ORDER_SLIP_PRINTED',
+        targetType: 'order',
+        targetId: ord.orderNo,
+        summaryBn: `${ord.orderNo} অর্ডারের প্রিন্ট অনুরোধ করা হয়েছে (কাউন্টার: ${printCount})।`,
+        metadata: { printCount, event: 'print_requested' },
+      });
+    }
   }
 
   // Sort batch according to user selection
@@ -1062,9 +1066,11 @@ export function generateOrderPrintSlips(
     return a.bundle.orderNo.localeCompare(b.bundle.orderNo);
   });
 
-  writeErpState(erpState);
-  writePhase4BStore(p4bStore);
-  writeAdminStore(adminStore);
+  if (input.recordPrint) {
+    writeErpState(erpState);
+    writePhase4BStore(p4bStore);
+    writeAdminStore(adminStore);
+  }
 
   return {
     success: true,

@@ -15,6 +15,7 @@ import { LocalizedText } from '@/components/ui/localized-text';
 //   5. Strict Zero-Leak Security Rule A2 (Customer parts never leak vendor/cost details)
 
 import * as React from 'react';
+import { flushSync } from 'react-dom';
 import { adminFetch as fetch } from '@/lib/admin/admin-fetch';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -44,83 +45,43 @@ import { formatPoishaToBdt } from '@/lib/money';
 import { formatLocaleNumber } from '@/lib/i18n/dictionaries';
 import { Badge, Button, Card, Input } from '../ui/primitives';
 
-/**
- * Deterministic SVG Code128-style Linear Barcode Renderer.
- * Produces crisp vector bars for thermal (203/300 DPI) & A4 laser/inkjet printing.
- */
-export function Code128BarcodeSvg({
-  value,
-  height = 42,
-}: {
-  value: string;
-  height?: number;
-}) {
-  const clean = (value || 'ORD-0000').toUpperCase();
+// Code 128 set B: start, data, modulo-103 checksum, stop and quiet zones.
+const CODE128_PATTERNS = [
+  '212222','222122','222221','121223','121322','131222','122213','122312','132212','221213',
+  '221312','231212','112232','122132','122231','113222','123122','123221','223211','221132',
+  '221231','213212','223112','312131','311222','321122','321221','312212','322112','322211',
+  '212123','212321','232121','111323','131123','131321','112313','132113','132311','211313',
+  '231113','231311','112133','112331','132131','113123','113321','133121','313121','211331',
+  '231131','213113','213311','213131','311123','311321','331121','312113','312311','332111',
+  '314111','221411','431111','111224','111422','121124','121421','141122','141221','112214',
+  '112412','122114','122411','142112','142211','241211','221114','413111','241112','134111',
+  '111242','121142','121241','114212','124112','124211','411212','421112','421211','212141',
+  '214121','412121','111143','111341','131141','114113','114311','411113','411311','113141',
+  '114131','311141','411131','211412','211214','211232','2331112',
+];
+
+export function Code128BarcodeSvg({ value, height = 42 }: { value: string; height?: number }) {
+  // Code 128 B represents ASCII 32–126. Never render a fake barcode for unsupported input.
+  if (!value || !/^[\x20-\x7e]+$/.test(value)) return <span className="text-xs">{value || '—'}</span>;
+  const codes = Array.from(value, char => char.charCodeAt(0) - 32);
+  const checksum = (104 + codes.reduce((sum, code, index) => sum + code * (index + 1), 0)) % 103;
+  const patterns = [104, ...codes, checksum, 106].map(code => CODE128_PATTERNS[code]!);
   const bars: Array<{ x: number; w: number }> = [];
-  let cursor = 0;
-
-  // Start quiet-zone + start guard pattern
-  const startPattern = [2, 1, 1, 2, 3, 2];
-  for (let i = 0; i < startPattern.length; i++) {
-    const w = startPattern[i]!;
-    if (i % 2 === 0) {
-      bars.push({ x: cursor, w });
-    }
-    cursor += w;
+  let cursor = 10;
+  for (const pattern of patterns) {
+    Array.from(pattern, Number).forEach((width, index) => {
+      if (index % 2 === 0) bars.push({ x: cursor, w: width });
+      cursor += width;
+    });
   }
-
-  for (let idx = 0; idx < clean.length; idx++) {
-    const code = clean.charCodeAt(idx);
-    const b1 = ((code >> 0) & 1) + 1;
-    const s1 = ((code >> 1) & 1) + 1;
-    const b2 = ((code >> 2) & 1) + 1;
-    const s2 = ((code >> 3) & 1) + 1;
-    const b3 = ((code >> 4) & 1) + 1;
-    const s3 = ((code >> 5) & 1) + 1;
-    const seq = [b1, s1, b2, s2, b3, s3];
-    for (let j = 0; j < seq.length; j++) {
-      const w = seq[j]!;
-      if (j % 2 === 0) {
-        bars.push({ x: cursor, w });
-      }
-      cursor += w;
-    }
-  }
-
-  // Stop guard pattern
-  const stopPattern = [2, 3, 3, 1, 1, 1, 2];
-  for (let i = 0; i < stopPattern.length; i++) {
-    const w = stopPattern[i]!;
-    if (i % 2 === 0) {
-      bars.push({ x: cursor, w });
-    }
-    cursor += w;
-  }
-
-  return (
-    <div className="inline-flex flex-col items-center">
-      <svg
-        viewBox={`0 0 ${cursor} ${height}`}
-        className="w-full max-w-[220px] h-9 text-ink"
-        role="img"
-        aria-label={`Barcode ${clean}`}
-      >
-        {bars.map((b, idx) => (
-          <rect
-            key={idx}
-            x={b.x}
-            y={0}
-            width={b.w}
-            height={height}
-            fill="currentColor"
-          />
-        ))}
-      </svg>
-      <span className="font-mono text-[10px] font-bold tracking-widest text-ink mt-0.5">
-        {clean}
-      </span>
-    </div>
-  );
+  cursor += 10;
+  return <div className="inline-flex flex-col items-center">
+    <svg viewBox={`0 0 ${cursor} ${height}`} className="w-full max-w-[220px] h-9 text-ink" role="img" aria-label={`Barcode ${value}`}>
+      <rect width={cursor} height={height} fill="white" />
+      {bars.map((bar, index) => <rect key={index} x={bar.x} y={0} width={bar.w} height={height} fill="black" />)}
+    </svg>
+    <span className="font-mono text-[10px] font-bold tracking-widest text-ink mt-0.5">{value}</span>
+  </div>;
 }
 
 export interface PrintEnginePanelProps {
@@ -150,6 +111,7 @@ export function PrintEnginePanel({
   const [selectedOrderNos, setSelectedOrderNos] =
     React.useState<string[]>(availableOrderNos);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [visibleParts, setVisibleParts] = React.useState([true, true, true]);
   const [courierFilter, setCourierFilter] = React.useState<string>('ALL');
   const [sortOption, setSortOption] = React.useState<PrintSortOption>('newest');
   const [layoutMode, setLayoutMode] = React.useState<'a4_3part' | 'thermal_4x6'>(
@@ -163,107 +125,65 @@ export function PrintEnginePanel({
   const [loadingSlips, setLoadingSlips] = React.useState(false);
   const [feedback, setFeedback] = React.useState<string | null>(null);
 
-  const [prevAvailableOrderNos, setPrevAvailableOrderNos] =
-    React.useState(availableOrderNos);
+  const printableRef = React.useRef<HTMLDivElement>(null);
+  const requestId = React.useRef(0);
+  const orderKey = JSON.stringify(availableOrderNos);
 
-  if (prevAvailableOrderNos !== availableOrderNos) {
-    setPrevAvailableOrderNos(availableOrderNos);
-    setSelectedOrderNos(availableOrderNos);
-  }
-
-  // Load Slips from Server
-  const loadSlips = React.useCallback(
-    async (ordersToLoad: string[], sortKey: PrintSortOption) => {
-      if (ordersToLoad.length === 0) {
-        setSlips([]);
-        return;
-      }
-      setLoadingSlips(true);
-      try {
-        const res = await fetch('/api/admin/workspace', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            operation: 'generate_print_slips',
-            orderNos: ordersToLoad,
-            sortBy: sortKey === 'newest' || sortKey === 'oldest' ? 'order_no' : sortKey,
-          }),
-        });
-        const data = (await res.json()) as {
-          success: boolean;
-          printConfig?: PrintTemplateConfig;
-          slips?: OrderPrintSlipBundle[];
-        };
-        if (data.success && data.slips) {
-          setSlips(data.slips);
-          if (data.printConfig) {
-            setPrintConfig(data.printConfig);
-          }
-        }
-      } finally {
-        setLoadingSlips(false);
-      }
-    },
-    []
-  );
-
-  // Fetch initial slips
   React.useEffect(() => {
-    let active = true;
-    if (availableOrderNos.length === 0) return;
+    const orders = JSON.parse(orderKey) as string[];
+    setSelectedOrderNos(previous => {
+      const available = new Set(orders);
+      return previous.filter(order => available.has(order));
+    });
+    if (!orders.length) { setSlips([]); return; }
+    const id = ++requestId.current;
+    setLoadingSlips(true);
     fetch('/api/admin/workspace', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        operation: 'generate_print_slips',
-        orderNos: availableOrderNos,
-        sortBy: 'order_no',
-      }),
-    })
-      .then((res) =>
-        res.json() as Promise<{
-          success: boolean;
-          printConfig?: PrintTemplateConfig;
-          slips?: OrderPrintSlipBundle[];
-        }>
-      )
-      .then((data) => {
-        if (!active) return;
-        if (data.success && data.slips) {
-          setSlips(data.slips);
-          if (data.printConfig) {
-            setPrintConfig(data.printConfig);
-          }
-        }
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [availableOrderNos]);
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operation: 'generate_print_slips', orderNos: orders }),
+    }).then(async res => {
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.errorBn || 'প্রিভিউ লোড করা যায়নি। / Could not load preview.');
+      if (id === requestId.current) setSlips(data.slips || []);
+    }).catch(error => { if (id === requestId.current) setFeedback(error.message); })
+      .finally(() => { if (id === requestId.current) setLoadingSlips(false); });
+    return () => { requestId.current++; };
+  }, [orderKey]);
+
+  const loadSlips = async () => {
+    const orders = JSON.parse(orderKey) as string[];
+    if (!orders.length) return;
+    const id = ++requestId.current;
+    setLoadingSlips(true);
+    try {
+      const res = await fetch('/api/admin/workspace', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'generate_print_slips', orderNos: orders }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.errorBn || 'প্রিভিউ লোড করা যায়নি। / Could not load preview.');
+      if (id === requestId.current) setSlips(data.slips || []);
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : 'সংযোগ ব্যর্থ। / Connection failed.');
+    } finally { if (id === requestId.current) setLoadingSlips(false); }
+  };
 
   // Save Print Template Settings
   const handleSaveTemplateConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
-    const res = await fetch('/api/admin/workspace', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        operation: 'update_print_config',
-        patch: printConfig,
-      }),
-    });
-    const data = (await res.json()) as {
-      success: boolean;
-      errorBn?: string;
-    };
-    if (data.success) {
-      setFeedback('প্রিন্ট টেমপ্লেট ও লেবেল সফলভাবে সেভ হয়েছে।');
+    try {
+      const res = await fetch('/api/admin/workspace', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'update_print_config', patch: printConfig }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.errorBn || 'সেভ করা সম্ভব হয়নি। / Could not save settings.');
+      setPrintConfig(data.printConfig);
+      setLayoutMode(data.printConfig.defaultMode);
+      setFeedback(locale === 'bn' ? 'প্রিন্ট সেটিংস সেভ হয়েছে।' : 'Print settings saved.');
       await onRefreshWorkspace();
-    } else {
-      setFeedback(data.errorBn ?? 'সেভ করা সম্ভব হয়নি।');
-    }
+    } catch (error) { setFeedback(error instanceof Error ? error.message : 'সংযোগ ব্যর্থ। / Connection failed.'); }
   };
 
   // Filtered & Sorted Slips for Display
@@ -328,6 +248,74 @@ export function PrintEnginePanel({
       selectedOrderNos.includes(s.orderNo)
     );
   }, [filteredAndSortedSlips, selectedOrderNos]);
+
+  const heightScale = Math.min(1, 275 / (printConfig.part1HeightMm + printConfig.part2HeightMm + printConfig.part3HeightMm));
+
+  const handlePrint = async () => {
+    if (!activeSlipsToPrint.length || !printableRef.current) return;
+    setLoadingSlips(true);
+    setFeedback(null);
+    try {
+      // Record a print request, not a claim that the printer actually succeeded.
+      const res = await fetch('/api/admin/workspace', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'generate_print_slips', orderNos: activeSlipsToPrint.map(s => s.orderNo), recordPrint: true }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.errorBn || 'প্রিন্ট অনুরোধ ব্যর্থ। / Print request failed.');
+      const updates = new Map<string, OrderPrintSlipBundle>(data.slips.map((slip: OrderPrintSlipBundle) => [slip.orderNo, slip]));
+      flushSync(() => setSlips(previous => previous.map(slip => updates.get(slip.orderNo) || slip)));
+      const frame = document.createElement('iframe');
+      frame.setAttribute('title', 'Print preview');
+      Object.assign(frame.style, { position: 'fixed', width: layoutMode === 'thermal_4x6' ? '101.6mm' : '210mm', height: '297mm', left: '-10000px', top: '0', opacity: '0', border: '0' });
+      document.body.appendChild(frame);
+      const doc = frame.contentDocument;
+      const win = frame.contentWindow;
+      if (!doc || !win || !printableRef.current) { frame.remove(); throw new Error('প্রিন্ট উইন্ডো তৈরি করা যায়নি। / Could not open print window.'); }
+      doc.open();
+      doc.write('<!doctype html><html><head><meta charset="utf-8"><base href="' + document.baseURI.replace(/"/g, '&quot;') + '"></head><body></body></html>');
+      doc.close();
+      const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
+      const waits = styles.map(node => {
+        const clone = node.cloneNode(true) as HTMLElement;
+        doc.head.appendChild(clone);
+        if (clone.tagName !== 'LINK') return Promise.resolve();
+        return new Promise<void>(resolve => {
+          clone.addEventListener('load', () => resolve(), { once: true });
+          clone.addEventListener('error', () => resolve(), { once: true });
+          setTimeout(resolve, 2500);
+        });
+      });
+      const pageStyle = doc.createElement('style');
+      pageStyle.textContent = `@page { size: ${layoutMode === 'thermal_4x6' ? '101.6mm 152.4mm' : 'A4 portrait'}; margin: 0; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          .print-slips { margin: 0 !important; padding: 0 !important; }
+          .print-a4-sheet, .print-thermal-sheet { box-sizing: border-box; width: ${layoutMode === 'thermal_4x6' ? '101.6mm' : '210mm'} !important; max-width: none !important; height: auto !important; min-height: 0 !important; margin: 0 !important; break-after: page; page-break-after: always; }
+          .print-a4-sheet { display: block !important; padding: 4mm !important; }
+          .print-thermal-sheet { padding: 4mm !important; }
+          .print-a4-sheet:last-child, .print-thermal-sheet:last-child { break-after: auto; page-break-after: auto; }
+          .print-slip-part { box-sizing: border-box; }
+          img { max-width: 100%; }
+        }`;
+      doc.head.appendChild(pageStyle);
+      doc.body.appendChild(printableRef.current.cloneNode(true));
+      for (const image of Array.from(doc.images)) image.loading = 'eager';
+      await Promise.all(waits);
+      if (doc.fonts) await doc.fonts.ready;
+      await Promise.all(Array.from(doc.images).map(image => image.complete ? Promise.resolve() : new Promise<void>(resolve => {
+        image.onload = image.onerror = () => resolve(); setTimeout(resolve, 2000);
+      })));
+      win.onafterprint = () => frame.remove();
+      win.focus();
+      win.print();
+      // Browsers do not report whether the dialog was cancelled or paper was printed.
+      setFeedback(locale === 'bn' ? 'প্রিন্ট অনুরোধ নথিভুক্ত হয়েছে। প্রিন্ট ডায়ালগে কাগজের আকার ও স্কেল যাচাই করুন; বাতিল করলেও অনুরোধের সংখ্যা থাকবে।' : 'Print request recorded. Check paper size and scale in the print dialog; cancelled requests are also counted.');
+      setTimeout(() => frame.remove(), 120000);
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : 'প্রিন্ট ব্যর্থ। / Print failed.');
+    } finally { setLoadingSlips(false); }
+  };
 
   return (
     <section className="space-y-5">
@@ -477,6 +465,12 @@ export function PrintEnginePanel({
                 </div>
               </div>
 
+              {layoutMode === 'a4_3part' && <fieldset className="flex flex-wrap gap-4 text-xs border-t border-border pt-2">
+                <legend>{locale === 'bn' ? 'প্রিন্টের অংশ / Parts to print' : 'Parts to print / প্রিন্টের অংশ'}</legend>
+                {['গ্রাহক / Customer', 'কুরিয়ার / Courier', 'অভ্যন্তরীণ / Internal'].map((label, index) => <label key={label} className="inline-flex items-center gap-1.5">
+                  <input type="checkbox" checked={visibleParts[index]} onChange={e => setVisibleParts(parts => parts.map((value, i) => i === index ? e.target.checked : value))} /> {label}
+                </label>)}
+              </fieldset>}
               {/* Row 2: Selection Counters & Direct Print Trigger Buttons */}
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border">
                 <div className="flex items-center gap-2 text-xs">
@@ -501,7 +495,7 @@ export function PrintEnginePanel({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => void loadSlips(selectedOrderNos, sortOption)}
+                    onClick={() => void loadSlips()}
                     disabled={loadingSlips}
                     leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
                   >
@@ -511,8 +505,8 @@ export function PrintEnginePanel({
                   <Button
                     variant="primary"
                     size="md"
-                    onClick={() => window.print()}
-                    disabled={activeSlipsToPrint.length === 0}
+                    onClick={() => void handlePrint()}
+                    disabled={activeSlipsToPrint.length === 0 || loadingSlips || (layoutMode === 'a4_3part' && !visibleParts.some(Boolean))}
                     leftIcon={<Printer className="w-4 h-4" />}
                   >
                     {layoutMode === 'a4_3part'
@@ -587,7 +581,7 @@ export function PrintEnginePanel({
           {/* ====================================================================
               PRINTABLE SLIPS CONTAINER (RENDERED NATIVELY ON BROWSER PRINT)
              ==================================================================== */}
-          <div className="space-y-6 print:space-y-0">
+          <div ref={printableRef} className="print-slips space-y-6 print:space-y-0">
             {activeSlipsToPrint.map((slip) => {
               const p12 = slip.customerAndCourierPart;
               const p3 = slip.internalPart3;
@@ -596,7 +590,7 @@ export function PrintEnginePanel({
                 return (
                   <div
                     key={slip.orderNo}
-                    className="max-w-[101.6mm] mx-auto border-2 border-ink bg-bg text-ink p-4 space-y-3 print:break-after-page"
+                    className="print-thermal-sheet max-w-[101.6mm] mx-auto border-2 border-ink bg-bg text-ink p-4 space-y-3 print:break-after-page"
                   >
                     <div className="flex items-center justify-between border-b border-border pb-2">
                       <div>
@@ -610,8 +604,8 @@ export function PrintEnginePanel({
                     </div>
 
                     <div className="flex items-center justify-between gap-2 py-1">
-                      <Code128BarcodeSvg value={p12.trackingCode} height={40} />
-                      <QRCodeSVG value={p12.trackingUrl} size={56} />
+                      <div><Code128BarcodeSvg value={p12.trackingCode || p12.orderNo} height={40} />{!p12.trackingCode && <p className="text-[9px]">অর্ডার বারকোড / Order barcode</p>}</div>
+                      {p12.trackingUrl && <QRCodeSVG value={new URL(p12.trackingUrl, window.location.origin).href} size={56} />}
                     </div>
 
                     <div className="p-2 border border-border rounded-[var(--radius-sm)] space-y-1 text-xs">
@@ -642,7 +636,7 @@ export function PrintEnginePanel({
 
                     <div className="text-[10px] font-mono text-muted flex justify-between pt-1 border-t border-border">
                       <span><LocalizedText source={"Order:"} area="admin" />{" "}{p12.orderNo}</span>
-                      <span><LocalizedText source={"CNS:"} area="admin" />{" "}{p12.consignmentId}</span>
+                      <span><LocalizedText source={"CNS:"} area="admin" />{" "}{p12.consignmentId || '—'}</span>
                     </div>
                   </div>
                 );
@@ -657,7 +651,7 @@ export function PrintEnginePanel({
                   {/* ==========================================================
                       PART 1: CUSTOMER INVOICE (গ্রাহক ইনভয়েস — ZERO COST LEAK)
                      ========================================================== */}
-                  <div className="border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg">
+                  <div className="print-slip-part border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg" style={{ minHeight: `${printConfig.part1HeightMm * heightScale}mm`, display: visibleParts[0] ? undefined : 'none' }}>
                     <div className="flex items-start justify-between border-b border-border pb-1.5 gap-2">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-[var(--radius-sm)] border border-ink bg-ink text-bg flex items-center justify-center font-bold text-sm shrink-0">
@@ -735,13 +729,13 @@ export function PrintEnginePanel({
                                 </td>
                                 <td className="py-1 px-1.5">
                                   <div className="flex items-center gap-1.5">
-                                    <div className="relative w-5 h-5 border border-border rounded overflow-hidden shrink-0">
+                                    {item.imageUrl && <div className="relative w-5 h-5 border border-border rounded overflow-hidden shrink-0">
                                       <img
                                         src={item.imageUrl}
                                         alt={item.productNameBn}
                                         referrerPolicy="no-referrer"
                                         className="object-cover" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
-                                    </div>
+                                    </div>}
                                     <div className="leading-tight">
                                       <span className="font-semibold text-ink">
                                         {localizedField(item, "productNameBn", locale)}
@@ -821,7 +815,7 @@ export function PrintEnginePanel({
                   </div>
 
                   {/* CUT LINE 1 */}
-                  <div className="flex items-center gap-2 text-[8.5px] font-mono text-muted py-0">
+                  <div style={{ display: visibleParts[0] && (visibleParts[1] || visibleParts[2]) ? undefined : 'none' }} className="flex items-center gap-2 text-[8.5px] font-mono text-muted py-0">
                     <Scissors className="w-3 h-3 shrink-0" aria-hidden="true" />
                     <div className="flex-1 border-t border-dashed border-ink" />
                     <span><LocalizedText source={"✂ CUT HERE (PART 1 CUSTOMER COPY / PART 2 COURIER BOX LABEL)"} area="admin" /></span>
@@ -831,7 +825,7 @@ export function PrintEnginePanel({
                   {/* ==========================================================
                       PART 2: COURIER BOX STICKER (কুরিয়ার বক্স স্টিকার)
                      ========================================================== */}
-                  <div className="border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg">
+                  <div className="print-slip-part border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg" style={{ minHeight: `${printConfig.part2HeightMm * heightScale}mm`, display: visibleParts[1] ? undefined : 'none' }}>
                     <div className="flex items-center justify-between border-b border-border pb-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-surface border border-border rounded text-ink">
@@ -846,7 +840,7 @@ export function PrintEnginePanel({
                         <span className="font-bold uppercase px-1.5 py-0.5 bg-ink text-bg rounded">
                           {p12.courierProvider}
                         </span>{' '}
-                        · <span className="font-bold">{p12.consignmentId}</span>
+                        · <span className="font-bold">{p12.consignmentId || '—'}</span>
                       </div>
                     </div>
 
@@ -873,9 +867,10 @@ export function PrintEnginePanel({
 
                       <div className="sm:col-span-4 flex items-center justify-center gap-2.5 py-0.5">
                         <div className="text-center">
-                          <Code128BarcodeSvg value={p12.trackingCode} height={34} />
+                          <Code128BarcodeSvg value={p12.trackingCode || p12.orderNo} height={34} />
+                          {!p12.trackingCode && <p>অর্ডার বারকোড / Order barcode</p>}
                         </div>
-                        <QRCodeSVG value={p12.trackingUrl} size={46} />
+                        {p12.trackingUrl && <QRCodeSVG value={new URL(p12.trackingUrl, window.location.origin).href} size={46} />}
                       </div>
 
                       <div className="sm:col-span-3 border-2 border-ink bg-surface p-1.5 text-center rounded-[var(--radius-sm)]">
@@ -892,7 +887,7 @@ export function PrintEnginePanel({
                   </div>
 
                   {/* CUT LINE 2 */}
-                  <div className="flex items-center gap-2 text-[8.5px] font-mono text-muted py-0">
+                  <div style={{ display: visibleParts[1] && visibleParts[2] ? undefined : 'none' }} className="flex items-center gap-2 text-[8.5px] font-mono text-muted py-0">
                     <Scissors className="w-3 h-3 shrink-0" aria-hidden="true" />
                     <div className="flex-1 border-t border-dashed border-ink" />
                     <span>
@@ -904,7 +899,7 @@ export function PrintEnginePanel({
                       PART 3: ADMIN, ACCOUNTS & WAREHOUSE MASTER COPY
                       (পূর্ণাঙ্গ প্রোডাক্ট, সাপ্লায়ার, কেনা দাম, লাভ, মার্জিন ও হিসাব ব্রেকডাউন)
                      ========================================================== */}
-                  <div className="border-2 border-ink rounded-[var(--radius-sm)] p-2.5 bg-surface/60 space-y-2">
+                  <div className="print-slip-part border-2 border-ink rounded-[var(--radius-sm)] p-2.5 bg-surface/60 space-y-2" style={{ minHeight: `${printConfig.part3HeightMm * heightScale}mm`, display: visibleParts[2] ? undefined : 'none' }}>
                     {/* Part 3 Header & Operational Telemetry Strip */}
                     <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-border pb-1.5">
                       <div>
@@ -984,7 +979,7 @@ export function PrintEnginePanel({
                                   {line.vendorBusinessName} ({line.vendorCode})
                                 </div>
                                 <div className="font-mono text-[8px] text-muted">
-                                  {line.consignmentLotRef ?? 'LOT-ACTIVE'}
+                                  {line.consignmentLotRef || '—'}
                                   {line.vendorContactPhone
                                     ? ` · ${line.vendorContactPhone}`
                                     : ''}
@@ -1005,8 +1000,8 @@ export function PrintEnginePanel({
                                   <strong className="text-ink">
                                     {line.internalVendorSku}
                                   </strong>{' '}
-                                  · {line.warehouseBinCode ?? 'BIN-A1'} ·{' '}
-                                  {line.weightGrams ?? 450}<LocalizedText source={"g"} area="admin" />{" "}</div>
+                                  · {line.warehouseBinCode || '—'} ·{' '}
+                                  {line.weightGrams ?? '—'}<LocalizedText source={"g"} area="admin" />{" "}</div>
                               </td>
                               <td className="py-1 px-1 text-center font-mono font-bold text-ink">
                                 {formatLocaleNumber(line.quantity, locale)}<LocalizedText source={"টি"} area="admin" />{" "}</td>
@@ -1198,7 +1193,7 @@ export function PrintEnginePanel({
                               </span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted"><LocalizedText source={"ডেলিভারি (গ্রাহক/প্রকৃত):"} area="admin" /></span>
+                              <span className="text-muted"><LocalizedText source={"ডেলিভারি (গ্রাহক/আনুমানিক):"} area="admin" /></span>
                               <span>
                                 {formatPoishaToBdt(
                                   p3.accountingSummary
@@ -1285,7 +1280,7 @@ export function PrintEnginePanel({
                               )}
                               <LocalizedText source={") - ছাড় - ডেলিভারি ভর্তুকি - প্যাকিং - ৫% ভ্যাট"} area="admin" />{" "}</span>
                             <span className="text-[9.5px] font-bold text-success bg-surface px-2 py-0.5 rounded border border-border">
-                              <LocalizedText source={"নিট প্ল্যাটফর্ম লাভ (Net Profit):"} area="admin" />{' '}
+                              <LocalizedText source={"আনুমানিক নিট প্ল্যাটফর্ম লাভ (Estimated Net Profit):"} area="admin" />{' '}
                               {formatPoishaToBdt(
                                 p3.accountingSummary
                                   .netPlatformRetainedProfitPoisha,
@@ -1301,7 +1296,7 @@ export function PrintEnginePanel({
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 border-t border-border text-[8.5px] items-end">
                       <div className="sm:col-span-7 space-y-1">
                         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
-                          {p3.checklistItemsBn.map((chk, idx) => (
+                          {printConfig.checklistItemsBn.filter(chk => chk.trim()).map((chk, idx) => (
                             <span
                               key={idx}
                               className="inline-flex items-center gap-1 text-ink font-medium"
@@ -1350,6 +1345,15 @@ export function PrintEnginePanel({
           </div>
 
           <form onSubmit={handleSaveTemplateConfig} className="space-y-4">
+            <label className="block text-sm font-medium">
+              {locale === 'bn' ? 'ডিফল্ট কাগজ / Default paper' : 'Default paper / ডিফল্ট কাগজ'}
+              <select className="block w-full mt-1 border border-border rounded p-2 bg-bg" value={printConfig.defaultMode}
+                onChange={e => setPrintConfig(p => ({ ...p, defaultMode: e.target.value as PrintTemplateConfig['defaultMode'] }))}>
+                <option value="a4_3part">A4 — ৩ অংশ / 3 parts</option>
+                <option value="thermal_4x6">4 × 6 inch — থার্মাল / Thermal</option>
+              </select>
+            </label>
+            <p className="text-xs text-muted">{locale === 'bn' ? 'অংশের উচ্চতা ন্যূনতম লক্ষ্য; A4-এ জায়গা কম হলে অনুপাতে কমবে এবং বেশি লেখা পরের পাতায় যাবে, কাটা হবে না।' : 'Part heights are minimum targets, proportionally reduced to fit A4. Overflow continues on another page rather than being clipped.'}</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Input
                 label="Part 1 শিরোনাম (গ্রাহক কপি)"
@@ -1381,9 +1385,13 @@ export function PrintEnginePanel({
                   }))
                 }
               />
+              {[1, 2, 3].map((part) => {
+                const key = `part${part}TitleEn` as 'part1TitleEn' | 'part2TitleEn' | 'part3TitleEn';
+                return <Input key={key} label={`Part ${part} English title / ইংরেজি শিরোনাম`} required minLength={2} value={printConfig[key]} onChange={e => setPrintConfig(p => ({ ...p, [key]: e.target.value }))} />;
+              })}
               <Input
                 label="Part 1 উচ্চতা (mm)"
-                type="number"
+                type="number" min={60} max={120} required
                 value={String(printConfig.part1HeightMm)}
                 onChange={(e) =>
                   setPrintConfig((p) => ({
@@ -1394,7 +1402,7 @@ export function PrintEnginePanel({
               />
               <Input
                 label="Part 2 উচ্চতা (mm)"
-                type="number"
+                type="number" min={60} max={120} required
                 value={String(printConfig.part2HeightMm)}
                 onChange={(e) =>
                   setPrintConfig((p) => ({
@@ -1403,6 +1411,9 @@ export function PrintEnginePanel({
                   }))
                 }
               />
+              <Input label="Part 3 উচ্চতা / Height (mm)" type="number" min={60} max={120} required
+                value={String(printConfig.part3HeightMm)}
+                onChange={e => setPrintConfig(p => ({ ...p, part3HeightMm: Number(e.target.value) }))} />
               <Input
                 label="গ্রাহক ফুটার টার্মস/নোট"
                 value={printConfig.footerNoteBn}
@@ -1415,6 +1426,12 @@ export function PrintEnginePanel({
               />
             </div>
 
+            <label className="block text-sm font-medium">
+              {locale === 'bn' ? 'প্যাকিং চেকলিস্ট (প্রতি লাইনে একটি) / Packing checklist' : 'Packing checklist (one item per line) / প্যাকিং চেকলিস্ট'}
+              <textarea className="block w-full mt-1 border border-border rounded p-2 bg-bg" rows={5}
+                value={printConfig.checklistItemsBn.join('\n')}
+                onChange={e => setPrintConfig(p => ({ ...p, checklistItemsBn: e.target.value.split('\n') }))} />
+            </label>
             <div className="flex justify-end pt-2 border-t border-border">
               <Button type="submit" variant="primary" size="md">
                 <LocalizedText source={"সেটিংস সেভ করুন"} area="admin" />{" "}</Button>
@@ -1435,13 +1452,13 @@ export function PrintEnginePanel({
                 <span><LocalizedText source={"প্রিন্ট ইতিহাস ও সামারি (Print Audit Log)"} area="admin" /></span>
               </h2>
               <p className="text-xs text-muted">
-                <LocalizedText source={"সর্বশেষ কতটি ইনভয়েস ও কুরিয়ার স্টিকার প্রিন্ট করা হয়েছে তার তালিকা।"} area="admin" />{" "}</p>
+                <LocalizedText source={"বর্তমান কিউর অর্ডারগুলোর প্রিন্ট অনুরোধ; বাতিল করলেও গণনা হয়। / Requests for orders in the current queue, including cancelled dialogs."} area="admin" />{" "}</p>
             </div>
-            <Badge status="neutral"><LocalizedText source={"মোট রেকর্ড:"} area="admin" />{" "}{slips.length}</Badge>
+            <Badge status="neutral"><LocalizedText source={"মোট রেকর্ড:"} area="admin" />{" "}{formatLocaleNumber(slips.filter(s => s.internalPart3.printCount > 0).length, locale)}</Badge>
           </div>
 
           <div className="divide-y divide-border">
-            {slips.map((slip) => {
+            {slips.filter(s => s.internalPart3.printCount > 0).map((slip) => {
               const p12 = slip.customerAndCourierPart;
               const p3 = slip.internalPart3;
 
@@ -1454,7 +1471,7 @@ export function PrintEnginePanel({
                     <div className="flex items-center gap-2 font-mono font-bold text-ink">
                       <span>{p12.orderNo}</span>
                       <Badge status={p3.isReprintWarning ? 'warning' : 'neutral'}>
-                        {p3.printCount} {" "}<LocalizedText source={"বার প্রিন্ট হয়েছে"} area="admin" />{" "}</Badge>
+                        {formatLocaleNumber(p3.printCount, locale)} {" "}<LocalizedText source={"টি প্রিন্ট অনুরোধ / print requests"} area="admin" />{" "}</Badge>
                     </div>
                     <p className="text-muted">
                       <LocalizedText source={"গ্রাহক:"} area="admin" />{" "}{p12.customerName} ({p12.customerPhone}) —{' '}
