@@ -83,3 +83,52 @@ test('failed registration transaction does not leave an account behind', async (
   assert.equal((await POST(req({ action: 'login', identifier: 'rollback@example.com', password: 'rollback password' }))).status, 401);
   assert.equal((await POST(req({ action: 'register', email: 'rollback@example.com', password: 'rollback password' }))).status, 200);
 });
+
+test('guest checkout requires an unguessable retry key and does not associate orders by phone', async () => {
+  const crypto = await import('node:crypto');
+  const { POST: checkout } = await import('../../../app/api/orders/route');
+  const { readErpState, writeErpState } = await import('../db/repository');
+  const state = readErpState();
+  const product = state.products.find(p => p.status === 'active' && p.variants.length)!;
+  product.variants[0].stockOnHand = product.variants[0].stockAvailable = 20;
+  state.siteSettings.globalFreeDelivery = false;
+  state.siteSettings.freeDeliveryThresholdPoisha = 100_000_000;
+  product.isFreeDelivery = false;
+  writeErpState(state);
+  const phone = '01776543210';
+  const input = { customerName: 'Guest Customer', customerPhone: phone, districtId: 47, upazilaId: 365, streetAddress: 'Test guest house road 25', landmark: 'Test school', deliveryMethod: 'courier', paymentMethod: 'cod', idempotencyKey: crypto.randomUUID(), items: [{ productId: product.productId, variantId: product.variants[0].variantId, quantity: 1 }] };
+  const send = (body: object) => new ApiRequest('http://localhost/api/orders', { method: 'POST', headers: { origin: 'http://localhost', host: 'localhost', 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  assert.equal((await checkout(send({ ...input, idempotencyKey: 'guessable-key' }))).status, 400);
+  const response = await checkout(send(input));
+  assert.equal(response.status, 200, await response.clone().text());
+  const order = (await response.json()).order;
+  assert.match(order.secureTrackingToken, /^trk_/);
+  const retry = await checkout(send(input));
+  assert.equal((await retry.json()).order.orderNo, order.orderNo);
+  const settings = readErpState();
+  const depositProduct = settings.products.find(p => p.productId === product.productId)!;
+  depositProduct.requiresAdvanceCourierCharge = true; depositProduct.customAdvanceDepositPoisha = 1234;
+  settings.siteSettings.globalFreeDelivery = true;
+  writeErpState(settings);
+  const bkash = await checkout(send({ ...input, idempotencyKey: crypto.randomUUID(), paymentMethod: 'bkash_manual', manualPaymentTrxId: 'AUDIT987654' }));
+  assert.equal(bkash.status, 200, await bkash.clone().text());
+  const submission = readErpState().manualBkashSubmissions.find(s => s.trxId === 'AUDIT987654');
+  assert.equal(submission?.status, 'pending_verification');
+  assert.equal(submission?.submittedAmountPoisha, 1234);
+  const registered = await POST(req({ action: 'register', phone, password: 'secure guest password' }));
+  assert.equal(registered.status, 200);
+  assert.equal((await (await account(cookieOf(registered))).json()).orders.some((o: { orderNo: string }) => o.orderNo === order.orderNo), false);
+});
+
+test('scheduled courier endpoint fails closed even with the configured secret', async () => {
+  const { GET } = await import('../../../app/api/cron/courier-status/route');
+  const previous = process.env.CRON_SECRET;
+  process.env.CRON_SECRET = 'test-cron-secret';
+  try {
+    const request = (auth?: string) => new ApiRequest('http://localhost/api/cron/courier-status', { headers: auth ? { authorization: auth } : {} });
+    assert.equal((await GET(request())).status, 401);
+    const response = await GET(request('Bearer test-cron-secret'));
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).code, 'NOT_INTEGRATED');
+  } finally { if (previous === undefined) delete process.env.CRON_SECRET; else process.env.CRON_SECRET = previous; }
+});

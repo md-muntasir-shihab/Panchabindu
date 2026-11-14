@@ -99,6 +99,10 @@ export function ProductCard({ product }: ProductCardProps) {
               src={activeImage}
               alt={displayName}
               referrerPolicy="no-referrer"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = '/assets/product-placeholder.svg';
+              }}
               className="object-cover transition-transform duration-500 ease-out group-hover:scale-105" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
           </Link>
 

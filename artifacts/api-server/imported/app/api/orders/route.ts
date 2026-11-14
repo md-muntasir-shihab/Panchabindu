@@ -64,13 +64,8 @@ async function handlePOST(req: NextRequest) {
     const session = verifyCustomerSessionToken(
       req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value
     );
-    if (!session) {
-      return NextResponse.json(
-        { success: false, errorBn: 'অর্ডার দিতে আগে কাস্টমার অ্যাকাউন্টে লগইন করুন।' },
-        { status: 401 }
-      );
-    }
-    if (!checkRateLimit(`checkout:${session.customerId}`, 10, 60_000).allowed) return NextResponse.json({ success: false }, { status: 429 });
+    const rateLimitKey = session?.customerId ?? `guest:${getClientIpFromRequest(req)}`;
+    if (!checkRateLimit(`checkout:${rateLimitKey}`, 10, 60_000).allowed) return NextResponse.json({ success: false }, { status: 429 });
     const raw = await req.text();
     if (!assertJsonBodySize(raw, 32 * 1024).ok) return NextResponse.json({ success: false }, { status: 413 });
     const body = JSON.parse(raw);
@@ -89,7 +84,12 @@ async function handlePOST(req: NextRequest) {
       );
     }
 
-    if (session.phone && parsed.data.customerPhone !== session.phone) {
+    // Guest retry keys also protect access to the returned tracking token.
+    if (!session && !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(parsed.data.idempotencyKey)) {
+      return NextResponse.json({ success: false, errorBn: 'নিরাপদ অর্ডার কী প্রয়োজন। পেজটি রিফ্রেশ করুন।' }, { status: 400 });
+    }
+
+    if (session?.phone && parsed.data.customerPhone !== session.phone) {
       return NextResponse.json(
         { success: false, errorBn: 'অর্ডারের ফোন নম্বরটি লগইন করা অ্যাকাউন্টের সঙ্গে মিলতে হবে।' },
         { status: 403 }
@@ -97,7 +97,7 @@ async function handlePOST(req: NextRequest) {
     }
 
     const result = await runWithAtomicStockLock(() =>
-      createStorefrontOrder({ ...parsed.data, source: 'storefront', advancePaidPoisha: 0, internalStaffNote: '' }, req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value)
+      createStorefrontOrder({ ...parsed.data, source: 'storefront', advancePaidPoisha: 0, internalStaffNote: '' }, session ? req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value : undefined)
     );
     if (!result.success || !result.order) {
       return NextResponse.json(
@@ -111,7 +111,7 @@ async function handlePOST(req: NextRequest) {
 
     // Initialize Multi-Vendor Fulfillment Groups (VFG) & 5-Dimension Orthogonal State
     buildAndPersistOrderFulfillmentGroups(result.order.orderNo);
-    reconcileOrderReservationRecords(result.order.orderNo, `customer:${session.customerId}`);
+    reconcileOrderReservationRecords(result.order.orderNo, session ? `customer:${session.customerId}` : `guest:${getClientIpFromRequest(req)}`);
     computeOrthogonalOrderState(result.order.orderNo);
 
     return NextResponse.json({

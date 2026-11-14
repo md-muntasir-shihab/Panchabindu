@@ -15,8 +15,8 @@ function request(path: string): NextRequest {
 }
 
 describe('customer route authentication boundaries', () => {
-  it('rejects anonymous checkout, cancellation, payment and returns', async () => {
-    assert.equal((await createOrder(request('/api/orders'))).status, 401);
+  it('validates guest checkout and rejects anonymous cancellation, payment and returns', async () => {
+    assert.equal((await createOrder(request('/api/orders'))).status, 400);
     assert.equal((await cancelOrder(request('/api/orders/cancellation-request'))).status, 401);
     assert.equal((await submitPayment(request('/api/payments/manual-bkash/submissions'))).status, 401);
     const returnRequest = new NextRequest('http://localhost/api/orders/return-request', {

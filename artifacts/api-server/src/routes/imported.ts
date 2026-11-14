@@ -30,6 +30,7 @@ import * as vendorOnboarding from '../../imported/app/api/vendor/onboarding/rout
 import * as adminVendors from '../../imported/app/api/admin/vendors/route';
 import * as adminVendorPayouts from '../../imported/app/api/admin/vendor-payouts/route';
 import * as webhook from '../../imported/app/api/webhooks/courier/route';
+import * as courierStatusCron from '../../imported/app/api/cron/courier-status/route';
 import { pageData, manifest, sitemap, robots } from './page-data';
 
 type Handler = (request: ApiRequest, context: { params: Promise<Record<string, string>> }) => Promise<Response>;
@@ -81,7 +82,7 @@ const routes: Array<[string, Record<string, unknown>]> = [
   ['/api/vendor/products', vendorProducts], ['/api/vendor/stock', vendorStock],
   ['/api/vendor/price-proposals', vendorPriceProposals], ['/api/vendor/payouts', vendorPayouts],
   ['/api/vendor/profile', vendorProfile], ['/api/vendor/onboarding', vendorOnboarding],
-  ['/api/webhooks/courier', webhook],
+  ['/api/webhooks/courier', webhook], ['/api/cron/courier-status', courierStatusCron],
   ['/api/page-data', { GET: pageData }],
   ['/manifest.webmanifest', { GET: manifest }], ['/sitemap.xml', { GET: sitemap }],
   ['/robots.txt', { GET: robots }],

@@ -1733,12 +1733,15 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
   const totalPayablePoisha =
     subtotalPoisha - appliedDiscountPoisha + deliveryCalc.finalChargePoisha;
 
-  // Rule 4.7: Unverified Manual bKash submissions NEVER count as paid/advance until verified by an admin checker.
+  // Calculate the requested advance from server-side product settings, just as
+  // the checkout quote does. A submitted transaction is not a verified payment.
+  const requiredDepositPoisha = resolvedLines.reduce((sum, line) => sum +
+    (line.product.requiresAdvanceCourierCharge ? (line.product.customAdvanceDepositPoisha ?? 0) * line.quantity : 0), 0);
   const submittedBkashPoisha =
     input.paymentMethod !== 'cod' && input.manualPaymentTrxId
       ? input.advancePaidPoisha > 0
         ? input.advancePaidPoisha
-        : deliveryCalc.finalChargePoisha
+        : deliveryCalc.finalChargePoisha + requiredDepositPoisha
       : 0;
 
   if (input.paymentMethod !== 'cod' && input.manualPaymentTrxId) {

@@ -1,6 +1,6 @@
 {
   "installCommand": "npx --yes pnpm@10.34.9 install --frozen-lockfile",
-  "buildCommand": "npx --yes pnpm@10.34.9 run db:initialize-runtime && PORT=3000 BASE_PATH=/ npx --yes pnpm@10.34.9 run build",
+  "buildCommand": "npx --yes pnpm@10.34.9 run db:initialize-runtime && PORT=3000 BASE_PATH=/ npx --yes pnpm@10.34.9 run build:vercel",
   "outputDirectory": "artifacts/panchabindu/dist/public",
   "functions": {
     "api/*.mjs": {
@@ -11,6 +11,8 @@
     }
   },
   "rewrites": [
+    { "source": "/api/cron/courier-status", "destination": "/api/courier-status-cron.mjs" },
+    { "source": "/api/vendor/overview", "destination": "/api/vendor-overview.mjs" },
     { "source": "/manifest.webmanifest", "destination": "/api/__metadata/manifest.webmanifest" },
     { "source": "/sitemap.xml", "destination": "/api/__metadata/sitemap.xml" },
     { "source": "/robots.txt", "destination": "/api/__metadata/robots.txt" },

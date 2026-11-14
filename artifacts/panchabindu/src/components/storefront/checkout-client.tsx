@@ -123,7 +123,7 @@ export function CheckoutClient({
 
   // Submission & Idempotency State
   const [idempotencyKey] = React.useState(
-    () => `chk-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+    () => crypto.randomUUID()
   );
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -291,8 +291,8 @@ export function CheckoutClient({
       setSubmitError(locale === 'bn' ? 'সার্ভারের হিসাব আসা পর্যন্ত অপেক্ষা করুন।' : 'Please wait for the server quote.');
       return;
     }
-    if (sessionStatus !== 'authenticated') {
-      setSubmitError('অর্ডার নিশ্চিত করার আগে অ্যাকাউন্টে লগইন করুন।');
+    if (sessionStatus === 'loading' || sessionStatus === 'error') {
+      setSubmitError(locale === 'bn' ? 'চেকআউট প্রস্তুত হচ্ছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।' : 'Checkout is being prepared. Please try again shortly.');
       return;
     }
 
@@ -415,12 +415,9 @@ export function CheckoutClient({
   return (
     <StorefrontShell siteSettings={siteSettings} categories={categories}>
       <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-6">
-        {sessionStatus !== 'authenticated' && (
+        {sessionStatus === 'error' && (
           <Card className="space-y-3">
-            <p role="status" className="text-sm">
-              {sessionStatus === 'loading' ? (locale === 'bn' ? 'অ্যাকাউন্ট যাচাই হচ্ছে…' : 'Checking your account…') : sessionStatus === 'error' ? (locale === 'bn' ? 'অ্যাকাউন্ট যাচাই করা যায়নি। লগইন পেজ থেকে আবার চেষ্টা করুন।' : 'Could not check your account. Please sign in again.') : (locale === 'bn' ? 'অর্ডার নিশ্চিত করতে আগে লগইন করুন। আপনার কার্ট সংরক্ষিত থাকবে।' : 'Sign in before placing your order. Your cart will be saved.')}
-            </p>
-            {sessionStatus !== 'loading' && <Link href="/account?tab=orders&returnTo=checkout" className="inline-flex min-h-[44px] items-center font-semibold underline">{locale === 'bn' ? 'অ্যাকাউন্টে লগইন করুন' : 'Sign in to your account'}</Link>}
+            <p role="status" className="text-sm">{locale === 'bn' ? 'চেকআউট প্রস্তুত করা যায়নি। পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।' : 'Checkout could not be prepared. Please refresh and try again.'}</p>
           </Card>
         )}
         <div className="flex items-center justify-between border-b border-border pb-4">
@@ -1246,7 +1243,7 @@ export function CheckoutClient({
                   type="submit"
                   variant="primary"
                   size="lg"
-                  disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus !== 'authenticated'}
+                  disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus === 'loading' || sessionStatus === 'error'}
                   className="w-full min-h-[46px] text-sm font-bold shadow-sm"
                   leftIcon={
                     <ShieldCheck className="w-4 h-4" aria-hidden="true" />
@@ -1276,7 +1273,7 @@ export function CheckoutClient({
                 type="submit"
                 variant="primary"
                 size="md"
-                disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus !== 'authenticated'}
+                disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus === 'loading' || sessionStatus === 'error'}
                 className="min-h-[42px] px-4 font-bold"
                 leftIcon={<ShieldCheck className="w-4 h-4" aria-hidden="true" />}
               >
