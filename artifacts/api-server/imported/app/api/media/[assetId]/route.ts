@@ -6,6 +6,7 @@ import { createSupabaseAdminClient, isSupabaseAdminConfigured } from '@/src/lib/
 import { extractAdminSessionTokenFromRequest, verifyAdminSessionToken, verifyOriginAndCsrf } from '@/src/lib/security/crypto-session';
 import { getActorSecurityContext, appendImmutableAuditLog, readAdminStore, writeAdminStore } from '@/src/lib/admin/phase4a-service';
 import { isFirstLoginGateCleared } from '@/src/types/permissions';
+import { prioritizeApprovedImage } from '@/src/lib/media/product-gallery';
 
 type Context = { params: Promise<{ assetId: string }> };
 
@@ -49,7 +50,8 @@ export const POST = backendRoute(async (request: NextRequest, context: Context) 
   asset.status = 'approved';
   asset.approvedBy = actor.userId;
   asset.publicPath = publicPath;
-  if (!product.images.includes(url)) product.images.push(url);
+  // The newly approved image must be visible as the product card cover.
+  product.images = prioritizeApprovedImage(product.images, url);
   writeErpState(state);
   const audit = readAdminStore();
   appendImmutableAuditLog(audit, { actorUserId: actor.userId, actorUsername: actor.username, actorRole: actor.roleSlug,
