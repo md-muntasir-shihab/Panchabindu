@@ -1,0 +1,6 @@
+{
+  "name": "Panchagarh — Multi-Vendor Consignment F-Commerce & ERP",
+  "description": "Bangladesh Multi-Vendor Consignment F-Commerce Platform & Admin ERP with COD, manual bKash, double-entry ledger, and consignment inventory.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

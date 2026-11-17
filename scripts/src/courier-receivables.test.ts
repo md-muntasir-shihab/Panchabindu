@@ -22,7 +22,7 @@ test('missing, invalid, overflow and duplicate data fail closed instead of inven
     assert.equal(summarizeCourierOrders([{ orderNo: 'A', status: 'delivered', codCollectablePoisha: value }]).delivered, null);
   }
   assert.equal(summarizeCourierOrders([{ status: 'shipped', codCollectablePoisha: 100 }]).transit, null);
-  const duplicate = [{ orderNo: 'A', status: 'delivered', codCollectablePoisha: 1 }, { orderNo: 'a', status: 'delivered', codCollectablePoisha: 1 }];
+  const duplicate = [{ orderNo: 'A', status: 'delivered' as const, codCollectablePoisha: 1 }, { orderNo: 'a', status: 'delivered' as const, codCollectablePoisha: 1 }];
   assert.equal(summarizeCourierOrders(duplicate.slice(0, 1), duplicate).delivered, null);
   assert.equal(summarizeCourierOrders([{ orderNo: 'A', status: 'delivered', codCollectablePoisha: Number.MAX_SAFE_INTEGER }, { orderNo: 'B', status: 'delivered', codCollectablePoisha: 1 }]).delivered, null);
   assert.deepEqual(summarizeCourierOrders([]), { delivered: 0, transit: 0, deliveredCount: 0, transitCount: 0 });

@@ -3,8 +3,15 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "..",
+    "lib": ["es2022", "dom"],
     "types": ["node"],
-    "paths": { "@/*": ["../artifacts/api-server/imported/*"] }
+    "paths": {
+      "@/*": [
+        "../artifacts/api-server/imported/*",
+        "../artifacts/api-server/imported/src/*",
+        "../artifacts/panchabindu/src/*"
+      ]
+    }
   },
   "include": ["src"]
 }
