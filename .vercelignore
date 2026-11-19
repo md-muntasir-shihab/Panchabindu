@@ -1,4 +1,8 @@
-.migration-backup
 .agents
 .replit
+.replitignore
 docs
+*.log
+node_modules
+**/*.tsbuildinfo
+.migration-backup

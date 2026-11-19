@@ -18,8 +18,8 @@
     "test:preview": "node --test ./src/preview.test.mjs"
   },
   "devDependencies": {
-    "@types/node": "^25.3.3",
+    "@types/node": "catalog:",
     "playwright": "^1.65.0",
-    "tsx": "^4.21.0"
+    "tsx": "catalog:"
   }
 }
