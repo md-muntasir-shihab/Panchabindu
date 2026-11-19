@@ -124,6 +124,8 @@ import {
   type PermissionModuleKey,
   type SystemRoleSlug,
 } from '@/src/types/permissions';
+import { listVendorRequests } from '@/src/lib/vendor/vendor-request-store';
+import { listKycRecords } from '@/src/lib/vendor/vendor-kyc';
 
 async function handleGET(req: NextRequest) {
   // CRITICAL SECURITY FIX (Phase 1): NEVER default to 'usr-super-admin' when token is missing or invalid!
@@ -273,6 +275,38 @@ async function handleGET(req: NextRequest) {
           })
           .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       : [],
+    pendingVendorRequests: isSuperAdmin
+      ? listVendorRequests()
+          .filter((request) => request.status === 'pending_review')
+          .map((request) => {
+            const vendor = p4b.vendors.find((v) => v.vendorId === request.vendorId);
+            return {
+              requestId: request.requestId,
+              vendorId: request.vendorId,
+              vendorCode: vendor?.vendorCode ?? request.vendorId,
+              vendorNameBn: vendor?.businessNameBn ?? 'ভেন্ডর',
+              kind: request.kind,
+              createdAt: request.createdAt,
+            };
+          })
+      : [],
+    pendingVendorKycDocs:
+      ctx && isSuperAdmin
+        ? listKycRecords(ctx)
+            .filter((doc) => doc.status === 'pending_review')
+            .map((doc) => {
+              const vendorId = 'vendorId' in doc ? String(doc.vendorId) : '';
+              const vendor = p4b.vendors.find((v) => v.vendorId === vendorId);
+              return {
+                documentId: doc.documentId,
+                vendorId,
+                vendorCode: vendor?.vendorCode ?? vendorId,
+                vendorNameBn: vendor?.businessNameBn ?? 'ভেন্ডর',
+                category: doc.category,
+                createdAt: doc.createdAt,
+              };
+            })
+        : [],
     // Customer Inquiries & About/Contact Page Content
     inquiries: isSuperAdmin ? erpState.inquiries ?? [] : [],
     aboutContactPage: erpState.siteSettings.aboutContactPage,

@@ -252,7 +252,7 @@ export function Courier360AndRatesPanel({
         <Card surface="bg" padding="md" className="space-y-4">
           <div className="border-b border-border pb-2">
             <h2 className="text-base font-bold text-ink">
-              <LocalizedText source={"৬৪ জেলার ডেলিভারি রেট টেবিল ও ফ্রি ডেলিভারি ওভাররাইড (Module C)"} area="admin" />{" "}</h2>
+              <LocalizedText source={"৬৪ জেলার ডেলিভারি রেট টেবিল ও ফ্রি ডেলিভারি ওভাররাইড"} area="admin" />{" "}</h2>
             <p className="text-xs text-muted">
               <LocalizedText source={"যেকোনো জেলার কুরিয়ার হোম ডেলিভারি (প্রথম ১ কেজি ও অতিরিক্ত প্রতি কেজি) এবং বাংলাদেশ ডাক বিভাগের (BD Post per-kg) রেট পরিবর্তন করুন।"} area="admin" />{" "}</p>
           </div>
@@ -1270,7 +1270,7 @@ export function VendorEscrowAndReturnPanel({
           {showOnboarding15Q && isSuperAdmin && (
             <Card surface="surface" padding="md" className="space-y-4">
               <h2 className="text-base font-bold text-ink border-b border-border pb-2">
-                <LocalizedText source={"১৫-প্রশ্নের কনসাইনমেন্ট সাপ্লায়ার অনবোর্ডিং ফর্ম (Module E — ১৮-দফা চুক্তি)"} area="admin" />{" "}</h2>
+                <LocalizedText source={"১৫-প্রশ্নের কনসাইনমেন্ট সাপ্লায়ার অনবোর্ডিং ফর্ম (১৮-দফা চুক্তি)"} area="admin" />{" "}</h2>
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();

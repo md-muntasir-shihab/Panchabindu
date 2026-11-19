@@ -1474,7 +1474,7 @@ export function PrintEnginePanel({
           <div className="border-b border-border pb-2">
             <h2 className="text-base font-bold text-ink flex items-center gap-2">
               <Sliders className="w-4 h-4 text-ink" />
-              <span><LocalizedText source={"প্রিন্ট টেমপ্লেট ও লেবেল কনফিগারেশন (Module O)"} area="admin" /></span>
+              <span><LocalizedText source={"প্রিন্ট টেমপ্লেট ও লেবেল কনফিগারেশন"} area="admin" /></span>
             </h2>
             <p className="text-xs text-muted">
               <LocalizedText source={"ইনভয়েসের প্রতিটি অংশের শিরোনাম, পেপার সাইজ এবং গ্রাহক ফুট নোট নিয়ন্ত্রণ করুন।"} area="admin" />{" "}</p>

@@ -169,8 +169,8 @@ export function Phase5ReadinessPanel({
             <ShieldCheck className="w-5 h-5 text-ink" aria-hidden="true" />
             <h1 className="text-xl font-bold text-ink">
               {locale === 'bn'
-                ? 'প্রি-লঞ্চ সিকিউরিটি অডিট, রোল স্যানিটাইজেশন ও গো-লাইভ ভেরিফিকেশন (Phase 5 — Module Q)'
-                : 'Pre-Launch Security Audit, Role Sanitization & Go-Live Center (Phase 5 — Module Q)'}
+                ? 'প্রি-লঞ্চ সিকিউরিটি অডিট, রোল স্যানিটাইজেশন ও গো-লাইভ ভেরিফিকেশন'
+                : 'Pre-Launch Security Audit, Role Sanitization & Go-Live Center'}
             </h1>
           </div>
           <p className="text-xs text-muted mt-1">
@@ -878,11 +878,11 @@ export function Phase5ReadinessPanel({
               <li className="p-2.5 border border-border rounded-[var(--radius-sm)] bg-bg">
                 {locale === 'bn' ? (
                   <>
-                    <strong>ধাপ ৪ (Courier & Messaging Keys):</strong> কন্ট্রোল সেন্টার (Module P) থেকে Steadfast/Pathao/RedX কী যুক্ত করুন, অথবা ফ্রি ওয়ান-ট্যাপ `wa.me` / `sms:` ফলব্যাক মোডে অপারেশন শুরু করুন।
+                    <strong>ধাপ ৪ (Courier & Messaging Keys):</strong> কন্ট্রোল সেন্টার থেকে Steadfast/Pathao/RedX কী যুক্ত করুন, অথবা ফ্রি ওয়ান-ট্যাপ `wa.me` / `sms:` ফলব্যাক মোডে অপারেশন শুরু করুন।
                   </>
                 ) : (
                   <>
-                    <strong>Step 4 (Courier & Messaging Keys):</strong> Add Steadfast/Pathao/RedX credentials in Control Center (Module P) or use free one-tap `wa.me` / `sms:` fallback mode.
+                    <strong>Step 4 (Courier & Messaging Keys):</strong> Add Steadfast/Pathao/RedX credentials in Control Center or use free one-tap `wa.me` / `sms:` fallback mode.
                   </>
                 )}
               </li>

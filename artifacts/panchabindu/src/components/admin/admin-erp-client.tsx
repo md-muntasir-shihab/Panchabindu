@@ -157,12 +157,13 @@ import { PrintEnginePanel } from './print-engine-panel';
 import { CrmContactsPanel } from './crm-contacts-panel';
 import { MessagingHubPanel, type MessagingHubSubTab } from './messaging-hub-panel';
 import { SyncHealthPanel } from './sync-health-panel';
+import { Courier360AndRatesPanel } from './courier-and-escrow-panel';
+import { VendorsHubPanel, type VendorsHubSubTab } from './vendors-hub-panel';
 import {
-  Courier360AndRatesPanel,
-  VendorEscrowAndReturnPanel,
-} from './courier-and-escrow-panel';
-import { VendorControlPanel } from './vendor-control-panel';
-import { VendorPayoutRegisterPanel } from './vendor-payout-register-panel';
+  VendorPayoutsLedgerPanel,
+  type PayoutsLedgerSubTab,
+} from './vendor-payouts-ledger-panel';
+import type { AdminPayoutStatus } from '@/lib/vendor/vendor-types';
 import {
   FinanceProduct360AndExpensesPanel,
   SuperAdminControlCenterPanel,
@@ -174,7 +175,6 @@ import type {
   RoleSanitizationInspectionDTO,
 } from '@/lib/admin/phase5-service';
 import type { Phase6WorkspaceOverviewDTO } from '@/lib/admin/phase6-service';
-import { Phase7PortalPanel } from './phase7-portal-panel';
 import type { Phase7WorkspaceOverviewDTO } from '@/lib/admin/phase7-service';
 import { ProductManagementStudioPanel } from './product-studio-panel';
 import { OperationalHelpModal } from './operational-help-modal';
@@ -207,7 +207,8 @@ export type AdminTabKey =
   | 'smart_order_entry'
   | 'print_engine'
   | 'courier_360'
-  | 'vendor_escrow'
+  | 'vendors_hub'
+  | 'vendor_payouts'
   | 'product_studio'
   | 'finance_product360'
   | 'crm_contacts'
@@ -215,10 +216,7 @@ export type AdminTabKey =
   | 'sync_health'
   | 'control_center'
   | 'users_and_rbac'
-  | 'phase5_readiness'
-  | 'phase7_portal'
-  | 'vendor_control'
-  | 'vendor_payouts';
+  | 'phase5_readiness';
 
 type EnrichedOrderRow = Partial<OrderGridRowDTO> & {
   callAttempts: number;
@@ -318,6 +316,23 @@ interface WorkspaceSnapshotResponse {
     messageCount: number;
     updatedAt: string;
   }>;
+  pendingVendorRequests?: Array<{
+    requestId: string;
+    vendorId: string;
+    vendorCode: string;
+    vendorNameBn: string;
+    kind: string;
+    summaryBn?: string;
+    createdAt: string;
+  }>;
+  pendingVendorKycDocs?: Array<{
+    documentId: string;
+    vendorId: string;
+    vendorCode: string;
+    vendorNameBn: string;
+    category: string;
+    createdAt: string;
+  }>;
   inquiries?: CustomerInquiryRecord[];
   aboutContactPage?: AboutContactPageSettings;
 }
@@ -397,7 +412,7 @@ const ADMIN_NAV_GROUPS: Array<{ id: string; bn: string; en: string; keys: AdminT
   { id: 'overview', bn: 'ওভারভিউ', en: 'Overview', keys: ['today_screen'] },
   { id: 'orders', bn: 'অর্ডার ও ডেলিভারি', en: 'Orders & Delivery', keys: ['orders_grid', 'smart_order_entry', 'courier_360', 'print_engine'] },
   { id: 'catalog', bn: 'পণ্য ও ক্যাটালগ', en: 'Products & Catalog', keys: ['product_studio'] },
-  { id: 'vendors', bn: 'ভেন্ডর ও এসক্রো', en: 'Vendors & Escrow', keys: ['vendor_escrow', 'vendor_payouts', 'vendor_control', 'phase7_portal'] },
+  { id: 'vendors', bn: 'ভেন্ডর ও পেআউট', en: 'Vendors & Payouts', keys: ['vendors_hub', 'vendor_payouts'] },
   { id: 'finance', bn: 'ফাইন্যান্স', en: 'Finance', keys: ['finance_product360'] },
   { id: 'operations', bn: 'সিআরএম, মেসেজিং ও সিঙ্ক', en: 'CRM, Messaging & Sync', keys: ['crm_contacts', 'messaging_hub', 'sync_health'] },
   { id: 'settings', bn: 'সিস্টেম ও নিরাপত্তা', en: 'System & Security', keys: ['phase5_readiness', 'users_and_rbac', 'control_center'] },
@@ -452,7 +467,15 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
 
   // Workspace Navigation & Toast Banner State
   const [activeTab, setActiveTab] = React.useState<AdminTabKey>('today_screen');
-  const [vendorControlSubTab, setVendorControlSubTab] = React.useState<'directory' | 'permissions' | 'requests' | 'scorecard'>('directory');
+  const [vendorsHubSubTab, setVendorsHubSubTab] = React.useState<VendorsHubSubTab>('directory');
+  const [focusedVendorId, setFocusedVendorId] = React.useState<string | null>(null);
+  const [vendorsStatusFilter, setVendorsStatusFilter] = React.useState<
+    'all' | 'active' | 'pending_onboarding' | 'suspended'
+  >('all');
+  const [payoutsSubTab, setPayoutsSubTab] = React.useState<PayoutsLedgerSubTab>('register');
+  const [payoutsVendorFilter, setPayoutsVendorFilter] = React.useState<string | null>(null);
+  const [payoutsStatusFilter, setPayoutsStatusFilter] = React.useState<'all' | AdminPayoutStatus>('all');
+  const [payoutsOpenCreateMode, setPayoutsOpenCreateMode] = React.useState<'request' | 'direct' | null>(null);
   const [messagingSubTab, setMessagingSubTab] = React.useState<MessagingHubSubTab>('customer');
   const [focusedInquiryId, setFocusedInquiryId] = React.useState<string | null>(null);
   const [openNavGroups, setOpenNavGroups] = React.useState<string[]>(['overview']);
@@ -536,20 +559,21 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       severity: 'info' | 'warning' | 'danger';
     }> = [];
 
-    // 1. Pending Vendor Approval Requests & Payout Requests
+    // 1. Vendor Approvals, Payouts, Stock Lots, Proposals, KYC, Reversals & Support
     if (snapshot.vendorEscrow?.vendors) {
       for (const v of snapshot.vendorEscrow.vendors) {
         if (v.profile.status === 'pending_onboarding') {
           list.push({
             id: `vendor-appr-${v.profile.vendorId}`,
             type: 'vendor_approval',
-            titleBn: `ভেন্ডর অনুমোদন অনুরোধ: ${v.profile.businessNameBn}`,
-            titleEn: `Vendor Approval Request: ${v.profile.businessNameEn}`,
-            descBn: `অনবোর্ডিং ভেন্ডর স্ট্যাটাস: পেন্ডিং অনুমোদন (মালিক: ${v.profile.ownerNameBn})`,
-            descEn: `Vendor status: Pending Approval (Owner: ${v.profile.ownerNameBn})`,
-            timestampBn: 'পেন্ডিং',
-            timestampEn: 'Pending',
-            targetTab: 'vendor_escrow',
+            titleBn: `ভেন্ডর অনবোর্ডিং অনুমোদন: ${v.profile.businessNameBn}`,
+            titleEn: `Vendor Onboarding Approval: ${v.profile.businessNameEn}`,
+            descBn: `মালিক: ${v.profile.ownerNameBn} (${v.profile.vendorCode}) — অ্যাক্টিভেশনের অপেক্ষায়`,
+            descEn: `Owner: ${v.profile.ownerNameBn} (${v.profile.vendorCode}) — awaiting activation`,
+            timestampBn: 'অনবোর্ডিং',
+            timestampEn: 'Onboarding',
+            targetTab: 'vendors_hub',
+            targetQueue: `VENDORS_ONBOARDING:${v.profile.vendorId}`,
             severity: 'warning',
           });
         }
@@ -560,16 +584,135 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       for (const pr of snapshot.vendorEscrow.payoutRequests) {
         if (pr.status === 'requested') {
           list.push({
-            id: `vendor-payout-${pr.payoutId}`,
+            id: `vendor-payout-req-${pr.payoutId}`,
             type: 'vendor_approval',
-            titleBn: `পেআউট অনুরোধ: ${pr.vendorNameBn}`,
-            titleEn: `Payout Request: ${pr.vendorNameBn}`,
-            descBn: `মেথড: ${pr.payoutMethodBn}, অ্যাকাউন্ট: ${pr.payoutAccountNo}`,
-            descEn: `Method: ${pr.payoutMethodBn}, Account: ${pr.payoutAccountNo}`,
-            timestampBn: 'পেন্ডিং পেআউট',
-            timestampEn: 'Pending Payout',
+            titleBn: `পেআউট অনুরোধ: ${pr.vendorNameBn} (${formatPoishaToBdt(pr.requestedAmountPoisha, 'bn')})`,
+            titleEn: `Payout Request: ${pr.vendorNameBn} (${formatPoishaToBdt(pr.requestedAmountPoisha, 'en')})`,
+            descBn: `${pr.payoutMethodBn} · অ্যাকাউন্ট: ${pr.payoutAccountNo} — অনুমোদনের অপেক্ষায়`,
+            descEn: `${pr.payoutMethodBn} · Account: ${pr.payoutAccountNo} — awaiting approval`,
+            timestampBn: 'পেআউট অনুরোধ',
+            timestampEn: 'Payout Request',
             targetTab: 'vendor_payouts',
+            targetQueue: `PAYOUTS_REQUESTED:${pr.vendorId}`,
             severity: 'warning',
+          });
+        } else if (pr.status === 'approved') {
+          list.push({
+            id: `vendor-payout-appr-${pr.payoutId}`,
+            type: 'vendor_approval',
+            titleBn: `পেআউট পরিশোধ বাকি: ${pr.vendorNameBn} (${formatPoishaToBdt(pr.requestedAmountPoisha, 'bn')})`,
+            titleEn: `Approved Payout Awaiting Transfer: ${pr.vendorNameBn} (${formatPoishaToBdt(pr.requestedAmountPoisha, 'en')})`,
+            descBn: `${pr.payoutMethodBn} · ${pr.payoutAccountNo} — টাকা পাঠিয়ে TrxID দিন`,
+            descEn: `${pr.payoutMethodBn} · ${pr.payoutAccountNo} — send transfer & record TrxID`,
+            timestampBn: 'পরিশোধ বাকি',
+            timestampEn: 'Ready to Pay',
+            targetTab: 'vendor_payouts',
+            targetQueue: `PAYOUTS_APPROVED:${pr.vendorId}`,
+            severity: 'info',
+          });
+        }
+      }
+    }
+
+    if (snapshot.pendingVendorRequests) {
+      for (const req of snapshot.pendingVendorRequests) {
+        const kindBn =
+          req.kind === 'onboarding_update'
+            ? 'অনবোর্ডিং তথ্য পরিবর্তনের অনুরোধ'
+            : 'প্রোফাইল বা পেআউট তথ্য পরিবর্তনের অনুরোধ';
+        const kindEn =
+          req.kind === 'onboarding_update'
+            ? 'Onboarding information update request'
+            : 'Profile or payout details update request';
+        list.push({
+          id: `vendor-req-${req.requestId}`,
+          type: 'vendor_approval',
+          titleBn: `ভেন্ডর প্রোফাইল অনুরোধ: ${req.vendorNameBn} (${req.vendorCode})`,
+          titleEn: `Vendor Profile Request: ${req.vendorNameBn} (${req.vendorCode})`,
+          descBn: req.summaryBn ?? kindBn,
+          descEn: req.summaryBn ?? kindEn,
+          timestampBn: 'প্রোফাইল অনুরোধ',
+          timestampEn: 'Profile Request',
+          targetTab: 'vendors_hub',
+          targetQueue: 'VENDORS_APPROVALS',
+          severity: 'warning',
+        });
+      }
+    }
+
+    if (snapshot.pendingVendorKycDocs) {
+      for (const doc of snapshot.pendingVendorKycDocs) {
+        list.push({
+          id: `vendor-kyc-${doc.documentId}`,
+          type: 'vendor_approval',
+          titleBn: `ভেন্ডর KYC যাচাই: ${doc.vendorNameBn} (${doc.vendorCode})`,
+          titleEn: `Vendor KYC Verification: ${doc.vendorNameBn} (${doc.vendorCode})`,
+          descBn: `ডকুমেন্ট (${doc.category}) রিভিউয়ের অপেক্ষায় রয়েছে।`,
+          descEn: `Document (${doc.category}) awaiting admin verification.`,
+          timestampBn: 'KYC পেন্ডিং',
+          timestampEn: 'KYC Pending',
+          targetTab: 'vendors_hub',
+          targetQueue: 'VENDORS_APPROVALS',
+          severity: 'warning',
+        });
+      }
+    }
+
+    if (snapshot.phase7Overview?.consignmentLots) {
+      for (const lot of snapshot.phase7Overview.consignmentLots) {
+        if (lot.status === 'pending_qc') {
+          list.push({
+            id: `vendor-lot-${lot.lotId}`,
+            type: 'vendor_approval',
+            titleBn: `স্টক চালান QC বাকি: ${lot.vendorNameBn} (${lot.challanRef})`,
+            titleEn: `Stock Lot QC Pending: ${lot.vendorNameBn} (${lot.challanRef})`,
+            descBn: `${lot.productNameBn} — ${lot.dispatchedQty} পিস গুদামে যাচাইয়ের অপেক্ষায়`,
+            descEn: `${lot.productNameBn} — ${lot.dispatchedQty} pcs awaiting warehouse QC`,
+            timestampBn: 'চালান QC',
+            timestampEn: 'Lot QC',
+            targetTab: 'vendors_hub',
+            targetQueue: 'VENDORS_APPROVALS',
+            severity: 'warning',
+          });
+        }
+      }
+    }
+
+    if (snapshot.phase7Overview?.priceProposals) {
+      for (const prop of snapshot.phase7Overview.priceProposals) {
+        if (prop.status === 'pending_review') {
+          list.push({
+            id: `vendor-price-${prop.proposalId}`,
+            type: 'vendor_approval',
+            titleBn: `মূল্য পরিবর্তন প্রস্তাব: ${prop.vendorNameBn} (${prop.publicSku})`,
+            titleEn: `Price Change Proposal: ${prop.vendorNameBn} (${prop.publicSku})`,
+            descBn: `${prop.productNameBn} — প্রস্তাবিত বিক্রয়মূল্য ${formatPoishaToBdt(prop.proposedSalePricePoisha, 'bn')}`,
+            descEn: `${prop.productNameBn} — proposed sale price ${formatPoishaToBdt(prop.proposedSalePricePoisha, 'en')}`,
+            timestampBn: 'মূল্য প্রস্তাব',
+            timestampEn: 'Price Proposal',
+            targetTab: 'vendors_hub',
+            targetQueue: 'VENDORS_APPROVALS',
+            severity: 'warning',
+          });
+        }
+      }
+    }
+
+    if (snapshot.phase7Overview?.ledgerReversals) {
+      for (const rev of snapshot.phase7Overview.ledgerReversals) {
+        if (rev.status === 'pending_checker_approval') {
+          list.push({
+            id: `vendor-rev-${rev.reversalId}`,
+            type: 'vendor_approval',
+            titleBn: `লেজার রিভার্সাল চেকার অনুমোদন: ${rev.reversalCode}`,
+            titleEn: `Ledger Reversal Approval: ${rev.reversalCode}`,
+            descBn: `${rev.reasonBn} — মেকার @${rev.createdByUsername}`,
+            descEn: `${rev.reasonBn} — maker @${rev.createdByUsername}`,
+            timestampBn: 'রিভার্সাল',
+            timestampEn: 'Reversal',
+            targetTab: 'vendor_payouts',
+            targetQueue: 'PAYOUTS_LEDGER',
+            severity: 'danger',
           });
         }
       }
@@ -1840,62 +1983,68 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       ],
     },
     {
-      groupLabelBn: '০৪. ভেন্ডর ও এসক্রো',
-      groupLabelEn: '04. Vendor & Escrow',
+      groupLabelBn: '০৪. ভেন্ডর ও পেআউট',
+      groupLabelEn: '04. Vendors & Payouts',
       items: [
         {
-          key: 'vendor_escrow',
-          labelBn: 'ভেন্ডর লেজার ও পেআউট',
-          labelEn: 'Vendor Ledger & Payouts',
-          fullLabelBn: 'ভেন্ডর ডাইরেক্টরি, এসক্রো লেজার ও পেআউট',
-          fullLabelEn: 'Vendor Directory, Escrow Ledger & Payouts',
-          icon: <Wallet className="w-4 h-4 shrink-0" aria-hidden="true" />,
+          key: 'vendors_hub',
+          labelBn: 'ভেন্ডরসমূহ',
+          labelEn: 'Vendors',
+          fullLabelBn: 'ভেন্ডর ডাইরেক্টরি, প্রোফাইল ও অনুমোদন',
+          fullLabelEn: 'Vendors, Profiles & Approvals',
+          icon: <Store className="w-4 h-4 shrink-0" aria-hidden="true" />,
+          hidden: isVendor,
+          badge: (() => {
+            const pendingOnboarding = (snapshot.vendorEscrow?.vendors ?? []).filter(
+              (v) => v.profile.status === 'pending_onboarding'
+            ).length;
+            const pendingLots = (snapshot.phase7Overview?.consignmentLots ?? []).filter(
+              (l) => l.status === 'pending_qc'
+            ).length;
+            const pendingProposals = (snapshot.phase7Overview?.priceProposals ?? []).filter(
+              (p) => p.status === 'pending_review'
+            ).length;
+            const pendingReqs = (snapshot.pendingVendorRequests ?? []).length;
+            const pendingKyc = (snapshot.pendingVendorKycDocs ?? []).length;
+            const totalPending =
+              pendingOnboarding + pendingLots + pendingProposals + pendingReqs + pendingKyc;
+            return totalPending > 0 ? totalPending : snapshot.vendors?.length || undefined;
+          })(),
+          badgeStatus: (() => {
+            const pendingCount =
+              (snapshot.vendorEscrow?.vendors ?? []).filter(
+                (v) => v.profile.status === 'pending_onboarding'
+              ).length +
+              (snapshot.phase7Overview?.consignmentLots ?? []).filter(
+                (l) => l.status === 'pending_qc'
+              ).length +
+              (snapshot.phase7Overview?.priceProposals ?? []).filter(
+                (p) => p.status === 'pending_review'
+              ).length +
+              (snapshot.pendingVendorRequests ?? []).length +
+              (snapshot.pendingVendorKycDocs ?? []).length;
+            return pendingCount > 0 ? 'warning' : 'neutral';
+          })(),
         },
         {
           key: 'vendor_payouts',
-          labelBn: 'পেআউট রেজিস্টার',
-          labelEn: 'Payout Register',
-          fullLabelBn: 'ভেন্ডর পেআউট রেজিস্টার ও নিষ্পত্তি',
-          fullLabelEn: 'Vendor Payout Register & Settlement',
+          labelBn: 'পেআউট ও লেজার',
+          labelEn: 'Payouts & Ledger',
+          fullLabelBn: 'ভেন্ডর পেআউট রেজিস্টার ও এসক্রো লেজার',
+          fullLabelEn: 'Vendor Payouts & Escrow Ledger',
           icon: <Banknote className="w-4 h-4 shrink-0" aria-hidden="true" />,
-          hidden: !isSuperAdmin,
-          badge:
-            snapshot.vendorEscrow?.payoutRequests?.filter(
+          hidden: !isSuperAdmin && !snapshot.vendorEscrow,
+          badge: (() => {
+            const pendingPayouts = (snapshot.vendorEscrow?.payoutRequests ?? []).filter(
               (p) => p.status === 'requested' || p.status === 'approved'
-            ).length || undefined,
+            ).length;
+            const pendingReversals = (snapshot.phase7Overview?.ledgerReversals ?? []).filter(
+              (r) => r.status === 'pending_checker_approval'
+            ).length;
+            const total = pendingPayouts + pendingReversals;
+            return total > 0 ? total : undefined;
+          })(),
           badgeStatus: 'warning',
-        },
-        {
-          key: 'vendor_control',
-          labelBn: 'ভেন্ডর অনুমতি',
-          labelEn: 'Vendor Permissions',
-          fullLabelBn: 'ভেন্ডর প্যানেল নিয়ন্ত্রণ, অনুমতি ও সাপোর্ট',
-          fullLabelEn: 'Vendor Panel Control, Permissions & Support',
-          icon: <Store className="w-4 h-4 shrink-0" aria-hidden="true" />,
-          hidden: !isSuperAdmin,
-          badge:
-            (snapshot.vendorSupportTickets?.length ?? 0) > 0
-              ? snapshot.vendorSupportTickets!.length
-              : snapshot.vendors?.length || undefined,
-          badgeStatus:
-            (snapshot.vendorSupportTickets?.length ?? 0) > 0 ? 'warning' : 'neutral',
-        },
-      ],
-    },
-    {
-      groupLabelBn: '০৫. পোর্টাল ও অ্যাকাউন্টিং',
-      groupLabelEn: '05. Portal & Accounting',
-      items: [
-        {
-          key: 'phase7_portal',
-          labelBn: 'ভেন্ডর পোর্টাল ও অ্যাকাউন্টিং',
-          labelEn: 'Vendor Portal & Accounting',
-          fullLabelBn: 'সেলফ-সার্ভিস ভেন্ডর পোর্টাল, প্রোমো ও একাউন্টিং',
-          fullLabelEn: 'Vendor Portal, Promo & Executive Accounting',
-          icon: <Store className="w-4 h-4 shrink-0" aria-hidden="true" />,
-          badge: snapshot.phase7Overview
-            ? `${snapshot.phase7Overview.consignmentLots.filter((l) => l.status === 'pending_qc').length}`
-            : undefined,
         },
       ],
     },
@@ -3408,7 +3557,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
             <div className="border-b border-border pb-3">
               <h1 className="text-xl font-bold text-ink">
                 {locale === 'bn'
-                  ? 'ইউজার সিকিউরিটি, ঐচ্ছিক 2FA ও পারমিশন ম্যাট্রিক্স (Module P)'
+                  ? 'ইউজার সিকিউরিটি, ঐচ্ছিক 2FA ও পারমিশন ম্যাট্রিক্স'
                   : 'Users, Optional 2FA & Granular Permission Matrix'}
               </h1>
               <p className="text-xs text-muted">
@@ -3839,48 +3988,89 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
           )}
 
         {/* ==================================================================
-            TAB 7: PHASE 4B — VENDOR ESCROW LEDGER, 4-WAY RETURN & PAYOUTS
+            TAB: VENDORS HUB (Directory, 360° Profiles, Approvals & Performance)
            ================================================================== */}
-        {activeTab === 'vendor_escrow' && snapshot.vendorEscrow && (
-          <VendorEscrowAndReturnPanel
+        {activeTab === 'vendors_hub' && !isVendor && (
+          <VendorsHubPanel
             locale={locale}
             isSuperAdmin={isSuperAdmin}
-            isVendor={isVendor}
-            brandNameBn={siteSettings.brandNameBn}
-            minPayoutPoisha={snapshot.siteSettings?.minPayoutRequestPoisha ?? 0}
-            vendors={snapshot.vendorEscrow.vendors}
-            ledgerEntries={snapshot.vendorEscrow.ledgerEntries}
-            payoutRequests={snapshot.vendorEscrow.payoutRequests}
-            returnResolutions={snapshot.vendorEscrow.returnResolutions}
+            initialSubTab={vendorsHubSubTab}
+            focusedVendorId={focusedVendorId}
+            initialStatusFilter={vendorsStatusFilter}
+            vendorsEscrow={snapshot.vendorEscrow?.vendors ?? []}
+            ledgerEntries={snapshot.vendorEscrow?.ledgerEntries ?? []}
+            payoutRequests={snapshot.vendorEscrow?.payoutRequests ?? []}
             manualCourierParcels={snapshot.manualCourierParcels ?? []}
-            availableOrderNos={orders.map((o) => o.orderNo!).filter(Boolean)}
-            products={snapshot.product360}
-            orders={orders as unknown as OrderGridRowDTO[]}
-            onRefreshWorkspace={fetchWorkspace}
-          />
-        )}
-
-        {/* ==================================================================
-            TAB: VENDOR PANEL CONTROL & PERMISSION MATRIX (SUPER ADMIN)
-           ================================================================== */}
-        {activeTab === 'vendor_payouts' && isSuperAdmin && (
-          <VendorPayoutRegisterPanel
-            locale={locale}
-            onNotify={(msg, tone) => setActionFeedback({ type: tone ?? 'success', text: msg })}
-          />
-        )}
-
-        {activeTab === 'vendor_control' && isSuperAdmin && (
-          <VendorControlPanel
-            locale={locale}
-            initialSubTab={vendorControlSubTab}
-            openSupportCount={(snapshot.vendorSupportTickets ?? []).filter((tkt) => tkt.status === 'open').length}
+            product360={snapshot.product360 ?? []}
+            orders={orders as unknown as Array<Partial<OrderGridRowDTO>>}
+            phase7Overview={snapshot.phase7Overview ?? null}
             vendorScorecards={snapshot.phase6Overview?.vendorScorecards ?? []}
+            openSupportCount={
+              (snapshot.vendorSupportTickets ?? []).filter((tkt) => tkt.status === 'open').length
+            }
+            pendingKycCount={(snapshot.pendingVendorKycDocs ?? []).length}
+            onRefreshWorkspace={fetchWorkspace}
+            onNotify={(msg, tone) =>
+              setActionFeedback({ type: tone ?? 'success', text: msg })
+            }
+            onOpenPayoutsForVendor={(vendorId, mode) => {
+              setPayoutsVendorFilter(vendorId);
+              setPayoutsStatusFilter('all');
+              if (mode === 'ledger') {
+                setPayoutsSubTab('ledger');
+                setPayoutsOpenCreateMode(null);
+              } else if (mode === 'direct_pay') {
+                setPayoutsSubTab('register');
+                setPayoutsOpenCreateMode('direct');
+              } else {
+                setPayoutsSubTab('register');
+                setPayoutsOpenCreateMode(null);
+              }
+              setActiveTab('vendor_payouts');
+            }}
+            onOpenOrderDetails={(orderNo) =>
+              setDetailsSheetState({ orderNo, initialFocus: 'top' })
+            }
+            onOpenProductStudio={() => setActiveTab('product_studio')}
             onOpenVendorInbox={() => {
               setMessagingSubTab('vendor');
               setActiveTab('messaging_hub');
             }}
-            onNotify={(msg, tone) => setActionFeedback({ type: tone ?? 'success', text: msg })}
+            onOpenUsersRbac={() => setActiveTab('users_and_rbac')}
+            onClearFocusedVendor={() => {
+              setFocusedVendorId(null);
+              setVendorsStatusFilter('all');
+            }}
+          />
+        )}
+
+        {/* ==================================================================
+            TAB: VENDOR PAYOUTS & ESCROW LEDGER
+           ================================================================== */}
+        {activeTab === 'vendor_payouts' && (isSuperAdmin || Boolean(snapshot.vendorEscrow)) && (
+          <VendorPayoutsLedgerPanel
+            locale={locale}
+            isSuperAdmin={isSuperAdmin}
+            initialSubTab={payoutsSubTab}
+            initialVendorFilter={payoutsVendorFilter}
+            initialStatusFilter={payoutsStatusFilter}
+            openCreateMode={payoutsOpenCreateMode}
+            vendorsEscrow={snapshot.vendorEscrow?.vendors ?? []}
+            ledgerEntries={snapshot.vendorEscrow?.ledgerEntries ?? []}
+            returnResolutions={snapshot.vendorEscrow?.returnResolutions ?? []}
+            maturityBatches={snapshot.phase7Overview?.maturityBatches ?? []}
+            ledgerReversals={snapshot.phase7Overview?.ledgerReversals ?? []}
+            availableOrderNos={orders.map((o) => o.orderNo!).filter(Boolean)}
+            onRefreshWorkspace={fetchWorkspace}
+            onNotify={(msg, tone) =>
+              setActionFeedback({ type: tone ?? 'success', text: msg })
+            }
+            onOpenVendorProfile={(vendorId) => {
+              setFocusedVendorId(vendorId);
+              setVendorsHubSubTab('directory');
+              setActiveTab('vendors_hub');
+            }}
+            onConsumeDeepLink={() => setPayoutsOpenCreateMode(null)}
           />
         )}
 
@@ -3907,7 +4097,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
         )}
 
         {/* ==================================================================
-            TAB 8: PHASE 4C — FINANCE, MONEY MAP, PROMO & PRODUCT 360 (MODULE F & G)
+            TAB: FINANCE, ACCOUNTING, VAT, REFUNDS & PRODUCT 360
            ================================================================== */}
         {activeTab === 'finance_product360' && (
           <FinanceProduct360AndExpensesPanel
@@ -3919,6 +4109,9 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
             moneyMapPnl={snapshot.moneyMapPnl ?? null}
             expenses={snapshot.expenses ?? []}
             promoCodes={snapshot.promoCodes ?? []}
+            executiveAccounting={snapshot.phase7Overview?.executiveAccounting ?? null}
+            customerRefunds={snapshot.phase7Overview?.customerRefunds ?? []}
+            availableOrderNos={orders.map((o) => o.orderNo!).filter(Boolean)}
             onRefreshWorkspace={fetchWorkspace}
           />
         )}
@@ -4033,31 +4226,6 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
             />
           )}
 
-        {/* ==================================================================
-            TAB 13: PHASE 7 — SELF-SERVICE VENDOR PORTAL, FLASH CAMPAIGNS & ACCOUNTING (MODULE T)
-           ================================================================== */}
-        {activeTab === 'phase7_portal' && snapshot.phase7Overview && (
-          <Phase7PortalPanel
-            overview={snapshot.phase7Overview}
-            productVariants={(snapshot.product360 ?? []).map((p) => ({
-              productId: p.productId,
-              productNameBn: p.productNameBn,
-              variantId: p.variantId,
-              variantTitleBn: p.variantTitleBn,
-              publicSku: p.publicSku,
-              salePricePoisha: p.salePricePoisha,
-              supplierCostPoisha: p.supplierCostPoisha,
-              platformMarginPoisha: p.platformMarginPoisha,
-              stockAvailable: p.stockAvailable,
-            }))}
-            roleSlug={currentUser.roleSlug}
-            onRefreshWorkspace={fetchWorkspace}
-            onNotify={(msg, tone) =>
-              setActionFeedback({ type: tone ?? 'success', text: msg })
-            }
-            locale={locale}
-          />
-        )}
       </main>
       </div>
 
@@ -4117,15 +4285,15 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
           )}
           <button
             type="button"
-            onClick={() => setActiveTab('vendor_escrow')}
+            onClick={() => setActiveTab(isVendor ? 'vendor_payouts' : 'vendors_hub')}
             className={`flex flex-col items-center justify-center gap-1 cursor-pointer ${
-              activeTab === 'vendor_escrow'
+              activeTab === 'vendors_hub' || activeTab === 'vendor_payouts'
                 ? 'text-ink font-bold'
                 : 'text-muted'
             }`}
           >
-            <Wallet className="w-4 h-4" aria-hidden="true" />
-            <span>{locale === 'bn' ? 'এসক্রো' : 'Escrow'}</span>
+            <Store className="w-4 h-4" aria-hidden="true" />
+            <span>{locale === 'bn' ? 'ভেন্ডর' : 'Vendors'}</span>
           </button>
         </div>
       </nav>
@@ -4558,6 +4726,31 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                             if (n.targetQueue === 'VENDOR_SUPPORT_INBOX') {
                               setMessagingSubTab('vendor');
                               setActiveTab('messaging_hub');
+                            } else if (n.targetQueue === 'VENDORS_APPROVALS') {
+                              setVendorsHubSubTab('approvals');
+                              setFocusedVendorId(null);
+                              setActiveTab('vendors_hub');
+                            } else if (n.targetQueue?.startsWith('VENDORS_ONBOARDING:')) {
+                              const vid = n.targetQueue.slice('VENDORS_ONBOARDING:'.length);
+                              setVendorsStatusFilter('pending_onboarding');
+                              setVendorsHubSubTab('directory');
+                              setFocusedVendorId(vid || null);
+                              setActiveTab('vendors_hub');
+                            } else if (n.targetQueue?.startsWith('PAYOUTS_REQUESTED:')) {
+                              const vid = n.targetQueue.slice('PAYOUTS_REQUESTED:'.length);
+                              setPayoutsSubTab('register');
+                              setPayoutsVendorFilter(vid || null);
+                              setPayoutsStatusFilter('requested');
+                              setActiveTab('vendor_payouts');
+                            } else if (n.targetQueue?.startsWith('PAYOUTS_APPROVED:')) {
+                              const vid = n.targetQueue.slice('PAYOUTS_APPROVED:'.length);
+                              setPayoutsSubTab('register');
+                              setPayoutsVendorFilter(vid || null);
+                              setPayoutsStatusFilter('approved');
+                              setActiveTab('vendor_payouts');
+                            } else if (n.targetQueue === 'PAYOUTS_LEDGER') {
+                              setPayoutsSubTab('ledger');
+                              setActiveTab('vendor_payouts');
                             } else if (n.targetQueue?.startsWith('CUSTOMER_INQUIRY:')) {
                               setFocusedInquiryId(n.targetQueue.slice('CUSTOMER_INQUIRY:'.length));
                               setMessagingSubTab('customer');
@@ -4571,7 +4764,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                           }}
                           className="inline-flex items-center gap-1 min-h-11 px-3 py-1.5 rounded-[var(--radius-sm)] bg-ink text-surface text-[11px] font-semibold hover:opacity-90 cursor-pointer transition-opacity"
                         >
-                          <span>{locale === 'bn' ? 'মডিউলে যান' : 'Go to Tab'}</span>
+                          <span>{locale === 'bn' ? 'দেখুন' : 'Open'}</span>
                           <ArrowUpRight className="w-3 h-3" />
                         </button>
                       </div>

@@ -54,6 +54,10 @@ import type {
   ScheduledJobRecord,
   SheetsSyncJobRecord,
 } from '@/lib/admin/phase4c-service';
+import type {
+  CustomerRefundExecutionRecord,
+  ExecutiveAccountingSummaryDTO,
+} from '@/lib/admin/phase7-service';
 import { formatPoishaToBdt, takaToPoisha } from '@/lib/money';
 import { Badge, Button, Card, Input } from '../ui/primitives';
 
@@ -108,6 +112,9 @@ export interface FinanceProduct360AndExpensesPanelProps {
   moneyMapPnl: MoneyMapAndPnlDTO | null;
   expenses: ExpenseLedgerRecord[];
   promoCodes: PromoRuleInput[];
+  executiveAccounting?: ExecutiveAccountingSummaryDTO | null;
+  customerRefunds?: CustomerRefundExecutionRecord[];
+  availableOrderNos?: string[];
   onRefreshWorkspace: () => Promise<void>;
 }
 
@@ -120,12 +127,33 @@ export function FinanceProduct360AndExpensesPanel({
   moneyMapPnl,
   expenses,
   promoCodes,
+  executiveAccounting,
+  customerRefunds = [],
+  availableOrderNos = [],
   onRefreshWorkspace,
 }: FinanceProduct360AndExpensesPanelProps) {
+  const isBn = locale === 'bn';
+  const [financeTab, setFinanceTab] = React.useState<
+    'overview' | 'accounting' | 'product360'
+  >('overview');
   const [feedback, setFeedback] = React.useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
+
+  // Customer Refund Form State
+  const [refundOrderNo, setRefundOrderNo] = React.useState<string>(
+    availableOrderNos[0] ?? 'ORD-261106-0001'
+  );
+  const [refundAmountBdt, setRefundAmountBdt] = React.useState<string>('500');
+  const [refundChannel, setRefundChannel] = React.useState<
+    'bkash_manual' | 'bank_transfer'
+  >('bkash_manual');
+  const [refundTrxRef, setRefundTrxRef] = React.useState<string>('');
+  const [refundReasonBn, setRefundReasonBn] = React.useState<string>(
+    'অর্ডার বাতিল বা রিটার্নের কারণে গ্রাহক রিফান্ড।'
+  );
+  const [submittingRefund, setSubmittingRefund] = React.useState(false);
 
   // Consignment QC Stock Receipt State
   const [qcVariantId, setQcVariantId] = React.useState<string>(
@@ -295,24 +323,111 @@ export function FinanceProduct360AndExpensesPanel({
     }
   };
 
+  const handleExecuteCustomerRefund = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingRefund(true);
+    setFeedback(null);
+    try {
+      const res = await fetch('/api/admin/workspace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operation: 'execute_customer_refund',
+          orderNo: refundOrderNo.trim(),
+          refundAmountPoisha: takaToPoisha(Number(refundAmountBdt) || 0),
+          refundChannel,
+          refundTrxId: refundTrxRef.trim(),
+          reasonBn: refundReasonBn.trim(),
+        }),
+      });
+      const data = (await res.json()) as {
+        success: boolean;
+        errorBn?: string;
+        refund?: { refundCode: string };
+      };
+      if (res.ok && data.success) {
+        setFeedback({
+          type: 'success',
+          text: isBn
+            ? `গ্রাহক রিফান্ড (${data.refund?.refundCode ?? ''}) ও লেজার ভাউচার সম্পন্ন হয়েছে।`
+            : `Customer refund (${data.refund?.refundCode ?? ''}) and double-entry voucher posted.`,
+        });
+        setRefundTrxRef('');
+        await onRefreshWorkspace();
+      } else {
+        setFeedback({
+          type: 'error',
+          text: data.errorBn ?? (isBn ? 'রিফান্ড সম্পন্ন করা যায়নি।' : 'Failed to execute refund.'),
+        });
+      }
+    } catch {
+      setFeedback({ type: 'error', text: isBn ? 'নেটওয়ার্ক ত্রুটি।' : 'Network error.' });
+    } finally {
+      setSubmittingRefund(false);
+    }
+  };
+
   return (
     <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
         <div>
           <h1 className="text-xl font-bold text-ink">
-            {locale === 'bn'
-              ? 'ফাইন্যান্স, মানি ম্যাপ, প্রোমো ও প্রোডাক্ট ৩৬০ (Module F & G)'
-              : 'Finance, Money Map, Promo & Product 360'}
+            {isBn
+              ? 'ফাইন্যান্স, একাউন্টিং ও প্রোডাক্ট ৩৬০'
+              : 'Finance, Accounting & Product 360'}
           </h1>
           <p className="text-xs text-muted mt-0.5">
             {isSuperAdmin
-              ? 'কুরিয়ারে আটকে থাকা টাকা, ভেন্ডর প্রদেয়, অটো নেট প্রফিট, ROAS/CPO এবং ইনভেন্টরি কভারেজ'
-              : 'ইনভেন্টরি ৩৬০, চ্যানেল ROAS/CPO এবং কনসাইনমেন্ট স্টক স্ট্যাটাস'}
+              ? isBn
+                ? 'মানি ম্যাপ, অটো নেট প্রফিট, ৫% ভ্যাট লেজার, গ্রাহক রিফান্ড, ROAS/CPO এবং ইনভেন্টরি কভারেজ'
+                : 'Money map, net P&L, 5% VAT ledger, customer refunds, ROAS/CPO and inventory coverage'
+              : isBn
+                ? 'ইনভেন্টরি ৩৬০, চ্যানেল ROAS/CPO এবং কনসাইনমেন্ট স্টক স্ট্যাটাস'
+                : 'Product 360, channel ROAS/CPO and consignment stock status'}
           </p>
         </div>
-        <Badge status={isSuperAdmin ? 'success' : 'info'}>
-          {isSuperAdmin ? 'Full Financial P&L Visible' : `Role: ${roleSlug}`}
-        </Badge>
+        <div className="inline-flex flex-wrap items-center rounded-md border border-border bg-surface p-0.5 text-xs">
+          <button
+            type="button"
+            onClick={() => setFinanceTab('overview')}
+            className={`min-h-9 px-3 rounded font-medium transition-colors cursor-pointer ${
+              financeTab === 'overview'
+                ? 'bg-ink text-bg'
+                : 'text-muted hover:text-ink'
+            }`}
+          >
+            {isBn ? 'মানি ম্যাপ ও খরচ' : 'Money Map & P&L'}
+          </button>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              onClick={() => setFinanceTab('accounting')}
+              className={`min-h-9 px-3 rounded font-medium transition-colors cursor-pointer ${
+                financeTab === 'accounting'
+                  ? 'bg-ink text-bg'
+                  : 'text-muted hover:text-ink'
+              }`}
+            >
+              {isBn ? 'একাউন্টিং, ভ্যাট ও রিফান্ড' : 'Accounting, VAT & Refunds'}
+              {customerRefunds.length > 0 && (
+                <span className="ml-1.5 font-mono text-[10px] opacity-80">
+                  ({customerRefunds.length})
+                </span>
+              )}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setFinanceTab('product360')}
+            className={`min-h-9 px-3 rounded font-medium transition-colors cursor-pointer ${
+              financeTab === 'product360'
+                ? 'bg-ink text-bg'
+                : 'text-muted hover:text-ink'
+            }`}
+          >
+            {isBn ? 'প্রোডাক্ট ৩৬০ ও স্টক' : 'Product 360 & Stock'}
+          </button>
+        </div>
       </div>
 
       {feedback && (
@@ -341,6 +456,9 @@ export function FinanceProduct360AndExpensesPanel({
         </div>
       )}
 
+      {/* TAB 1: MONEY MAP, P&L, EXPENSES & PROMO CODES */}
+      {financeTab === 'overview' && (
+        <div className="space-y-6">
       {/* SUPER ADMIN ONLY: MONEY MAP & AUTO NET PROFIT BREAKDOWN */}
       {isSuperAdmin && moneyMapPnl && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -702,8 +820,275 @@ export function FinanceProduct360AndExpensesPanel({
           </div>
         </div>
       )}
+        </div>
+      )}
 
-      {/* PRODUCT 360 & CONSIGNMENT QC STOCK RECEIPT */}
+      {/* TAB 2: EXECUTIVE ACCOUNTING, 5% VAT LEDGER & CUSTOMER REFUNDS */}
+      {financeTab === 'accounting' && isSuperAdmin && (
+        <div className="space-y-6">
+          {executiveAccounting && (
+            <>
+              <Card surface="surface" padding="md" className="space-y-4">
+                <div className="border-b border-border pb-2.5">
+                  <h2 className="text-sm font-bold text-ink flex items-center gap-2">
+                    <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
+                    <span>
+                      {isBn
+                        ? 'এক্সিকিউটিভ বিডিটি একাউন্টিং, এসক্রো দায় ও ৫% ভ্যাট লেজার'
+                        : 'Executive BDT Accounting, Escrow Liability & 5% VAT Ledger'}
+                    </span>
+                  </h2>
+                  <p className="text-xs text-muted mt-0.5">
+                    {isBn
+                      ? 'সকল হিসাব পূর্ণসংখ্যা পয়সায় সংরক্ষিত। ৫% ভ্যাট শুধুমাত্র প্ল্যাটফর্মের নিট কমিশন মার্জিনের ওপর প্রযোজ্য।'
+                      : 'All figures stored in integer Poisha. 5% VAT applies strictly to net platform commission margin, never vendor principal.'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                  <div className="p-3 border border-border rounded-md bg-bg">
+                    <p className="text-muted">
+                      {isBn ? 'ডেলিভারিকৃত গ্রস রেভিনিউ' : 'Delivered Gross Revenue'}
+                    </p>
+                    <p className="mt-1 font-mono text-base font-bold tabular-nums text-ink">
+                      {formatPoishaToBdt(executiveAccounting.totalDeliveredGrossRevenuePoisha, locale)}
+                    </p>
+                  </div>
+                  <div className="p-3 border border-border rounded-md bg-bg">
+                    <p className="text-muted">
+                      {isBn ? 'নগদ প্রাপ্তি (COD + Advance)' : 'Cash Received (COD + Advance)'}
+                    </p>
+                    <p className="mt-1 font-mono text-base font-bold tabular-nums text-success">
+                      {formatPoishaToBdt(executiveAccounting.totalCashRemittedAndAdvancePoisha, locale)}
+                    </p>
+                  </div>
+                  <div className="p-3 border border-border rounded-md bg-bg">
+                    <p className="text-muted">
+                      {isBn ? 'কুরিয়ারে বকেয়া রিসিভেবল' : 'Courier Unsettled Receivable'}
+                    </p>
+                    <p className="mt-1 font-mono text-base font-bold tabular-nums text-warning">
+                      {formatPoishaToBdt(executiveAccounting.totalCourierUnsettledReceivablePoisha, locale)}
+                    </p>
+                  </div>
+                  <div className="p-3 border border-border rounded-md bg-bg">
+                    <p className="text-muted">
+                      {isBn ? 'ভেন্ডর পেআউট পরিশোধিত' : 'Vendor Payouts Disbursed'}
+                    </p>
+                    <p className="mt-1 font-mono text-base font-bold tabular-nums text-ink">
+                      {formatPoishaToBdt(executiveAccounting.totalVendorPaidDisbursedPoisha, locale)}
+                    </p>
+                  </div>
+                  <div className="p-3 border border-border rounded-md bg-bg">
+                    <p className="text-muted">
+                      {isBn ? 'প্ল্যাটফর্ম গ্রস কমিশন মার্জিন' : 'Gross Platform Margin'}
+                    </p>
+                    <p className="mt-1 font-mono text-base font-bold tabular-nums text-ink">
+                      {formatPoishaToBdt(executiveAccounting.grossPlatformCommissionEarnedPoisha, locale)}
+                    </p>
+                  </div>
+                  <div className="p-3 border border-border rounded-md bg-bg">
+                    <p className="text-muted">
+                      {isBn ? 'প্রোমো ডিসকাউন্ট ভর্তুকি' : 'Promo Subsidy'}
+                    </p>
+                    <p className="mt-1 font-mono text-base font-bold tabular-nums text-danger">
+                      -{formatPoishaToBdt(executiveAccounting.totalPromoAndFlashSubsidyPoisha, locale)}
+                    </p>
+                  </div>
+                  <div className="p-3 border border-border rounded-md bg-bg">
+                    <p className="text-muted">
+                      {isBn ? 'মার্জিনের ওপর ৫% ভ্যাট প্রভিশন' : '5% VAT Provision on Margin'}
+                    </p>
+                    <p className="mt-1 font-mono text-base font-bold tabular-nums text-warning">
+                      -{formatPoishaToBdt(executiveAccounting.estimatedVatOnMarginPoisha, locale)}
+                    </p>
+                  </div>
+                  <div className="p-3 border border-border rounded-md bg-bg">
+                    <p className="text-muted">
+                      {isBn ? 'নিট রিটেইনড প্ল্যাটফর্ম প্রফিট' : 'Net Retained Platform Profit'}
+                    </p>
+                    <p className="mt-1 font-mono text-base font-bold tabular-nums text-success">
+                      {formatPoishaToBdt(executiveAccounting.netRetainedPlatformProfitPoisha, locale)}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card surface="surface" padding="md" className="space-y-3">
+                <h3 className="text-sm font-bold text-ink border-b border-border pb-2">
+                  {isBn
+                    ? 'পেআউট চ্যানেল চার্জ শিডিউল (৳১০,০০০ উদাহরণ)'
+                    : 'Payout Channel Fee Schedule (৳10,000 Reference)'}
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-border text-muted">
+                        <th className="py-2 px-2">{isBn ? 'মাধ্যম' : 'Channel'}</th>
+                        <th className="py-2 px-2">{isBn ? 'চার্জ হার' : 'Rate'}</th>
+                        <th className="py-2 px-2 text-right">{isBn ? 'গ্রস' : 'Gross'}</th>
+                        <th className="py-2 px-2 text-right">{isBn ? 'চার্জ' : 'Fee'}</th>
+                        <th className="py-2 px-2 text-right">{isBn ? 'নিট প্রাপ্তি' : 'Net'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {executiveAccounting.payoutFeeSchedule.map((row) => (
+                        <tr key={row.methodNameBn}>
+                          <td className="py-2 px-2 font-medium text-ink">
+                            {localizedField(row, 'methodNameBn', locale)}
+                          </td>
+                          <td className="py-2 px-2 font-mono text-muted">
+                            {(row.feeRateBp / 100).toFixed(2)}% ({row.feeRateBp} bp)
+                          </td>
+                          <td className="py-2 px-2 text-right font-mono tabular-nums text-ink">
+                            {formatPoishaToBdt(row.sample10kPayoutGrossPoisha, locale)}
+                          </td>
+                          <td className="py-2 px-2 text-right font-mono tabular-nums text-danger">
+                            -{formatPoishaToBdt(row.sample10kFeeDeductedPoisha, locale)}
+                          </td>
+                          <td className="py-2 px-2 text-right font-mono font-bold tabular-nums text-success">
+                            {formatPoishaToBdt(row.sample10kNetReceivedPoisha, locale)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </>
+          )}
+
+          {/* Customer Refund Execution & History */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <Card surface="surface" padding="md" className="lg:col-span-5 space-y-3">
+              <div className="border-b border-border pb-2">
+                <h3 className="text-sm font-bold text-ink">
+                  {isBn ? 'গ্রাহক রিফান্ড এক্সিকিউশন' : 'Execute Customer Refund'}
+                </h3>
+                <p className="text-xs text-muted mt-0.5">
+                  {isBn
+                    ? 'অর্ডার বাতিল বা রিটার্নের পর বিকাশ/ব্যাংক রিফান্ড ও ডাবল-এন্ট্রি ভাউচার পোস্ট করুন।'
+                    : 'Issue bKash or bank refund and post balanced double-entry refund voucher.'}
+                </p>
+              </div>
+              <form onSubmit={handleExecuteCustomerRefund} className="space-y-3 text-xs">
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block font-medium text-ink mb-1">
+                      {isBn ? 'অর্ডার নম্বর *' : 'Order No *'}
+                    </label>
+                    <input
+                      type="text"
+                      list="finance-refund-orders"
+                      value={refundOrderNo}
+                      onChange={(e) => setRefundOrderNo(e.target.value)}
+                      required
+                      className="w-full h-9 px-2.5 rounded-[var(--radius-md)] border border-border bg-bg font-mono text-ink"
+                    />
+                    <datalist id="finance-refund-orders">
+                      {availableOrderNos.slice(0, 30).map((ord) => (
+                        <option key={ord} value={ord} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <Input
+                    label={isBn ? 'পরিমাণ (টাকা BDT) *' : 'Amount (BDT) *'}
+                    type="number"
+                    min={10}
+                    value={refundAmountBdt}
+                    onChange={(e) => setRefundAmountBdt(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block font-medium text-ink mb-1">
+                      {isBn ? 'রিফান্ড মাধ্যম' : 'Channel'}
+                    </label>
+                    <select
+                      value={refundChannel}
+                      onChange={(e) =>
+                        setRefundChannel(e.target.value as 'bkash_manual' | 'bank_transfer')
+                      }
+                      className="w-full h-9 px-2 rounded-[var(--radius-md)] border border-border bg-bg text-ink"
+                    >
+                      <option value="bkash_manual">
+                        {isBn ? 'ম্যানুয়াল বিকাশ' : 'bKash Manual'}
+                      </option>
+                      <option value="bank_transfer">
+                        {isBn ? 'ব্যাংক ট্রান্সফার' : 'Bank Transfer'}
+                      </option>
+                    </select>
+                  </div>
+                  <Input
+                    label={isBn ? 'TrxID / ভাউচার রেফ *' : 'TrxID / Ref *'}
+                    value={refundTrxRef}
+                    onChange={(e) => setRefundTrxRef(e.target.value)}
+                    placeholder="BKS-REF-..."
+                    required
+                  />
+                </div>
+                <Input
+                  label={isBn ? 'রিফান্ড কারণ *' : 'Reason *'}
+                  value={refundReasonBn}
+                  onChange={(e) => setRefundReasonBn(e.target.value)}
+                  required
+                />
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={submittingRefund}
+                  className="w-full"
+                >
+                  {submittingRefund
+                    ? isBn ? 'প্রসেস হচ্ছে...' : 'Processing...'
+                    : isBn ? 'রিফান্ড কার্যকর ও লেজার পোস্ট করুন' : 'Execute Refund & Post Ledger'}
+                </Button>
+              </form>
+            </Card>
+
+            <Card surface="surface" padding="md" className="lg:col-span-7 space-y-3">
+              <div className="flex items-center justify-between border-b border-border pb-2">
+                <h3 className="text-sm font-bold text-ink">
+                  {isBn ? 'সম্পন্ন গ্রাহক রিফান্ড রেজিস্টার' : 'Customer Refund Register'}
+                </h3>
+                <span className="font-mono text-xs text-muted">{customerRefunds.length}</span>
+              </div>
+              {customerRefunds.length === 0 ? (
+                <p className="text-xs text-muted py-6 text-center">
+                  {isBn ? 'এখনো কোনো গ্রাহক রিফান্ড রেকর্ড নেই।' : 'No customer refunds recorded yet.'}
+                </p>
+              ) : (
+                <div className="divide-y divide-border border border-border rounded-md">
+                  {customerRefunds.map((rf) => (
+                    <div key={rf.refundId} className="p-3 bg-bg text-xs space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-mono font-bold text-ink">
+                          {rf.refundCode} · {rf.orderNo}{' '}
+                          <span className="font-sans font-normal text-muted">
+                            ({rf.customerName})
+                          </span>
+                        </span>
+                        <span className="font-mono font-bold tabular-nums text-success">
+                          {formatPoishaToBdt(rf.refundAmountPoisha, locale)}
+                        </span>
+                      </div>
+                      <p className="font-mono text-[11px] text-muted">
+                        {rf.refundChannel} · TrxID: {rf.refundTrxId} · @
+                        {rf.approvedByUsername ?? rf.requestedByUsername}
+                      </p>
+                      <p className="text-ink">{rf.reasonBn}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: PRODUCT 360 & CONSIGNMENT QC STOCK RECEIPT */}
+      {financeTab === 'product360' && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <Card
           surface="surface"
@@ -849,6 +1234,7 @@ export function FinanceProduct360AndExpensesPanel({
           </Card>
         )}
       </div>
+      )}
     </section>
   );
 }
@@ -1091,8 +1477,8 @@ export function MessagingAutomationAndSheetsPanel({
         <div>
           <h1 className="text-xl font-bold text-ink">
             {locale === 'bn'
-              ? 'মেসেজিং, ফ্রড ব্ল্যাকলিস্ট, অটোমেশন ও গুগল শিট সিঙ্ক (Module H, I, J, K)'
-              : 'Messaging, Fraud Blacklist, Automation & Google Sheets Sync (Module H, I, J, K)'}
+              ? 'মেসেজিং, ফ্রড ব্ল্যাকলিস্ট, অটোমেশন ও গুগল শিট সিঙ্ক'
+              : 'Messaging, Fraud Blacklist, Automation & Google Sheets Sync'}
           </h1>
           <p className="text-xs text-muted mt-0.5">
             {locale === 'bn'
@@ -1248,8 +1634,8 @@ export function MessagingAutomationAndSheetsPanel({
               <ShieldAlert className="w-4 h-4" aria-hidden="true" />
               <span>
                 {locale === 'bn'
-                  ? 'গ্রাহক ব্ল্যাকলিস্ট ও ফ্রড রেজিস্ট্রি (Module H)'
-                  : 'Customer Blacklist & Fraud Registry (Module H)'}
+                  ? 'গ্রাহক ব্ল্যাকলিস্ট ও ফ্রড রেজিস্ট্রি'
+                  : 'Customer Blacklist & Fraud Registry'}
               </span>
             </h2>
             <Badge status="danger">
@@ -1432,8 +1818,8 @@ export function MessagingAutomationAndSheetsPanel({
               <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
               <span>
                 {locale === 'bn'
-                  ? 'গুগল শিট ৮-ট্যাব ওয়ান-ওয়ে মিরর সিঙ্ক (Module J)'
-                  : 'Google Sheets 8-Tab One-Way Mirror Sync (Module J)'}
+                  ? 'গুগল শিট ৮-ট্যাব ওয়ান-ওয়ে মিরর সিঙ্ক'
+                  : 'Google Sheets 8-Tab One-Way Mirror Sync'}
               </span>
             </h2>
             <Badge status="warning"><LocalizedText source={"One-Way Mirror Only"} area="admin" /></Badge>
@@ -1838,8 +2224,8 @@ export function SuperAdminControlCenterPanel({
         <div>
           <h1 className="text-xl font-bold text-ink">
             {locale === 'bn'
-              ? 'সুপার অ্যাডমিন কন্ট্রোল সেন্টার, ক্রেডেনশিয়াল ভল্ট ও শিডিউলড জবস (Module L & R)'
-              : 'Super Admin Control Center, Credential Vault & Scheduled Jobs (Module L & R)'}
+              ? 'সুপার অ্যাডমিন কন্ট্রোল সেন্টার, ক্রেডেনশিয়াল ভল্ট ও শিডিউলড জবস'
+              : 'Super Admin Control Center, Credential Vault & Scheduled Jobs'}
           </h1>
           <p className="text-xs text-muted mt-0.5">
             {locale === 'bn'

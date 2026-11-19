@@ -329,8 +329,8 @@ export function Phase6LiveOpsPanel({
             <Webhook className="w-5 h-5 text-ink" aria-hidden="true" />
             <h1 className="text-xl font-bold text-ink">
               {locale === 'bn'
-                ? 'লাইভ অপারেশনস, কার্ট রিকভারি সিআরএম, কুরিয়ার ওয়েবহুক ও সিস্টেম ব্যাকআপ (Phase 6 — Module S)'
-                : 'Live Operations, Cart Recovery CRM, Courier Webhooks & System Backup (Phase 6)'}
+                ? 'লাইভ অপারেশনস, কার্ট রিকভারি সিআরএম, কুরিয়ার ওয়েবহুক ও সিস্টেম ব্যাকআপ'
+                : 'Live Operations, Cart Recovery CRM, Courier Webhooks & System Backup'}
             </h1>
           </div>
           <p className="text-xs text-muted mt-1">
