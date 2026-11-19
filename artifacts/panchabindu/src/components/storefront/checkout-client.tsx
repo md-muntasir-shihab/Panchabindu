@@ -41,6 +41,10 @@ import {
   getDistrictById,
   getThanasByDistrict,
 } from '@/lib/geo/bd-geocode';
+import {
+  getPathaoAreasByZone,
+  resolveGeoCourierDefaults,
+} from '@/lib/geo/bd-courier-geo';
 import { formatPoishaToBdt as formatMoney } from '@/lib/money';
 import {
   evaluateAddressQuality,
@@ -99,6 +103,10 @@ export function CheckoutClient({
   const [upazilaId, setUpazilaId] = React.useState<number>(
     () => getThanasByDistrict(47)[0]?.id ?? 365
   );
+  const [postCode, setPostCode] = React.useState<string>('1209');
+  const [recipientCity, setRecipientCity] = React.useState<string>('Dhaka');
+  const [recipientZone, setRecipientZone] = React.useState<string>('Dhanmondi');
+  const [recipientArea, setRecipientArea] = React.useState<string>('Dhanmondi 27');
   const [streetAddress, setStreetAddress] = React.useState('');
   const [landmark, setLandmark] = React.useState('');
   const [customerNote, setCustomerNote] = React.useState('');
@@ -135,7 +143,23 @@ export function CheckoutClient({
     fetch('/api/account/orders', { cache: 'no-store', signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error('Account unavailable');
-        const data = await response.json() as { authenticated?: boolean; customerPhone?: string; deliveryProfile?: { customerName: string; customerPhone: string; customerEmail: string | null; districtId: number; upazilaId: number; streetAddress: string; landmark: string } | null };
+        const data = await response.json() as {
+          authenticated?: boolean;
+          customerPhone?: string;
+          deliveryProfile?: {
+            customerName: string;
+            customerPhone: string;
+            customerEmail: string | null;
+            districtId: number;
+            upazilaId: number;
+            postCode?: string;
+            recipientCity?: string;
+            recipientZone?: string;
+            recipientArea?: string;
+            streetAddress: string;
+            landmark: string;
+          } | null;
+        };
         if (controller.signal.aborted) return;
         setSessionStatus(data.authenticated ? 'authenticated' : 'anonymous');
         if (data.authenticated) {
@@ -149,6 +173,20 @@ export function CheckoutClient({
             if (getDistrictById(profile.districtId) && getThanasByDistrict(profile.districtId).some(t => t.id === profile.upazilaId)) {
               setDistrictId(profile.districtId); setUpazilaId(profile.upazilaId);
               setDistrictConfirmed(true); setThanaConfirmed(true);
+              const synced = resolveGeoCourierDefaults({
+                districtId: profile.districtId,
+                upazilaId: profile.upazilaId,
+                streetAddress: profile.streetAddress,
+                landmark: profile.landmark,
+                existingPostCode: profile.postCode,
+                existingCity: profile.recipientCity,
+                existingZone: profile.recipientZone,
+                existingArea: profile.recipientArea,
+              });
+              setPostCode(synced.postCode);
+              setRecipientCity(synced.recipientCity);
+              setRecipientZone(synced.recipientZone);
+              setRecipientArea(synced.recipientArea);
             }
           }
         }
@@ -167,16 +205,27 @@ export function CheckoutClient({
     } catch { /* A missing or invalid local address never blocks checkout. */ }
   }, []);
 
-  // Keep upazilaId in sync when districtId changes
+  // Keep upazilaId and courier geo defaults in sync when districtId changes
   const handleDistrictChange = (newDistrictId: number) => {
     setDistrictId(newDistrictId);
     setDistrictConfirmed(true);
     setThanaConfirmed(false);
     setThanaQuery('');
     const list = getThanasByDistrict(newDistrictId);
+    const nextUpzId = list[0]?.id ?? upazilaId;
     if (list[0]) {
       setUpazilaId(list[0].id);
     }
+    const synced = resolveGeoCourierDefaults({
+      districtId: newDistrictId,
+      upazilaId: nextUpzId,
+      streetAddress,
+      landmark,
+    });
+    setPostCode(synced.postCode);
+    setRecipientCity(synced.recipientCity);
+    setRecipientZone(synced.recipientZone);
+    setRecipientArea(synced.recipientArea);
   };
 
   // Only identifiers and quantities go to the server; stored cart prices are not trusted.
@@ -361,6 +410,10 @@ export function CheckoutClient({
           customerEmail: customerEmail.trim() || undefined,
           districtId,
           upazilaId,
+          postCode: postCode.trim() || undefined,
+          recipientCity: recipientCity.trim() || undefined,
+          recipientZone: recipientZone.trim() || undefined,
+          recipientArea: recipientArea.trim() || undefined,
           streetAddress: streetAddress.trim(),
           landmark: landmark.trim(),
           source: 'storefront',
@@ -373,6 +426,7 @@ export function CheckoutClient({
           advancePaidPoisha: advancePortion,
           promoCode: appliedPromoCode ?? undefined,
           customerNote: customerNote.trim(),
+          specialInstruction: customerNote.trim() || undefined,
           items: cartItems.map((i) => ({
             productId: i.productId,
             variantId: i.variantId,
@@ -427,22 +481,22 @@ export function CheckoutClient({
 
   return (
     <StorefrontShell siteSettings={siteSettings} categories={categories}>
-      <div className="checkout-page max-w-7xl mx-auto px-4 py-5 sm:py-10 space-y-5 sm:space-y-7">
+      <div className="checkout-page max-w-7xl mx-auto px-3.5 sm:px-4 py-4 sm:py-10 space-y-4 sm:space-y-7">
         {sessionStatus === 'error' && (
           <Card className="space-y-3">
             <p role="status" className="text-sm">{locale === 'bn' ? 'চেকআউট প্রস্তুত করা যায়নি। পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।' : 'Checkout could not be prepared. Please refresh and try again.'}</p>
           </Card>
         )}
-        <div className="checkout-heading flex flex-wrap items-end justify-between gap-4">
-          <div>
+        <div className="checkout-heading flex flex-wrap items-end justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
             <Link href="/shop" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#53685d] hover:text-[var(--store-accent)]">
               <ArrowLeft className="w-4 h-4" aria-hidden="true" /><span>{dict.common.continueShopping}</span>
             </Link>
             <p className="checkout-eyebrow">{locale === 'bn' ? 'আপনার অর্ডার' : 'YOUR ORDER'}</p>
             <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-[#162b20]">{locale === 'bn' ? 'অর্ডার সম্পন্ন করুন' : 'Complete your order'}</h1>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#607268]">{locale === 'bn' ? 'ঠিকানা, ডেলিভারি ও পেমেন্টের তথ্য দিয়ে অর্ডার নিশ্চিত করুন।' : 'Add your delivery details and choose how you would like to pay.'}</p>
+            <p className="mt-1.5 sm:mt-2 max-w-xl text-sm leading-relaxed text-[#607268]">{locale === 'bn' ? 'ঠিকানা, ডেলিভারি ও পেমেন্টের তথ্য দিয়ে অর্ডার নিশ্চিত করুন।' : 'Add your delivery details and choose how you would like to pay.'}</p>
           </div>
-          <div className="checkout-header-note"><ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />{locale === 'bn' ? 'নিরাপদ চেকআউট' : 'Secure checkout'}</div>
+          <div className="checkout-header-note shrink-0"><ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />{locale === 'bn' ? 'নিরাপদ চেকআউট' : 'Secure checkout'}</div>
         </div>
 
         {hasCartItems && (!quoteReady || quoteError) && (
@@ -536,6 +590,20 @@ export function CheckoutClient({
                   if (!address) return;
                   setDistrictId(address.districtId); setDistrictConfirmed(true); setUpazilaId(address.upazilaId); setThanaConfirmed(true);
                   setThanaQuery(''); setStreetAddress(address.streetAddress); setLandmark(address.landmark);
+                  const synced = resolveGeoCourierDefaults({
+                    districtId: address.districtId,
+                    upazilaId: address.upazilaId,
+                    streetAddress: address.streetAddress,
+                    landmark: address.landmark,
+                    existingPostCode: address.postCode,
+                    existingCity: address.recipientCity,
+                    existingZone: address.recipientZone,
+                    existingArea: address.recipientArea,
+                  });
+                  setPostCode(synced.postCode);
+                  setRecipientCity(synced.recipientCity);
+                  setRecipientZone(synced.recipientZone);
+                  setRecipientArea(synced.recipientArea);
                 }}><option value="">{locale === 'bn' ? 'ঠিকানা নির্বাচন করুন' : 'Choose an address'}</option>{savedAddresses.map(a => <option key={a.id} value={a.id}>{a.label} — {a.streetAddress}</option>)}</select></div>}
                 <Input type="email" autoComplete="email" maxLength={254} label={locale === 'bn' ? 'ইমেইল (ঐচ্ছিক)' : 'Email (optional)'} placeholder="name@example.com" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
                 {/* Cascading 64 District -> Upazila Selectors */}
@@ -596,7 +664,23 @@ export function CheckoutClient({
                     <select
                       id="checkout-upazila"
                       value={thanaConfirmed && visibleThanas.some(u => u.id === upazilaId) ? upazilaId : ''}
-                      onChange={(e) => { setUpazilaId(Number(e.target.value)); setThanaConfirmed(Boolean(e.target.value)); }}
+                      onChange={(e) => {
+                        const nextUpz = Number(e.target.value);
+                        setUpazilaId(nextUpz);
+                        setThanaConfirmed(Boolean(e.target.value));
+                        if (nextUpz) {
+                          const synced = resolveGeoCourierDefaults({
+                            districtId,
+                            upazilaId: nextUpz,
+                            streetAddress,
+                            landmark,
+                          });
+                          setPostCode(synced.postCode);
+                          setRecipientCity(synced.recipientCity);
+                          setRecipientZone(synced.recipientZone);
+                          setRecipientArea(synced.recipientArea);
+                        }
+                      }}
                       required disabled={!districtConfirmed}
                       className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-bg text-ink border border-border rounded-[var(--radius-md)] focus:outline-2 focus:outline-ink"
                     >
@@ -625,6 +709,49 @@ export function CheckoutClient({
                   </div>
                 </div>
 
+                {/* Auto-Synced Post Code & Courier City/Zone/Area Bar */}
+                {districtConfirmed && thanaConfirmed && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 border border-border rounded-[var(--radius-md)] bg-surface">
+                    <Input
+                      label={locale === 'bn' ? 'পোস্ট কোড (৪ সংখ্যা — অটো সিঙ্কড)' : 'Post Code (4-digit — Auto-Synced)'}
+                      value={postCode}
+                      maxLength={4}
+                      onChange={(e) => setPostCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="1209"
+                    />
+                    <div className="space-y-1 min-w-0">
+                      <label className="block text-xs font-medium text-ink">
+                        {locale === 'bn' ? 'কুরিয়ার জোন (Auto-Synced)' : 'Courier Zone (Auto-Synced)'}
+                      </label>
+                      <div className="min-h-[44px] px-3 py-2 text-xs font-mono bg-bg border border-border rounded-[var(--radius-md)] flex items-center justify-between gap-2 text-ink min-w-0">
+                        <span className="truncate min-w-0">{recipientCity} → {recipientZone}</span>
+                        <Badge status="neutral" className="shrink-0">Auto</Badge>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label htmlFor="checkout-recipient-area" className="block text-xs font-medium text-ink">
+                        {locale === 'bn' ? 'ডেলিভারি এরিয়া (Area)' : 'Delivery Area'}
+                      </label>
+                      <select
+                        id="checkout-recipient-area"
+                        value={recipientArea}
+                        onChange={(e) => setRecipientArea(e.target.value)}
+                        className="w-full min-h-[44px] px-3 py-2 text-xs bg-bg text-ink border border-border rounded-[var(--radius-md)]"
+                      >
+                        {Array.from(
+                          new Set([recipientArea, ...getPathaoAreasByZone(recipientZone)])
+                        )
+                          .filter(Boolean)
+                          .map((areaName) => (
+                            <option key={areaName} value={areaName}>
+                              {areaName}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 <Input
                   label={
                     locale === 'bn'
@@ -638,7 +765,21 @@ export function CheckoutClient({
                   }
                   autoComplete="street-address"
                   value={streetAddress}
-                  onChange={(e) => setStreetAddress(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setStreetAddress(val);
+                    if (districtConfirmed && thanaConfirmed) {
+                      const synced = resolveGeoCourierDefaults({
+                        districtId,
+                        upazilaId,
+                        streetAddress: val,
+                        landmark,
+                        existingPostCode: postCode,
+                      });
+                      setRecipientZone(synced.recipientZone);
+                      setRecipientArea(synced.recipientArea);
+                    }
+                  }}
                   required
                 />
 
@@ -728,13 +869,13 @@ export function CheckoutClient({
                     type="button"
                     onClick={() => setDeliveryMethod('courier')}
                     aria-pressed={deliveryMethod === 'courier'}
-                    className={`checkout-choice p-3.5 text-left border rounded-[var(--radius-md)] cursor-pointer transition-colors flex items-center justify-between ${
+                    className={`checkout-choice p-3.5 text-left border rounded-[var(--radius-md)] cursor-pointer transition-colors flex items-center justify-between gap-3 ${
                       deliveryMethod === 'courier'
                         ? 'border-ink bg-surface ring-1 ring-ink'
                         : 'border-border bg-bg hover:border-ink'
                     }`}
                   >
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-bold text-ink">
                         {locale === 'bn'
                           ? 'কুরিয়ার হোম ডেলিভারি'
@@ -744,7 +885,7 @@ export function CheckoutClient({
                         {locale === 'bn' ? 'আপনার ঠিকানায় কুরিয়ার ডেলিভারি' : 'Courier delivery to your address'}
                       </p>
                     </div>
-                    <span className="text-sm font-bold text-ink tabular-nums">
+                    <span className="text-sm font-bold text-ink tabular-nums shrink-0 whitespace-nowrap">
                       {quoteReady && courierChargeCalc.isFreeDeliveryApplied
                         ? dict.common.freeDelivery
                         : formatPoishaToBdt(
@@ -758,13 +899,13 @@ export function CheckoutClient({
                     type="button"
                     onClick={() => setDeliveryMethod('post_office')}
                     aria-pressed={deliveryMethod === 'post_office'}
-                    className={`checkout-choice p-3.5 text-left border rounded-[var(--radius-md)] cursor-pointer transition-colors flex items-center justify-between ${
+                    className={`checkout-choice p-3.5 text-left border rounded-[var(--radius-md)] cursor-pointer transition-colors flex items-center justify-between gap-3 ${
                       deliveryMethod === 'post_office'
                         ? 'border-ink bg-surface ring-1 ring-ink'
                         : 'border-border bg-bg hover:border-ink'
                     }`}
                   >
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-bold text-ink">
                         {locale === 'bn'
                           ? 'বাংলাদেশ ডাক বিভাগ (BD Post)'
@@ -776,7 +917,7 @@ export function CheckoutClient({
                           : 'Economy Government Post'}
                       </p>
                     </div>
-                    <span className="text-sm font-bold text-ink tabular-nums">
+                    <span className="text-sm font-bold text-ink tabular-nums shrink-0 whitespace-nowrap">
                       {quoteReady && bdPostChargeCalc.isFreeDeliveryApplied
                         ? dict.common.freeDelivery
                         : formatPoishaToBdt(
@@ -838,12 +979,12 @@ export function CheckoutClient({
                         : 'border-border bg-bg hover:border-ink cursor-pointer'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-1.5">
                       <p className="text-sm font-bold text-ink">
                         {locale === 'bn' ? method.nameBn : method.nameEn}
                       </p>
                       {hasItemRequiringAdvance && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-danger/10 text-danger font-medium">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-danger/10 text-danger font-medium shrink-0">
                           {locale === 'bn' ? 'অগ্রিম প্রযোজ্য' : 'Advance Req'}
                         </span>
                       )}
@@ -866,11 +1007,11 @@ export function CheckoutClient({
                         : 'border-border bg-bg hover:border-[#E2136E]/60'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-1.5">
                       <p className="text-sm font-bold text-[#E2136E]">
                         {locale === 'bn' ? method.nameBn : method.nameEn}
                       </p>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#E2136E]/10 text-[#E2136E]">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#E2136E]/10 text-[#E2136E] break-all">
                         {method.accountNumber}
                       </span>
                     </div>
@@ -883,17 +1024,17 @@ export function CheckoutClient({
 
                 {/* MFS Send Money Guidance Box */}
                 {quoteReady && isManualPayment && selectedPayment && (
-                  <div className="p-4 border border-border rounded-[var(--radius-md)] bg-surface space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 text-xs font-bold rounded-md bg-ink text-bg">
+                  <div className="p-3.5 sm:p-4 border border-border rounded-[var(--radius-md)] bg-surface space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border pb-2.5">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
+                        <span className="px-2 py-0.5 text-xs font-bold rounded-md bg-ink text-bg shrink-0">
                           {locale === 'bn' ? selectedPayment.nameBn : selectedPayment.nameEn}</span>
                         <span className="text-xs text-muted">
                           {locale === 'bn'
                             ? 'পার্সোনাল সেন্ড মানি নম্বর:'
                             : 'Personal Send Money Number:'}
                         </span>
-                        <span className="text-xs font-mono font-bold text-ink">
+                        <span className="text-xs font-mono font-bold text-ink break-all">
                           {selectedPayment.accountNumber}
                         </span>
                       </div>
@@ -910,7 +1051,7 @@ export function CheckoutClient({
                             setSubmitError('নম্বর কপি করা যায়নি। নম্বরটি নির্বাচন করে কপি করুন।');
                           }
                         }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-bg text-ink hover:border-ink cursor-pointer"
+                        className="inline-flex min-h-[40px] items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-bg text-ink hover:border-ink cursor-pointer shrink-0"
                       >
                         {copiedMfsNumber ? (
                           <Check className="w-3.5 h-3.5 text-success" />
@@ -981,7 +1122,7 @@ export function CheckoutClient({
                         ? item.variantTitleBn
                         : item.variantTitleEn;
                     return (
-                      <li key={item.variantId} className="p-3 flex gap-3">
+                      <li key={item.variantId} className="p-2.5 sm:p-3 flex gap-2.5 sm:gap-3">
                         <div className="relative w-14 h-14 shrink-0 border border-border rounded-[var(--radius-sm)] overflow-hidden bg-surface">
                           {item.imageUrl && (
                             <img
@@ -1077,6 +1218,7 @@ export function CheckoutClient({
                         type="button"
                         variant="outline"
                         size="md"
+                        className="min-h-[44px] shrink-0"
                         onClick={handleRemovePromo}
                       >
                         {dict.common.remove}
@@ -1086,6 +1228,7 @@ export function CheckoutClient({
                         type="button"
                         variant="secondary"
                         size="md"
+                        className="min-h-[44px] shrink-0"
                         disabled={isCheckingPromo || !promoInput.trim()}
                         onClick={handleApplyPromo}
                         leftIcon={<Tag className="w-4 h-4" aria-hidden="true" />}
@@ -1230,10 +1373,10 @@ export function CheckoutClient({
             </div>
 
             {/* Mobile Sticky Order Confirmation Bar (< 1024px) */}
-            <div className="checkout-sticky storefront-action-bar lg:hidden fixed bottom-[calc(3.5rem+max(16px,var(--safe-bottom)))] md:bottom-0 left-0 right-0 z-30 p-3 md:pb-[max(0.75rem,var(--safe-bottom))] bg-surface/95 backdrop-blur border-t border-border shadow-lg flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] text-muted">{dict.common.total}</p>
-                <p className="text-sm font-bold text-ink tabular-nums">
+            <div className="checkout-sticky storefront-action-bar lg:hidden fixed bottom-[calc(3.5rem+var(--safe-bottom))] md:bottom-0 left-0 right-0 z-30 px-3.5 py-2.5 sm:p-3 md:pb-[max(0.75rem,var(--safe-bottom))] bg-surface/95 backdrop-blur border-t border-border shadow-lg flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-[11px] text-muted leading-none">{dict.common.total}</p>
+                <p className="text-sm sm:text-base font-bold text-ink tabular-nums mt-0.5 truncate">
                   {formatPoishaToBdt(totalPayablePoisha, locale)}
                 </p>
               </div>
@@ -1242,7 +1385,7 @@ export function CheckoutClient({
                 variant="primary"
                 size="md"
                 disabled={isSubmitting || isCheckingPromo || !quoteReady || !selectedPayment || sessionStatus === 'loading' || sessionStatus === 'error'}
-                className="min-h-[42px] px-4 font-bold"
+                className="min-h-[44px] px-4 font-bold shrink-0 whitespace-nowrap"
                 leftIcon={<ShieldCheck className="w-4 h-4" aria-hidden="true" />}
               >
                 {isSubmitting

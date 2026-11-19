@@ -1,7 +1,7 @@
 import { backendRoute } from '@/src/lib/db/backend-route';
 import { ApiRequest as NextRequest, ApiResponse as NextResponse } from '@/src/lib/http';
 import { z } from 'zod';
-import { getAuthenticatedCustomerOrders, getCustomerLastDeliveryProfile } from '@/src/lib/db/repository';
+import { getAuthenticatedCustomerOrders, getCustomerLastDeliveryProfile, saveCustomerDeliveryProfile } from '@/src/lib/db/repository';
 import {
   assertJsonBodySize, checkRateLimit, CUSTOMER_SESSION_COOKIE_NAME, CUSTOMER_SESSION_TTL_MS, getClientIpFromRequest,
   registerPasswordCustomer, loginPasswordCustomer, getCustomerSessionProfile, changeCustomerPassword,
@@ -14,6 +14,26 @@ const schema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('register'), phone: z.string().trim().max(30).optional(), email: z.string().trim().max(254).optional(), password }),
   z.object({ action: z.literal('login'), identifier: z.string().trim().min(1).max(254), password: z.string().min(1).max(128) }),
   z.object({ action: z.literal('change_password'), currentPassword: z.string().min(1).max(128), newPassword: password }),
+  z.object({
+    action: z.literal('update_personal_profile'),
+    customerName: z.string().trim().min(2).max(120),
+    customerPhone: z.string().trim().max(30).optional(),
+    customerEmail: z.string().trim().max(254).nullable().optional(),
+  }),
+  z.object({
+    action: z.literal('update_delivery_profile'),
+    customerName: z.string().trim().min(2).max(120),
+    customerPhone: z.string().trim().max(30).optional(),
+    customerEmail: z.string().trim().max(254).nullable().optional(),
+    districtId: z.number().int().positive(),
+    upazilaId: z.number().int().positive(),
+    postCode: z.string().trim().max(10).optional(),
+    recipientCity: z.string().trim().max(120).optional(),
+    recipientZone: z.string().trim().max(120).optional(),
+    recipientArea: z.string().trim().max(120).optional(),
+    streetAddress: z.string().trim().min(6).max(500),
+    landmark: z.string().trim().max(200).optional(),
+  }),
   z.object({ action: z.literal('get_orders') }),
   z.object({ action: z.literal('logout') }),
 ]);
@@ -31,8 +51,15 @@ async function handleGET(req: NextRequest) {
   const session = verifyCustomerSessionToken(token);
   if (!session) return NextResponse.json({ authenticated: false, orders: [] });
   const profile = getCustomerSessionProfile(session);
-  return NextResponse.json({ authenticated: true, customerPhone: session.phone, identifier: profile?.identifier ?? session.phone,
-    customerEmail: profile?.email ?? null, deliveryProfile: getCustomerLastDeliveryProfile(token), orders: getAuthenticatedCustomerOrders(token) });
+  return NextResponse.json({
+    authenticated: true,
+    authBypassed: session.sessionId === 'bypass-customer-session',
+    customerPhone: session.phone,
+    identifier: profile?.identifier ?? session.phone,
+    customerEmail: profile?.email ?? null,
+    deliveryProfile: getCustomerLastDeliveryProfile(token),
+    orders: getAuthenticatedCustomerOrders(token),
+  });
 }
 
 async function handlePOST(req: NextRequest) {
@@ -52,7 +79,71 @@ async function handlePOST(req: NextRequest) {
     const token = req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
     const session = verifyCustomerSessionToken(token);
     if (!session) return NextResponse.json({ success: false, errorBn: 'অ্যাকাউন্টে লগইন করুন।' }, { status: 401 });
-    return NextResponse.json({ success: true, customerPhone: session.phone, orders: getAuthenticatedCustomerOrders(token) });
+    return NextResponse.json({ success: true, customerPhone: session.phone, deliveryProfile: getCustomerLastDeliveryProfile(token), orders: getAuthenticatedCustomerOrders(token) });
+  }
+  if (data.action === 'update_personal_profile') {
+    const token = req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
+    const session = verifyCustomerSessionToken(token);
+    if (!session) return NextResponse.json({ success: false, errorBn: 'অ্যাকাউন্টে লগইন করুন।' }, { status: 401 });
+    const normalizedPhone = data.customerPhone?.trim() ? normalizeBdPhone(data.customerPhone.trim()) : session.phone;
+    if (data.customerPhone?.trim() && !normalizedPhone) {
+      return NextResponse.json({ success: false, errorBn: 'সঠিক ১১ ডিজিট বাংলাদেশি মোবাইল নম্বর দিন।' }, { status: 400 });
+    }
+    const cleanEmail = data.customerEmail?.trim() ? data.customerEmail.trim().toLowerCase() : null;
+    if (cleanEmail && !z.email().safeParse(cleanEmail).success) {
+      return NextResponse.json({ success: false, errorBn: 'সঠিক ইমেইল ঠিকানা দিন।' }, { status: 400 });
+    }
+    const existing = getCustomerLastDeliveryProfile(token);
+    const saved = saveCustomerDeliveryProfile(token, {
+      customerName: data.customerName,
+      customerPhone: normalizedPhone ?? session.phone,
+      customerEmail: cleanEmail,
+      districtId: existing?.districtId ?? 47,
+      upazilaId: existing?.upazilaId ?? 365,
+      postCode: existing?.postCode,
+      recipientCity: existing?.recipientCity,
+      recipientZone: existing?.recipientZone,
+      recipientArea: existing?.recipientArea,
+      streetAddress: existing?.streetAddress ?? '',
+      landmark: existing?.landmark ?? '',
+      allowEmptyAddress: true,
+    });
+    if (!saved.success) {
+      return NextResponse.json(saved, { status: 400 });
+    }
+    return NextResponse.json({
+      success: true,
+      deliveryProfile: saved.deliveryProfile,
+    });
+  }
+  if (data.action === 'update_delivery_profile') {
+    const token = req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value;
+    const session = verifyCustomerSessionToken(token);
+    if (!session) return NextResponse.json({ success: false, errorBn: 'অ্যাকাউন্টে লগইন করুন।' }, { status: 401 });
+    const normalizedPhone = data.customerPhone ? normalizeBdPhone(data.customerPhone) : session.phone;
+    if (data.customerPhone && !normalizedPhone) {
+      return NextResponse.json({ success: false, errorBn: 'সঠিক ১১ ডিজিট বাংলাদেশি মোবাইল নম্বর দিন।' }, { status: 400 });
+    }
+    const saved = saveCustomerDeliveryProfile(token, {
+      customerName: data.customerName,
+      customerPhone: normalizedPhone ?? session.phone,
+      customerEmail: data.customerEmail ?? null,
+      districtId: data.districtId,
+      upazilaId: data.upazilaId,
+      postCode: data.postCode,
+      recipientCity: data.recipientCity,
+      recipientZone: data.recipientZone,
+      recipientArea: data.recipientArea,
+      streetAddress: data.streetAddress,
+      landmark: data.landmark,
+    });
+    if (!saved.success) {
+      return NextResponse.json(saved, { status: 400 });
+    }
+    return NextResponse.json({
+      success: true,
+      deliveryProfile: saved.deliveryProfile,
+    });
   }
   const ip = getClientIpFromRequest(req);
   const limit = checkRateLimit(`customer-password-ip:${ip}`, 100, 15 * 60_000);

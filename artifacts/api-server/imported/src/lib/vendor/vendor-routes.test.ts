@@ -77,13 +77,25 @@ test('vendor workspace requires a signed vendor session and never leaks platform
 
   const workspace = body.workspace as {
     profile: { vendorCode: string; payoutAccountMasked: string };
-    capabilities: { canCreateProduct: boolean };
+    capabilities: {
+      canCreateProduct: boolean;
+      canEditProduct: boolean;
+      canSubmitConsignmentLot: boolean;
+      canSubmitPriceProposal: boolean;
+      canEditProfile: boolean;
+      canRequestPayout: boolean;
+    };
     products: Array<{ productId: string; categoryId: string }>;
     orders: unknown[];
   };
   assert.equal(workspace.profile.vendorCode, 'VND-001');
   assert.match(workspace.profile.payoutAccountMasked, /•/);
-  assert.equal(workspace.capabilities.canCreateProduct, true);
+  assert.equal(workspace.capabilities.canCreateProduct, false);
+  assert.equal(workspace.capabilities.canEditProduct, false);
+  assert.equal(workspace.capabilities.canSubmitConsignmentLot, false);
+  assert.equal(workspace.capabilities.canSubmitPriceProposal, false);
+  assert.equal(workspace.capabilities.canEditProfile, false);
+  assert.equal(workspace.capabilities.canRequestPayout, true);
   assert.ok(workspace.products.length > 0);
 });
 
@@ -118,9 +130,10 @@ test('vendor mutations reject admin sessions, cross-origin and missing CSRF', as
   );
 });
 
-test('vendor can create and publish an own product, but cannot touch another vendor product', async () => {
+test('vendor cannot create products by default, and admin unlock permits create while isolating foreign products', async () => {
+  const admin = adminSession();
   const vendor = vendorSession();
-  const created = await postProduct(
+  const defaultBlocked = await postProduct(
     vendorRequest('/api/vendor/products', {
       method: 'POST',
       token: vendor.token,
@@ -129,74 +142,130 @@ test('vendor can create and publish an own product, but cannot touch another ven
         action: 'upsert',
         product: {
           categoryId: 'cat-fashion',
-          nameBn: 'ভেন্ডর নতুন পণ্য',
-          nameEn: 'Vendor new product',
-          descriptionBn: 'ভেন্ডরের নিজের যোগ করা পণ্য',
+          nameBn: 'ডিফল্ট ব্লক পণ্য',
+          nameEn: 'Default blocked product',
+          descriptionBn: 'অনুমতি ছাড়া তৈরি হবে না',
           variants: [
-            { publicSku: 'VND-NEW-1', titleBn: 'স্ট্যান্ডার্ড', supplierCostPoisha: 20000, salePricePoisha: 30000 },
+            { publicSku: 'VND-DEF-BLOCK', titleBn: 'স্ট্যান্ডার্ড', supplierCostPoisha: 20000, salePricePoisha: 30000 },
           ],
         },
       },
     })
   );
-  assert.equal(created.status, 200);
-  const createdBody = (await created.json()) as { success: boolean; product: { productId: string; status: string } };
-  assert.equal(createdBody.success, true);
-  assert.equal(createdBody.product.status, 'draft');
+  assert.equal(defaultBlocked.status, 400);
 
-  // Thin margin is refused so the platform never sells at a loss.
-  const thin = await postProduct(
-    vendorRequest('/api/vendor/products', {
+  const targetVendorId = vendor.actor.vendorId!;
+  await postAdminVendors(
+    vendorRequest('/api/admin/vendors', {
       method: 'POST',
-      token: vendor.token,
-      csrf: vendor.csrf,
+      token: admin.token,
+      csrf: admin.csrf,
       body: {
-        action: 'upsert',
-        product: {
-          categoryId: 'cat-fashion',
-          nameBn: 'কম মার্জিন',
-          nameEn: 'Thin margin',
-          descriptionBn: 'খুবই কম মার্জিনের পণ্য',
-          variants: [
-            { publicSku: 'VND-THIN-1', titleBn: 'স্ট্যান্ডার্ড', supplierCostPoisha: 29900, salePricePoisha: 30000 },
-          ],
-        },
+        operation: 'set_capabilities',
+        vendorId: targetVendorId,
+        capabilities: { canCreateProduct: true, canEditProduct: true, canChangeProductStatus: true },
       },
     })
   );
-  assert.equal(thin.status, 400);
 
-  // Another vendor's product is a 404, never a 403.
-  const foreign = await postProduct(
-    vendorRequest('/api/vendor/products', {
-      method: 'POST',
-      token: vendor.token,
-      csrf: vendor.csrf,
-      body: { action: 'set_status', productId: 'prod-not-mine', status: 'draft' },
-    })
-  );
-  assert.equal(foreign.status, 404);
+  try {
+    const created = await postProduct(
+      vendorRequest('/api/vendor/products', {
+        method: 'POST',
+        token: vendor.token,
+        csrf: vendor.csrf,
+        body: {
+          action: 'upsert',
+          product: {
+            categoryId: 'cat-fashion',
+            nameBn: 'ভেন্ডর নতুন পণ্য',
+            nameEn: 'Vendor new product',
+            descriptionBn: 'ভেন্ডরের নিজের যোগ করা পণ্য',
+            variants: [
+              { publicSku: 'VND-NEW-1', titleBn: 'স্ট্যান্ডার্ড', supplierCostPoisha: 20000, salePricePoisha: 30000 },
+            ],
+          },
+        },
+      })
+    );
+    assert.equal(created.status, 200);
+    const createdBody = (await created.json()) as { success: boolean; product: { productId: string; status: string } };
+    assert.equal(createdBody.success, true);
+    assert.equal(createdBody.product.status, 'draft');
+
+    // Thin margin is refused so the platform never sells at a loss.
+    const thin = await postProduct(
+      vendorRequest('/api/vendor/products', {
+        method: 'POST',
+        token: vendor.token,
+        csrf: vendor.csrf,
+        body: {
+          action: 'upsert',
+          product: {
+            categoryId: 'cat-fashion',
+            nameBn: 'কম মার্জিন',
+            nameEn: 'Thin margin',
+            descriptionBn: 'খুবই কম মার্জিনের পণ্য',
+            variants: [
+              { publicSku: 'VND-THIN-1', titleBn: 'স্ট্যান্ডার্ড', supplierCostPoisha: 29900, salePricePoisha: 30000 },
+            ],
+          },
+        },
+      })
+    );
+    assert.equal(thin.status, 400);
+
+    // Another vendor's product is a 404, never a 403.
+    const foreign = await postProduct(
+      vendorRequest('/api/vendor/products', {
+        method: 'POST',
+        token: vendor.token,
+        csrf: vendor.csrf,
+        body: { action: 'set_status', productId: 'prod-not-mine', status: 'draft' },
+      })
+    );
+    assert.equal(foreign.status, 404);
+  } finally {
+    await postAdminVendors(
+      vendorRequest('/api/admin/vendors', {
+        method: 'POST',
+        token: admin.token,
+        csrf: admin.csrf,
+        body: { operation: 'reset_capabilities', vendorId: targetVendorId },
+      })
+    );
+  }
 });
 
 test('vendor stock, proposal, payout and profile endpoints enforce ownership and capability flags', async () => {
+  const admin = adminSession();
   const vendor = vendorSession();
+  const targetVendorId = vendor.actor.vendorId!;
 
+  // Read-only by default blocks dispatch lots, proposals, and profile requests.
   assert.equal(
     (await postStock(vendorRequest('/api/vendor/stock', {
       method: 'POST', token: vendor.token, csrf: vendor.csrf,
       body: { action: 'dispatch_lot', variantId: 'var-not-mine', dispatchedQty: 5, challanRef: 'CH-1', noteBn: '' },
     }))).status,
-    404
+    400
   );
-
   assert.equal(
     (await postProposal(vendorRequest('/api/vendor/price-proposals', {
       method: 'POST', token: vendor.token, csrf: vendor.csrf,
       body: { variantId: 'var-not-mine', proposedSupplierCostPoisha: 10000, proposedSalePricePoisha: 20000, reasonBn: 'দাম বেড়েছে' },
     }))).status,
-    404
+    400
+  );
+  assert.equal(
+    (await postProfile(vendorRequest('/api/vendor/profile', {
+      method: 'POST', token: vendor.token, csrf: vendor.csrf,
+      body: { contactPhone: '01711901999' },
+    }))).status,
+    400
   );
 
+  // Payout requests remain enabled by default and validate minimum thresholds.
   assert.equal(
     (await postPayout(vendorRequest('/api/vendor/payouts', {
       method: 'POST', token: vendor.token, csrf: vendor.csrf,
@@ -205,22 +274,67 @@ test('vendor stock, proposal, payout and profile endpoints enforce ownership and
     400
   );
 
-  const profile = await postProfile(vendorRequest('/api/vendor/profile', {
-    method: 'POST', token: vendor.token, csrf: vendor.csrf,
-    body: { contactPhone: '01711901999' },
-  }));
-  assert.equal(profile.status, 201);
-  const profileBody = (await profile.json()) as { request: { status: string } };
-  assert.equal(profileBody.request.status, 'pending_review');
-
-  // Invalid phone never becomes a pending request.
-  assert.equal(
-    (await postProfile(vendorRequest('/api/vendor/profile', {
-      method: 'POST', token: vendor.token, csrf: vendor.csrf,
-      body: { contactPhone: '12345' },
-    }))).status,
-    400
+  // When Admin explicitly enables self-service capabilities, ownership checks run.
+  await postAdminVendors(
+    vendorRequest('/api/admin/vendors', {
+      method: 'POST',
+      token: admin.token,
+      csrf: admin.csrf,
+      body: {
+        operation: 'set_capabilities',
+        vendorId: targetVendorId,
+        capabilities: {
+          canSubmitConsignmentLot: true,
+          canSubmitPriceProposal: true,
+          canEditProfile: true,
+        },
+      },
+    })
   );
+
+  try {
+    assert.equal(
+      (await postStock(vendorRequest('/api/vendor/stock', {
+        method: 'POST', token: vendor.token, csrf: vendor.csrf,
+        body: { action: 'dispatch_lot', variantId: 'var-not-mine', dispatchedQty: 5, challanRef: 'CH-1', noteBn: '' },
+      }))).status,
+      404
+    );
+
+    assert.equal(
+      (await postProposal(vendorRequest('/api/vendor/price-proposals', {
+        method: 'POST', token: vendor.token, csrf: vendor.csrf,
+        body: { variantId: 'var-not-mine', proposedSupplierCostPoisha: 10000, proposedSalePricePoisha: 20000, reasonBn: 'দাম বেড়েছে' },
+      }))).status,
+      404
+    );
+
+    const profile = await postProfile(vendorRequest('/api/vendor/profile', {
+      method: 'POST', token: vendor.token, csrf: vendor.csrf,
+      body: { contactPhone: '01711901999' },
+    }));
+    assert.equal(profile.status, 201);
+    const profileBody = (await profile.json()) as { request: { status: string } };
+    assert.equal(profileBody.request.status, 'pending_review');
+
+    // Invalid phone never becomes a pending request.
+    assert.equal(
+      (await postProfile(vendorRequest('/api/vendor/profile', {
+        method: 'POST', token: vendor.token, csrf: vendor.csrf,
+        body: { contactPhone: '12345' },
+      }))).status,
+      400
+    );
+  } finally {
+    await postAdminVendors(
+      vendorRequest('/api/admin/vendors', {
+        method: 'POST',
+        token: admin.token,
+        csrf: admin.csrf,
+        body: { operation: 'reset_capabilities', vendorId: targetVendorId },
+      })
+    );
+  }
 });
 
 test('admin vendor control requires super admin and gates vendor capabilities', async () => {
@@ -241,6 +355,43 @@ test('admin vendor control requires super admin and gates vendor capabilities', 
 
   const target = snapshot.vendors.find((item) => item.vendorCode === 'VND-001')!;
 
+  // Super Admin enables product creation, vendor creates product successfully.
+  const enableProduct = await postAdminVendors(
+    vendorRequest('/api/admin/vendors', {
+      method: 'POST',
+      token: admin.token,
+      csrf: admin.csrf,
+      body: {
+        operation: 'set_capabilities',
+        vendorId: target.vendorId,
+        capabilities: { canCreateProduct: true },
+      },
+    })
+  );
+  assert.equal(enableProduct.status, 200);
+
+  const ownSession = vendorSession();
+  const allowedProduct = await postProduct(
+    vendorRequest('/api/vendor/products', {
+      method: 'POST',
+      token: ownSession.token,
+      csrf: ownSession.csrf,
+      body: {
+        action: 'upsert',
+        product: {
+          categoryId: 'cat-fashion',
+          nameBn: 'অনুমতিপ্রাপ্ত পণ্য',
+          nameEn: 'Allowed product',
+          descriptionBn: 'অনুমতি সক্রিয় থাকা অবস্থায় তৈরি',
+          variants: [
+            { publicSku: 'VND-ALLOW-1', titleBn: 'স্ট্যান্ডার্ড', supplierCostPoisha: 10000, salePricePoisha: 20000 },
+          ],
+        },
+      },
+    })
+  );
+  assert.equal(allowedProduct.status, 200);
+
   const disable = await postAdminVendors(
     vendorRequest('/api/admin/vendors', {
       method: 'POST',
@@ -257,7 +408,6 @@ test('admin vendor control requires super admin and gates vendor capabilities', 
   assert.equal(disable.status, 200);
 
   // Vendors are the ones who feel the toggle immediately.
-  const ownSession = vendorSession();
   const blocked = await postProduct(
     vendorRequest('/api/vendor/products', {
       method: 'POST',
@@ -301,18 +451,24 @@ test('admin vendor control requires super admin and gates vendor capabilities', 
   );
   assert.equal(restore.status, 200);
 
-  // A reset must also drop the admin restriction note, otherwise a re-enabled
-  // vendor keeps seeing "payouts are closed" in their panel.
+  // A reset restores read-only defaults (canCreateProduct = false, canRequestPayout = true)
+  // and drops the admin restriction note.
   const restoredSnapshot = (await (
     await getAdminVendors(vendorRequest('/api/admin/vendors', { token: admin.token }))
   ).json()) as {
-    vendors: Array<{ vendorCode: string; capabilities: { canCreateProduct: boolean }; restrictionNoteBn: string | null }>;
+    vendors: Array<{
+      vendorCode: string;
+      capabilities: { canCreateProduct: boolean; canRequestPayout: boolean };
+      restrictionNoteBn: string | null;
+    }>;
   };
   const restoredVendor = restoredSnapshot.vendors.find((item) => item.vendorCode === 'VND-001')!;
-  assert.equal(restoredVendor.capabilities.canCreateProduct, true);
+  assert.equal(restoredVendor.capabilities.canCreateProduct, false);
+  assert.equal(restoredVendor.capabilities.canRequestPayout, true);
   assert.equal(restoredVendor.restrictionNoteBn, null);
 
-  const unrestricted = await postProduct(
+  // Product creation remains read-only after reset.
+  const defaultReadOnly = await postProduct(
     vendorRequest('/api/vendor/products', {
       method: 'POST',
       token: ownSession.token,
@@ -321,9 +477,9 @@ test('admin vendor control requires super admin and gates vendor capabilities', 
         action: 'upsert',
         product: {
           categoryId: 'cat-fashion',
-          nameBn: 'পুনরুদ্ধারকৃত পণ্য',
-          nameEn: 'Restored product',
-          descriptionBn: 'অনুমতি ফিরে এসেছে',
+          nameBn: 'ডিফল্ট রিড-অনলি',
+          nameEn: 'Default read only',
+          descriptionBn: 'ডিফল্ট রিড-অনলি যাচাই',
           variants: [
             { publicSku: 'VND-RESTORE-1', titleBn: 'স্ট্যান্ডার্ড', supplierCostPoisha: 10000, salePricePoisha: 20000 },
           ],
@@ -331,7 +487,7 @@ test('admin vendor control requires super admin and gates vendor capabilities', 
       },
     })
   );
-  assert.equal(unrestricted.status, 200);
+  assert.equal(defaultReadOnly.status, 400);
 });
 
 test('admin can suspend a vendor and that vendor loses every mutation', async () => {
@@ -598,6 +754,18 @@ test('new vendor remains pending, cannot transact before activation and cannot b
     const { VENDOR_ONBOARDING_15_QUESTIONS } = await import('@/src/lib/admin/phase4b-service');
     const vendor = vendorSession();
     const answers15 = Object.fromEntries(VENDOR_ONBOARDING_15_QUESTIONS.map(q => [q.key, 'Test response']));
+    assert.equal(
+      (await postOnboarding(vendorRequest('/api/vendor/onboarding', { method: 'POST', token: vendor.token, csrf: vendor.csrf, body: { answers15 } }))).status,
+      400
+    );
+    await postAdminVendors(
+      vendorRequest('/api/admin/vendors', {
+        method: 'POST',
+        token: admin.token,
+        csrf: admin.csrf,
+        body: { operation: 'set_capabilities', vendorId, capabilities: { canSubmitOnboardingAnswers: true } },
+      })
+    );
     const submitted = await postOnboarding(vendorRequest('/api/vendor/onboarding', { method: 'POST', token: vendor.token, csrf: vendor.csrf, body: { answers15 } }));
     assert.equal(submitted.status, 201, await submitted.clone().text());
     assert.equal((await updateStatus('active', 'Reviewed onboarding')).status, 400);
@@ -741,4 +909,185 @@ test('bucket statement rolls forward own complete ledger and reports recorded pa
     ]; writePhase4BStore(overflow);
     assert.equal((await statement(vendorRequest(url, { token: vendor.token }))).status, 503);
   } finally { const current = readPhase4BStore(); current.vendorLedger = oldLedger; current.payoutRequests = oldPayouts; writePhase4BStore(current); }
+});
+
+test('vendor workspace exposes only admin-approved reviews and excludes pending or rejected ones', async () => {
+  const { readErpState, writeErpState } = await import('@/src/lib/db/repository');
+  const { readPhase6Store, writePhase6Store } = await import('@/src/lib/admin/phase6-service');
+  const vendor = vendorSession();
+  const erp = readErpState();
+  const p6 = readPhase6Store();
+  const oldReviews = [...erp.reviews];
+  const oldModeration = { ...(p6.reviewModerationStatus ?? {}) };
+  const ownProduct = erp.products.find((p) => p.vendorId === vendor.actor.vendorId)!;
+
+  try {
+    erp.reviews = [
+      {
+        id: 'rev-test-approved',
+        productId: ownProduct.productId,
+        customerName: 'অনুমোদিত ক্রেতা',
+        rating: 5,
+        comment: 'দারুণ মানের পণ্য অনুমোদিত',
+        isVerifiedPurchase: true,
+        createdAt: '2026-11-10T10:00:00.000Z',
+      },
+      {
+        id: 'rev-test-pending',
+        productId: ownProduct.productId,
+        customerName: 'অপেক্ষমাণ ক্রেতা',
+        rating: 1,
+        comment: 'পেন্ডিং গোপন মন্তব্য',
+        isVerifiedPurchase: false,
+        createdAt: '2026-11-11T10:00:00.000Z',
+      },
+      {
+        id: 'rev-test-rejected',
+        productId: ownProduct.productId,
+        customerName: 'বাতিল ক্রেতা',
+        rating: 2,
+        comment: 'রিজেক্টেড গোপন মন্তব্য',
+        isVerifiedPurchase: false,
+        createdAt: '2026-11-12T10:00:00.000Z',
+      },
+    ];
+    writeErpState(erp);
+    p6.reviewModerationStatus = {
+      'rev-test-approved': { status: 'approved', moderatedBy: 'super_admin', moderatedAt: '2026-11-10T12:00:00.000Z' },
+      'rev-test-pending': { status: 'pending', moderatedBy: null, moderatedAt: null },
+      'rev-test-rejected': { status: 'rejected', moderatedBy: 'super_admin', moderatedAt: '2026-11-12T12:00:00.000Z' },
+    };
+    writePhase6Store(p6);
+
+    const res = await getWorkspace(vendorRequest('/api/vendor/workspace', { token: vendor.token }));
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as {
+      workspace: {
+        approvedReviews: Array<{ reviewId: string; rating: number; reviewerLabel: string; comment: string }>;
+        counters: { approvedReviews: number };
+      };
+    };
+    const serialized = JSON.stringify(body.workspace.approvedReviews);
+    assert.equal(body.workspace.approvedReviews.length, 1);
+    assert.equal(body.workspace.counters.approvedReviews, 1);
+    assert.equal(body.workspace.approvedReviews[0].reviewId, 'rev-test-approved');
+    assert.match(body.workspace.approvedReviews[0].reviewerLabel, /•••/);
+    assert.equal(serialized.includes('অনুমোদিত ক্রেতা'), false);
+    assert.equal(serialized.includes('পেন্ডিং গোপন মন্তব্য'), false);
+    assert.equal(serialized.includes('রিজেক্টেড গোপন মন্তব্য'), false);
+  } finally {
+    const restoreErp = readErpState();
+    restoreErp.reviews = oldReviews;
+    writeErpState(restoreErp);
+    const restoreP6 = readPhase6Store();
+    restoreP6.reviewModerationStatus = oldModeration;
+    writePhase6Store(restoreP6);
+  }
+});
+
+test('admin consignment intake updates warehouse stock and vendor dispatch/receive history', async () => {
+  const { GET: getAdminWorkspace, POST: postAdminWorkspace } = await import('../../../app/api/admin/workspace/route');
+  const { readErpState, writeErpState } = await import('@/src/lib/db/repository');
+  const { readPhase7Store, writePhase7Store } = await import('@/src/lib/admin/phase7-service');
+  const admin = adminSession();
+  const vendor = vendorSession();
+  const erp = readErpState();
+  const p7 = readPhase7Store();
+  const targetProd = erp.products.find((p) => p.vendorId === vendor.actor.vendorId)!;
+  const targetVar = targetProd.variants[0]!;
+  const beforeAvail = targetVar.stockAvailable;
+  const beforeLots = [...p7.consignmentLots];
+
+  try {
+    const res = await postAdminWorkspace(
+      vendorRequest('/api/admin/workspace', {
+        method: 'POST',
+        token: admin.token,
+        csrf: admin.csrf,
+        body: {
+          operation: 'record_admin_consignment_intake',
+          variantId: targetVar.variantId,
+          dispatchedQty: 12,
+          qcRejectedQty: 2,
+          unitSupplierCostPoisha: 175000,
+          challanRef: 'CH-ADMIN-INTAKE-99',
+          dispatchedAt: '2026-11-14T08:00:00.000Z',
+          receivedAt: '2026-11-15T14:30:00.000Z',
+          qcProofUrl: 'https://example.com/proof-99.jpg',
+          noteBn: '১০ পিস গ্রহণ এবং ২ পিস কোয়ালিটি ইস্যুতে ফেরত।',
+        },
+      })
+    );
+    assert.equal(res.status, 201, await res.clone().text());
+    const intakeBody = (await res.json()) as { success: boolean; updatedStockAvailable: number };
+    assert.equal(intakeBody.success, true);
+    assert.equal(intakeBody.updatedStockAvailable, beforeAvail + 10);
+
+    const vendorRes = await getWorkspace(vendorRequest('/api/vendor/workspace', { token: vendor.token }));
+    assert.equal(vendorRes.status, 200);
+    const vendorBody = (await vendorRes.json()) as {
+      workspace: {
+        lots: Array<{
+          challanRef: string;
+          dispatchedQty: number;
+          qcAcceptedQty: number | null;
+          qcRejectedQty: number | null;
+          unitSupplierCostPoisha: number;
+          totalValuePoisha: number;
+          dispatchedAt: string;
+          receivedAt: string | null;
+          qcProofUrl: string | null;
+          status: string;
+        }>;
+      };
+    };
+    const recorded = vendorBody.workspace.lots.find((l) => l.challanRef === 'CH-ADMIN-INTAKE-99')!;
+    assert.ok(recorded);
+    assert.equal(recorded.dispatchedQty, 12);
+    assert.equal(recorded.qcAcceptedQty, 10);
+    assert.equal(recorded.qcRejectedQty, 2);
+    assert.equal(recorded.unitSupplierCostPoisha, 175000);
+    assert.equal(recorded.totalValuePoisha, 1750000);
+    assert.equal(recorded.dispatchedAt, '2026-11-14T08:00:00.000Z');
+    assert.equal(recorded.receivedAt, '2026-11-15T14:30:00.000Z');
+    assert.equal(recorded.qcProofUrl, 'https://example.com/proof-99.jpg');
+    assert.equal(recorded.status, 'approved_stocked');
+
+    // Admin overview GET also surfaces open vendor support tickets.
+    const vendorApi = await import('../../../app/api/vendor/support/route');
+    const createdTicketRes = await vendorApi.POST(
+      vendorRequest('/api/vendor/support', {
+        method: 'POST',
+        token: vendor.token,
+        csrf: vendor.csrf,
+        body: { action: 'create', subject: 'অ্যাডমিন ইনবক্স টেস্ট', text: 'সাপোর্ট নোটিফিকেশন যাচাই' },
+      })
+    );
+    assert.equal(createdTicketRes.status, 201);
+    const { ticket } = (await createdTicketRes.json()) as { ticket: { ticketId: string } };
+
+    const adminOverview = await getAdminWorkspace(vendorRequest('/api/admin/workspace', { token: admin.token }));
+    assert.equal(adminOverview.status, 200);
+    const adminBody = (await adminOverview.json()) as {
+      vendorSupportTickets?: Array<{ ticketId: string; status: string; subject: string; lastSender: string }>;
+    };
+    assert.ok(
+      adminBody.vendorSupportTickets?.some(
+        (t) => t.ticketId === ticket.ticketId && t.status === 'open' && t.lastSender === 'vendor'
+      )
+    );
+  } finally {
+    const restoreErp = readErpState();
+    for (const prod of restoreErp.products) {
+      const vr = prod.variants.find((v) => v.variantId === targetVar.variantId);
+      if (vr) {
+        vr.stockOnHand = targetVar.stockOnHand;
+        vr.stockAvailable = targetVar.stockAvailable;
+      }
+    }
+    writeErpState(restoreErp);
+    const restoreP7 = readPhase7Store();
+    restoreP7.consignmentLots = beforeLots;
+    writePhase7Store(restoreP7);
+  }
 });

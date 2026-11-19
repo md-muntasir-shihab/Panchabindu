@@ -38,6 +38,7 @@ import type {
   AboutContactPageSettings,
   SiteSettingsRecord,
 } from '@/lib/db/repository';
+import type { SystemBackupSnapshotMeta } from '@/lib/admin/phase6-service';
 import type {
   AutomationExecutionLogRecord,
   AutomationRuleRecord,
@@ -1527,6 +1528,7 @@ export interface SuperAdminControlCenterPanelProps {
   siteSettings: SiteSettingsRecord;
   maskedCredentials: MaskedCredentialStatusDTO[];
   scheduledJobs: ScheduledJobRecord[];
+  backupSnapshots?: SystemBackupSnapshotMeta[];
   onRefreshWorkspace: () => Promise<void>;
   locale?: SupportedLocale;
 }
@@ -1535,9 +1537,11 @@ export function SuperAdminControlCenterPanel({
   siteSettings,
   maskedCredentials,
   scheduledJobs,
+  backupSnapshots = [],
   onRefreshWorkspace,
   locale = 'en',
 }: SuperAdminControlCenterPanelProps) {
+  const [creatingSnapshot, setCreatingSnapshot] = React.useState(false);
   const [feedback, setFeedback] = React.useState<{
     type: 'success' | 'error';
     text: string;
@@ -1561,7 +1565,7 @@ export function SuperAdminControlCenterPanel({
   const [helplineHoursEn, setHelplineHoursEn] = React.useState(aboutContact?.helplineHoursEn ?? '9 AM – 10 PM Everyday');
   const [savingAboutPage, setSavingAboutPage] = React.useState(false);
 
-  // Branding & Thresholds State
+  // Branding, Thresholds & Courier Dispatch Defaults State
   const [bkashManualNumber, setBkashManualNumber] = React.useState(
     siteSettings.bkashManualNumber
   );
@@ -1574,6 +1578,27 @@ export function SuperAdminControlCenterPanel({
   const [maintenanceMode, setMaintenanceMode] = React.useState(
     siteSettings.maintenanceMode
   );
+  const [pathaoDefaultStoreName, setPathaoDefaultStoreName] = React.useState(
+    siteSettings.pathaoDefaultStoreName ?? 'Panchabindu Store'
+  );
+  const [pathaoDefaultItemType, setPathaoDefaultItemType] = React.useState<
+    'parcel' | 'document' | 'fragile'
+  >(siteSettings.pathaoDefaultItemType ?? 'parcel');
+  const [courierSenderNameBn, setCourierSenderNameBn] = React.useState(
+    siteSettings.courierSenderNameBn ?? siteSettings.brandNameBn
+  );
+  const [courierSenderPhone, setCourierSenderPhone] = React.useState(
+    siteSettings.courierSenderPhone ?? siteSettings.supportPhone
+  );
+  const [courierSenderAddressBn, setCourierSenderAddressBn] = React.useState(
+    siteSettings.courierSenderAddressBn ?? 'প্লট ১২, রোড ৪/এ, ধানমন্ডি, ঢাকা'
+  );
+  const [courierSenderPostCode, setCourierSenderPostCode] = React.useState(
+    siteSettings.courierSenderPostCode ?? '1209'
+  );
+  const [defaultBdPostServiceType, setDefaultBdPostServiceType] = React.useState<
+    string
+  >(siteSettings.defaultBdPostServiceType ?? 'vpp_cod');
   const [savingSettings, setSavingSettings] = React.useState(false);
 
   // Masked Credentials Input State
@@ -1645,6 +1670,13 @@ export function SuperAdminControlCenterPanel({
             ),
             globalEscrowHoldDays: Math.max(1, Number(escrowHoldDays) || 7),
             maintenanceMode,
+            pathaoDefaultStoreName: pathaoDefaultStoreName.trim() || 'Panchabindu Store',
+            pathaoDefaultItemType,
+            courierSenderNameBn: courierSenderNameBn.trim() || siteSettings.brandNameBn,
+            courierSenderPhone: courierSenderPhone.trim() || siteSettings.supportPhone,
+            courierSenderAddressBn: courierSenderAddressBn.trim(),
+            courierSenderPostCode: courierSenderPostCode.trim() || '1209',
+            defaultBdPostServiceType,
           },
         }),
       });
@@ -1655,7 +1687,7 @@ export function SuperAdminControlCenterPanel({
       if (res.ok && data.success) {
         setFeedback({
           type: 'success',
-          text: 'ব্র্যান্ডিং, থ্রেশহোল্ড এবং মেইনটেন্যান্স সেটিংস আপডেট হয়েছে।',
+          text: 'ব্র্যান্ডিং, কুরিয়ার স্টোরনেম, প্রেরকের ঠিকানা এবং মেইনটেন্যান্স সেটিংস আপডেট হয়েছে।',
         });
         await onRefreshWorkspace();
       } else {
@@ -1746,6 +1778,7 @@ export function SuperAdminControlCenterPanel({
       siteSettings,
       maskedCredentials,
       scheduledJobs,
+      backupSnapshots,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: 'application/json',
@@ -1753,11 +1786,49 @@ export function SuperAdminControlCenterPanel({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `bongoconsign-erp-backup-${new Date()
+    a.download = `panchabindu-erp-backup-${new Date()
       .toISOString()
       .slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleCreateSystemBackupSnapshot = async () => {
+    setCreatingSnapshot(true);
+    setFeedback(null);
+    try {
+      const res = await fetch('/api/admin/workspace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operation: 'create_system_backup_snapshot',
+        }),
+      });
+      const data = (await res.json()) as {
+        success?: boolean;
+        snapshot?: SystemBackupSnapshotMeta;
+        errorBn?: string;
+      };
+      if (res.ok && data.success && data.snapshot) {
+        setFeedback({
+          type: 'success',
+          text: `SHA-256 ব্যাকআপ স্ন্যাপশট তৈরি হয়েছে (${data.snapshot.snapshotId}, ${data.snapshot.totalOrdersCount} অর্ডার)।`,
+        });
+        await onRefreshWorkspace();
+      } else {
+        setFeedback({
+          type: 'error',
+          text: data.errorBn ?? 'ব্যাকআপ স্ন্যাপশট তৈরি ব্যর্থ হয়েছে।',
+        });
+      }
+    } catch {
+      setFeedback({
+        type: 'error',
+        text: 'সার্ভারের সাথে সংযোগ ব্যর্থ হয়েছে।',
+      });
+    } finally {
+      setCreatingSnapshot(false);
+    }
   };
 
   return (
@@ -1807,7 +1878,7 @@ export function SuperAdminControlCenterPanel({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Dynamic Branding, Financial Thresholds & Maintenance Mode */}
+        {/* Dynamic Branding, Financial Thresholds, Courier StoreName & Maintenance Mode */}
         <Card
           surface="surface"
           padding="md"
@@ -1816,7 +1887,7 @@ export function SuperAdminControlCenterPanel({
           <div className="flex items-center justify-between border-b border-border pb-2">
             <h2 className="text-sm font-bold text-ink flex items-center gap-2">
               <Settings className="w-4 h-4" aria-hidden="true" />
-              <span><LocalizedText source={"ডায়নামিক ব্র্যান্ডিং ও থ্রেশহোল্ড কনফিগারেশন"} area="admin" /></span>
+              <span><LocalizedText source={"ডায়নামিক ব্র্যান্ডিং, কুরিয়ার ডিফল্ট ও থ্রেশহোল্ড"} area="admin" /></span>
             </h2>
             <Badge status={maintenanceMode ? 'danger' : 'success'}>
               {maintenanceMode ? 'Maintenance ON' : 'Storefront Live'}
@@ -1828,6 +1899,13 @@ export function SuperAdminControlCenterPanel({
                 label="বিকাশ মার্চেন্ট নম্বর *"
                 value={bkashManualNumber}
                 onChange={(e) => setBkashManualNumber(e.target.value)}
+                required
+              />
+              <Input
+                label="Pathao ডিফল্ট StoreName *"
+                value={pathaoDefaultStoreName}
+                onChange={(e) => setPathaoDefaultStoreName(e.target.value)}
+                placeholder="Panchabindu Store"
                 required
               />
             </div>
@@ -1844,6 +1922,81 @@ export function SuperAdminControlCenterPanel({
                 value={escrowHoldDays}
                 onChange={(e) => setEscrowHoldDays(e.target.value)}
               />
+            </div>
+            <div className="border-t border-border pt-2 space-y-2">
+              <p className="font-bold text-ink text-[11px]">
+                কুরিয়ার প্রেরক ও ডাক বিভাগ ডিফল্ট (Pathao / Steadfast / BD Post):
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  label="প্রেরকের নাম (Sender Name)"
+                  value={courierSenderNameBn}
+                  onChange={(e) => setCourierSenderNameBn(e.target.value)}
+                />
+                <Input
+                  label="প্রেরকের ফোন (Sender Phone)"
+                  value={courierSenderPhone}
+                  onChange={(e) => setCourierSenderPhone(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
+                  <Input
+                    label="প্রেরকের রিটার্ন ঠিকানা (Sender Return Address)"
+                    value={courierSenderAddressBn}
+                    onChange={(e) => setCourierSenderAddressBn(e.target.value)}
+                  />
+                </div>
+                <Input
+                  label="প্রেরকের পোস্টকোড"
+                  value={courierSenderPostCode}
+                  onChange={(e) => setCourierSenderPostCode(e.target.value)}
+                  maxLength={4}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-medium text-ink mb-1">
+                    Pathao ডিফল্ট ItemType
+                  </label>
+                  <select
+                    value={pathaoDefaultItemType}
+                    onChange={(e) =>
+                      setPathaoDefaultItemType(
+                        e.target.value as 'parcel' | 'document' | 'fragile'
+                      )
+                    }
+                    className="w-full h-9 px-2 rounded-[var(--radius-md)] border border-border bg-bg text-ink"
+                  >
+                    <option value="parcel">parcel</option>
+                    <option value="document">document</option>
+                    <option value="fragile">fragile</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-medium text-ink mb-1">
+                    BD Post ডিফল্ট সার্ভিস
+                  </label>
+                  <select
+                    value={defaultBdPostServiceType}
+                    onChange={(e) =>
+                      setDefaultBdPostServiceType(
+                        e.target.value as
+                          | 'gep'
+                          | 'ems'
+                          | 'vpp_cod'
+                          | 'registered_parcel'
+                      )
+                    }
+                    className="w-full h-9 px-2 rounded-[var(--radius-md)] border border-border bg-bg text-ink"
+                  >
+                    <option value="vpp_cod">VPP / COD</option>
+                    <option value="gep">GEP</option>
+                    <option value="ems">EMS</option>
+                    <option value="registered_parcel">Registered Parcel</option>
+                  </select>
+                </div>
+              </div>
             </div>
             <label className="flex items-center gap-2 pt-1 cursor-pointer">
               <input
@@ -1863,7 +2016,7 @@ export function SuperAdminControlCenterPanel({
             >
               {savingSettings
                 ? 'সংরক্ষণ হচ্ছে...'
-                : 'ব্র্যান্ডিং ও থ্রেশহোল্ড সেভ করুন'}
+                : 'ব্র্যান্ডিং, কুরিয়ার ও থ্রেশহোল্ড সেভ করুন'}
             </Button>
           </form>
         </Card>
@@ -2005,6 +2158,85 @@ export function SuperAdminControlCenterPanel({
             </div>
           ))}
         </div>
+      </Card>
+
+      {/* Disaster Recovery & SHA-256 System Backup Snapshots */}
+      <Card surface="surface" padding="md" className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
+          <div>
+            <h2 className="text-sm font-bold text-ink">
+              {locale === 'bn'
+                ? 'সিস্টেম ব্যাকআপ স্ন্যাপশট (SHA-256 চেকসাম)'
+                : 'System Backup Snapshots (SHA-256 Checksum)'}
+            </h2>
+            <p className="text-xs text-muted mt-0.5">
+              {locale === 'bn'
+                ? 'অর্ডার, পণ্য, ভেন্ডর লেজার ও অডিট লগের অখণ্ডতা যাচাইকৃত স্ন্যাপশট তৈরি করুন।'
+                : 'Generate checksummed snapshots covering orders, products, vendor ledger, and audit logs.'}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={creatingSnapshot}
+              onClick={() => void handleCreateSystemBackupSnapshot()}
+            >
+              {creatingSnapshot
+                ? locale === 'bn'
+                  ? 'তৈরি হচ্ছে...'
+                  : 'Creating...'
+                : locale === 'bn'
+                  ? 'নতুন SHA-256 স্ন্যাপশট'
+                  : 'Create SHA-256 Snapshot'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadBackupJson}
+              leftIcon={<Download className="w-3.5 h-3.5" aria-hidden="true" />}
+            >
+              {locale === 'bn' ? 'কনফিগ JSON এক্সপোর্ট' : 'Export Config JSON'}
+            </Button>
+          </div>
+        </div>
+
+        {backupSnapshots.length === 0 ? (
+          <p className="text-xs text-muted">
+            {locale === 'bn'
+              ? 'এখনো কোনো SHA-256 ব্যাকআপ স্ন্যাপশট তৈরি হয়নি।'
+              : 'No SHA-256 backup snapshots created yet.'}
+          </p>
+        ) : (
+          <div className="divide-y divide-border border border-border rounded-[var(--radius-md)] bg-bg text-xs">
+            {backupSnapshots.slice(0, 10).map((snap) => (
+              <div
+                key={snap.snapshotId}
+                className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+              >
+                <div className="space-y-0.5 min-w-0">
+                  <p className="font-mono font-semibold text-ink">
+                    {snap.snapshotId}{' '}
+                    <span className="text-muted font-normal">
+                      · SHA256: {snap.sha256Checksum.slice(0, 16)}…
+                    </span>
+                  </p>
+                  <p className="text-muted tabular-nums">
+                    {snap.totalOrdersCount} orders · {snap.totalProductsCount} products ·{' '}
+                    {snap.totalVendorsCount} vendors · {snap.totalLedgerEntriesCount} ledger ·{' '}
+                    {(snap.payloadSizeBytes / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+                <span className="font-mono text-[11px] text-muted tabular-nums shrink-0">
+                  @{snap.createdByUsername} ·{' '}
+                  {new Date(snap.createdAt).toLocaleString(locale === 'bn' ? 'bn-BD' : 'en-GB')}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* Contact Page & About Us Content Editor */}

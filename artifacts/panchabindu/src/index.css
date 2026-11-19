@@ -1,11 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 @import "./styles/tokens.css";
 
 :root {
+  --font-display-serif: 'Cormorant Garamond';
   --font-inter: 'Inter';
   --font-noto-bengali: 'Noto Sans Bengali';
+  --font-space-mono: 'Space Mono';
 }
 
 @theme inline {
@@ -21,27 +23,39 @@
   --color-accent: var(--store-accent);
   --color-accent-soft: var(--store-accent-soft);
 
+  --font-display: var(--font-display-serif), var(--font-noto-bengali), Georgia, serif;
+  --font-sans: var(--font-inter), var(--font-noto-bengali), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
 }
 
-.storefront-theme { --color-primary: var(--store-accent); --color-info: var(--store-accent); }
-.storefront-theme a:focus-visible, .storefront-theme button:focus-visible { outline: 2px solid var(--store-accent); outline-offset: 4px; }
+.storefront-theme {
+  --color-primary: var(--store-accent);
+  --color-info: var(--store-accent);
+  --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.storefront-theme a:focus-visible, .storefront-theme button:focus-visible, .storefront-theme input:focus-visible, .storefront-theme select:focus-visible { outline: 2px solid var(--store-accent); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .storefront-theme *, .storefront-theme *::before, .storefront-theme *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
 
 /* Storefront keeps its existing inner gutters and maximum widths, while the
    shell and fixed controls respect device cutouts in portrait and landscape. */
 .storefront-shell { padding-left: var(--safe-left); padding-right: var(--safe-right); }
 .storefront-header { padding-top: var(--safe-top); }
-.storefront-delay-banner { padding-top: calc(0.625rem + var(--safe-top)); }
+.storefront-delay-banner { padding-top: calc(0.45rem + var(--safe-top)); }
 .storefront-bottom-nav { padding-left: var(--safe-left); padding-right: var(--safe-right); }
 .storefront-floating-contact { right: max(1rem, calc(var(--safe-right) + 1rem)); }
 .storefront-action-bar { padding-left: calc(0.75rem + var(--safe-left)); padding-right: calc(0.75rem + var(--safe-right)); }
 .storefront-footer-bottom { padding-bottom: calc(1.25rem + var(--safe-bottom)); }
 
 /* Subtle active-tab indicator for the app-style mobile navigation. */
-.storefront-bottom-nav [aria-current] { box-shadow: inset 0 2px 0 var(--store-accent); }
+.storefront-bottom-nav [aria-current],
+.storefront-bottom-nav [data-active="true"] { box-shadow: inset 0 2px 0 var(--store-accent); }
+
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
 
 /* Print previews use paper-safe colors regardless of the admin theme. */
 .print-slips {
@@ -89,6 +103,8 @@
 .checkout-confirm { border-radius: 12px; }
 .checkout-sticky { background: rgba(255, 255, 255, .97); border-color: #e3eae3; }
 @media (max-width: 639px) {
+  .storefront-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  .storefront-theme textarea { font-size: 16px; }
   .checkout-card input:not([type="checkbox"]), .checkout-card select { font-size: 16px; }
   .checkout-header-note { padding: .4rem .7rem; }
 }

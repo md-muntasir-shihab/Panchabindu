@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  ExternalLink,
   FileCheck2,
   Filter,
   RefreshCw,
@@ -31,7 +32,7 @@ import {
 } from 'lucide-react';
 import { adminFetch as fetch } from '@/lib/admin/admin-fetch';
 import { formatPoishaToBdt } from '@/lib/money';
-import { Badge, Button, Card, EmptyState, Input, Skeleton } from '@/components/ui/primitives';
+import { Badge, Button, Card, EmptyState, InfoTooltip, Input, Skeleton } from '@/components/ui/primitives';
 import { cn } from '@/lib/utils';
 import type {
   AdminPayoutStatus,
@@ -95,12 +96,29 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
   // Per-row settlement inputs, kept separate so typing in one row cannot
   // overwrite another row's TrxID.
   const [trxDraft, setTrxDraft] = React.useState<Record<string, string>>({});
+  const [feeDraft, setFeeDraft] = React.useState<Record<string, string>>({});
+  const [senderDraft, setSenderDraft] = React.useState<Record<string, string>>({});
+  const [proofDraft, setProofDraft] = React.useState<Record<string, string>>({});
+  const [noteDraft, setNoteDraft] = React.useState<Record<string, string>>({});
   const [reasonDraft, setReasonDraft] = React.useState<Record<string, string>>({});
   const [overrideDraft, setOverrideDraft] = React.useState<Record<string, string>>({});
 
   const [showCreate, setShowCreate] = React.useState(false);
+  const [createMode, setCreateMode] = React.useState<'request' | 'direct'>('request');
   const [createVendorId, setCreateVendorId] = React.useState('');
   const [createAmount, setCreateAmount] = React.useState('');
+  const [createFee, setCreateFee] = React.useState('0');
+  const [createMethod, setCreateMethod] = React.useState('বিকাশ (bKash)');
+  const [createSenderAcc, setCreateSenderAcc] = React.useState('');
+  const [createReceiverAcc, setCreateReceiverAcc] = React.useState('');
+  const [createTrxId, setCreateTrxId] = React.useState('');
+  const [createProofUrl, setCreateProofUrl] = React.useState('');
+  const [createNote, setCreateNote] = React.useState('');
+  const [createPaidAt, setCreatePaidAt] = React.useState(() => {
+    const d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+  });
+  const [createAutoCredit, setCreateAutoCredit] = React.useState(false);
   const [createError, setCreateError] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {
@@ -265,16 +283,45 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
         </Card>
       </div>
 
-      {/* Create payout */}
+      {/* Create / Direct Payout */}
       {showCreate && (
         <Card surface="bg" padding="md" className="space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
-            <Wallet className="h-4 w-4" aria-hidden="true" />
-            {t('ভেন্ডরের পক্ষে পেআউট তৈরি করুন', 'Create a payout on a vendor’s behalf')}
-          </h3>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
+              <Wallet className="h-4 w-4" aria-hidden="true" />
+              {createMode === 'request'
+                ? t('ভেন্ডরের পক্ষে পেআউট তৈরি করুন', 'Create a payout on a vendor’s behalf')
+                : t('সরাসরি ভেন্ডর পেমেন্ট পরিশোধ (প্রমাণসহ)', 'Direct Immediate Vendor Settlement (With Proof)')}
+            </h3>
+            <div className="flex gap-1.5">
+              <Button
+                type="button"
+                size="sm"
+                variant={createMode === 'request' ? 'primary' : 'outline'}
+                onClick={() => {
+                  setCreateMode('request');
+                  setCreateError(null);
+                }}
+              >
+                {t('অনুরোধ (Hold)', 'Request (Hold)')}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={createMode === 'direct' ? 'primary' : 'outline'}
+                onClick={() => {
+                  setCreateMode('direct');
+                  setCreateError(null);
+                }}
+              >
+                {t('সরাসরি পরিশোধ (Paid Now)', 'Direct Immediate Pay')}
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-3">
             <label className="block text-xs">
-              <span className="mb-1 block font-semibold text-ink">{t('ভেন্ডর', 'Vendor')}</span>
+              <span className="mb-1 block font-semibold text-ink">{t('ভেন্ডর *', 'Vendor *')}</span>
               <select
                 className={inputCls}
                 value={createVendorId}
@@ -283,13 +330,13 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
                 <option value="">{t('— নির্বাচন করুন —', '— select —')}</option>
                 {data.vendorRollups.map((vendor) => (
                   <option key={vendor.vendorId} value={vendor.vendorId}>
-                    {vendor.vendorCode} · {vendor.vendorNameBn} ({formatPoishaToBdt(vendor.balance.withdrawablePoisha, locale)})
+                    {vendor.vendorCode} · {vendor.vendorNameBn} ({t('পাওনা', 'Owed')}: {formatPoishaToBdt(vendor.totalOwedPoisha, locale)})
                   </option>
                 ))}
               </select>
             </label>
             <label className="block text-xs">
-              <span className="mb-1 block font-semibold text-ink">{t('পরিমাণ (৳)', 'Amount (৳)')}</span>
+              <span className="mb-1 block font-semibold text-ink">{t('পরিমাণ (৳) *', 'Amount (৳) *')}</span>
               <input
                 className={cn(inputCls, 'font-mono')}
                 inputMode="decimal"
@@ -298,7 +345,107 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
                 onChange={(e) => setCreateAmount(e.target.value)}
               />
             </label>
+            {createMode === 'direct' && (
+              <label className="block text-xs">
+                <span className="mb-1 block font-semibold text-ink">{t('চার্জ / ফি (৳)', 'Transaction Fee (৳)')}</span>
+                <input
+                  className={cn(inputCls, 'font-mono')}
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={createFee}
+                  onChange={(e) => setCreateFee(e.target.value)}
+                />
+              </label>
+            )}
           </div>
+
+          {createMode === 'direct' && (
+            <div className="space-y-2 text-xs">
+              <div className="grid gap-2 sm:grid-cols-3">
+                <label className="block">
+                  <span className="mb-1 block font-semibold text-ink">{t('মাধ্যম *', 'Method *')}</span>
+                  <select className={inputCls} value={createMethod} onChange={(e) => setCreateMethod(e.target.value)}>
+                    <option value="বিকাশ (bKash)">বিকাশ (bKash)</option>
+                    <option value="ব্যাংক ট্রান্সফার (Bank Transfer)">ব্যাংক ট্রান্সফার (Bank Transfer)</option>
+                    <option value="নগদ ক্যাশ / অফিস (Cash)">নগদ ক্যাশ / অফিস (Cash)</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1 block font-semibold text-ink">{t('প্রেরকের অ্যাকাউন্ট (আমাদের)', 'Sender Account')}</span>
+                  <input
+                    className={cn(inputCls, 'font-mono')}
+                    placeholder="017..."
+                    value={createSenderAcc}
+                    onChange={(e) => setCreateSenderAcc(e.target.value)}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block font-semibold text-ink">{t('ভেন্ডরের অ্যাকাউন্ট *', 'Vendor Account *')}</span>
+                  <input
+                    className={cn(inputCls, 'font-mono')}
+                    placeholder="017... / Bank Acc"
+                    value={createReceiverAcc}
+                    onChange={(e) => setCreateReceiverAcc(e.target.value)}
+                  />
+                </label>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <label className="block">
+                  <span className="mb-1 block font-semibold text-ink">{t('TrxID / রেফারেন্স *', 'TrxID / Reference *')}</span>
+                  <input
+                    className={cn(inputCls, 'font-mono')}
+                    placeholder="TRX-20261118"
+                    value={createTrxId}
+                    onChange={(e) => setCreateTrxId(e.target.value)}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block font-semibold text-ink">{t('পরিশোধের তারিখ ও সময় *', 'Paid Date & Time *')}</span>
+                  <input
+                    type="datetime-local"
+                    className={cn(inputCls, 'font-mono')}
+                    value={createPaidAt}
+                    onChange={(e) => setCreatePaidAt(e.target.value)}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block font-semibold text-ink">{t('রসিদ/স্ক্রিনশট লিংক', 'Proof URL')}</span>
+                  <input
+                    className={cn(inputCls, 'font-mono')}
+                    placeholder="https://..."
+                    value={createProofUrl}
+                    onChange={(e) => setCreateProofUrl(e.target.value)}
+                  />
+                </label>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 items-center">
+                <label className="block">
+                  <span className="mb-1 block font-semibold text-ink">{t('মন্তব্য / নোট', 'Note')}</span>
+                  <input
+                    className={inputCls}
+                    placeholder={t('পরিশোধ সংক্রান্ত নোট', 'Settlement note')}
+                    value={createNote}
+                    onChange={(e) => setCreateNote(e.target.value)}
+                  />
+                </label>
+                <label className="flex items-center gap-2 p-2.5 mt-4 border border-border rounded-[var(--radius-sm)] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={createAutoCredit}
+                    onChange={(e) => setCreateAutoCredit(e.target.checked)}
+                    className="accent-ink"
+                  />
+                  <span>
+                    {t(
+                      'উত্তোলনযোগ্য কম থাকলে অগ্রিম/স্বতন্ত্র পাওনা যোগ করে পরিশোধ করুন',
+                      'Auto-credit advance if withdrawable balance is insufficient'
+                    )}
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
+
           {(() => {
             const selected = data.vendorRollups.find((v) => v.vendorId === createVendorId);
             const amount = parseTaka(createAmount);
@@ -311,13 +458,18 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
                       {formatPoishaToBdt(selected.balance.withdrawablePoisha, locale)}
                     </strong>
                     {' · '}
+                    {t('মোট পাওনা:', 'Total Owed:')}{' '}
+                    <strong className="font-mono text-ink">
+                      {formatPoishaToBdt(selected.totalOwedPoisha, locale)}
+                    </strong>
+                    {' · '}
                     {t('সর্বনিম্ন:', 'Minimum:')}{' '}
                     <strong className="font-mono text-ink">
                       {formatPoishaToBdt(data.minPayoutRequestPoisha, locale)}
                     </strong>
                   </p>
                 )}
-                {amount !== null && amount > 0 && (
+                {amount !== null && amount > 0 && createMode === 'request' && (
                   <p className="text-muted">
                     {t('নিট প্রদেয় (১.৮৫% বাদে):', 'Net payable (after 1.85%):')}{' '}
                     <strong className="font-mono text-success">
@@ -342,31 +494,69 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
                         setCreateError(t('ভেন্ডর নির্বাচন করুন।', 'Select a vendor.'));
                         return;
                       }
-                      const amount = parseTaka(createAmount);
-                      if (amount === null || amount <= 0) {
+                      const amtPoisha = parseTaka(createAmount);
+                      if (amtPoisha === null || amtPoisha <= 0) {
                         setCreateError(t('সঠিক পরিমাণ লিখুন (যেমন ১০০০.৫০)।', 'Enter a valid amount (e.g. 1000.50).'));
                         return;
                       }
-                      if (amount < data.minPayoutRequestPoisha) {
-                        setCreateError(
-                          t(
-                            `সর্বনিম্ন পেআউট ${formatPoishaToBdt(data.minPayoutRequestPoisha, locale)}।`,
-                            `Minimum payout is ${formatPoishaToBdt(data.minPayoutRequestPoisha, locale)}.`
-                          )
+                      if (createMode === 'request') {
+                        if (amtPoisha < data.minPayoutRequestPoisha) {
+                          setCreateError(
+                            t(
+                              `সর্বনিম্ন পেআউট ${formatPoishaToBdt(data.minPayoutRequestPoisha, locale)}।`,
+                              `Minimum payout is ${formatPoishaToBdt(data.minPayoutRequestPoisha, locale)}.`
+                            )
+                          );
+                          return;
+                        }
+                        const ok = await post(
+                          { operation: 'create_payout', vendorId: createVendorId, requestedAmountPoisha: amtPoisha },
+                          t('পেআউট অনুরোধ তৈরি হয়েছে এবং টাকা হোল্ড করা হয়েছে।', 'Payout created and funds held.')
                         );
-                        return;
-                      }
-                      const ok = await post(
-                        { operation: 'create_payout', vendorId: createVendorId, requestedAmountPoisha: amount },
-                        t('পেআউট অনুরোধ তৈরি হয়েছে এবং টাকা হোল্ড করা হয়েছে।', 'Payout created and funds held.')
-                      );
-                      if (ok) {
-                        setShowCreate(false);
-                        setCreateAmount('');
+                        if (ok) {
+                          setShowCreate(false);
+                          setCreateAmount('');
+                        }
+                      } else {
+                        const feePoisha = parseTaka(createFee || '0') ?? 0;
+                        if (createTrxId.trim().length < 3) {
+                          setCreateError(t('কমপক্ষে ৩ অক্ষরের TrxID বা রেফারেন্স দিন।', 'Enter at least 3 chars for TrxID.'));
+                          return;
+                        }
+                        if (!createReceiverAcc.trim()) {
+                          setCreateError(t('ভেন্ডরের অ্যাকাউন্ট নম্বর দিন।', 'Enter receiver account number.'));
+                          return;
+                        }
+                        const ok = await post(
+                          {
+                            operation: 'direct_payout',
+                            vendorId: createVendorId,
+                            requestedAmountPoisha: amtPoisha,
+                            feePoisha,
+                            payoutMethodBn: createMethod,
+                            payoutAccountNo: createReceiverAcc.trim(),
+                            senderAccountNo: createSenderAcc.trim() || undefined,
+                            paymentTrxId: createTrxId.trim(),
+                            proofUrl: createProofUrl.trim() || undefined,
+                            noteBn: createNote.trim() || undefined,
+                            paidAt: createPaidAt ? new Date(createPaidAt).toISOString() : undefined,
+                            creditAndSettleIfInsufficient: createAutoCredit,
+                          },
+                          t('সরাসরি ভেন্ডর পেমেন্ট ও প্রমাণ সংরক্ষণ হয়েছে।', 'Direct vendor settlement saved with proof.')
+                        );
+                        if (ok) {
+                          setShowCreate(false);
+                          setCreateAmount('');
+                          setCreateTrxId('');
+                          setCreateProofUrl('');
+                          setCreateNote('');
+                        }
                       }
                     }}
                   >
-                    {t('অনুরোধ তৈরি করুন', 'Create request')}
+                    {createMode === 'request'
+                      ? t('অনুরোধ তৈরি করুন', 'Create request')
+                      : t('সরাসরি পরিশোধ সংরক্ষণ করুন', 'Save direct payment')}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setShowCreate(false)}>
                     {t('বাতিল', 'Cancel')}
@@ -380,15 +570,20 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
 
       {/* Vendor roll-up */}
       <Card surface="bg" padding="md" className="space-y-2">
-        <h3 className="text-sm font-bold text-ink">{t('ভেন্ডর অনুযায়ী হিসাব', 'Per-vendor account')}</h3>
+        <h3 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+          <span>{t('ভেন্ডর অনুযায়ী হিসাব', 'Per-vendor account')}</span>
+          <InfoTooltip termKey="supplier_payable" locale={locale} />
+        </h3>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-xs">
+          <table className="w-full min-w-[760px] text-xs">
             <thead>
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted">
                 <th className="py-1.5 pr-2 font-semibold">{t('ভেন্ডর', 'Vendor')}</th>
+                <th className="py-1.5 pr-2 text-right font-semibold">{t('মোট অর্জিত', 'Total Earned')}</th>
                 <th className="py-1.5 pr-2 text-right font-semibold">{t('পরিশোধিত', 'Paid')}</th>
-                <th className="py-1.5 pr-2 text-right font-semibold">{t('বাকি', 'Outstanding')}</th>
+                <th className="py-1.5 pr-2 text-right font-semibold">{t('মোট পাওনা (Owed)', 'Total Owed')}</th>
                 <th className="py-1.5 pr-2 text-right font-semibold">{t('উত্তোলনযোগ্য', 'Withdrawable')}</th>
+                <th className="py-1.5 pr-2 text-right font-semibold">{t('পার্সেল', 'Parcels')}</th>
                 <th className="py-1.5 text-right font-semibold">{t('সর্বশেষ পেমেন্ট', 'Last paid')}</th>
               </tr>
             </thead>
@@ -410,15 +605,21 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
                       </Badge>
                     )}
                   </td>
-                  <td className="py-1.5 pr-2 text-right font-mono text-success">
+                  <td className="py-1.5 pr-2 text-right font-mono tabular-nums text-ink">
+                    {formatPoishaToBdt(vendor.totalEarnedPoisha, locale)}
+                  </td>
+                  <td className="py-1.5 pr-2 text-right font-mono tabular-nums text-success">
                     {formatPoishaToBdt(vendor.paidPoisha, locale)}
                     <span className="ml-1 text-[10px] text-muted">({vendor.paidCount})</span>
                   </td>
-                  <td className="py-1.5 pr-2 text-right font-mono text-warning">
-                    {formatPoishaToBdt(vendor.outstandingPoisha, locale)}
+                  <td className="py-1.5 pr-2 text-right font-mono tabular-nums font-bold text-warning">
+                    {formatPoishaToBdt(vendor.totalOwedPoisha, locale)}
                   </td>
-                  <td className="py-1.5 pr-2 text-right font-mono text-ink">
+                  <td className="py-1.5 pr-2 text-right font-mono tabular-nums text-ink">
                     {formatPoishaToBdt(vendor.balance.withdrawablePoisha, locale)}
+                  </td>
+                  <td className="py-1.5 pr-2 text-right font-mono tabular-nums text-muted">
+                    {vendor.parcelCount}
                   </td>
                   <td className="py-1.5 text-right text-muted">{fmtDate(vendor.lastPaidAt, locale)}</td>
                 </tr>
@@ -538,12 +739,23 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
                       t={t}
                       busy={busy}
                       trxDraft={trxDraft[row.payoutId] ?? ''}
+                      feeDraft={feeDraft[row.payoutId] ?? ''}
+                      senderDraft={senderDraft[row.payoutId] ?? ''}
+                      proofDraft={proofDraft[row.payoutId] ?? ''}
+                      noteDraft={noteDraft[row.payoutId] ?? ''}
                       reasonDraft={reasonDraft[row.payoutId] ?? ''}
                       overrideDraft={overrideDraft[row.payoutId] ?? ''}
                       onTrx={(value) => setTrxDraft((d) => ({ ...d, [row.payoutId]: value }))}
+                      onFee={(value) => setFeeDraft((d) => ({ ...d, [row.payoutId]: value }))}
+                      onSender={(value) => setSenderDraft((d) => ({ ...d, [row.payoutId]: value }))}
+                      onProof={(value) => setProofDraft((d) => ({ ...d, [row.payoutId]: value }))}
+                      onNote={(value) => setNoteDraft((d) => ({ ...d, [row.payoutId]: value }))}
                       onReason={(value) => setReasonDraft((d) => ({ ...d, [row.payoutId]: value }))}
                       onOverride={(value) => setOverrideDraft((d) => ({ ...d, [row.payoutId]: value }))}
-                      onAction={(decision) =>
+                      onAction={(decision) => {
+                        const parsedFee = feeDraft[row.payoutId]?.trim()
+                          ? parseTaka(feeDraft[row.payoutId])
+                          : null;
                         void post(
                           {
                             operation: 'resolve_payout',
@@ -551,6 +763,20 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
                             decision,
                             paymentTrxId:
                               decision === 'mark_paid' ? (trxDraft[row.payoutId] ?? '').trim() : undefined,
+                            feePoisha:
+                              decision === 'mark_paid' && parsedFee !== null ? parsedFee : undefined,
+                            senderAccountNo:
+                              decision === 'mark_paid'
+                                ? (senderDraft[row.payoutId] ?? '').trim() || undefined
+                                : undefined,
+                            proofUrl:
+                              decision === 'mark_paid'
+                                ? (proofDraft[row.payoutId] ?? '').trim() || undefined
+                                : undefined,
+                            noteBn:
+                              decision === 'mark_paid'
+                                ? (noteDraft[row.payoutId] ?? '').trim() || undefined
+                                : undefined,
                             rejectionReasonBn:
                               decision === 'reject' ? (reasonDraft[row.payoutId] ?? '').trim() : undefined,
                             selfApprovalOverrideReasonBn:
@@ -561,8 +787,8 @@ export function VendorPayoutRegisterPanel({ locale = 'bn', onNotify }: Props) {
                             : decision === 'mark_paid'
                               ? t('পেআউট পরিশোধিত হিসেবে চিহ্নিত হয়েছে।', 'Payout marked as paid.')
                               : t('পেআউট বাতিল, টাকা ভেন্ডরের ব্যালেন্সে ফেরত দেওয়া হয়েছে।', 'Payout rejected and funds returned.')
-                        )
-                      }
+                        );
+                      }}
                     />
                   )}
                 </div>
@@ -581,9 +807,17 @@ interface PayoutDetailProps {
   t: (bn: string, en: string) => string;
   busy: boolean;
   trxDraft: string;
+  feeDraft: string;
+  senderDraft: string;
+  proofDraft: string;
+  noteDraft: string;
   reasonDraft: string;
   overrideDraft: string;
   onTrx: (value: string) => void;
+  onFee: (value: string) => void;
+  onSender: (value: string) => void;
+  onProof: (value: string) => void;
+  onNote: (value: string) => void;
   onReason: (value: string) => void;
   onOverride: (value: string) => void;
   onAction: (decision: 'approve' | 'reject' | 'mark_paid') => void;
@@ -595,9 +829,17 @@ function PayoutDetail({
   t,
   busy,
   trxDraft,
+  feeDraft,
+  senderDraft,
+  proofDraft,
+  noteDraft,
   reasonDraft,
   overrideDraft,
   onTrx,
+  onFee,
+  onSender,
+  onProof,
+  onNote,
   onReason,
   onOverride,
   onAction,
@@ -611,17 +853,18 @@ function PayoutDetail({
           <p className="font-mono font-bold text-ink">{formatPoishaToBdt(row.requestedAmountPoisha, locale)}</p>
         </div>
         <div>
-          <p className="text-muted">{t('চার্জ (১.৮৫%)', 'Fee (1.85%)')}</p>
-          <p className="font-mono font-bold text-danger">-{formatPoishaToBdt(row.estimatedFeePoisha, locale)}</p>
+          <p className="text-muted">{t('চার্জ / ফি', 'Fee')}</p>
+          <p className="font-mono font-bold text-danger">-{formatPoishaToBdt(row.feePoisha ?? row.estimatedFeePoisha, locale)}</p>
         </div>
         <div>
-          <p className="text-muted">{t('নিট প্রদেয়', 'Net payable')}</p>
-          <p className="font-mono font-bold text-success">{formatPoishaToBdt(row.netPayablePoisha, locale)}</p>
+          <p className="text-muted">{t('নিট পরিশোধ/প্রদেয়', 'Net paid/payable')}</p>
+          <p className="font-mono font-bold text-success">{formatPoishaToBdt(row.netPaidPoisha ?? row.netPayablePoisha, locale)}</p>
         </div>
         <div>
           <p className="text-muted">{t('মাধ্যম / অ্যাকাউন্ট', 'Channel / account')}</p>
           <p className="font-mono font-bold text-ink">
             {row.payoutMethodBn} · {row.payoutAccountMasked}
+            {row.senderAccountNo ? ` (${t('প্রেরক', 'From')}: ${row.senderAccountNo})` : ''}
           </p>
         </div>
       </div>
@@ -639,6 +882,12 @@ function PayoutDetail({
         </p>
       </div>
 
+      {row.noteBn && (
+        <p className="text-[11px] text-muted">
+          <strong>{t('নোট:', 'Note:')}</strong> {row.noteBn}
+        </p>
+      )}
+
       {row.rejectionReasonBn && (
         <p className="flex items-start gap-1 rounded-[var(--radius-sm)] border border-danger/40 bg-danger/5 p-2 text-[11px] text-danger">
           <XCircle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
@@ -651,7 +900,8 @@ function PayoutDetail({
       {row.proofUrl && row.status === 'paid' && (
         <p className="flex items-center gap-1 text-[11px] text-muted">
           <FileCheck2 className="h-3 w-3" aria-hidden="true" />
-          <a href={row.proofUrl} target="_blank" rel="noreferrer" className="underline">
+          <a href={row.proofUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline text-ink">
+            <ExternalLink className="h-3 w-3" aria-hidden="true" />
             {t('পেমেন্ট প্রমাণ দেখুন', 'View payment proof')}
           </a>
         </p>
@@ -707,6 +957,33 @@ function PayoutDetail({
                   placeholder={t('বিকাশ/ব্যাংক TrxID *', 'bKash/bank TrxID *')}
                   value={trxDraft}
                   onChange={(e) => onTrx(e.target.value)}
+                />
+                <div className="grid grid-cols-2 gap-1.5">
+                  <input
+                    className={cn(inputCls, 'font-mono text-xs')}
+                    placeholder={t('চার্জ (৳, ঐচ্ছিক)', 'Fee (৳, opt.)')}
+                    inputMode="decimal"
+                    value={feeDraft}
+                    onChange={(e) => onFee(e.target.value)}
+                  />
+                  <input
+                    className={cn(inputCls, 'font-mono text-xs')}
+                    placeholder={t('প্রেরক নম্বর', 'Sender acc')}
+                    value={senderDraft}
+                    onChange={(e) => onSender(e.target.value)}
+                  />
+                </div>
+                <input
+                  className={cn(inputCls, 'font-mono text-xs')}
+                  placeholder={t('প্রমাণ লিংক (https://...)', 'Proof URL (optional)')}
+                  value={proofDraft}
+                  onChange={(e) => onProof(e.target.value)}
+                />
+                <input
+                  className={cn(inputCls, 'text-xs')}
+                  placeholder={t('নোট (ঐচ্ছিক)', 'Note (optional)')}
+                  value={noteDraft}
+                  onChange={(e) => onNote(e.target.value)}
                 />
                 <Button
                   variant="primary"

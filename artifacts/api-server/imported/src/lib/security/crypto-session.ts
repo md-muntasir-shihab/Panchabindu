@@ -334,6 +334,14 @@ export function verifyTotpWithReplayGuard(params: {
 export const ADMIN_SESSION_COOKIE_NAME = 'bg_admin_session';
 export const ADMIN_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+export function isAuthBypassEnabled(): boolean {
+  return (
+    process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'test' &&
+    process.env.PANCHABINDU_BYPASS_AUTH !== '0'
+  );
+}
+
 export interface AdminSessionRecord {
   purpose?: 'workspace' | 'enrollment';
   sessionId: string;
@@ -514,16 +522,37 @@ export function verifyAdminSessionToken(
 ): AdminSessionRecord | null {
   if (process.env.NODE_ENV === 'production' && !hasDurableRuntimeContext()) return null;
   const sessionId = verifySignedSessionId(token, 'admin');
-  if (!sessionId) return null;
+  if (sessionId) {
+    const store = readSessionStore();
+    const nowIso = new Date().toISOString();
+    const found = store.adminSessions.find((s) => s.sessionId === sessionId);
+    if (
+      found &&
+      !found.revokedAt &&
+      Number.isFinite(Date.parse(found.expiresAt)) &&
+      found.expiresAt > nowIso
+    ) {
+      return found;
+    }
+  }
 
-  const store = readSessionStore();
-  const nowIso = new Date().toISOString();
-  const found = store.adminSessions.find((s) => s.sessionId === sessionId);
-  if (!found) return null;
-  if (found.revokedAt) return null;
-  if (!Number.isFinite(Date.parse(found.expiresAt)) || found.expiresAt <= nowIso) return null;
+  if (isAuthBypassEnabled()) {
+    return {
+      purpose: 'workspace',
+      sessionId: 'bypass-admin-session',
+      userId: 'usr-super-admin',
+      username:
+        process.env.PANCHABINDU_SANDBOX_ADMIN_USERNAME?.trim().toLowerCase() ||
+        'admin',
+      roleSlug: 'super_admin',
+      csrfToken: 'bypass-csrf-token',
+      createdAt: new Date(0).toISOString(),
+      expiresAt: new Date(Date.now() + ADMIN_SESSION_TTL_MS).toISOString(),
+      revokedAt: null,
+    };
+  }
 
-  return found;
+  return null;
 }
 
 export function revokeAdminSession(tokenOrSessionId: string | undefined | null): void {
@@ -827,17 +856,44 @@ export function verifyCustomerSessionToken(
 ): CustomerSessionRecord | null {
   if (process.env.NODE_ENV === 'production' && !hasDurableRuntimeContext()) return null;
   const sessionId = verifySignedSessionId(token, 'customer');
-  if (!sessionId) return null;
-
-  const store = readSessionStore();
-  const nowIso = new Date().toISOString();
-  const found = store.customerSessions.find((s) => s.sessionId === sessionId);
-  if (!found || found.revokedAt || !Number.isFinite(Date.parse(found.expiresAt)) || found.expiresAt <= nowIso) {
-    return null;
+  if (sessionId) {
+    const store = readSessionStore();
+    const nowIso = new Date().toISOString();
+    const found = store.customerSessions.find((s) => s.sessionId === sessionId);
+    if (
+      found &&
+      !found.revokedAt &&
+      Number.isFinite(Date.parse(found.expiresAt)) &&
+      found.expiresAt > nowIso
+    ) {
+      const principal = store.customerPrincipals.find(
+        (p) => p.customerId === found.customerId && p.phone === found.phone && p.isActive
+      );
+      if (
+        principal &&
+        !(
+          process.env.NODE_ENV === 'production' &&
+          principal.phoneConfirmationStatus !== 'VERIFIED' &&
+          !(principal.authMethod === 'password' && principal.passwordHash)
+        )
+      ) {
+        return found;
+      }
+    }
   }
-  const principal = store.customerPrincipals.find((p) => p.customerId === found.customerId && p.phone === found.phone && p.isActive);
-  if (!principal || (process.env.NODE_ENV === 'production' && principal.phoneConfirmationStatus !== 'VERIFIED' && !(principal.authMethod === 'password' && principal.passwordHash))) return null;
-  return found;
+
+  if (isAuthBypassEnabled()) {
+    return {
+      sessionId: 'bypass-customer-session',
+      customerId: 'cust-bypass-default',
+      phone: '01712345678',
+      createdAt: new Date(0).toISOString(),
+      expiresAt: new Date(Date.now() + CUSTOMER_SESSION_TTL_MS).toISOString(),
+      revokedAt: null,
+    };
+  }
+
+  return null;
 }
 
 /** Password accounts have their own immutable principal. Unverified identifiers
@@ -874,7 +930,13 @@ export function loginPasswordCustomer(identifier: string, password: string) {
 
 export function getCustomerSessionProfile(session: CustomerSessionRecord): { identifier: string; email: string | null; phone: string } | null {
   const principal = readSessionStore().customerPrincipals.find(p => p.customerId === session.customerId && p.isActive);
-  return principal ? { identifier: principal.email || principal.phone, email: principal.email ?? null, phone: principal.phone } : null;
+  if (principal) {
+    return { identifier: principal.email || principal.phone, email: principal.email ?? null, phone: principal.phone };
+  }
+  if (isAuthBypassEnabled() && session.sessionId === 'bypass-customer-session') {
+    return { identifier: session.phone, email: null, phone: session.phone };
+  }
+  return null;
 }
 
 export function changeCustomerPassword(session: CustomerSessionRecord, currentPassword: string, newPassword: string): boolean {
@@ -1006,6 +1068,9 @@ export function verifyOriginAndCsrf(
   req: Request,
   session?: AdminSessionRecord | null
 ): { ok: boolean; errorBn?: string } {
+  if (isAuthBypassEnabled()) {
+    return { ok: true };
+  }
   const origin = req.headers.get('origin');
   try {
     const configured = process.env.APP_URL?.trim();

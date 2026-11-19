@@ -9,5 +9,68 @@ export function BrandMark({ settings, compact = false }: { settings: PublicSafeS
   const config = getStorefrontConfig(settings);
   const name = locale === 'bn' ? settings.brandNameBn : settings.brandNameEn;
   const tagline = locale === 'bn' ? settings.taglineBn : settings.taglineEn;
-  return <span className="inline-flex items-center gap-3 min-w-0">{config.logoUrl ? <img  src={config.logoUrl} alt={name} width={config.logoWidth} height={48} className="max-h-12 max-w-[40px] sm:max-w-[160px] shrink-0 object-contain" style={{ width: config.logoWidth, height: 'auto' }} loading="lazy" decoding="async" /> : <span aria-hidden="true" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-current text-xl font-semibold text-[var(--store-accent)]">{Array.from(name)[0]}</span>}{config.showBrandName && <span className="flex min-w-0 flex-col"><span className={`${compact ? 'text-lg' : 'text-lg sm:text-xl'} font-semibold leading-tight tracking-tight text-[#162119] max-w-[100px] sm:max-w-[200px] truncate`}>{name}</span>{config.showTagline && <span className="mt-1 max-w-48 text-[10px] leading-snug text-[#5A655D]">{tagline}</span>}</span>}</span>;
+  const emblemSize = compact ? 'h-9 w-9' : 'h-9 w-9 sm:h-10 sm:w-10';
+  return (
+    <span className="inline-flex items-center gap-2.5 sm:gap-3 min-w-0">
+      {config.logoUrl ? (
+        <img
+          src={config.logoUrl}
+          alt={name}
+          width={config.logoWidth}
+          height={48}
+          className="max-h-12 max-w-[120px] sm:max-w-[200px] shrink-0 rounded-lg object-contain"
+          style={{ width: config.logoWidth, height: 'auto' }}
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <span
+          aria-hidden="true"
+          className={`inline-flex ${emblemSize} shrink-0 items-center justify-center rounded-xl bg-[var(--store-accent,#1B4332)] text-[#FDFCF8] shadow-[0_2px_8px_rgba(27,67,50,0.14)]`}
+        >
+          <svg
+            viewBox="0 0 40 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-6 h-6 sm:w-7 sm:h-7"
+          >
+            {/* Subtle botanical diamond connecting the 4 cardinal points */}
+            <rect
+              x="12.5"
+              y="12.5"
+              width="15"
+              height="15"
+              rx="1.5"
+              transform="rotate(45 20 20)"
+              stroke="#FDFCF8"
+              strokeOpacity="0.34"
+              strokeWidth="1.2"
+            />
+            {/* Panchabindu — Five balanced points (4 cardinal + 1 center focal dot) */}
+            <circle cx="20" cy="9.4" r="2.35" fill="#FDFCF8" />
+            <circle cx="30.6" cy="20" r="2.35" fill="#FDFCF8" />
+            <circle cx="20" cy="30.6" r="2.35" fill="#FDFCF8" />
+            <circle cx="9.4" cy="20" r="2.35" fill="#FDFCF8" />
+            <circle cx="20" cy="20" r="3.4" fill="#E8A98A" />
+          </svg>
+        </span>
+      )}
+      {config.showBrandName && (
+        <span className="flex min-w-0 flex-col">
+          <span
+            className={`font-display ${
+              compact ? 'text-2xl' : 'text-2xl sm:text-[1.9rem]'
+            } font-bold leading-none tracking-tight text-[#1B4332] whitespace-nowrap truncate`}
+          >
+            {name}
+          </span>
+          {config.showTagline && (
+            <span className="mt-1 max-w-48 font-mono text-[10px] uppercase tracking-[0.08em] leading-snug text-[#1B4332]/60">
+              {tagline}
+            </span>
+          )}
+        </span>
+      )}
+    </span>
+  );
 }

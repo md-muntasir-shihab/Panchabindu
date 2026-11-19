@@ -17,6 +17,7 @@
 
 import { readAdminStore } from '../admin/phase4a-service';
 import {
+  adminDirectVendorSettlement,
   readPhase4BStore,
   resolveVendorPayoutRequest,
   requestVendorPayout,
@@ -39,12 +40,17 @@ export interface AdminVendorPayoutRowDTO {
   vendorNameBn: string;
   status: PayoutStatusValue;
   requestedAmountPoisha: number;
-  /** Estimated cash-out deduction; null until a channel fee is known. */
+  /** Actual recorded fee if set, else estimated cash-out deduction. */
   estimatedFeePoisha: number;
+  feePoisha: number;
   /** What the vendor's account actually receives after the fee. */
   netPayablePoisha: number;
+  netPaidPoisha: number;
   payoutMethodBn: string;
   payoutAccountMasked: string;
+  senderAccountNo: string | null;
+  noteBn: string | null;
+  entryType: string;
   requestedByUsername: string;
   requestedAt: string;
   resolvedAt: string | null;
@@ -91,6 +97,9 @@ export interface AdminVendorPayoutVendorRollupDTO {
   paidCount: number;
   paidPoisha: number;
   outstandingPoisha: number;
+  totalEarnedPoisha: number;
+  totalOwedPoisha: number;
+  parcelCount: number;
   lastPaidAt: string | null;
   balance: VendorEscrowBalance;
 }
@@ -179,7 +188,8 @@ export function getAdminVendorPayoutRegister(
 
   const rows: AdminVendorPayoutRowDTO[] = p4b.payoutRequests.map((payout: VendorPayoutRequestRecord) => {
     const audit = trail.get(payout.payoutId);
-    const feePoisha = feeFor(payout.requestedAmountPoisha);
+    const feePoisha = payout.feePoisha !== undefined ? payout.feePoisha : feeFor(payout.requestedAmountPoisha);
+    const netPaid = payout.netPaidPoisha !== undefined ? payout.netPaidPoisha : Math.max(0, payout.requestedAmountPoisha - feePoisha);
     const vendor = vendorById.get(payout.vendorId);
     const sameMaker =
       (payout.requestedByUsername ?? '').trim().toLowerCase() ===
@@ -193,7 +203,9 @@ export function getAdminVendorPayoutRegister(
       timeline.push({ at, eventBn: label.bn, eventEn: label.en, actor });
     };
 
-    pushEvent('VENDOR_PAYOUT_REQUESTED', payout.requestedAt, payout.requestedByUsername);
+    if (payout.entryType !== 'direct_settlement') {
+      pushEvent('VENDOR_PAYOUT_REQUESTED', payout.requestedAt, payout.requestedByUsername);
+    }
     const approvedBy = actorFor(audit, 'VENDOR_PAYOUT_APPROVE');
     const paidBy = actorFor(audit, 'VENDOR_PAYOUT_MARK_PAID');
     const rejectedBy = actorFor(audit, 'VENDOR_PAYOUT_REJECT');
@@ -202,7 +214,9 @@ export function getAdminVendorPayoutRegister(
       const at = audit?.find((row) => row.actionCode === 'VENDOR_PAYOUT_APPROVE')?.createdAt ?? null;
       pushEvent('VENDOR_PAYOUT_APPROVE', at, approvedBy);
     }
-    if (paidBy) pushEvent('VENDOR_PAYOUT_MARK_PAID', payout.resolvedAt, paidBy);
+    if (paidBy || payout.entryType === 'direct_settlement') {
+      pushEvent('VENDOR_PAYOUT_MARK_PAID', payout.resolvedAt ?? payout.requestedAt, paidBy ?? payout.requestedByUsername);
+    }
     if (rejectedBy) pushEvent('VENDOR_PAYOUT_REJECT', payout.resolvedAt, rejectedBy);
     timeline.sort((a, b) => a.at.localeCompare(b.at));
 
@@ -214,16 +228,21 @@ export function getAdminVendorPayoutRegister(
       status: payout.status as PayoutStatusValue,
       requestedAmountPoisha: payout.requestedAmountPoisha,
       estimatedFeePoisha: feePoisha,
-      netPayablePoisha: Math.max(0, payout.requestedAmountPoisha - feePoisha),
+      feePoisha,
+      netPayablePoisha: netPaid,
+      netPaidPoisha: netPaid,
       payoutMethodBn: payout.payoutMethodBn,
       payoutAccountMasked: maskAccount(payout.payoutAccountNo),
+      senderAccountNo: payout.senderAccountNo ?? null,
+      noteBn: payout.noteBn ?? null,
+      entryType: payout.entryType ?? 'vendor_request',
       requestedByUsername: payout.requestedByUsername,
       requestedAt: payout.requestedAt,
       resolvedAt: payout.resolvedAt,
       rejectionReasonBn: payout.rejectionReasonBn,
       paymentTrxId: payout.paymentTrxId,
       proofUrl: payout.proofUrl,
-      paidByUsername: paidBy,
+      paidByUsername: paidBy ?? (payout.entryType === 'direct_settlement' ? payout.requestedByUsername : null),
       approvedByUsername: approvedBy,
       blocksCurrentUser:
         sameMaker && (payout.status === 'requested' || payout.status === 'approved'),
@@ -257,14 +276,58 @@ export function getAdminVendorPayoutRegister(
     ),
     estimatedFeePoisha: rows
       .filter((row) => row.status === 'paid')
-      .reduce((total, row) => total + row.estimatedFeePoisha, 0),
+      .reduce((total, row) => total + row.feePoisha, 0),
     escrowHeldPoisha,
   };
+
+  const manualParcels = p4b.manualCourierParcels ?? [];
+  const orderIdsByVendor = new Map<string, Set<string>>();
+  for (const line of erp.orderLines) {
+    const set = orderIdsByVendor.get(line.vendorId) ?? new Set<string>();
+    set.add(line.orderId);
+    orderIdsByVendor.set(line.vendorId, set);
+  }
 
   const vendorRollups: AdminVendorPayoutVendorRollupDTO[] = p4b.vendors.map((vendor) => {
     const own = rows.filter((row) => row.vendorId === vendor.vendorId);
     const paid = own.filter((row) => row.status === 'paid');
     const entries = p4b.vendorLedger.filter((entry) => entry.vendorId === vendor.vendorId);
+    const balance = computeVendorEscrowBalance(vendor.vendorId, entries);
+
+    const outstandingPoisha = own
+      .filter((row) => row.status === 'requested' || row.status === 'approved')
+      .reduce((total, row) => total + row.requestedAmountPoisha, 0);
+    const totalEarnedPoisha = Math.max(
+      0,
+      entries
+        .filter(
+          (e) =>
+            !['PAYOUT_HOLD', 'PAYOUT_HOLD_RELEASE', 'PAYOUT_DISBURSED'].includes(e.entryType)
+        )
+        .reduce((sum, e) => sum + e.amountPoisha, 0)
+    );
+    const totalOwedPoisha = Math.max(
+      0,
+      balance.pendingPoisha +
+        balance.lockedPoisha +
+        balance.availablePoisha +
+        outstandingPoisha -
+        balance.clawbackDebtPoisha
+    );
+    const parcelOrderIds = orderIdsByVendor.get(vendor.vendorId) ?? new Set<string>();
+    const shippedOrderNos = new Set(
+      erp.orders
+        .filter((o) => parcelOrderIds.has(o.id) && ['shipped', 'out_for_delivery', 'delivered', 'returned'].includes(o.status))
+        .map((o) => o.orderNo)
+    );
+    const vendorParcels = manualParcels.filter(
+      (p) => p.vendorIds.includes(vendor.vendorId) || (p.orderNo && shippedOrderNos.has(p.orderNo))
+    );
+    const combinedParcelKeys = new Set<string>([
+      ...shippedOrderNos,
+      ...vendorParcels.map((p) => p.orderNo ?? p.parcelId),
+    ]);
+
     return {
       vendorId: vendor.vendorId,
       vendorCode: vendor.vendorCode,
@@ -275,12 +338,15 @@ export function getAdminVendorPayoutRegister(
       outstandingPoisha: own
         .filter((row) => row.status === 'requested' || row.status === 'approved')
         .reduce((total, row) => total + row.requestedAmountPoisha, 0),
+      totalEarnedPoisha,
+      totalOwedPoisha,
+      parcelCount: combinedParcelKeys.size,
       lastPaidAt: paid.length
         ? paid
             .map((row) => row.resolvedAt ?? row.requestedAt)
             .sort((a, b) => b.localeCompare(a))[0]
         : null,
-      balance: computeVendorEscrowBalance(vendor.vendorId, entries),
+      balance,
     };
   });
 
@@ -337,6 +403,10 @@ export function adminResolveVendorPayout(
     rejectionReasonBn?: string;
     paymentTrxId?: string;
     proofUrl?: string;
+    feePoisha?: number;
+    senderAccountNo?: string;
+    noteBn?: string;
+    paidAt?: string;
     /**
      * Records an explicit reason when a super admin overrides maker-checker.
      * Without it the domain guard still refuses self-approval.
@@ -381,6 +451,10 @@ export function adminResolveVendorPayout(
     rejectionReasonBn: input.rejectionReasonBn,
     paymentTrxId: input.paymentTrxId,
     proofUrl: input.proofUrl,
+    feePoisha: input.feePoisha,
+    senderAccountNo: input.senderAccountNo,
+    noteBn: input.noteBn,
+    paidAt: input.paidAt,
     emergencyOverride: overrideActive ? true : undefined,
     emergencyReasonBn: overrideActive ? reason : undefined,
   });
@@ -401,4 +475,14 @@ export function adminCreateVendorPayout(
   }
 ): PayoutActionResult {
   return requestVendorPayout(actor, input);
+}
+
+/**
+ * Direct immediate vendor payment settlement with TrxID, fee, sender account, proof, and optional auto-credit.
+ */
+export function adminDirectPayout(
+  actor: ActorSecurityContext,
+  input: Parameters<typeof adminDirectVendorSettlement>[1]
+): PayoutActionResult {
+  return adminDirectVendorSettlement(actor, input);
 }

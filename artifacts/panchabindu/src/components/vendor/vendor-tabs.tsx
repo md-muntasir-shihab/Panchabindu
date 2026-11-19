@@ -1,8 +1,9 @@
 'use client';
 
 // src/components/vendor/vendor-tabs.tsx
-// The eight vendor-panel tabs. Every money value shown here is one the vendor
-// is entitled to see: their own cost, their own payable, their own escrow.
+// Minimalist, read-only-by-default vendor workspace tabs.
+// Every figure shown here is whitelisted: vendor cost, vendor payable,
+// admin-received stock history, admin-approved reviews, and 7-day escrow ledger.
 
 import { useMemo, useState } from 'react';
 import {
@@ -12,11 +13,13 @@ import {
   Boxes,
   CheckCircle2,
   ClipboardList,
+  Clock,
   Coins,
   Info,
+  MessageSquare,
   Package,
+  PackageCheck,
   PackagePlus,
-  Percent,
   PlusCircle,
   ShieldCheck,
   Star,
@@ -27,10 +30,10 @@ import {
 import { Badge, Button, Card, EmptyState } from '@/components/ui/primitives';
 import { cn } from '@/lib/utils';
 import type {
-  VendorCapabilityFlags,
   VendorProductDTO,
   VendorWorkspaceDTO,
 } from '@/lib/vendor/vendor-types';
+import type { VendorTabKey } from '@/components/vendor/vendor-client';
 
 type Translate = (bn: string, en: string) => string;
 type Formatter = (value: number) => string;
@@ -57,7 +60,7 @@ const textareaClass =
   'w-full min-h-[80px] px-3 py-2 text-sm bg-bg text-ink border border-border rounded-[var(--radius-md)] focus:outline-2 focus:outline-offset-0 focus:outline-ink';
 
 /** Exact Taka → poisha, no floating point. Returns null for invalid input. */
-function parseTaka(value: string): number | null {
+export function parseTaka(value: string): number | null {
   const clean = value.replace(/[৳,\s]/g, '');
   if (!/^\d+(\.\d{0,2})?$/.test(clean)) return null;
   const [whole, fraction = ''] = clean.split('.');
@@ -74,7 +77,7 @@ function statusTone(status: string): 'success' | 'warning' | 'danger' | 'info' |
 
 const STATUS_BN: Record<string, string> = {
   active: 'সক্রিয়', draft: 'ড্রাফট', archived: 'আর্কাইভড',
-  pending_qc: 'কিউসি অপেক্ষমাণ', approved_stocked: 'অনুমোদিত ও স্টকড', rejected: 'প্রত্যাখ্যাত',
+  pending_qc: 'কিউসি অপেক্ষমাণ', approved_stocked: 'গৃহীত ও স্টকড', rejected: 'প্রত্যাখ্যাত',
   pending_review: 'যাচাই অপেক্ষমাণ', approved: 'অনুমোদিত',
   requested: 'অনুরোধকৃত', paid: 'পরিশোধিত',
   pending_confirmation: 'নিশ্চিতকরণ অপেক্ষমাণ', confirmed: 'নিশ্চিত', packed: 'প্যাকড',
@@ -108,34 +111,20 @@ function Kpi({
       ? 'text-danger'
       : 'text-ink';
   return (
-    <div className="rounded-[var(--radius-md)] border border-border bg-surface p-3">
+    <div className="rounded-[var(--radius-md)] border border-border bg-surface p-3.5">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</p>
         {icon ? <span className="text-muted">{icon}</span> : null}
       </div>
-      <p className={cn('mt-1 text-lg font-bold tabular-nums', toneClass)}>{value}</p>
-      {hint ? <p className="mt-0.5 text-[11px] text-muted">{hint}</p> : null}
-    </div>
-  );
-}
-
-function LockedNotice({ label, t }: { label: string; t: Translate }) {
-  return (
-    <div role="status" className="flex items-start gap-2 rounded-[var(--radius-md)] border border-warning bg-bg p-3 text-xs">
-      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-      <p className="text-ink">
-        {t(
-          `এই সুবিধাটি অ্যাডমিন বন্ধ রেখেছেন: ${label}। প্রয়োজনে অ্যাডমিনের সাথে যোগাযোগ করুন।`,
-          `The admin has disabled this capability: ${label}. Contact the platform admin if you need it.`
-        )}
-      </p>
+      <p className={cn('mt-1.5 text-lg font-bold tabular-nums', toneClass)}>{value}</p>
+      {hint ? <p className="mt-1 text-[11px] text-muted">{hint}</p> : null}
     </div>
   );
 }
 
 function SectionHead({ title, desc, right }: { title: string; desc?: string; right?: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-2">
+    <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 className="text-base font-bold text-ink">{title}</h2>
         {desc ? <p className="mt-0.5 text-xs text-muted">{desc}</p> : null}
@@ -145,6 +134,19 @@ function SectionHead({ title, desc, right }: { title: string; desc?: string; rig
   );
 }
 
+function formatShortDate(iso: string | null | undefined, bn: boolean): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString(bn ? 'bn-BD' : 'en-GB', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 // ===========================================================================
 // 1. DASHBOARD
 // ===========================================================================
@@ -152,205 +154,241 @@ function SectionHead({ title, desc, right }: { title: string; desc?: string; rig
 export function DashboardTab({
   workspace,
   onNavigate,
+  onOpenPayout,
   t,
   num,
   money,
-}: TabProps & { onNavigate: (tab: 'products' | 'stock' | 'orders' | 'payouts' | 'proposals') => void }) {
-  const { escrow, counters, scorecard, lots, profile } = workspace;
+  bn,
+}: TabProps & {
+  onNavigate: (tab: VendorTabKey) => void;
+  onOpenPayout: () => void;
+  bn: boolean;
+}) {
+  const { escrow, counters, lots, approvedReviews, profile, rules, capabilities } = workspace;
+  const holdDays = profile.escrowHoldDaysOverride ?? rules.globalEscrowHoldDays;
 
-  const onboardingPct = Math.round(
-    (profile.onboardingAnsweredCount / Math.max(1, profile.onboardingTotalQuestions)) * 100
-  );
+  const avgRating =
+    approvedReviews.length > 0
+      ? (approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length).toFixed(1)
+      : '0.0';
 
   return (
     <div className="space-y-5">
       <SectionHead
-        title={t('আজকের সারসংক্ষেপ', 'Today at a glance')}
-        desc={t('আপনার নিজস্ব কনসাইনমেন্ট ব্যবসার লাইভ অবস্থা', 'Live state of your own consignment business')}
+        title={t('ভেন্ডর ড্যাশবোর্ড', 'Vendor Dashboard')}
+        desc={t(
+          'আপনার বিক্রয়, পেআউট ব্যালেন্স, স্টক রিসিভ এবং অ্যাডমিন-অনুমোদিত ক্রেতা রিভিউয়ের সারসংক্ষেপ।',
+          'Overview of your balances, orders, stock receipts, and admin-approved customer reviews.'
+        )}
       />
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {/* Primary Financial KPIs */}
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        <Kpi
+          label={t('মোট পাওনা বাকি', 'Total Owed')}
+          value={money(escrow.totalOwedPoisha ?? (escrow.pendingPoisha + escrow.lockedPoisha + escrow.withdrawablePoisha))}
+          hint={t('পেন্ডিং + লকড + উত্তোলনযোগ্য', 'Pending + Locked + Withdrawable')}
+          tone={(escrow.totalOwedPoisha ?? 0) > 0 ? 'positive' : 'neutral'}
+          icon={<Wallet className="h-4 w-4" aria-hidden="true" />}
+        />
+        <Kpi
+          label={t('মোট পরিশোধিত', 'Total Paid')}
+          value={money(escrow.totalPaidPoisha ?? 0)}
+          hint={t('এ পর্যন্ত প্রাপ্ত পেআউট', 'Disbursed payouts so far')}
+          tone={(escrow.totalPaidPoisha ?? 0) > 0 ? 'positive' : 'neutral'}
+          icon={<BadgeCheck className="h-4 w-4" aria-hidden="true" />}
+        />
         <Kpi
           label={t('উত্তোলনযোগ্য', 'Withdrawable')}
           value={money(escrow.withdrawablePoisha)}
-          hint={t('Available এসক্রো ব্যালেন্স', 'Available escrow balance')}
+          hint={t('এখনই পেআউট অনুরোধযোগ্য', 'Ready for payout request')}
           tone={escrow.withdrawablePoisha > 0 ? 'positive' : 'neutral'}
           icon={<Wallet className="h-4 w-4" aria-hidden="true" />}
         />
         <Kpi
-          label={t('হোল্ডে আছে', 'On hold')}
+          label={t('এসক্রো হোল্ডে আছে', 'On Hold')}
           value={money(escrow.lockedPoisha)}
-          hint={t('ডেলিভারির পর হোল্ড পিরিয়ড', 'Post-delivery hold period')}
+          hint={t(`ডেলিভারির পর ${num(holdDays)} দিনের হোল্ড`, `${num(holdDays)}-day post-delivery hold`)}
           tone={escrow.lockedPoisha > 0 ? 'warning' : 'neutral'}
-          icon={<Coins className="h-4 w-4" aria-hidden="true" />}
-        />
-        <Kpi
-          label={t('সক্রিয় পণ্য', 'Live products')}
-          value={num(counters.activeProducts)}
-          hint={`${num(counters.draftProducts)} ${t('ড্রাফট আছে', 'in draft')}`}
-          icon={<Package className="h-4 w-4" aria-hidden="true" />}
-        />
-        <Kpi
-          label={t('চলতি অর্ডার', 'Open orders')}
-          value={num(counters.openOrders)}
-          hint={t('প্যাকিং/ডেলিভারি প্রক্রিয়ায়', 'In packing or delivery')}
-          tone={counters.openOrders > 0 ? 'warning' : 'neutral'}
-          icon={<ClipboardList className="h-4 w-4" aria-hidden="true" />}
+          icon={<Clock className="h-4 w-4" aria-hidden="true" />}
         />
       </div>
 
+      {/* Payout Action & Operational Shortcuts */}
       <div className="grid gap-3 md:grid-cols-2">
-        <Card surface="surface" padding="sm" className="space-y-3">
-          <h3 className="text-sm font-bold">{t('আপনার পদক্ষেপ দরকার', 'Needs your action')}</h3>
-          <ul className="space-y-2 text-xs">
-            <ActionRow
-              count={counters.pendingLots}
-              label={t('কিউসি অনুমোদনের অপেক্ষায় চালান', 'Challans awaiting QC approval')}
-              onClick={() => onNavigate('stock')}
-              t={t}
-            />
-            <ActionRow
-              count={counters.pendingProposals}
-              label={t('মূল্য প্রস্তাব যাচাইয়ের অপেক্ষায়', 'Price proposals awaiting review')}
-              onClick={() => onNavigate('proposals')}
-              t={t}
-            />
-            <ActionRow
-              count={counters.lowStockVariants}
-              label={t('কম স্টকের ভ্যারিয়েন্ট', 'Variants running low on stock')}
-              onClick={() => onNavigate('products')}
-              t={t}
-            />
-            <ActionRow
-              count={counters.draftProducts}
-              label={t('ড্রাফট পণ্য এখনো লাইভ হয়নি', 'Draft products not published yet')}
-              onClick={() => onNavigate('products')}
-              t={t}
-            />
-            <ActionRow
-              count={counters.pendingPayouts}
-              label={t('পেআউট অনুরোধ প্রক্রিয়াধীন', 'Payout requests in progress')}
-              onClick={() => onNavigate('payouts')}
-              t={t}
-            />
-          </ul>
+        <Card surface="surface" padding="md" className="flex flex-col justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-bold text-ink">{t('পেআউট ও উত্তোলন', 'Payout & Withdrawal')}</h3>
+              {counters.pendingPayouts > 0 && (
+                <Badge status="warning">
+                  {num(counters.pendingPayouts)} {t('প্রক্রিয়াধীন', 'in progress')}
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted">
+              {t(
+                `সর্বনিম্ন ${money(rules.minPayoutRequestPoisha)} থেকে উত্তোলন অনুরোধ পাঠানো যায়। পেমেন্ট পদ্ধতি: ${profile.payoutMethodBn} (${profile.payoutAccountMasked})।`,
+                `Minimum request is ${money(rules.minPayoutRequestPoisha)} via ${profile.payoutMethodBn} (${profile.payoutAccountMasked}).`
+              )}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<Wallet className="h-4 w-4" aria-hidden="true" />}
+              disabled={!capabilities.canRequestPayout}
+              onClick={onOpenPayout}
+              className="min-h-[44px]"
+            >
+              {t('পেআউট অনুরোধ করুন', 'Request Payout')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onNavigate('earnings')}
+              className="min-h-[44px]"
+            >
+              {t('আয় ও এসক্রো দেখুন', 'View Earnings & Escrow')}
+            </Button>
+          </div>
         </Card>
 
-        <Card surface="surface" padding="sm" className="space-y-3">
-          <h3 className="flex items-center gap-1.5 text-sm font-bold">
-            <BadgeCheck className="h-4 w-4" aria-hidden="true" />
-            {t('পারফরম্যান্স স্কোরকার্ড', 'Performance scorecard')}
-          </h3>
-          {scorecard ? (
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-muted">{t('SLA গ্রেড', 'SLA grade')}</span>
-                <Badge status={scorecard.slaGrade === 'A+' || scorecard.slaGrade === 'A' ? 'success' : scorecard.slaGrade === 'B' ? 'warning' : 'danger'}>
-                  {scorecard.slaGrade}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted">{t('গড় রেটিং', 'Average rating')}</span>
-                <span className="flex items-center gap-1 font-semibold tabular-nums">
-                  <Star className="h-3.5 w-3.5" aria-hidden="true" />
-                  {(scorecard.averageRatingBp / 100).toFixed(1)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted">{t('মোট বিক্রিত ইউনিট', 'Units sold')}</span>
-                <span className="font-semibold tabular-nums">{num(scorecard.totalUnitsSold)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted">{t('রিটার্ন হার', 'Return rate')}</span>
-                <span className={cn('font-semibold tabular-nums', scorecard.returnRateBp > 500 ? 'text-danger' : 'text-ink')}>
-                  {(scorecard.returnRateBp / 100).toFixed(2)}%
-                </span>
-              </div>
-              <div className="flex items-center justify-between border-t border-border pt-2">
-                <span className="text-muted">{t('নিট প্রদেয়', 'Net payable to you')}</span>
-                <span className="font-semibold tabular-nums">{money(scorecard.netVendorPayablePoisha)}</span>
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-muted">{t('এখনো কোনো স্কোরকার্ড তৈরি হয়নি।', 'No scorecard yet.')}</p>
-          )}
+        <Card surface="surface" padding="md" className="space-y-3">
+          <h3 className="text-sm font-bold text-ink">{t('চলতি কার্যক্রম', 'Workspace Activity')}</h3>
+          <div className="grid grid-cols-1 gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => onNavigate('orders')}
+              className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2 text-left hover:bg-surface cursor-pointer"
+            >
+              <span className="flex items-center gap-2 font-medium text-ink">
+                <ClipboardList className="h-4 w-4 text-muted" aria-hidden="true" />
+                {t('চলতি অর্ডার', 'Open Orders')}
+              </span>
+              <span className="font-bold tabular-nums text-ink">{num(counters.openOrders)} ›</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('products')}
+              className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2 text-left hover:bg-surface cursor-pointer"
+            >
+              <span className="flex items-center gap-2 font-medium text-ink">
+                <Package className="h-4 w-4 text-muted" aria-hidden="true" />
+                {t('সক্রিয় পণ্য / কম স্টক', 'Active Products / Low Stock')}
+              </span>
+              <span className="font-bold tabular-nums text-ink">
+                {num(counters.activeProducts)} / {num(counters.lowStockVariants)} ›
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('support')}
+              className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border bg-bg px-3 py-2 text-left hover:bg-surface cursor-pointer"
+            >
+              <span className="flex items-center gap-2 font-medium text-ink">
+                <MessageSquare className="h-4 w-4 text-muted" aria-hidden="true" />
+                {t('খোলা সাপোর্ট টিকিট', 'Open Support Tickets')}
+              </span>
+              <span className="font-bold tabular-nums text-ink">{num(counters.openSupportTickets)} ›</span>
+            </button>
+          </div>
         </Card>
       </div>
 
-      <Card surface="surface" padding="sm" className="space-y-2">
-        <h3 className="flex items-center gap-1.5 text-sm font-bold">
-          <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-          {t('অনবোর্ডিং প্রোফাইল', 'Onboarding profile')}
-        </h3>
-        <div className="h-2 w-full rounded-full border border-border bg-bg">
-          <div className="h-full rounded-full bg-ink" style={{ width: `${onboardingPct}%` }} aria-hidden="true" />
-        </div>
-        <p className="text-xs text-muted">
-          {t(
-            `${profile.onboardingAnsweredCount} / ${profile.onboardingTotalQuestions} প্রশ্নের উত্তর সম্পন্ন`,
-            `${profile.onboardingAnsweredCount} of ${profile.onboardingTotalQuestions} questions answered`
+      {/* Approved Customer Reviews Summary & Recent Stock Receipts */}
+      <div className="grid gap-3 md:grid-cols-2">
+        <Card surface="surface" padding="md" className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+              <Star className="h-4 w-4 text-warning" aria-hidden="true" />
+              {t('অ্যাডমিন-অনুমোদিত ক্রেতা রিভিউ', 'Approved Customer Reviews')}
+            </h3>
+            <span className="text-xs font-bold tabular-nums text-ink">
+              {avgRating} ★ · {num(approvedReviews.length)} {t('টি রিভিউ', 'reviews')}
+            </span>
+          </div>
+          {approvedReviews.length === 0 ? (
+            <p className="text-xs text-muted">
+              {t(
+                'এখনো কোনো অ্যাডমিন-অনুমোদিত রিভিউ নেই। ক্রেতাদের রিভিউ অ্যাডমিন অনুমোদন করলে এখানে দেখাবে।',
+                'No admin-approved customer reviews yet. Approved buyer reviews appear here.'
+              )}
+            </p>
+          ) : (
+            <ul className="space-y-2 text-xs">
+              {approvedReviews.slice(0, 3).map((rev) => (
+                <li key={rev.reviewId} className="rounded-[var(--radius-sm)] border border-border bg-bg p-2.5 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-semibold text-ink">{bn ? rev.productNameBn : rev.productNameEn}</span>
+                    <span className="shrink-0 font-mono text-[11px] font-bold text-warning tabular-nums">
+                      {'★'.repeat(Math.max(1, Math.min(5, Math.round(rev.rating))))} ({num(rev.rating)})
+                    </span>
+                  </div>
+                  <p className="text-ink/90 line-clamp-2">{rev.comment}</p>
+                  <p className="text-[11px] text-muted">
+                    {rev.reviewerLabel} · {formatShortDate(rev.createdAt, bn)}
+                  </p>
+                </li>
+              ))}
+            </ul>
           )}
-        </p>
-      </Card>
-
-      {lots.length > 0 && (
-        <Card surface="bg" padding="sm" className="space-y-2">
-          <h3 className="text-sm font-bold">{t('সাম্প্রতিক চালান', 'Recent challans')}</h3>
-          <ul className="space-y-1.5 text-xs">
-            {lots.slice(0, 3).map((lot) => (
-              <li key={lot.lotId} className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-1.5 last:border-0">
-                <span className="font-mono text-muted">{lot.lotCode}</span>
-                <span className="min-w-0 flex-1 truncate">{lot.productNameBn}</span>
-                <span className="tabular-nums">{num(lot.dispatchedQty)}</span>
-                <StatusBadge status={lot.status} t={t} />
-              </li>
-            ))}
-          </ul>
+          <Button variant="outline" size="sm" onClick={() => onNavigate('products')} className="min-h-[40px]">
+            {t('সব পণ্য ও রিভিউ দেখুন', 'View Products & All Reviews')}
+          </Button>
         </Card>
-      )}
+
+        <Card surface="surface" padding="md" className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+              <PackageCheck className="h-4 w-4 text-ink" aria-hidden="true" />
+              {t('সাম্প্রতিক স্টক গ্রহণ ইতিহাস', 'Recent Stock Receipts')}
+            </h3>
+            <span className="text-xs text-muted tabular-nums">
+              {num(lots.length)} {t('টি চালান', 'batches')}
+            </span>
+          </div>
+          {lots.length === 0 ? (
+            <p className="text-xs text-muted">
+              {t(
+                'অ্যাডমিন প্যানেল থেকে কোনো পণ্য গ্রহণ রেকর্ড করা হলে তার বিস্তারিত ইতিহাস এখানে দেখা যাবে।',
+                'Stock batches received by Admin appear here with dates, quantities, and unit costs.'
+              )}
+            </p>
+          ) : (
+            <ul className="space-y-2 text-xs">
+              {lots.slice(0, 4).map((lot) => (
+                <li key={lot.lotId} className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border bg-bg p-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-ink">
+                      {lot.productNameBn} · {lot.variantTitleBn}
+                    </p>
+                    <p className="text-[11px] text-muted tabular-nums">
+                      <span className="font-mono">{lot.lotCode}</span> · {formatShortDate(lot.receivedAt ?? lot.dispatchedAt, bn)} · {money(lot.unitSupplierCostPoisha)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-bold tabular-nums text-ink">
+                      {num(lot.qcAcceptedQty ?? lot.dispatchedQty)} {t('পিস', 'pcs')}
+                    </span>
+                    <StatusBadge status={lot.status} t={t} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button variant="outline" size="sm" onClick={() => onNavigate('products')} className="min-h-[40px]">
+            {t('পূর্ণ রিসিভ ইতিহাস দেখুন', 'View Full Stock History')}
+          </Button>
+        </Card>
+      </div>
     </div>
   );
 }
 
-function ActionRow({
-  count,
-  label,
-  onClick,
-  t,
-}: {
-  count: number;
-  label: string;
-  onClick: () => void;
-  t: Translate;
-}) {
-  if (count <= 0) {
-    return (
-      <li className="flex items-center gap-2 text-muted">
-        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden="true" />
-        <span>{label}</span>
-        <span className="ml-auto text-[10px] uppercase">{t('ঠিক আছে', 'clear')}</span>
-      </li>
-    );
-  }
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={onClick}
-        className="flex min-h-[36px] w-full items-center gap-2 rounded-[var(--radius-sm)] border border-border px-2 text-left hover:bg-bg"
-      >
-        <span className="inline-flex min-w-[22px] justify-center rounded-full border border-warning px-1 text-[10px] font-bold text-warning">
-          {count}
-        </span>
-        <span className="flex-1">{label}</span>
-        <span aria-hidden="true" className="text-muted">›</span>
-      </button>
-    </li>
-  );
-}
-
 // ===========================================================================
-// 2. PRODUCTS
+// 2. PRODUCTS, STOCK RECEIVING HISTORY & APPROVED REVIEWS
 // ===========================================================================
 
 export function ProductsTab({
@@ -362,185 +400,402 @@ export function ProductsTab({
   money,
   bn,
 }: MutatingTabProps & { bn: boolean }) {
-  const { products, capabilities, categories } = workspace;
+  const { products, capabilities, categories, lots, approvedReviews } = workspace;
   const [editing, setEditing] = useState<VendorProductDTO | null>(null);
   const [creating, setCreating] = useState(false);
+  const [reviewProductFilter, setReviewProductFilter] = useState<string>('all');
+
+  // Optional Admin-unlocked lot submission state (only shown if capabilities.canSubmitConsignmentLot === true)
+  const variantOptions = useMemo(
+    () =>
+      products.flatMap((product) =>
+        product.variants.map((variant) => ({
+          value: variant.variantId,
+          label: `${product.nameBn} — ${variant.titleBn} (${variant.publicSku})`,
+        }))
+      ),
+    [products]
+  );
+  const [lotVariantId, setLotVariantId] = useState(variantOptions[0]?.value ?? '');
+  const [lotQty, setLotQty] = useState('1');
+  const [lotChallanRef, setLotChallanRef] = useState('');
+  const [lotNoteBn, setLotNoteBn] = useState('');
+
+  const filteredReviews = useMemo(() => {
+    if (reviewProductFilter === 'all') return approvedReviews;
+    return approvedReviews.filter((r) => r.productId === reviewProductFilter);
+  }, [approvedReviews, reviewProductFilter]);
 
   return (
-    <div className="space-y-4">
-      <SectionHead
-        title={t('পণ্য ও ভ্যারিয়েন্ট', 'Products & variants')}
-        desc={t(
-          'নতুন পণ্য ড্রাফট হিসেবে যোগ হবে। লাইভ করতে স্টক ও ছবি থাকা বাধ্যতামূলক।',
-          'New products start as drafts. Publishing requires stock and at least one image.'
-        )}
-        right={
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<PackagePlus className="h-4 w-4" aria-hidden="true" />}
-            onClick={() => {
-              setCreating(true);
-              setEditing(null);
-            }}
-            disabled={!capabilities.canCreateProduct}
-          >
-            {t('নতুন পণ্য', 'New product')}
-          </Button>
-        }
-      />
-
-      {!capabilities.canCreateProduct && <LockedNotice label={t('নতুন পণ্য তৈরি', 'create new products')} t={t} />}
-      {capabilities.maxActiveProducts > 0 && (
-        <p className="text-xs text-muted">
-          {t(
-            `অ্যাডমিন সর্বোচ্চ ${capabilities.maxActiveProducts}টি পণ্যের অনুমতি দিয়েছেন।`,
-            `The admin allows a maximum of ${capabilities.maxActiveProducts} products.`
+    <div className="space-y-6">
+      {/* 1. Product Catalog & Live Stock (Read-Only by default) */}
+      <section className="space-y-3">
+        <SectionHead
+          title={t('পণ্য ও লাইভ স্টক', 'Products & Live Stock')}
+          desc={t(
+            'পণ্যের দাম, তথ্য ও স্টক অ্যাডমিন প্যানেল থেকে নিয়ন্ত্রিত হয়। এখানে আপনার প্রতিটি পণ্যের বর্তমান স্টক ও ক্রয়মূল্য দেখুন।',
+            'Catalog, pricing, and stock levels are managed by Admin. Inspect your live inventory and unit costs here.'
           )}
-        </p>
-      )}
+          right={
+            capabilities.canCreateProduct ? (
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<PackagePlus className="h-4 w-4" aria-hidden="true" />}
+                onClick={() => {
+                  setCreating(true);
+                  setEditing(null);
+                }}
+              >
+                {t('নতুন পণ্য', 'New product')}
+              </Button>
+            ) : (
+              <Badge status="neutral">{t('শুধু দেখার জন্য (অ্যাডমিন নিয়ন্ত্রিত)', 'Read-only · Admin Managed')}</Badge>
+            )
+          }
+        />
 
-      {(creating || editing) && (
-        <ProductEditor
-          key={editing?.productId ?? 'new'}
-          product={editing}
-          categories={categories}
-          canEdit={editing ? capabilities.canEditProduct : capabilities.canCreateProduct}
-          busy={busy}
-          t={t}
-          bn={bn}
-          onCancel={() => {
-            setCreating(false);
-            setEditing(null);
-          }}
-          onSubmit={async (payload) => {
-            const ok = await send('/api/vendor/products', { action: 'upsert', product: payload }, {
-              bn: editing ? 'পণ্য আপডেট হয়েছে।' : 'পণ্য ড্রাফট হিসেবে তৈরি হয়েছে।',
-              en: editing ? 'Product updated.' : 'Product created as draft.',
-            });
-            if (ok) {
+        {(creating || editing) && (
+          <ProductEditor
+            key={editing?.productId ?? 'new'}
+            product={editing}
+            categories={categories}
+            canEdit={editing ? capabilities.canEditProduct : capabilities.canCreateProduct}
+            busy={busy}
+            t={t}
+            bn={bn}
+            onCancel={() => {
               setCreating(false);
               setEditing(null);
-            }
-          }}
-        />
-      )}
+            }}
+            onSubmit={async (payload) => {
+              const ok = await send('/api/vendor/products', { action: 'upsert', product: payload }, {
+                bn: editing ? 'পণ্য আপডেট হয়েছে।' : 'পণ্য ড্রাফট হিসেবে তৈরি হয়েছে।',
+                en: editing ? 'Product updated.' : 'Product created as draft.',
+              });
+              if (ok) {
+                setCreating(false);
+                setEditing(null);
+              }
+            }}
+          />
+        )}
 
-      {products.length === 0 ? (
-        <EmptyState
-          icon={<Package className="h-6 w-6" aria-hidden="true" />}
-          title={t('কোনো পণ্য নেই', 'No products yet')}
-          description={t(
-            'প্রথম পণ্য যোগ করে কনসাইনমেন্ট শুরু করুন। মূল্য যাচাই প্ল্যাটফর্ম করবে।',
-            'Add your first product to start consignment. The platform verifies every price.'
-          )}
-        />
-      ) : (
-        <div className="space-y-2">
-          {products.map((product) => (
-            <Card key={product.productId} surface="surface" padding="sm" className="space-y-2">
-              <div className="flex flex-wrap items-start gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-bold">{bn ? product.nameBn : product.nameEn}</p>
-                    <StatusBadge status={product.status} t={t} />
-                    {product.lowStockThreshold > 0 &&
-                      product.variants.some((variant) => variant.lowStock) && (
-                        <Badge status="warning">{t('কম স্টক', 'Low stock')}</Badge>
-                      )}
+        {products.length === 0 ? (
+          <EmptyState
+            icon={<Package className="h-6 w-6" aria-hidden="true" />}
+            title={t('কোনো পণ্য নেই', 'No products yet')}
+            description={t(
+              'অ্যাডমিন আপনার নামে পণ্য যোগ করলে সেগুলো এখানে তালিকাভুক্ত হবে।',
+              'Products assigned to your supplier account appear here.'
+            )}
+          />
+        ) : (
+          <div className="space-y-3">
+            {products.map((product) => (
+              <Card key={product.productId} surface="surface" padding="sm" className="space-y-2.5">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-sm font-bold text-ink">{bn ? product.nameBn : product.nameEn}</p>
+                      <StatusBadge status={product.status} t={t} />
+                      {product.lowStockThreshold > 0 &&
+                        product.variants.some((variant) => variant.lowStock) && (
+                          <Badge status="warning">{t('কম স্টক', 'Low stock')}</Badge>
+                        )}
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-muted tabular-nums">
+                      {bn ? product.categoryNameBn : product.categoryNameEn} ·{' '}
+                      {t('বিক্রিত', 'Sold')}: {num(product.totalSoldCount)} ·{' '}
+                      {t('অনুমোদিত রিভিউ', 'Approved rating')}:{' '}
+                      {product.reviewCount > 0
+                        ? `${(product.ratingAvgBp / 100).toFixed(1)} ★ (${num(product.reviewCount)})`
+                        : t('রিভিউ নেই', 'No reviews')}
+                    </p>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-muted">
-                    {bn ? product.categoryNameBn : product.categoryNameEn} ·{' '}
-                    {t('বিক্রিত', 'Sold')}: {num(product.totalSoldCount)} ·{' '}
-                    {t('রেটিং', 'Rating')}: {(product.ratingAvgBp / 100).toFixed(1)}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditing(product);
-                      setCreating(false);
-                    }}
-                    disabled={!capabilities.canEditProduct}
-                  >
-                    {t('সম্পাদনা', 'Edit')}
-                  </Button>
-                  {product.status !== 'active' ? (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      isLoading={busy}
-                      disabled={!capabilities.canChangeProductStatus}
-                      onClick={() =>
-                        void send(
-                          '/api/vendor/products',
-                          { action: 'set_status', productId: product.productId, status: 'active' },
-                          { bn: 'পণ্য লাইভ হয়েছে।', en: 'Product published.' }
+                  {(capabilities.canEditProduct || capabilities.canChangeProductStatus) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {capabilities.canEditProduct && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditing(product);
+                            setCreating(false);
+                          }}
+                        >
+                          {t('সম্পাদনা', 'Edit')}
+                        </Button>
+                      )}
+                      {capabilities.canChangeProductStatus && (
+                        product.status !== 'active' ? (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            isLoading={busy}
+                            onClick={() =>
+                              void send(
+                                '/api/vendor/products',
+                                { action: 'set_status', productId: product.productId, status: 'active' },
+                                { bn: 'পণ্য লাইভ হয়েছে।', en: 'Product published.' }
+                              )
+                            }
+                          >
+                            {t('লাইভ করুন', 'Publish')}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            isLoading={busy}
+                            onClick={() =>
+                              void send(
+                                '/api/vendor/products',
+                                { action: 'set_status', productId: product.productId, status: 'draft' },
+                                { bn: 'পণ্য ড্রাফটে সরানো হয়েছে।', en: 'Product moved to draft.' }
+                              )
+                            }
+                          >
+                            {t('আনপাবলিশ', 'Unpublish')}
+                          </Button>
                         )
-                      }
-                    >
-                      {t('লাইভ করুন', 'Publish')}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      isLoading={busy}
-                      disabled={!capabilities.canChangeProductStatus}
-                      onClick={() =>
-                        void send(
-                          '/api/vendor/products',
-                          { action: 'set_status', productId: product.productId, status: 'draft' },
-                          { bn: 'পণ্য ড্রাফটে সরানো হয়েছে।', en: 'Product moved to draft.' }
-                        )
-                      }
-                    >
-                      {t('আনপাবলিশ', 'Unpublish')}
-                    </Button>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[520px] text-left text-[11px]">
-                  <thead className="text-muted">
-                    <tr className="border-b border-border">
-                      <th className="py-1 pr-2 font-semibold">{t('ভ্যারিয়েন্ট', 'Variant')}</th>
-                      <th className="py-1 pr-2 font-semibold">SKU</th>
-                      <th className="py-1 pr-2 text-right font-semibold">{t('ক্রয়মূল্য', 'Cost')}</th>
-                      <th className="py-1 pr-2 text-right font-semibold">{t('বিক্রয়মূল্য', 'Retail')}</th>
-                      <th className="py-1 pr-2 text-right font-semibold">{t('স্টক', 'Stock')}</th>
-                      <th className="py-1 text-right font-semibold">{t('রিজার্ভ', 'Reserved')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {product.variants.map((variant) => (
-                      <tr key={variant.variantId} className="border-b border-border last:border-0">
-                        <td className="py-1 pr-2">{bn ? variant.titleBn : variant.titleEn}</td>
-                        <td className="py-1 pr-2 font-mono">{variant.publicSku}</td>
-                        <td className="py-1 pr-2 text-right tabular-nums">{money(variant.supplierCostPoisha)}</td>
-                        <td className="py-1 pr-2 text-right tabular-nums">{money(variant.salePricePoisha)}</td>
-                        <td className={cn('py-1 pr-2 text-right tabular-nums', variant.lowStock && 'font-bold text-warning')}>
-                          {num(variant.stockAvailable)}
-                        </td>
-                        <td className="py-1 text-right tabular-nums">{num(variant.stockReserved)}</td>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[540px] text-left text-[11px]">
+                    <thead className="text-muted">
+                      <tr className="border-b border-border">
+                        <th className="py-1.5 pr-2 font-semibold">{t('ভ্যারিয়েন্ট', 'Variant')}</th>
+                        <th className="py-1.5 pr-2 font-semibold">SKU</th>
+                        <th className="py-1.5 pr-2 text-right font-semibold">{t('সাপ্লায়ার কস্ট', 'Supplier Cost')}</th>
+                        <th className="py-1.5 pr-2 text-right font-semibold">{t('বিক্রয়মূল্য', 'Retail Price')}</th>
+                        <th className="py-1.5 pr-2 text-right font-semibold">{t('উপলব্ধ স্টক', 'Available')}</th>
+                        <th className="py-1.5 pr-2 text-right font-semibold">{t('রিজার্ভড', 'Reserved')}</th>
+                        <th className="py-1.5 text-right font-semibold">{t('ট্রানজিট', 'In Transit')}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {product.variants.map((variant) => (
+                        <tr key={variant.variantId} className="border-b border-border last:border-0">
+                          <td className="py-1.5 pr-2 font-medium text-ink">{bn ? variant.titleBn : variant.titleEn}</td>
+                          <td className="py-1.5 pr-2 font-mono text-muted">{variant.publicSku}</td>
+                          <td className="py-1.5 pr-2 text-right tabular-nums text-ink">{money(variant.supplierCostPoisha)}</td>
+                          <td className="py-1.5 pr-2 text-right tabular-nums text-muted">{money(variant.salePricePoisha)}</td>
+                          <td className={cn('py-1.5 pr-2 text-right font-semibold tabular-nums', variant.lowStock ? 'text-warning' : 'text-ink')}>
+                            {num(variant.stockAvailable)}
+                          </td>
+                          <td className="py-1.5 pr-2 text-right tabular-nums text-muted">{num(variant.stockReserved)}</td>
+                          <td className="py-1.5 text-right tabular-nums text-muted">{num(variant.stockInTransit)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 2. Product Receiving & Dispatch History */}
+      <section className="space-y-3 border-t border-border pt-5">
+        <SectionHead
+          title={t('পণ্য পাঠানো ও অ্যাডমিন রিসিভ ইতিহাস', 'Product Receiving & Dispatch History')}
+          desc={t(
+            'কবে কোন পণ্য কত পিস পাঠানো হয়েছে, অ্যাডমিন কবে গ্রহণ করেছে, ইউনিট মূল্য ও মোট মূল্যসহ পূর্ণ হিস্ট্রি।',
+            'Complete chronological record of every batch sent to warehouse and received by Admin, with dates, quantities, and unit costs.'
+          )}
+        />
+
+        {capabilities.canSubmitConsignmentLot && (
+          <Card surface="surface" padding="sm" className="space-y-2">
+            <p className="text-xs font-bold text-ink">{t('নতুন চালান জমা দিন', 'Submit Dispatch Challan')}</p>
+            <form
+              onSubmit={async (event) => {
+                event.preventDefault();
+                const parsedQty = Number(lotQty);
+                if (!lotVariantId || !Number.isInteger(parsedQty) || parsedQty < 1 || !lotChallanRef.trim()) return;
+                const ok = await send(
+                  '/api/vendor/stock',
+                  { action: 'dispatch_lot', variantId: lotVariantId, dispatchedQty: parsedQty, challanRef: lotChallanRef, noteBn: lotNoteBn },
+                  {
+                    bn: 'চালান জমা হয়েছে; অ্যাডমিন রিসিভ করলে স্টকে যুক্ত হবে।',
+                    en: 'Dispatch submitted; stock updates once received by Admin.',
+                  }
+                );
+                if (ok) {
+                  setLotChallanRef('');
+                  setLotNoteBn('');
+                  setLotQty('1');
+                }
+              }}
+              className="grid gap-2 sm:grid-cols-4"
+            >
+              <label className="space-y-1 text-xs font-medium sm:col-span-2">
+                <span>{t('ভ্যারিয়েন্ট', 'Variant')}</span>
+                <select className={inputClass} value={lotVariantId} onChange={(e) => setLotVariantId(e.target.value)} required>
+                  {variantOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 text-xs font-medium">
+                <span>{t('পরিমাণ', 'Qty')}</span>
+                <input className={inputClass} inputMode="numeric" value={lotQty} onChange={(e) => setLotQty(e.target.value.replace(/\D/g, ''))} required />
+              </label>
+              <label className="space-y-1 text-xs font-medium">
+                <span>{t('চালান রেফ', 'Challan ref')}</span>
+                <input className={inputClass} value={lotChallanRef} onChange={(e) => setLotChallanRef(e.target.value)} required />
+              </label>
+              <label className="space-y-1 text-xs font-medium sm:col-span-3">
+                <span>{t('নোট', 'Note')}</span>
+                <input className={inputClass} value={lotNoteBn} onChange={(e) => setLotNoteBn(e.target.value)} />
+              </label>
+              <div className="flex items-end">
+                <Button type="submit" variant="primary" isLoading={busy} disabled={variantOptions.length === 0} leftIcon={<Truck className="h-4 w-4" aria-hidden="true" />} className="w-full min-h-[44px]">
+                  {t('চালান জমা', 'Submit')}
+                </Button>
               </div>
-              <p className="text-[10px] text-muted">
-                {t(
-                  'ক্রয়মূল্য বা বিক্রয়মূল্য সরাসরি বদলানো যাবে না — "মূল্য প্রস্তাব" ট্যাব ব্যবহার করুন। পণ্য ডিলিট শুধু অ্যাডমিন করতে পারেন।',
-                  'Cost and retail price cannot be edited here — use the Price Proposals tab. Only the admin can delete a product.'
-                )}
-              </p>
-            </Card>
-          ))}
-        </div>
-      )}
+            </form>
+          </Card>
+        )}
+
+        {lots.length === 0 ? (
+          <EmptyState
+            icon={<Boxes className="h-6 w-6" aria-hidden="true" />}
+            title={t('এখনো কোনো স্টক রিসিভ রেকর্ড নেই', 'No receiving history yet')}
+            description={t(
+              'অ্যাডমিন প্যানেল থেকে চালান গ্রহণ রেকর্ড করা হলে এখানে তারিখ, দাম ও পরিমাণসহ দেখাবে।',
+              'Once Admin records incoming shipments, full batch details appear here.'
+            )}
+          />
+        ) : (
+          <Card surface="bg" padding="none">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[780px] text-left text-xs">
+                <thead className="bg-surface text-muted">
+                  <tr className="border-b border-border">
+                    <th className="p-2.5 font-semibold">{t('তারিখ (পাঠানো / রিসিভ)', 'Dates (Sent / Received)')}</th>
+                    <th className="p-2.5 font-semibold">{t('লট ও চালান রেফ', 'Lot & Challan')}</th>
+                    <th className="p-2.5 font-semibold">{t('পণ্য ও SKU', 'Product & SKU')}</th>
+                    <th className="p-2.5 text-right font-semibold">{t('পাঠানো / গৃহীত / বাতিল', 'Sent / Accepted / Rej.')}</th>
+                    <th className="p-2.5 text-right font-semibold">{t('ইউনিট ও মোট মূল্য', 'Unit & Batch Value')}</th>
+                    <th className="p-2.5 font-semibold">{t('অবস্থা ও নোট', 'Status & Notes')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lots.map((lot) => (
+                    <tr key={lot.lotId} className="border-t border-border">
+                      <td className="p-2.5 whitespace-nowrap text-[11px] tabular-nums">
+                        <p className="text-ink">{t('পাঠানো', 'Sent')}: {formatShortDate(lot.dispatchedAt, bn)}</p>
+                        <p className="text-muted">
+                          {t('রিসিভ', 'Recv')}: {lot.receivedAt ? formatShortDate(lot.receivedAt, bn) : t('অপেক্ষমাণ', 'Pending')}
+                        </p>
+                      </td>
+                      <td className="p-2.5 font-mono text-[11px]">
+                        <p className="font-bold text-ink">{lot.lotCode}</p>
+                        <p className="text-muted">{lot.challanRef}</p>
+                      </td>
+                      <td className="p-2.5">
+                        <p className="font-medium text-ink">{lot.productNameBn} · {lot.variantTitleBn}</p>
+                        <p className="font-mono text-[11px] text-muted">{lot.publicSku}</p>
+                      </td>
+                      <td className="p-2.5 text-right tabular-nums">
+                        <span className="font-semibold text-ink">{num(lot.dispatchedQty)}</span>
+                        {' / '}
+                        <span className="font-bold text-success">
+                          {lot.qcAcceptedQty === null ? '—' : num(lot.qcAcceptedQty)}
+                        </span>
+                        {' / '}
+                        <span className={cn(lot.qcRejectedQty && lot.qcRejectedQty > 0 ? 'font-bold text-danger' : 'text-muted')}>
+                          {lot.qcRejectedQty === null ? '—' : num(lot.qcRejectedQty)}
+                        </span>
+                      </td>
+                      <td className="p-2.5 text-right tabular-nums">
+                        <p className="font-semibold text-ink">{money(lot.totalValuePoisha)}</p>
+                        <p className="text-[11px] text-muted">@ {money(lot.unitSupplierCostPoisha)}</p>
+                      </td>
+                      <td className="p-2.5 space-y-1">
+                        <StatusBadge status={lot.status} t={t} />
+                        {lot.noteBn && <p className="text-[11px] text-muted">{lot.noteBn}</p>}
+                        {lot.qcProofUrl && (
+                          <a href={lot.qcProofUrl} target="_blank" rel="noreferrer" className="block text-[11px] underline text-ink">
+                            {t('রিসিভ প্রমাণ দেখুন', 'View receipt proof')}
+                          </a>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+      </section>
+
+      {/* 3. Admin-Approved Customer Reviews */}
+      <section className="space-y-3 border-t border-border pt-5">
+        <SectionHead
+          title={t('অ্যাডমিন-অনুমোদিত ক্রেতা রিভিউ ও রেটিং', 'Admin-Approved Customer Reviews & Ratings')}
+          desc={t(
+            'কেনাকাটার পর ক্রেতাদের দেওয়া যেসব রিভিউ অ্যাডমিন অনুমোদন করেছেন শুধু সেগুলোই এখানে প্রদর্শিত হচ্ছে।',
+            'Only customer ratings and reviews approved by Admin are displayed here.'
+          )}
+          right={
+            products.length > 0 && (
+              <select
+                aria-label={t('পণ্য অনুযায়ী রিভিউ ফিল্টার', 'Filter reviews by product')}
+                value={reviewProductFilter}
+                onChange={(e) => setReviewProductFilter(e.target.value)}
+                className="min-h-[44px] rounded-[var(--radius-md)] border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink"
+              >
+                <option value="all">{t(`সব পণ্য (${num(approvedReviews.length)})`, `All products (${num(approvedReviews.length)})`)}</option>
+                {products.map((p) => (
+                  <option key={p.productId} value={p.productId}>
+                    {bn ? p.nameBn : p.nameEn}
+                  </option>
+                ))}
+              </select>
+            )
+          }
+        />
+
+        {filteredReviews.length === 0 ? (
+          <EmptyState
+            icon={<Star className="h-6 w-6" aria-hidden="true" />}
+            title={t('কোনো অনুমোদিত রিভিউ নেই', 'No approved reviews yet')}
+            description={t(
+              'ক্রেতাদের রিভিউ অ্যাডমিন প্যানেল থেকে অনুমোদিত হলে এখানে দেখা যাবে।',
+              'Customer feedback appears here once moderated and approved by Admin.'
+            )}
+          />
+        ) : (
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            {filteredReviews.map((rev) => (
+              <Card key={rev.reviewId} surface="surface" padding="sm" className="space-y-1.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-ink">{bn ? rev.productNameBn : rev.productNameEn}</p>
+                    <p className="text-[11px] text-muted">
+                      {rev.reviewerLabel}
+                      {rev.isVerifiedPurchase ? ` · ${t('যাচাইকৃত ক্রেতা', 'Verified purchase')}` : ''}
+                      {' · '}
+                      {formatShortDate(rev.createdAt, bn)}
+                    </p>
+                  </div>
+                  <span className="shrink-0 font-mono text-xs font-bold text-warning tabular-nums">
+                    {'★'.repeat(Math.max(1, Math.min(5, Math.round(rev.rating))))} {num(rev.rating)}.0
+                  </span>
+                </div>
+                <p className="text-xs text-ink leading-relaxed">{rev.comment}</p>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -726,9 +981,6 @@ function ProductEditor({
             onChange={(e) => setImages(e.target.value)}
             placeholder="https://..."
           />
-          <span className="text-[10px] font-normal text-muted">
-            {t('লাইভ করার আগে কমপক্ষে একটি ছবি দরকার।', 'At least one image is required before publishing.')}
-          </span>
         </label>
 
         <div className="flex flex-wrap items-center gap-3 text-xs">
@@ -778,52 +1030,13 @@ function ProductEditor({
           </div>
           {variants.map((variant, index) => (
             <div key={index} className="grid gap-2 rounded-[var(--radius-md)] border border-border p-2 sm:grid-cols-6">
-              <input
-                className={inputClass}
-                placeholder="SKU"
-                value={variant.publicSku}
-                onChange={(e) => updateVariant(index, { publicSku: e.target.value })}
-                required
-              />
-              <input
-                className={inputClass}
-                placeholder={t('নাম (বাংলা)', 'Title (Bangla)')}
-                value={variant.titleBn}
-                onChange={(e) => updateVariant(index, { titleBn: e.target.value })}
-                required
-              />
-              <input
-                className={inputClass}
-                placeholder={t('নাম (ইংরেজি)', 'Title (English)')}
-                value={variant.titleEn}
-                onChange={(e) => updateVariant(index, { titleEn: e.target.value })}
-              />
-              <input
-                className={inputClass}
-                placeholder={t('ক্রয়মূল্য ৳', 'Cost ৳')}
-                inputMode="decimal"
-                value={variant.supplierCostPoisha}
-                onChange={(e) => updateVariant(index, { supplierCostPoisha: e.target.value })}
-                required
-                disabled={Boolean(product)}
-              />
-              <input
-                className={inputClass}
-                placeholder={t('বিক্রয়মূল্য ৳', 'Retail ৳')}
-                inputMode="decimal"
-                value={variant.salePricePoisha}
-                onChange={(e) => updateVariant(index, { salePricePoisha: e.target.value })}
-                required
-                disabled={Boolean(product)}
-              />
+              <input className={inputClass} placeholder="SKU" value={variant.publicSku} onChange={(e) => updateVariant(index, { publicSku: e.target.value })} required />
+              <input className={inputClass} placeholder={t('নাম (বাংলা)', 'Title (Bangla)')} value={variant.titleBn} onChange={(e) => updateVariant(index, { titleBn: e.target.value })} required />
+              <input className={inputClass} placeholder={t('নাম (ইংরেজি)', 'Title (English)')} value={variant.titleEn} onChange={(e) => updateVariant(index, { titleEn: e.target.value })} />
+              <input className={inputClass} placeholder={t('ক্রয়মূল্য ৳', 'Cost ৳')} inputMode="decimal" value={variant.supplierCostPoisha} onChange={(e) => updateVariant(index, { supplierCostPoisha: e.target.value })} required disabled={Boolean(product)} />
+              <input className={inputClass} placeholder={t('বিক্রয়মূল্য ৳', 'Retail ৳')} inputMode="decimal" value={variant.salePricePoisha} onChange={(e) => updateVariant(index, { salePricePoisha: e.target.value })} required disabled={Boolean(product)} />
               <div className="flex items-center gap-1">
-                <input
-                  className={inputClass}
-                  placeholder={t('গ্রাম', 'grams')}
-                  inputMode="numeric"
-                  value={variant.weightGrams}
-                  onChange={(e) => updateVariant(index, { weightGrams: e.target.value.replace(/\D/g, '') })}
-                />
+                <input className={inputClass} placeholder={t('গ্রাম', 'grams')} inputMode="numeric" value={variant.weightGrams} onChange={(e) => updateVariant(index, { weightGrams: e.target.value.replace(/\D/g, '') })} />
                 {variants.length > 1 && (
                   <button
                     type="button"
@@ -837,21 +1050,9 @@ function ProductEditor({
               </div>
             </div>
           ))}
-          {product && (
-            <p className="text-[10px] text-muted">
-              {t(
-                'মূল্য পরিবর্তন করতে "মূল্য প্রস্তাব" ট্যাব ব্যবহার করুন।',
-                'To change prices, use the Price Proposals tab.'
-              )}
-            </p>
-          )}
         </div>
 
-        {formError && (
-          <p role="alert" className="text-xs font-medium text-danger">
-            {formError}
-          </p>
-        )}
+        {formError && <p role="alert" className="text-xs font-medium text-danger">{formError}</p>}
 
         <div className="flex flex-wrap gap-2">
           <Button type="submit" variant="primary" isLoading={busy} disabled={!canEdit}>
@@ -867,243 +1068,197 @@ function ProductEditor({
 }
 
 // ===========================================================================
-// 3. STOCK / CONSIGNMENT LOTS
+// 3. ORDERS & RETURNS (MERGED)
 // ===========================================================================
 
-export function StockTab({ workspace, send, busy, t, num, money }: MutatingTabProps) {
-  const { products, lots, capabilities } = workspace;
-  const variantOptions = useMemo(
-    () =>
-      products.flatMap((product) =>
-        product.variants.map((variant) => ({
-          value: variant.variantId,
-          label: `${product.nameBn} — ${variant.titleBn} (${variant.publicSku})`,
-        }))
-      ),
-    [products]
-  );
-  const [variantId, setVariantId] = useState(variantOptions[0]?.value ?? '');
-  const [qty, setQty] = useState('1');
-  const [challanRef, setChallanRef] = useState('');
-  const [noteBn, setNoteBn] = useState('');
+const FAULT_LABELS: Record<string, [string, string]> = {
+  WAREHOUSE_PACKAGING_FAULT: ['প্যাকেজিং সংক্রান্ত', 'Packaging issue'],
+  SUPPLIER_DEFECT: ['সরবরাহকারী ত্রুটি', 'Supplier defect'],
+  COURIER_NEGLIGENCE: ['কুরিয়ার সংক্রান্ত', 'Courier issue'],
+  CUSTOMER_INTACT_RETURN: ['গ্রাহকের সিদ্ধান্ত', 'Customer decision'],
+};
 
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    const parsedQty = Number(qty);
-    if (!variantId || !Number.isInteger(parsedQty) || parsedQty < 1 || !challanRef.trim()) return;
-    const ok = await send(
-      '/api/vendor/stock',
-      { action: 'dispatch_lot', variantId, dispatchedQty: parsedQty, challanRef, noteBn },
-      {
-        bn: 'চালান জমা হয়েছে। ওয়্যারহাউস কিউসি অনুমোদনের পর স্টক যোগ হবে।',
-        en: 'Challan submitted. Stock is added after warehouse QC approval.',
-      }
-    );
-    if (ok) {
-      setChallanRef('');
-      setNoteBn('');
-      setQty('1');
+export function OrdersTab({ workspace, t, num, money, bn }: TabProps & { bn: boolean }) {
+  const { orders, returns, counters } = workspace;
+  const [filter, setFilter] = useState<'all' | 'open' | 'delivered' | 'returns'>('all');
+
+  const returnByOrderNo = useMemo(() => {
+    const map = new Map<string, typeof returns>();
+    for (const r of returns) {
+      const existing = map.get(r.orderNo) ?? [];
+      existing.push(r);
+      map.set(r.orderNo, existing);
     }
-  }
+    return map;
+  }, [returns]);
+
+  const visibleOrders = useMemo(() => {
+    if (filter === 'all') return orders;
+    if (filter === 'open') {
+      return orders.filter((o) =>
+        ['pending_confirmation', 'confirmed', 'packed', 'shipped', 'out_for_delivery'].includes(o.status)
+      );
+    }
+    if (filter === 'delivered') {
+      return orders.filter((o) => o.status === 'delivered');
+    }
+    return [];
+  }, [orders, filter]);
+
+  const openCount = counters.openOrders;
+  const deliveredCount = orders.filter((o) => o.status === 'delivered').length;
+  const returnsCount = returns.length;
 
   return (
     <div className="space-y-4">
       <SectionHead
-        title={t('কনসাইনমেন্ট চালান', 'Consignment challans')}
+        title={t('অর্ডার ও রিটার্ন ইতিহাস', 'Orders & Returns')}
         desc={t(
-          'গুদামে পণ্য পাঠানোর তথ্য দিন। কিউসি পাস হলে স্টক স্বয়ংক্রিয়ভাবে যোগ হবে।',
-          'Declare stock you are dispatching to the warehouse. Approved QC quantities become sellable stock.'
-        )}
-      />
-
-      {!capabilities.canSubmitConsignmentLot ? (
-        <LockedNotice label={t('কনসাইনমেন্ট চালান জমা', 'submit consignment challans')} t={t} />
-      ) : (
-        <Card surface="surface" padding="sm" className="space-y-2">
-          <form onSubmit={submit} className="grid gap-2 sm:grid-cols-4">
-            <label className="space-y-1 text-xs font-medium sm:col-span-2">
-              <span>{t('ভ্যারিয়েন্ট', 'Variant')}</span>
-              <select className={inputClass} value={variantId} onChange={(e) => setVariantId(e.target.value)} required>
-                {variantOptions.length === 0 && <option value="">{t('আগে পণ্য যোগ করুন', 'Add a product first')}</option>}
-                {variantOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-1 text-xs font-medium">
-              <span>{t('পরিমাণ (পিস)', 'Quantity')}</span>
-              <input
-                className={inputClass}
-                inputMode="numeric"
-                value={qty}
-                onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))}
-                required
-              />
-            </label>
-            <label className="space-y-1 text-xs font-medium">
-              <span>{t('চালান নম্বর', 'Challan ref')}</span>
-              <input className={inputClass} value={challanRef} onChange={(e) => setChallanRef(e.target.value)} required />
-            </label>
-            <label className="space-y-1 text-xs font-medium sm:col-span-4">
-              <span>{t('নোট (ঐচ্ছিক)', 'Note (optional)')}</span>
-              <textarea className={textareaClass} value={noteBn} onChange={(e) => setNoteBn(e.target.value)} />
-            </label>
-            <div className="sm:col-span-4">
-              <Button
-                type="submit"
-                variant="primary"
-                isLoading={busy}
-                disabled={variantOptions.length === 0}
-                leftIcon={<Truck className="h-4 w-4" aria-hidden="true" />}
-              >
-                {t('চালান জমা দিন', 'Submit challan')}
-              </Button>
-            </div>
-          </form>
-        </Card>
-      )}
-
-      {lots.length === 0 ? (
-        <EmptyState
-          icon={<Boxes className="h-6 w-6" aria-hidden="true" />}
-          title={t('কোনো চালান নেই', 'No challans yet')}
-          description={t('প্রথম চালান জমা দিলে এখানে কিউসি অবস্থা দেখা যাবে।', 'Submitted challans and their QC result appear here.')}
-        />
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-xs">
-            <thead className="text-muted">
-              <tr className="border-b border-border">
-                <th className="py-1.5 pr-2 font-semibold">{t('লট', 'Lot')}</th>
-                <th className="py-1.5 pr-2 font-semibold">{t('পণ্য', 'Product')}</th>
-                <th className="py-1.5 pr-2 text-right font-semibold">{t('পাঠানো', 'Sent')}</th>
-                <th className="py-1.5 pr-2 text-right font-semibold">{t('গৃহীত', 'Accepted')}</th>
-                <th className="py-1.5 pr-2 text-right font-semibold">{t('রিজেক্ট', 'Rejected')}</th>
-                <th className="py-1.5 pr-2 font-semibold">{t('ইউনিট ক্রয়মূল্য', 'Unit cost')}</th>
-                <th className="py-1.5 font-semibold">{t('অবস্থা', 'Status')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lots.map((lot) => (
-                <tr key={lot.lotId} className="border-b border-border last:border-0">
-                  <td className="py-1.5 pr-2 font-mono">{lot.lotCode}</td>
-                  <td className="py-1.5 pr-2">
-                    <p className="truncate font-medium">{lot.productNameBn}</p>
-                    <p className="text-[10px] text-muted">{lot.publicSku} · {lot.challanRef}</p>
-                  </td>
-                  <td className="py-1.5 pr-2 text-right tabular-nums">{num(lot.dispatchedQty)}</td>
-                  <td className="py-1.5 pr-2 text-right tabular-nums">{lot.qcAcceptedQty === null ? '—' : num(lot.qcAcceptedQty)}</td>
-                  <td className="py-1.5 pr-2 text-right tabular-nums">{lot.qcRejectedQty === null ? '—' : num(lot.qcRejectedQty)}</td>
-                  <td className="py-1.5 pr-2 tabular-nums">{money(lot.unitSupplierCostPoisha)}</td>
-                  <td className="py-1.5"><StatusBadge status={lot.status} t={t} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ===========================================================================
-// 4. ORDERS
-// ===========================================================================
-
-export function OrdersTab({ workspace, t, num, money }: TabProps) {
-  const { orders, counters } = workspace;
-  const [filter, setFilter] = useState<'all' | 'open' | 'done'>('all');
-
-  const visible = orders.filter((order) => {
-    if (filter === 'all') return true;
-    const open = ['pending_confirmation', 'confirmed', 'packed', 'shipped', 'out_for_delivery'].includes(order.status);
-    return filter === 'open' ? open : !open;
-  });
-
-  return (
-    <div className="space-y-4">
-      <SectionHead
-        title={t('আপনার অর্ডার', 'Your orders')}
-        desc={t(
-          `মোট ${counters.openOrders}টি চলতি অর্ডার। গ্রাহকের ফোন ও ঠিকানা প্ল্যাটফর্ম সুরক্ষিত রাখে।`,
-          `${counters.openOrders} open orders. Customer phone and address stay protected by the platform.`
+          'প্রতিটি অর্ডারের তারিখ, কুরিয়ার ডেলিভারি অবস্থা, প্রোডাক্ট ও আপনার প্রদেয় অর্থ। ক্রেতার ফোন ও বাসার ঠিকানা সুরক্ষিত থাকে।',
+          'Order timestamps, courier progress, items, vendor payable, and return adjustments. Customer phone and street address remain protected.'
         )}
         right={
-          <div className="flex gap-1">
-            {(['all', 'open', 'done'] as const).map((key) => (
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                ['all', t('সব', 'All'), orders.length],
+                ['open', t('চলতি', 'Open'), openCount],
+                ['delivered', t('ডেলিভারড', 'Delivered'), deliveredCount],
+                ['returns', t('রিটার্ন', 'Returns'), returnsCount],
+              ] as const
+            ).map(([key, label, count]) => (
               <Button
                 key={key}
                 size="sm"
                 variant={filter === key ? 'primary' : 'outline'}
                 onClick={() => setFilter(key)}
+                className="min-h-[40px] whitespace-nowrap"
               >
-                {key === 'all' ? t('সব', 'All') : key === 'open' ? t('চলতি', 'Open') : t('সম্পন্ন', 'Completed')}
+                {label} ({num(count)})
               </Button>
             ))}
           </div>
         }
       />
 
-      {visible.length === 0 ? (
+      {filter === 'returns' ? (
+        returns.length === 0 ? (
+          <EmptyState
+            icon={<ArrowRightLeft className="h-6 w-6" aria-hidden="true" />}
+            title={t('কোনো নিষ্পত্তিকৃত রিটার্ন নেই', 'No resolved returns')}
+            description={t('আপনার পণ্যের কোনো রিটার্ন নিষ্পত্তি হলে এখানে দেখাবে।', 'Resolved returns for your items appear here.')}
+          />
+        ) : (
+          <div className="space-y-2.5">
+            {returns.map((item) => (
+              <Card key={item.returnId} surface="surface" padding="sm" className="space-y-1.5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-ink">{item.orderNo}</span>
+                    <Badge status={item.vendorDebitPoisha > 0 ? 'danger' : 'info'}>
+                      {FAULT_LABELS[item.faultType] ? t(...FAULT_LABELS[item.faultType]) : item.faultType}
+                    </Badge>
+                  </div>
+                  <span className="text-[11px] text-muted tabular-nums">{formatShortDate(item.createdAt, bn)}</span>
+                </div>
+                <p className="text-muted tabular-nums">
+                  {t('ফেরত পরিমাণ', 'Returned qty')}: <strong className="text-ink">{num(item.quantity)}</strong>
+                  {' · '}
+                  {t('পুনরায় স্টকে', 'Restocked')}: <strong className="text-ink">{num(item.restockQuantity)}</strong>
+                  {' · '}
+                  {t('ভেন্ডর ডেবিট/সমন্বয়', 'Vendor debit adjustment')}:{' '}
+                  <strong className={item.vendorDebitPoisha > 0 ? 'text-danger' : 'text-ink'}>
+                    {money(item.vendorDebitPoisha)}
+                  </strong>
+                </p>
+              </Card>
+            ))}
+          </div>
+        )
+      ) : visibleOrders.length === 0 ? (
         <EmptyState
           icon={<ClipboardList className="h-6 w-6" aria-hidden="true" />}
-          title={t('কোনো অর্ডার নেই', 'No orders')}
-          description={t('আপনার পণ্য বিক্রি হলে অর্ডার এখানে দেখা যাবে।', 'Orders appear here when your products sell.')}
+          title={t('কোনো অর্ডার নেই', 'No orders found')}
+          description={t('আপনার পণ্য বিক্রি হলে অর্ডার এখানে দেখা যাবে।', 'Orders containing your products appear here.')}
         />
       ) : (
-        <div className="space-y-2">
-          {visible.map((order) => (
-            <Card key={order.orderNo} surface="surface" padding="sm" className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-xs font-bold">{order.orderNo}</span>
-                <StatusBadge status={order.status} t={t} />
-                <span className="text-[11px] text-muted">
-                  {order.districtNameBn} · {order.upazilaNameBn} · {new Date(order.createdAt).toLocaleDateString()}
-                </span>
-                <span className="ml-auto text-xs font-bold tabular-nums">{money(order.supplierPayablePoisha)}</span>
-              </div>
-              <ul className="space-y-0.5 text-[11px]">
-                {order.lines.map((line, index) => (
-                  <li key={index} className="flex justify-between gap-2">
-                    <span className="min-w-0 truncate">
-                      {line.productNameBn} · {line.variantTitleBn}
+        <div className="space-y-2.5">
+          {visibleOrders.map((order) => {
+            const linkedReturns = returnByOrderNo.get(order.orderNo) ?? [];
+            return (
+              <Card key={order.orderNo} surface="surface" padding="sm" className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-xs font-bold text-ink">{order.orderNo}</span>
+                  <StatusBadge status={order.status} t={t} />
+                  <span className="text-[11px] text-muted">
+                    {t('পেমেন্ট', 'Payment')}: {order.paymentStatus}
+                  </span>
+                  {order.courierProvider && (
+                    <span className="text-[11px] font-medium text-ink">
+                      · {order.courierProvider.toUpperCase()}
                     </span>
-                    <span className="shrink-0 tabular-nums">
-                      ×{num(line.quantity)} = {money(line.supplierPayablePoisha)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ))}
+                  )}
+                  <span className="text-[11px] text-muted tabular-nums">
+                    · {order.districtNameBn} · {order.upazilaNameBn} · {formatShortDate(order.createdAt, bn)}
+                  </span>
+                  <span className="ml-auto text-xs font-bold tabular-nums text-ink">
+                    {money(order.supplierPayablePoisha)}
+                  </span>
+                </div>
+
+                {(order.trackingCode || order.consignmentId || order.dispatchedAt || order.deliveredAt) && (
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 rounded-[var(--radius-sm)] border border-border bg-bg px-2.5 py-1.5 font-mono text-[11px] text-muted">
+                    {order.trackingCode && <span>{t('ট্র্যাকিং', 'Tracking')}: {order.trackingCode}</span>}
+                    {order.consignmentId && <span>{t('কনসাইনমেন্ট', 'Consignment')}: {order.consignmentId}</span>}
+                    {order.dispatchedAt && (
+                      <span>{t('পাঠানো', 'Dispatched')}: {formatShortDate(order.dispatchedAt, bn)}</span>
+                    )}
+                    {order.deliveredAt && (
+                      <span className="text-success">
+                        {t('ডেলিভারি', 'Delivered')}: {formatShortDate(order.deliveredAt, bn)}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <ul className="space-y-1 border-t border-border pt-2 text-[11px]">
+                  {order.lines.map((line, index) => (
+                    <li key={index} className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-ink">
+                        {bn ? line.productNameBn : line.productNameEn} · {bn ? line.variantTitleBn : line.variantTitleEn}{' '}
+                        <span className="font-mono text-muted">({line.publicSku})</span>
+                      </span>
+                      <span className="shrink-0 font-medium tabular-nums text-ink">
+                        ×{num(line.quantity)} = {money(line.supplierPayablePoisha)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {linkedReturns.length > 0 && (
+                  <div className="rounded-[var(--radius-sm)] border border-danger/40 bg-bg px-2.5 py-2 text-[11px] space-y-1">
+                    {linkedReturns.map((ret) => (
+                      <p key={ret.returnId} className="text-ink tabular-nums">
+                        <strong className="text-danger">{t('রিটার্ন নিষ্পত্তি', 'Return resolved')}:</strong>{' '}
+                        {FAULT_LABELS[ret.faultType] ? t(...FAULT_LABELS[ret.faultType]) : ret.faultType} ·{' '}
+                        {t('ফেরত', 'Returned')}: {num(ret.quantity)} ·{' '}
+                        {t('স্টকে ফেরত', 'Restocked')}: {num(ret.restockQuantity)} ·{' '}
+                        {t('সমন্বয়', 'Debit')}: {money(ret.vendorDebitPoisha)}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-export function ReturnsTab({ workspace, t, num, money }: TabProps) {
-  const faultLabels: Record<string, [string, string]> = {
-    WAREHOUSE_PACKAGING_FAULT: ['প্যাকেজিং সংক্রান্ত', 'Packaging issue'],
-    SUPPLIER_DEFECT: ['সরবরাহকারী ত্রুটি', 'Supplier defect'],
-    COURIER_NEGLIGENCE: ['কুরিয়ার সংক্রান্ত', 'Courier issue'],
-    CUSTOMER_INTACT_RETURN: ['গ্রাহকের সিদ্ধান্ত', 'Customer decision'],
-  };
-  return <div className="space-y-4">
-    <SectionHead title={t('রিটার্ন নিষ্পত্তি', 'Return resolutions')} desc={t('শুধু আপনার পণ্যের নিষ্পত্তিকৃত রিটার্ন এখানে দেখা যায়। নতুন দাবি বা বিরোধ অনলাইনে জমা এখনো চালু নয়।', 'Only resolved returns for your products are shown. Online claims or disputes are not yet available.')} />
-    {workspace.returns.length === 0 ? <EmptyState icon={<ArrowRightLeft className="h-6 w-6" />} title={t('কোনো নিষ্পত্তিকৃত রিটার্ন নেই', 'No resolved returns')} description={t('রিটার্ন নিষ্পত্তি হলে এখানে দেখা যাবে।', 'Resolved returns will appear here.')} /> : workspace.returns.map(item => <Card key={item.returnId} surface="surface" padding="sm" className="space-y-1 text-xs">
-      <p className="font-bold">{t('অর্ডার', 'Order')}: {item.orderNo} · {new Date(item.createdAt).toLocaleDateString()}</p>
-      <p>{t('ধরন', 'Type')}: {faultLabels[item.faultType] ? t(...faultLabels[item.faultType]) : t('অন্যান্য', 'Other')}</p>
-      <p>{t('পরিমাণ', 'Quantity')}: {num(item.quantity)} · {t('পুনরায় স্টকে', 'Restocked')}: {num(item.restockQuantity)}</p>
-      <p>{t('আপনার সমন্বয়', 'Your adjustment')}: {money(item.vendorDebitPoisha)}</p>
-    </Card>)}
-  </div>;
-}
-
 // ===========================================================================
-// 5. EARNINGS & ESCROW
+// 4. EARNINGS, 7-DAY ESCROW & PAYOUT HISTORY
 // ===========================================================================
 
 type LedgerStatement = {
@@ -1112,8 +1267,16 @@ type LedgerStatement = {
   payouts: Array<{ payoutId: string; amountPoisha: number; method: string; accountMasked: string; transactionId: string | null; requestedAt: string; recordedPaidAt: string }>;
 };
 
-export function EarningsTab({ workspace, t, num, money }: TabProps) {
-  const { escrow, ledger, scorecard, profile } = workspace;
+export function EarningsTab({
+  workspace,
+  onOpenPayout,
+  t,
+  num,
+  money,
+}: TabProps & { onOpenPayout: () => void }) {
+  const { escrow, ledger, payouts, profile, rules, capabilities } = workspace;
+  const holdDays = profile.escrowHoldDaysOverride ?? rules.globalEscrowHoldDays;
+
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [exportError, setExportError] = useState(false);
@@ -1121,6 +1284,7 @@ export function EarningsTab({ workspace, t, num, money }: TabProps) {
   const [statement, setStatement] = useState<LedgerStatement | null>(null);
   const [statementError, setStatementError] = useState(false);
   const [statementLoading, setStatementLoading] = useState(false);
+
   async function loadStatement() {
     setStatementError(false); setStatement(null); setStatementLoading(true);
     try {
@@ -1144,47 +1308,41 @@ export function EarningsTab({ workspace, t, num, money }: TabProps) {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch { setExportError(true); } finally { setExporting(false); }
   }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <SectionHead
-        title={t('আয় ও এসক্রো লেজার', 'Earnings & escrow ledger')}
+        title={t('আয়, ৭ দিনের এসক্রো ও পেআউট ইতিহাস', 'Earnings, Escrow & Payout History')}
         desc={t(
-          'ডেলিভারির পর হোল্ড পিরিয়ড শেষ হলে টাকা Pending → Locked → Available বাকেটে যায়।',
-          'After delivery, funds move Pending → Locked → Available once the hold period ends.'
+          `ডেলিভারির পর ${num(holdDays)} দিন লকড বাকেটে থেকে টাকা Available বাকেটে আসে এবং তখন পেআউট করা যায়।`,
+          `Funds wait ${num(holdDays)} days in Locked escrow after delivery before entering Withdrawable Available balance.`
         )}
+        right={
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<Wallet className="h-4 w-4" aria-hidden="true" />}
+            disabled={!capabilities.canRequestPayout}
+            onClick={onOpenPayout}
+            className="min-h-[44px]"
+          >
+            {t('পেআউট অনুরোধ করুন', 'Request Payout')}
+          </Button>
+        }
       />
 
-      <Card surface="surface" padding="sm" className="space-y-3">
-        <h3 className="font-bold">{t('লেজার স্টেটমেন্ট ডাউনলোড', 'Download ledger statement')}</h3>
-        <p className="text-xs text-muted">{t('তারিখ UTC অনুযায়ী। CSV-তে অর্থ পয়সায়; বাকেটের স্থানান্তরসহ পৃথক এন্ট্রি থাকে, এগুলোর যোগফল আয় নয়।', 'Dates use UTC. Amounts are in poisha; entries include bucket transfers, so their sum is not earnings.')}</p>
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="text-xs">{t('শুরুর তারিখ', 'From')}<input className={inputClass} type="date" disabled={statementLoading || exporting} value={from} onChange={e => { setFrom(e.target.value); setStatement(null); setStatementError(false); }} /></label>
-          <label className="text-xs">{t('শেষ তারিখ', 'To')}<input className={inputClass} type="date" disabled={statementLoading || exporting} value={to} onChange={e => { setTo(e.target.value); setStatement(null); setStatementError(false); }} /></label>
-          <Button type="button" variant="secondary" disabled={!from || !to || from > to || statementLoading} onClick={loadStatement}>{statementLoading ? t('লোড হচ্ছে…', 'Loading…') : t('স্টেটমেন্ট দেখুন', 'View statement')}</Button>
-          <Button type="button" variant="outline" disabled={!from || !to || from > to || exporting} onClick={exportStatement}>{exporting ? t('ডাউনলোড হচ্ছে…', 'Downloading…') : t('CSV ডাউনলোড', 'Download CSV')}</Button>
-        </div>
-        {statementError && <p role="alert" className="text-xs text-danger">{t('স্টেটমেন্ট তৈরি হয়নি। তথ্যের অসংগতি, সেশন বা এন্ট্রির সীমা পরীক্ষা করতে সহায়তায় যোগাযোগ করুন।', 'Statement unavailable. Contact support about the session, entry limit or inconsistent records.')}</p>}
-        {statement && <div className="space-y-3">
-          <h4 className="font-bold">{t('লেজার বাকেট স্টেটমেন্ট', 'Ledger bucket statement')} · {statement.from} — {statement.to} (UTC)</h4>
-          <p className="text-xs text-muted">{t('সংরক্ষিত লেজার থেকে হিসাব; ব্যাংক বা পেমেন্ট সেবার সাথে মিলিয়ে দেখা নয়। শুরুর পূর্ববর্তী সব এন্ট্রির যোগফল শুরুর ব্যালেন্স। ঋণাত্মক ব্যালেন্স লুকানো হয় না।', 'Calculated from recorded ledger entries, not reconciled with a bank or payment provider. Opening is the sum of all earlier entries. Negative balances are not hidden.')}</p>
-          <div className="overflow-x-auto"><table className="w-full min-w-[550px] text-left text-xs"><thead><tr><th className="p-2">{t('বাকেট', 'Bucket')}</th><th className="p-2">{t('শুরু', 'Opening')}</th><th className="p-2">{t('যোগ', 'Credits')}</th><th className="p-2">{t('বিয়োগ', 'Debits')}</th><th className="p-2">{t('শেষ', 'Closing')}</th></tr></thead><tbody>{statement.buckets.map(row => <tr key={row.bucket} className="border-t border-border"><th className="p-2">{row.bucket === 'pending' ? t('অপেক্ষমাণ', 'Pending') : row.bucket === 'locked' ? t('লকড', 'Locked') : t('উপলব্ধ', 'Available')}</th><td className="p-2">{money(row.openingPoisha)}</td><td className="p-2">{money(row.creditsPoisha)}</td><td className="p-2">{money(row.debitsPoisha)}</td><td className="p-2">{money(row.closingPoisha)}</td></tr>)}</tbody></table></div>
-          <p className="text-xs">{t('এন্ট্রি', 'Entries')}: {num(statement.ledgerEntryCount)} · {t('তৈরির সময়', 'Generated')}: {new Date(statement.generatedAt).toLocaleString()}</p>
-          <h4 className="font-bold">{t('এই সময়ে অ্যাডমিন কর্তৃক পরিশোধিত হিসেবে নথিভুক্ত পেআউট', 'Payouts recorded as paid by admin during this period')}</h4>
-          <p className="text-xs text-muted">{t('নিচের তথ্য প্রশাসনিক রেকর্ড; এটি টাকা স্থানান্তরের স্বাধীন প্রমাণ নয়। অঙ্ক অনুরোধকৃত পরিমাণ, প্রাপ্ত নিট অর্থ বা ফি নয়।', 'These are administrative records, not independent proof of transfer. Amounts are requested, not net received or fees.')}</p>
-          {statement.payouts.length === 0 ? <p className="text-xs">{t('এই সময়ে কোনো পরিশোধ রেকর্ড নেই।', 'No paid records in this period.')}</p> : <ul className="space-y-2">{statement.payouts.map(payout => <li key={payout.payoutId} className="rounded border border-border p-2 text-xs break-words"><p><strong>{payout.payoutId}</strong> · {money(payout.amountPoisha)}</p><p>{payout.method} · {payout.accountMasked}</p><p>{t('নথিভুক্ত পরিশোধ', 'Recorded paid')}: {new Date(payout.recordedPaidAt).toLocaleString()} · {t('লেনদেন রেফারেন্স', 'Transaction reference')}: {payout.transactionId || '—'}</p></li>)}</ul>}
-        </div>}
-        {exportError && <p role="alert" className="text-xs text-danger">{t('ডাউনলোড করা যায়নি। সেশন পরীক্ষা করুন অথবা ছোট তারিখসীমা বেছে নিন (সর্বোচ্চ ৫,০০০ এন্ট্রি)।', 'Download failed. Check your session or choose a shorter range (maximum 5,000 entries).')}</p>}
-        <p className="text-xs text-muted">{t('নিচের তালিকায় সর্বোচ্চ ২০০টি এন্ট্রি; CSV নির্বাচিত সময়ের সব এন্ট্রি দেখায়।', 'The list below shows up to 200 entries; CSV includes all entries in the selected period.')}</p>
-      </Card>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Kpi label={t('Pending', 'Pending')} value={money(escrow.pendingPoisha)} hint={t('ডেলিভারির অপেক্ষায়', 'Awaiting delivery')} />
-        <Kpi label={t('Locked (হোল্ড)', 'Locked (hold)')} value={money(escrow.lockedPoisha)} hint={`${profile.escrowHoldDaysOverride ?? workspace.rules.globalEscrowHoldDays} ${t('দিনের হোল্ড', 'day hold')}`} tone="warning" />
-        <Kpi label={t('Available', 'Available')} value={money(escrow.availablePoisha)} hint={t('উত্তোলনযোগ্য ব্যালেন্স', 'Withdrawable balance')} tone="positive" />
-        <Kpi label={t('পেআউট হোল্ডে', 'Payout on hold')} value={money(escrow.payoutHoldPoisha)} hint={t('অনুরোধ প্রক্রিয়াধীন', 'Request in progress')} />
+      {/* Escrow & Lifetime Summary */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+        <Kpi label={t('মোট আয়', 'Total Earned')} value={money(escrow.totalEarnedPoisha ?? 0)} />
+        <Kpi label={t('মোট পরিশোধিত', 'Total Paid')} value={money(escrow.totalPaidPoisha ?? 0)} tone="positive" />
+        <Kpi label={t('মোট পাওনা বাকি', 'Total Owed')} value={money(escrow.totalOwedPoisha ?? 0)} tone="positive" />
+        <Kpi label={t('পেন্ডিং (অপেক্ষমাণ)', 'Pending')} value={money(escrow.pendingPoisha)} hint={t('ডেলিভারি বাকি', 'Before delivery')} />
+        <Kpi label={t(`লকড (${num(holdDays)} দিন)`, `Locked (${num(holdDays)}d)`)} value={money(escrow.lockedPoisha)} hint={t('হোল্ড পিরিয়ড', 'Maturity lock')} tone="warning" />
+        <Kpi label={t('উত্তোলনযোগ্য', 'Withdrawable')} value={money(escrow.withdrawablePoisha)} hint={t(`হোল্ড: ${money(escrow.payoutHoldPoisha)}`, `In request: ${money(escrow.payoutHoldPoisha)}`)} tone="positive" />
       </div>
 
       {escrow.clawbackDebtPoisha > 0 && (
-        <div role="status" className="flex items-start gap-2 rounded-[var(--radius-md)] border border-danger bg-bg p-3 text-xs">
+        <div role="status" className="flex items-start gap-2 rounded-[var(--radius-md)] border border-danger bg-surface p-3 text-xs">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-hidden="true" />
           <p>
             {t(
@@ -1195,299 +1353,182 @@ export function EarningsTab({ workspace, t, num, money }: TabProps) {
         </div>
       )}
 
-      {scorecard && (
-        <Card surface="surface" padding="sm" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Kpi label={t('মোট বিক্রয় (গ্রস)', 'Gross sales')} value={money(scorecard.grossSalesPoisha)} />
-          <Kpi label={t('নিট প্রদেয়', 'Net payable')} value={money(scorecard.netVendorPayablePoisha)} tone="positive" />
-          <Kpi label={t('রিটার্ন হার', 'Return rate')} value={`${(scorecard.returnRateBp / 100).toFixed(2)}%`} tone={scorecard.returnRateBp > 500 ? 'danger' : 'neutral'} />
-          <Kpi label={t('SLA গ্রেড', 'SLA grade')} value={scorecard.slaGrade} />
-        </Card>
-      )}
-
-      <Card surface="bg" padding="none">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-xs">
-            <thead className="bg-surface text-muted">
-              <tr>
-                <th className="p-2 font-semibold">{t('তারিখ', 'Date')}</th>
-                <th className="p-2 font-semibold">{t('ধরন', 'Type')}</th>
-                <th className="p-2 font-semibold">{t('বাকেট', 'Bucket')}</th>
-                <th className="p-2 font-semibold">{t('অর্ডার', 'Order')}</th>
-                <th className="p-2 font-semibold">{t('বিবরণ', 'Description')}</th>
-                <th className="p-2 text-right font-semibold">{t('পরিমাণ', 'Amount')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ledger.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="p-6 text-center text-muted">
-                    {t('এখনো কোনো লেজার এন্ট্রি নেই।', 'No ledger entries yet.')}
-                  </td>
-                </tr>
-              )}
-              {ledger.map((entry) => (
-                <tr key={entry.id} className="border-t border-border">
-                  <td className="p-2 whitespace-nowrap">{new Date(entry.createdAt).toLocaleDateString()}</td>
-                  <td className="p-2 font-mono text-[10px]">{entry.entryType}</td>
-                  <td className="p-2">{entry.escrowBucket}</td>
-                  <td className="p-2 font-mono">{entry.orderNo ?? '—'}</td>
-                  <td className="p-2">{entry.descriptionBn}</td>
-                  <td className={cn('p-2 text-right tabular-nums', entry.amountPoisha < 0 ? 'text-danger' : 'text-ink')}>
-                    {money(entry.amountPoisha)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Payout Requests & Proof History */}
+      <section className="space-y-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-bold text-ink">{t('পেআউট অনুরোধ ও পরিশোধ প্রমাণ', 'Payout Requests & Payment Proofs')}</h3>
+          <span className="text-xs text-muted tabular-nums">
+            {num(payouts.length)} {t('টি রেকর্ড', 'records')}
+          </span>
         </div>
+
+        {payouts.length === 0 ? (
+          <Card surface="surface" padding="sm">
+            <p className="text-xs text-muted">
+              {t('এখনো কোনো পেআউট অনুরোধ বা পরিশোধ রেকর্ড নেই। Available ব্যালেন্স জমা হলে পেআউট অনুরোধ করুন।', 'No payout requests or disbursements yet.')}
+            </p>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {payouts.map((payout) => (
+              <Card key={payout.payoutId} surface="surface" padding="sm" className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-mono text-[11px] font-bold text-ink">{payout.payoutId}</span>
+                  <StatusBadge status={payout.status} t={t} />
+                  {payout.entryType === 'direct_settlement' && (
+                    <Badge status="info">{t('অ্যাডমিন সরাসরি পরিশোধ', 'Direct settlement')}</Badge>
+                  )}
+                  <span className="ml-auto font-bold tabular-nums text-ink">{money(payout.requestedAmountPoisha)}</span>
+                </div>
+                <p className="text-[11px] text-muted tabular-nums">
+                  {payout.payoutMethodBn} · {payout.payoutAccountMasked} ·{' '}
+                  {new Date(payout.resolvedAt ?? payout.requestedAt).toLocaleString()}
+                  {payout.paymentTrxId ? ` · TrxID: ${payout.paymentTrxId}` : ''}
+                  {payout.status === 'paid' && typeof payout.netPaidPoisha === 'number'
+                    ? ` · ${t('চার্জ', 'Fee')}: ${money(payout.feePoisha ?? 0)} · ${t('নিট প্রাপ্তি', 'Net')}: ${money(payout.netPaidPoisha)}`
+                    : ''}
+                </p>
+                {payout.noteBn && <p className="text-[11px] text-muted">{t('নোট', 'Note')}: {payout.noteBn}</p>}
+                {payout.proofUrl && (
+                  <p className="text-[11px]">
+                    <a href={payout.proofUrl} target="_blank" rel="noreferrer" className="underline text-ink">
+                      {t('পেমেন্ট প্রমাণ দেখুন', 'View payment proof')}
+                    </a>
+                  </p>
+                )}
+                {payout.rejectionReasonBn && (
+                  <p className="text-[11px] text-danger">
+                    {t('প্রত্যাখ্যানের কারণ', 'Rejection reason')}: {payout.rejectionReasonBn}
+                  </p>
+                )}
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Immutable Ledger Entries with 7-day maturity indicator */}
+      <section className="space-y-2.5">
+        <h3 className="text-sm font-bold text-ink">{t('এসক্রো লেজার বিবরণী', 'Escrow Ledger Entries')}</h3>
+        <Card surface="bg" padding="none">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[740px] text-left text-xs">
+              <thead className="bg-surface text-muted">
+                <tr>
+                  <th className="p-2.5 font-semibold">{t('তারিখ ও সময়', 'Date & Time')}</th>
+                  <th className="p-2.5 font-semibold">{t('ধরন ও বাকেট', 'Type & Bucket')}</th>
+                  <th className="p-2.5 font-semibold">{t('অর্ডার / রেফারেন্স', 'Order / Ref')}</th>
+                  <th className="p-2.5 font-semibold">{t('বিবরণ, আনলক তারিখ ও প্রমাণ', 'Description, Maturity & Proof')}</th>
+                  <th className="p-2.5 text-right font-semibold">{t('পরিমাণ', 'Amount')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ledger.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-6 text-center text-muted">
+                      {t('এখনো কোনো লেজার এন্ট্রি নেই।', 'No ledger entries yet.')}
+                    </td>
+                  </tr>
+                )}
+                {ledger.map((entry) => (
+                  <tr key={entry.id} className="border-t border-border">
+                    <td className="p-2.5 whitespace-nowrap font-mono text-[11px] tabular-nums">
+                      {new Date(entry.createdAt).toLocaleString()}
+                    </td>
+                    <td className="p-2.5">
+                      <span className="block font-mono text-[10px] text-ink">{entry.entryType}</span>
+                      <span className="text-[11px] text-muted">{entry.escrowBucket}</span>
+                    </td>
+                    <td className="p-2.5 font-mono text-[11px]">
+                      <span>{entry.orderNo ?? '—'}</span>
+                      {entry.referenceNo && <span className="block text-muted">Ref: {entry.referenceNo}</span>}
+                    </td>
+                    <td className="p-2.5 space-y-0.5">
+                      <span className="text-ink">{entry.descriptionBn}</span>
+                      {entry.maturesAt && (
+                        <span className="block text-[11px] text-warning tabular-nums">
+                          {t('উত্তোলনযোগ্য হবে', 'Unlocks at')}: {new Date(entry.maturesAt).toLocaleString()}
+                        </span>
+                      )}
+                      {entry.paymentMethodBn && (
+                        <span className="block text-[11px] text-muted">{entry.paymentMethodBn}</span>
+                      )}
+                      {entry.noteBn && <span className="block text-[11px] text-muted">{entry.noteBn}</span>}
+                      {entry.proofUrl && (
+                        <a href={entry.proofUrl} target="_blank" rel="noreferrer" className="inline-block text-[11px] underline text-ink">
+                          {t('প্রমাণ দেখুন', 'View proof')}
+                        </a>
+                      )}
+                    </td>
+                    <td className={cn('p-2.5 text-right font-semibold tabular-nums', entry.amountPoisha < 0 ? 'text-danger' : 'text-ink')}>
+                      {money(entry.amountPoisha)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </section>
+
+      {/* Statement / CSV Export */}
+      <Card surface="surface" padding="sm" className="space-y-3">
+        <h3 className="text-sm font-bold">{t('লেজার স্টেটমেন্ট ডাউনলোড (UTC)', 'Download Ledger Statement (UTC)')}</h3>
+        <p className="text-xs text-muted">{t('তারিখ UTC অনুযায়ী। CSV-তে অর্থ পয়সায় থাকে।', 'Dates use UTC; CSV values are in poisha.')}</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="text-xs">
+            {t('শুরুর তারিখ', 'From')}
+            <input className={inputClass} type="date" disabled={statementLoading || exporting} value={from} onChange={(e) => { setFrom(e.target.value); setStatement(null); setStatementError(false); }} />
+          </label>
+          <label className="text-xs">
+            {t('শেষ তারিখ', 'To')}
+            <input className={inputClass} type="date" disabled={statementLoading || exporting} value={to} onChange={(e) => { setTo(e.target.value); setStatement(null); setStatementError(false); }} />
+          </label>
+          <Button type="button" variant="secondary" disabled={!from || !to || from > to || statementLoading} onClick={loadStatement} className="min-h-[44px]">
+            {statementLoading ? t('লোড হচ্ছে…', 'Loading…') : t('স্টেটমেন্ট দেখুন', 'View statement')}
+          </Button>
+          <Button type="button" variant="outline" disabled={!from || !to || from > to || exporting} onClick={exportStatement} className="min-h-[44px]">
+            {exporting ? t('ডাউনলোড হচ্ছে…', 'Downloading…') : t('CSV ডাউনলোড', 'Download CSV')}
+          </Button>
+        </div>
+        {statementError && <p role="alert" className="text-xs text-danger">{t('স্টেটমেন্ট তৈরি করা যায়নি।', 'Statement unavailable.')}</p>}
+        {statement && (
+          <div className="space-y-3 pt-2">
+            <h4 className="font-bold text-xs">{t('লেজার বাকেট স্টেটমেন্ট', 'Ledger bucket statement')} · {statement.from} — {statement.to} (UTC)</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[550px] text-left text-xs">
+                <thead>
+                  <tr>
+                    <th className="p-2">{t('বাকেট', 'Bucket')}</th>
+                    <th className="p-2">{t('শুরু', 'Opening')}</th>
+                    <th className="p-2">{t('যোগ', 'Credits')}</th>
+                    <th className="p-2">{t('বিয়োগ', 'Debits')}</th>
+                    <th className="p-2">{t('শেষ', 'Closing')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {statement.buckets.map((row) => (
+                    <tr key={row.bucket} className="border-t border-border">
+                      <th className="p-2">{row.bucket === 'pending' ? t('অপেক্ষমাণ', 'Pending') : row.bucket === 'locked' ? t('লকড', 'Locked') : t('উপলব্ধ', 'Available')}</th>
+                      <td className="p-2 tabular-nums">{money(row.openingPoisha)}</td>
+                      <td className="p-2 tabular-nums">{money(row.creditsPoisha)}</td>
+                      <td className="p-2 tabular-nums">{money(row.debitsPoisha)}</td>
+                      <td className="p-2 tabular-nums">{money(row.closingPoisha)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {exportError && <p role="alert" className="text-xs text-danger">{t('ডাউনলোড করা যায়নি।', 'Download failed.')}</p>}
       </Card>
     </div>
   );
 }
 
 // ===========================================================================
-// 6. PAYOUTS
-// ===========================================================================
-
-export function PayoutsTab({ workspace, send, busy, t, num, money }: MutatingTabProps) {
-  const { escrow, payouts, capabilities, rules, profile } = workspace;
-  const [amount, setAmount] = useState('');
-
-  const poisha = parseTaka(amount);
-  const belowMin = poisha !== null && poisha < rules.minPayoutRequestPoisha;
-  const overBalance = poisha !== null && poisha > escrow.withdrawablePoisha;
-
-  return (
-    <div className="space-y-4">
-      <SectionHead
-        title={t('পেআউট', 'Payouts')}
-        desc={t(
-          'শুধুমাত্র Available ব্যালেন্স থেকে পেআউট চাওয়া যায়। অ্যাডমিন অনুমোদনের পর টাকা পাঠানো হয়।',
-          'Only the Available balance can be withdrawn. An admin approves every payout before it is sent.'
-        )}
-      />
-
-      <div className="grid gap-2 sm:grid-cols-3">
-        <Kpi label={t('উত্তোলনযোগ্য', 'Withdrawable')} value={money(escrow.withdrawablePoisha)} tone="positive" />
-        <Kpi label={t('সর্বনিম্ন অনুরোধ', 'Minimum request')} value={money(rules.minPayoutRequestPoisha)} />
-        <Kpi label={t('পেআউট পদ্ধতি', 'Payout method')} value={profile.payoutMethodBn} hint={profile.payoutAccountMasked} />
-      </div>
-
-      {!capabilities.canRequestPayout ? (
-        <LockedNotice label={t('পেআউট অনুরোধ', 'request payouts')} t={t} />
-      ) : (
-        <Card surface="surface" padding="sm">
-          <form
-            className="flex flex-wrap items-end gap-2"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              if (poisha === null || belowMin || overBalance) return;
-              const ok = await send('/api/vendor/payouts', { requestedAmountPoisha: poisha }, {
-                bn: 'পেআউট অনুরোধ জমা হয়েছে; অ্যাডমিন অনুমোদনের অপেক্ষায়।',
-                en: 'Payout request submitted and awaiting admin approval.',
-              });
-              if (ok) setAmount('');
-            }}
-          >
-            <label className="min-w-[180px] flex-1 space-y-1 text-xs font-medium">
-              <span>{t('পরিমাণ (৳)', 'Amount (৳)')}</span>
-              <input
-                className={inputClass}
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder={String(rules.minPayoutRequestPoisha / 100)}
-              />
-            </label>
-            <Button type="submit" variant="primary" isLoading={busy} disabled={poisha === null || belowMin || overBalance}>
-              {t('পেআউট অনুরোধ', 'Request payout')}
-            </Button>
-          </form>
-          {belowMin && (
-            <p role="alert" className="mt-2 text-xs text-danger">
-              {t(`সর্বনিম্ন ${money(rules.minPayoutRequestPoisha)} অনুরোধ করা যাবে।`, `Minimum request is ${money(rules.minPayoutRequestPoisha)}.`)}
-            </p>
-          )}
-          {overBalance && (
-            <p role="alert" className="mt-2 text-xs text-danger">
-              {t('উত্তোলনযোগ্য ব্যালেন্সের বেশি অনুরোধ করা যাবে না।', 'Cannot exceed the withdrawable balance.')}
-            </p>
-          )}
-        </Card>
-      )}
-
-      {payouts.length === 0 ? (
-        <EmptyState
-          icon={<Wallet className="h-6 w-6" aria-hidden="true" />}
-          title={t('কোনো পেআউট অনুরোধ নেই', 'No payout requests yet')}
-          description={t('Available ব্যালেন্স জমা হলে অনুরোধ করুন।', 'Request a payout once your available balance builds up.')}
-        />
-      ) : (
-        <div className="space-y-2">
-          {payouts.map((payout) => (
-            <Card key={payout.payoutId} surface="surface" padding="sm" className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-mono text-[10px] text-muted">{payout.payoutId}</span>
-                <StatusBadge status={payout.status} t={t} />
-                <span className="ml-auto font-bold tabular-nums">{money(payout.requestedAmountPoisha)}</span>
-              </div>
-              <p className="text-[11px] text-muted">
-                {payout.payoutMethodBn} · {payout.payoutAccountMasked} ·{' '}
-                {t('অনুরোধ', 'Requested')} {new Date(payout.requestedAt).toLocaleDateString()}
-                {payout.paymentTrxId ? ` · TrxID ${payout.paymentTrxId}` : ''}
-              </p>
-              {payout.rejectionReasonBn && (
-                <p className="text-[11px] text-danger">
-                  {t('প্রত্যাখ্যানের কারণ', 'Rejection reason')}: {payout.rejectionReasonBn}
-                </p>
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ===========================================================================
-// 7. PRICE PROPOSALS
-// ===========================================================================
-
-export function ProposalsTab({ workspace, send, busy, t, num, money }: MutatingTabProps) {
-  const { products, proposals, capabilities } = workspace;
-  const variantOptions = useMemo(
-    () =>
-      products.flatMap((product) =>
-        product.variants.map((variant) => ({
-          value: variant.variantId,
-          label: `${product.nameBn} — ${variant.titleBn} (${variant.publicSku}) · ${money(variant.salePricePoisha)}`,
-          current: variant,
-        }))
-      ),
-    [products, money]
-  );
-
-  const [variantId, setVariantId] = useState(variantOptions[0]?.value ?? '');
-  const selected = variantOptions.find((option) => option.value === variantId)?.current;
-  const [cost, setCost] = useState(selected ? String(selected.supplierCostPoisha / 100) : '');
-  const [price, setPrice] = useState(selected ? String(selected.salePricePoisha / 100) : '');
-  const [reason, setReason] = useState('');
-
-  return (
-    <div className="space-y-4">
-      <SectionHead
-        title={t('মূল্য প্রস্তাব', 'Price proposals')}
-        desc={t(
-          'ক্রয়মূল্য বা বিক্রয়মূল্য বদলাতে প্রস্তাব দিন। সুপার অ্যাডমিন অনুমোদনের পরেই দাম বদলাবে।',
-          'Propose a new cost or retail price. Nothing changes until a super admin approves it.'
-        )}
-      />
-
-      {!capabilities.canSubmitPriceProposal ? (
-        <LockedNotice label={t('মূল্য প্রস্তাব জমা', 'submit price proposals')} t={t} />
-      ) : (
-        <Card surface="surface" padding="sm" className="space-y-2">
-          <form
-            className="grid gap-2 sm:grid-cols-2"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              const costPoisha = parseTaka(cost);
-              const salePoisha = parseTaka(price);
-              if (costPoisha === null || salePoisha === null || !variantId || reason.trim().length < 2) return;
-              const ok = await send(
-                '/api/vendor/price-proposals',
-                {
-                  variantId,
-                  proposedSupplierCostPoisha: costPoisha,
-                  proposedSalePricePoisha: salePoisha,
-                  reasonBn: reason,
-                },
-                {
-                  bn: 'মূল্য প্রস্তাব জমা হয়েছে; অ্যাডমিন যাচাই করবে।',
-                  en: 'Price proposal submitted for admin review.',
-                }
-              );
-              if (ok) setReason('');
-            }}
-          >
-            <label className="space-y-1 text-xs font-medium sm:col-span-2">
-              <span>{t('ভ্যারিয়েন্ট', 'Variant')}</span>
-              <select
-                className={inputClass}
-                value={variantId}
-                onChange={(e) => {
-                  setVariantId(e.target.value);
-                  const next = variantOptions.find((option) => option.value === e.target.value)?.current;
-                  if (next) {
-                    setCost(String(next.supplierCostPoisha / 100));
-                    setPrice(String(next.salePricePoisha / 100));
-                  }
-                }}
-                required
-              >
-                {variantOptions.length === 0 && <option value="">{t('আগে পণ্য যোগ করুন', 'Add a product first')}</option>}
-                {variantOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-1 text-xs font-medium">
-              <span>{t('নতুন ক্রয়মূল্য (৳)', 'New cost (৳)')}</span>
-              <input className={inputClass} inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} required />
-            </label>
-            <label className="space-y-1 text-xs font-medium">
-              <span>{t('নতুন বিক্রয়মূল্য (৳)', 'New retail price (৳)')}</span>
-              <input className={inputClass} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} required />
-            </label>
-            <label className="space-y-1 text-xs font-medium sm:col-span-2">
-              <span>{t('কারণ', 'Reason')}</span>
-              <textarea className={textareaClass} value={reason} onChange={(e) => setReason(e.target.value)} required minLength={2} />
-            </label>
-            <div className="sm:col-span-2">
-              <Button type="submit" variant="primary" isLoading={busy} disabled={variantOptions.length === 0}>
-                {t('প্রস্তাব জমা দিন', 'Submit proposal')}
-              </Button>
-            </div>
-          </form>
-        </Card>
-      )}
-
-      {proposals.length === 0 ? (
-        <EmptyState
-          icon={<Percent className="h-6 w-6" aria-hidden="true" />}
-          title={t('কোনো প্রস্তাব নেই', 'No proposals yet')}
-          description={t('মূল্য পরিবর্তন দরকার হলে প্রস্তাব দিন।', 'Submit a proposal whenever your pricing needs to change.')}
-        />
-      ) : (
-        <div className="space-y-2">
-          {proposals.map((proposal) => (
-            <Card key={proposal.proposalId} surface="surface" padding="sm" className="space-y-1 text-xs">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-[10px] text-muted">{proposal.proposalId}</span>
-                <StatusBadge status={proposal.status} t={t} />
-                <span className="font-medium">{proposal.productNameBn}</span>
-                <span className="font-mono text-[10px]">{proposal.publicSku}</span>
-              </div>
-              <p className="text-[11px]">
-                {t('ক্রয়মূল্য', 'Cost')}: {money(proposal.currentSupplierCostPoisha)} →{' '}
-                <span className="font-semibold">{money(proposal.proposedSupplierCostPoisha)}</span>
-                {' · '}
-                {t('বিক্রয়মূল্য', 'Retail')}: {money(proposal.currentSalePricePoisha)} →{' '}
-                <span className="font-semibold">{money(proposal.proposedSalePricePoisha)}</span>
-              </p>
-              <p className="text-[11px] text-muted">{proposal.reasonBn}</p>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ===========================================================================
-// 8. PROFILE & ONBOARDING
+// 5. PROFILE (READ-ONLY BY DEFAULT)
 // ===========================================================================
 
 export function ProfileTab({
@@ -1496,10 +1537,9 @@ export function ProfileTab({
   busy,
   t,
   num,
-  money,
-  bn,
 }: MutatingTabProps & { bn: boolean }) {
   const { profile, capabilities, rules, selfServiceRequests } = workspace;
+  const holdDays = profile.escrowHoldDaysOverride ?? rules.globalEscrowHoldDays;
 
   const [businessNameBn, setBusinessNameBn] = useState('');
   const [ownerNameBn, setOwnerNameBn] = useState('');
@@ -1509,122 +1549,193 @@ export function ProfileTab({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const capabilityRows = Object.keys(CAP_LABEL_KEYS) as Array<keyof typeof CAP_LABEL_KEYS>;
 
+  const canRequestProfileEdit = capabilities.canEditProfile || capabilities.canEditPayoutProfile;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <SectionHead
-        title={t('প্রোফাইল ও অনবোর্ডিং', 'Profile & onboarding')}
+        title={t('ভেন্ডর প্রোফাইল ও চুক্তির তথ্য', 'Vendor Profile & Agreement Details')}
         desc={t(
-          'তথ্য পরিবর্তনের অনুরোধ অ্যাডমিন অনুমোদন করলে কার্যকর হবে — নিরাপত্তার জন্য সরাসরি পরিবর্তন বন্ধ।',
-          'Changes take effect only after admin approval — direct self-edits stay blocked for safety.'
+          'আপনার ব্যবসার তথ্য, পেআউট অ্যাকাউন্ট ও কমিশন শর্তাবলি অ্যাডমিন প্যানেল থেকে নির্ধারিত ও সংরক্ষিত থাকে।',
+          'Your business identity, payout account, and commercial terms are governed and maintained by Admin.'
         )}
+        right={<Badge status="neutral">{t('শুধু দেখার জন্য', 'Read-only')}</Badge>}
       />
 
-      <Card surface="surface" padding="sm" className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-        <Kpi label={t('ভেন্ডর কোড', 'Vendor code')} value={profile.vendorCode} />
-        <Kpi label={t('কমিশন', 'Commission')} value={profile.defaultCommissionBp === null ? t('গ্লোবাল', 'Global') : `${profile.defaultCommissionBp / 100}%`} />
-        <Kpi label={t('এসক্রো হোল্ড', 'Escrow hold')} value={`${profile.escrowHoldDaysOverride ?? rules.globalEscrowHoldDays} ${t('দিন', 'days')}`} />
-        <Kpi label={t('যোগদান', 'Joined')} value={new Date(profile.joinedAt).toLocaleDateString()} />
+      {/* Identity & Commercial Terms Grid */}
+      <Card surface="surface" padding="md" className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <p className="text-[11px] text-muted">{t('ব্যবসার নাম (বাংলা)', 'Business Name (Bangla)')}</p>
+            <p className="mt-0.5 font-bold text-ink">{profile.businessNameBn}</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-muted">{t('ব্যবসার নাম (ইংরেজি)', 'Business Name (English)')}</p>
+            <p className="mt-0.5 font-bold text-ink">{profile.businessNameEn}</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-muted">{t('ভেন্ডর কোড', 'Vendor Code')}</p>
+            <p className="mt-0.5 font-mono font-bold text-ink">{profile.vendorCode}</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-muted">{t('মালিকের নাম', 'Owner Name')}</p>
+            <p className="mt-0.5 font-semibold text-ink">{profile.ownerNameBn}</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-muted">{t('যোগাযোগ নম্বর', 'Contact Phone')}</p>
+            <p className="mt-0.5 font-mono font-semibold text-ink">{profile.contactPhone}</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-muted">{t('পেআউট অ্যাকাউন্ট', 'Payout Account')}</p>
+            <p className="mt-0.5 font-semibold text-ink">
+              {profile.payoutMethodBn} · <span className="font-mono">{profile.payoutAccountMasked}</span>
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] text-muted">{t('কমিশন হার', 'Commission Rate')}</p>
+            <p className="mt-0.5 font-semibold tabular-nums text-ink">
+              {profile.defaultCommissionBp === null
+                ? t(`গ্লোবাল (${rules.globalDefaultCommissionBp / 100}%)`, `Global (${rules.globalDefaultCommissionBp / 100}%)`)
+                : `${profile.defaultCommissionBp / 100}%`}
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] text-muted">{t('এসক্রো হোল্ড পিরিয়ড', 'Escrow Hold Period')}</p>
+            <p className="mt-0.5 font-semibold tabular-nums text-ink">{num(holdDays)} {t('দিন', 'days')}</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-muted">{t('যোগদানের তারিখ', 'Joined Date')}</p>
+            <p className="mt-0.5 font-semibold tabular-nums text-ink">{new Date(profile.joinedAt).toLocaleDateString()}</p>
+          </div>
+        </div>
       </Card>
 
-      <Card surface="bg" padding="sm" className="space-y-2">
-        <h3 className="text-sm font-bold">{t('অ্যাডমিন যা অনুমোদন করেছেন', 'What the admin allows you')}</h3>
-        <ul className="grid gap-1 text-xs sm:grid-cols-2">
+      {/* Admin Governance & Permissions */}
+      <Card surface="bg" padding="sm" className="space-y-2.5">
+        <h3 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+          <ShieldCheck className="h-4 w-4 text-ink" aria-hidden="true" />
+          {t('প্যানেল অনুমতি অবস্থা (অ্যাডমিন নিয়ন্ত্রিত)', 'Portal Capabilities (Admin Controlled)')}
+        </h3>
+        <ul className="grid gap-1.5 text-xs sm:grid-cols-2">
           {capabilityRows.map((key) => {
             const allowed = capabilities[key] === true;
             return (
               <li key={key} className="flex items-center gap-2">
                 {allowed ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-success" aria-hidden="true" />
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden="true" />
                 ) : (
-                  <XCircle className="h-3.5 w-3.5 text-danger" aria-hidden="true" />
+                  <XCircle className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden="true" />
                 )}
-                <span className={allowed ? 'text-ink' : 'text-muted line-through'}>
+                <span className={allowed ? 'text-ink font-medium' : 'text-muted'}>
                   {t(CAP_LABEL_KEYS[key][0], CAP_LABEL_KEYS[key][1])}
+                  {!allowed ? ` — ${t('অ্যাডমিন পরিচালিত', 'Admin managed')}` : ''}
                 </span>
               </li>
             );
           })}
           {capabilities.maxActiveProducts > 0 && (
             <li className="flex items-center gap-2 text-muted">
-              <Info className="h-3.5 w-3.5" aria-hidden="true" />
+              <Info className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {t(`সর্বোচ্চ ${capabilities.maxActiveProducts}টি পণ্য`, `Max ${capabilities.maxActiveProducts} products`)}
             </li>
           )}
         </ul>
       </Card>
 
-      <Card surface="surface" padding="sm" className="space-y-2">
-        <h3 className="text-sm font-bold">{t('প্রোফাইল পরিবর্তনের অনুরোধ', 'Request a profile change')}</h3>
-        {(!capabilities.canEditProfile && !capabilities.canEditPayoutProfile) && (
-          <LockedNotice label={t('প্রোফাইল সম্পাদনা', 'edit profile')} t={t} />
-        )}
-        <form
-          className="grid gap-2 sm:grid-cols-2"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            const payload: Record<string, string> = {};
-            if (businessNameBn.trim()) payload.businessNameBn = businessNameBn.trim();
-            if (ownerNameBn.trim()) payload.ownerNameBn = ownerNameBn.trim();
-            if (phone.trim()) payload.contactPhone = phone.trim();
-            if (payoutMethod.trim()) payload.payoutMethodBn = payoutMethod.trim();
-            if (payoutAccount.trim()) payload.payoutAccountNo = payoutAccount.trim();
-            if (Object.keys(payload).length === 0) return;
-            const ok = await send('/api/vendor/profile', payload, {
-              bn: 'পরিবর্তনের অনুরোধ জমা হয়েছে; অ্যাডমিন অনুমোদন করলে কার্যকর হবে।',
-              en: 'Change request submitted; it applies once the admin approves.',
-            });
-            if (ok) {
-              setBusinessNameBn('');
-              setOwnerNameBn('');
-              setPhone('');
-              setPayoutMethod('');
-              setPayoutAccount('');
-            }
-          }}
-        >
-          <label className="space-y-1 text-xs font-medium">
-            <span>{t('ব্যবসার নাম (বাংলা)', 'Business name (Bangla)')}</span>
-            <input className={inputClass} value={businessNameBn} onChange={(e) => setBusinessNameBn(e.target.value)} disabled={!capabilities.canEditProfile} placeholder={profile.businessNameBn} />
-          </label>
-          <label className="space-y-1 text-xs font-medium">
-            <span>{t('মালিকের নাম', 'Owner name')}</span>
-            <input className={inputClass} value={ownerNameBn} onChange={(e) => setOwnerNameBn(e.target.value)} disabled={!capabilities.canEditProfile} placeholder={profile.ownerNameBn} />
-          </label>
-          <label className="space-y-1 text-xs font-medium">
-            <span>{t('যোগাযোগ নম্বর', 'Contact number')}</span>
-            <input className={inputClass} inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!capabilities.canEditProfile} placeholder={profile.contactPhone} />
-          </label>
-          <label className="space-y-1 text-xs font-medium">
-            <span>{t('পেআউট পদ্ধতি', 'Payout method')}</span>
-            <input className={inputClass} value={payoutMethod} onChange={(e) => setPayoutMethod(e.target.value)} disabled={!capabilities.canEditPayoutProfile} placeholder={profile.payoutMethodBn} />
-          </label>
-          <label className="space-y-1 text-xs font-medium sm:col-span-2">
-            <span>{t('পেআউট অ্যাকাউন্ট নম্বর', 'Payout account number')}</span>
-            <input className={inputClass} value={payoutAccount} onChange={(e) => setPayoutAccount(e.target.value)} disabled={!capabilities.canEditPayoutProfile} placeholder={profile.payoutAccountMasked} />
-          </label>
-          <div className="sm:col-span-2">
-            <Button type="submit" variant="primary" isLoading={busy} disabled={!capabilities.canEditProfile && !capabilities.canEditPayoutProfile}>
-              {t('অনুরোধ পাঠান', 'Send request')}
-            </Button>
-          </div>
-        </form>
-      </Card>
-
-      <Card surface="surface" padding="sm" className="space-y-2">
-        <h3 className="text-sm font-bold">
-          {t('অনবোর্ডিং ১৫ প্রশ্ন', '15-question onboarding')}
-        </h3>
-        <p className="text-[11px] text-muted">
-          {t(
-            `${profile.onboardingAnsweredCount} / ${profile.onboardingTotalQuestions} উত্তর সম্পন্ন। সব উত্তর দিয়ে জমা দিলে অ্যাডমিন যাচাই করবে।`,
-            `${profile.onboardingAnsweredCount} of ${profile.onboardingTotalQuestions} answered. Fill everything in and the admin will verify it.`
-          )}
-        </p>
-        {!capabilities.canSubmitOnboardingAnswers ? (
-          <LockedNotice label={t('অনবোর্ডিং উত্তর জমা', 'submit onboarding answers')} t={t} />
-        ) : (
+      {/* Optional Self-Service Edit Forms — Rendered ONLY if Admin explicitly grants permission */}
+      {canRequestProfileEdit && (
+        <Card surface="surface" padding="sm" className="space-y-2">
+          <h3 className="text-sm font-bold">{t('প্রোফাইল পরিবর্তনের অনুরোধ', 'Request a profile change')}</h3>
           <form
-            className="space-y-2"
+            className="grid gap-2 sm:grid-cols-2"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              const payload: Record<string, string> = {};
+              if (businessNameBn.trim()) payload.businessNameBn = businessNameBn.trim();
+              if (ownerNameBn.trim()) payload.ownerNameBn = ownerNameBn.trim();
+              if (phone.trim()) payload.contactPhone = phone.trim();
+              if (payoutMethod.trim()) payload.payoutMethodBn = payoutMethod.trim();
+              if (payoutAccount.trim()) payload.payoutAccountNo = payoutAccount.trim();
+              if (Object.keys(payload).length === 0) return;
+              const ok = await send('/api/vendor/profile', payload, {
+                bn: 'পরিবর্তনের অনুরোধ জমা হয়েছে; অ্যাডমিন অনুমোদন করলে কার্যকর হবে।',
+                en: 'Change request submitted; it applies once the admin approves.',
+              });
+              if (ok) {
+                setBusinessNameBn('');
+                setOwnerNameBn('');
+                setPhone('');
+                setPayoutMethod('');
+                setPayoutAccount('');
+              }
+            }}
+          >
+            {capabilities.canEditProfile && (
+              <>
+                <label className="space-y-1 text-xs font-medium">
+                  <span>{t('ব্যবসার নাম (বাংলা)', 'Business name (Bangla)')}</span>
+                  <input className={inputClass} value={businessNameBn} onChange={(e) => setBusinessNameBn(e.target.value)} placeholder={profile.businessNameBn} />
+                </label>
+                <label className="space-y-1 text-xs font-medium">
+                  <span>{t('মালিকের নাম', 'Owner name')}</span>
+                  <input className={inputClass} value={ownerNameBn} onChange={(e) => setOwnerNameBn(e.target.value)} placeholder={profile.ownerNameBn} />
+                </label>
+                <label className="space-y-1 text-xs font-medium">
+                  <span>{t('যোগাযোগ নম্বর', 'Contact number')}</span>
+                  <input className={inputClass} inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={profile.contactPhone} />
+                </label>
+              </>
+            )}
+            {capabilities.canEditPayoutProfile && (
+              <>
+                <label className="space-y-1 text-xs font-medium">
+                  <span>{t('পেআউট পদ্ধতি', 'Payout method')}</span>
+                  <input className={inputClass} value={payoutMethod} onChange={(e) => setPayoutMethod(e.target.value)} placeholder={profile.payoutMethodBn} />
+                </label>
+                <label className="space-y-1 text-xs font-medium sm:col-span-2">
+                  <span>{t('পেআউট অ্যাকাউন্ট নম্বর', 'Payout account number')}</span>
+                  <input className={inputClass} value={payoutAccount} onChange={(e) => setPayoutAccount(e.target.value)} placeholder={profile.payoutAccountMasked} />
+                </label>
+              </>
+            )}
+            <div className="sm:col-span-2">
+              <Button type="submit" variant="primary" isLoading={busy}>
+                {t('অনুরোধ পাঠান', 'Send request')}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      {/* Read-Only Onboarding Answers Summary (plus form if Admin enables canSubmitOnboardingAnswers) */}
+      <Card surface="surface" padding="sm" className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-bold text-ink">{t('অনবোর্ডিং তথ্য (১৫ প্রশ্ন)', 'Onboarding Information (15 Questions)')}</h3>
+          <span className="text-xs text-muted tabular-nums">
+            {num(profile.onboardingAnsweredCount)} / {num(profile.onboardingTotalQuestions)} {t('সম্পন্ন', 'completed')}
+          </span>
+        </div>
+
+        {profile.onboardingAnswers && profile.onboardingAnswers.some((item) => item.answer) ? (
+          <dl className="grid gap-2 text-xs sm:grid-cols-2">
+            {profile.onboardingAnswers
+              .filter((item) => item.answer)
+              .map((item) => (
+                <div key={item.key} className="rounded-[var(--radius-sm)] border border-border bg-bg p-2.5">
+                  <dt className="text-[11px] font-medium text-muted">{item.questionBn}</dt>
+                  <dd className="mt-0.5 font-semibold text-ink">{item.answer}</dd>
+                </div>
+              ))}
+          </dl>
+        ) : (
+          <p className="text-xs text-muted">
+            {t('অনবোর্ডিং তথ্য এখনো অ্যাডমিন কর্তৃক হালনাগাদ করা হয়নি।', 'Onboarding answers have not been recorded yet.')}
+          </p>
+        )}
+
+        {capabilities.canSubmitOnboardingAnswers && (
+          <form
+            className="space-y-2 border-t border-border pt-3"
             onSubmit={async (event) => {
               event.preventDefault();
               const complete = rules.onboardingQuestions.every((question) => (answers[question.key] ?? '').trim().length >= 2);
@@ -1655,11 +1766,9 @@ export function ProfileTab({
         )}
       </Card>
 
-      <Card surface="bg" padding="sm" className="space-y-2">
-        <h3 className="text-sm font-bold">{t('অনুরোধের ইতিহাস', 'Request history')}</h3>
-        {selfServiceRequests.length === 0 ? (
-          <p className="text-xs text-muted">{t('কোনো অনুরোধ নেই।', 'No requests yet.')}</p>
-        ) : (
+      {selfServiceRequests.length > 0 && (
+        <Card surface="bg" padding="sm" className="space-y-2">
+          <h3 className="text-sm font-bold">{t('পূর্বের অনুরোধ ইতিহাস', 'Request History')}</h3>
           <ul className="space-y-1.5 text-xs">
             {selfServiceRequests.map((request) => (
               <li key={request.requestId} className="flex flex-wrap items-center gap-2 border-b border-border pb-1.5 last:border-0">
@@ -1672,8 +1781,8 @@ export function ProfileTab({
               </li>
             ))}
           </ul>
-        )}
-      </Card>
+        </Card>
+      )}
     </div>
   );
 }

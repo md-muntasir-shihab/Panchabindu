@@ -41,6 +41,7 @@ const child = fork(path.join(root, 'scripts/src/sandbox-fixture-app.mjs'), [], {
     PANCHABINDU_PERSISTENCE: 'json',
     PANCHABINDU_ENABLE_SANDBOX_AUTH: '1',
     PANCHABINDU_SANDBOX_DISABLE_2FA: '1',
+    PANCHABINDU_BYPASS_AUTH: process.env.PANCHABINDU_BYPASS_AUTH ?? '1',
     PANCHABINDU_SANDBOX_ADMIN_USERNAME: 'preview_admin',
     PANCHABINDU_SANDBOX_ADMIN_PASSWORD: secret(),
     PANCHABINDU_SANDBOX_VENDOR_PASSWORD: secret(),

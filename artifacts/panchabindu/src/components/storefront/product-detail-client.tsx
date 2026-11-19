@@ -134,9 +134,21 @@ export function ProductDetailClient({
   // Calculate live delivery rate estimate for selected district and quantity
   const selectedDistrict =
     getDistrictById(estimatorDistrictId) ?? getDistrictById(47)!;
-  const districtRates = getDistrictDeliveryRates(
+  const fallbackDistrictRates = getDistrictDeliveryRates(
     selectedDistrict.id,
     siteSettings.bdPostDefaultPerKgPoisha
+  );
+  const districtOverride =
+    siteSettings.districtRateOverrides?.[selectedDistrict.id];
+  const districtRates = districtOverride
+    ? {
+        base1KgPoisha: districtOverride.base1KgPoisha,
+        extraPerKgPoisha: districtOverride.extraPerKgPoisha,
+        bdPostPerKgPoisha: districtOverride.bdPostPerKgPoisha,
+      }
+    : fallbackDistrictRates;
+  const isDistrictFreeDelivery = Boolean(
+    districtOverride?.isFreeDeliveryDistrict
   );
   const lineWeightGrams = selectedVariant.weightGrams * quantity;
   const lineSubtotalPoisha = selectedVariant.salePricePoisha * quantity;
@@ -146,7 +158,8 @@ export function ProductDetailClient({
     totalWeightGrams: lineWeightGrams,
     orderSubtotalPoisha: lineSubtotalPoisha,
     freeDeliveryThresholdPoisha: siteSettings.freeDeliveryThresholdPoisha,
-    isGlobalFreeDelivery: siteSettings.globalFreeDelivery,
+    isGlobalFreeDelivery:
+      siteSettings.globalFreeDelivery || isDistrictFreeDelivery,
     isAllItemsFreeDelivery: product.isFreeDelivery,
     courierBaseRate1KgPoisha: districtRates.base1KgPoisha,
     courierExtraPerKgPoisha: districtRates.extraPerKgPoisha,
@@ -158,7 +171,8 @@ export function ProductDetailClient({
     totalWeightGrams: lineWeightGrams,
     orderSubtotalPoisha: lineSubtotalPoisha,
     freeDeliveryThresholdPoisha: siteSettings.freeDeliveryThresholdPoisha,
-    isGlobalFreeDelivery: siteSettings.globalFreeDelivery,
+    isGlobalFreeDelivery:
+      siteSettings.globalFreeDelivery || isDistrictFreeDelivery,
     isAllItemsFreeDelivery: product.isFreeDelivery,
     courierBaseRate1KgPoisha: districtRates.base1KgPoisha,
     courierExtraPerKgPoisha: districtRates.extraPerKgPoisha,
@@ -204,7 +218,7 @@ export function ProductDetailClient({
       categories={categories}
       products={[product, ...relatedProducts]}
     >
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10 space-y-14">
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-4 py-5 sm:py-10 space-y-9 sm:space-y-14">
         {/* Breadcrumb */}
         <nav
           aria-label={uiText("Breadcrumb", locale)}
@@ -213,24 +227,27 @@ export function ProductDetailClient({
           <Link href="/" className="hover:text-[var(--store-accent)] hover:underline">
             {dict.common.home}
           </Link>
-          <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+          <ChevronRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           {category && (
             <>
-              <span className="text-[#5A655D]">
+              <Link
+                href={`/category/${category.slug}`}
+                className="text-[#5A655D] hover:text-[var(--store-accent)] hover:underline"
+              >
                 {locale === 'bn' ? category.nameBn : category.nameEn}
-              </span>
-              <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+              </Link>
+              <ChevronRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             </>
           )}
-          <span className="text-[#162119] font-medium truncate max-w-xs">
+          <span className="text-[#162119] font-medium truncate max-w-[200px] sm:max-w-xs">
             {displayName}
           </span>
         </nav>
 
         {/* Main PDP 2-Column Editorial Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 lg:gap-12 items-start">
           {/* Left: 4:5 Portrait Product Image Gallery */}
-          <div className="lg:col-span-6 min-w-0 space-y-3.5">
+          <div className="lg:col-span-6 min-w-0 space-y-3">
             <div className="relative aspect-[4/5] w-full border border-[#E4E2DC] rounded-2xl overflow-hidden bg-[#F2EFE9]">
               <img
                   
@@ -259,14 +276,14 @@ export function ProductDetailClient({
             </div>
 
             {allImages.length > 1 && (
-              <div className="flex items-center gap-3 overflow-x-auto pb-1">
+              <div className="flex items-center gap-2.5 sm:gap-3 overflow-x-auto scrollbar-none pb-1">
                 {allImages.map((imgUrl, idx) => (
                   <button
                     key={imgUrl}
                     type="button"
                     onClick={() => setSelectedImageIdx(idx)}
                     aria-label={`View image ${idx + 1}`}
-                    className={`relative w-20 h-24 rounded-xl border overflow-hidden shrink-0 cursor-pointer transition-all ${
+                    className={`relative w-16 h-20 sm:w-20 sm:h-24 rounded-xl border overflow-hidden shrink-0 cursor-pointer transition-all ${
                       selectedImageIdx === idx
                         ? 'border-[var(--store-accent)] ring-2 ring-[var(--store-accent)]/20'
                         : 'border-[#E4E2DC] opacity-75 hover:opacity-100'
@@ -286,8 +303,8 @@ export function ProductDetailClient({
           </div>
 
           {/* Right: Editorial Details, Variant Selector, Pricing & Estimator */}
-          <div className="lg:col-span-6 min-w-0 space-y-7">
-            <div className="space-y-3 border-b border-[#E4E2DC] pb-5">
+          <div className="lg:col-span-6 min-w-0 space-y-5 sm:space-y-7">
+            <div className="space-y-2.5 sm:space-y-3 border-b border-[#E4E2DC] pb-4 sm:pb-5">
               {/* Unboxed Metadata Row */}
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#5A655D]">
                 <div className="flex items-center gap-2">
@@ -484,18 +501,19 @@ export function ProductDetailClient({
                         : 'Your number has been registered for restock alert.'}
                     </p>
                   ) : (
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="tel"
                         value={notifyPhone}
                         onChange={(e) => setNotifyPhone(e.target.value)}
                         placeholder="017XXXXXXXX"
-                        className="flex-1 min-h-[40px] px-3 py-1.5 text-xs bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-lg"
+                        className="flex-1 min-h-[44px] px-3 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-lg"
                       />
                       <Button
                         type="button"
                         variant="primary"
                         size="sm"
+                        className="min-h-[44px]"
                         onClick={() => {
                           if (notifyPhone.trim().length >= 11) {
                             setNotifySaved(true);
@@ -508,23 +526,23 @@ export function ProductDetailClient({
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                   <button
                     type="button"
                     disabled={isOutOfStock}
                     onClick={() => handleAddToCart(false)}
-                    className="min-h-[48px] px-5 py-3 rounded-xl border border-[var(--store-accent)] bg-[#FAF9F5] text-[var(--store-accent)] hover:bg-[#E8F0EC] text-sm font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    className="min-h-[48px] px-3 sm:px-5 py-3 rounded-xl border border-[var(--store-accent)] bg-[#FAF9F5] text-[var(--store-accent)] hover:bg-[#E8F0EC] text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 sm:gap-2 transition-colors cursor-pointer whitespace-nowrap"
                   >
                     {justAdded ? (
-                      <Check className="w-4 h-4" aria-hidden="true" />
+                      <Check className="w-4 h-4 shrink-0" aria-hidden="true" />
                     ) : (
-                      <ShoppingBag className="w-4 h-4" aria-hidden="true" />
+                      <ShoppingBag className="w-4 h-4 shrink-0" aria-hidden="true" />
                     )}
-                    <span>
+                    <span className="truncate">
                       {justAdded
                         ? locale === 'bn'
-                          ? 'কার্টে যুক্ত হয়েছে'
-                          : 'Added to Cart'
+                          ? 'যুক্ত হয়েছে'
+                          : 'Added'
                         : dict.common.addToCart}
                     </span>
                   </button>
@@ -533,7 +551,7 @@ export function ProductDetailClient({
                     type="button"
                     disabled={isOutOfStock}
                     onClick={() => handleAddToCart(true)}
-                    className="min-h-[48px] px-5 py-3 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 text-sm font-semibold flex items-center justify-center transition-colors cursor-pointer"
+                    className="min-h-[48px] px-3 sm:px-5 py-3 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 text-xs sm:text-sm font-semibold flex items-center justify-center transition-colors cursor-pointer whitespace-nowrap"
                   >
                     {dict.common.buyNow}
                   </button>
@@ -542,10 +560,10 @@ export function ProductDetailClient({
             </div>
 
             {/* Interactive 64-District Delivery Charge & Lead-Time Estimator */}
-            <div className="p-5 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="p-4 sm:p-5 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#162119]">
-                  <MapPin className="w-4 h-4 text-[var(--store-accent)]" aria-hidden="true" />
+                  <MapPin className="w-4 h-4 text-[var(--store-accent)] shrink-0" aria-hidden="true" />
                   <span>
                     {locale === 'bn'
                       ? 'জেলাভিত্তিক ডেলিভারি চার্জ ও সময় হিসাব'
@@ -559,7 +577,7 @@ export function ProductDetailClient({
                   onChange={(e) =>
                     setEstimatorDistrictId(Number(e.target.value))
                   }
-                  className="min-h-[38px] px-3 py-1.5 text-xs font-medium border border-[#E4E2DC] rounded-lg bg-[#FAF9F5] text-[#162119]"
+                  className="w-full sm:w-auto min-h-[44px] sm:min-h-[38px] px-3 py-1.5 text-xs font-medium border border-[#E4E2DC] rounded-lg bg-[#FAF9F5] text-[#162119]"
                 >
                   {BD_DISTRICTS.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -699,14 +717,14 @@ export function ProductDetailClient({
                 : 'No reviews yet for this product.'}
             </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
               {reviewList.map((rev) => (
                 <div
                   key={rev.id}
-                  className="p-5 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-2"
+                  className="p-4 sm:p-5 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-2"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs">
                       <span className="text-sm font-bold text-[#162119]">
                         {rev.customerName}
                       </span>
@@ -720,7 +738,7 @@ export function ProductDetailClient({
                         </>
                       )}
                     </div>
-                    <div className="flex items-center gap-0.5 text-[var(--store-accent)]">
+                    <div className="flex items-center gap-0.5 text-[var(--store-accent)] shrink-0">
                       {Array.from({ length: rev.rating }).map((_, idx) => (
                         <Star
                           key={idx}
@@ -741,11 +759,11 @@ export function ProductDetailClient({
 
         {/* Related Products (Frameless 4:5 Portrait Grid) */}
         {relatedProducts.length > 0 && (
-          <section className="space-y-6 border-t border-[#E4E2DC] pt-10 pb-16 md:pb-0">
+          <section className="space-y-5 sm:space-y-6 border-t border-[#E4E2DC] pt-8 sm:pt-10">
             <h2 className="text-xl sm:text-2xl font-bold text-[#162119]">
               {locale === 'bn' ? 'সম্পর্কিত অন্যান্য পণ্য' : 'Related Products'}
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 sm:gap-x-5 gap-y-6 sm:gap-y-10">
               {relatedProducts.map((rel) => (
                 <ProductCard key={rel.productId} product={rel} />
               ))}
@@ -881,12 +899,12 @@ export function ProductDetailClient({
         </form>
       </ResponsiveSheet>
 
-      {/* Single Mobile Sticky Purchase Bar (< 768px) */}
+      {/* Single Mobile Sticky Purchase Bar (< 768px, flush above 5-tab bar) */}
       {!isOutOfStock && (
-        <div className="storefront-action-bar md:hidden fixed bottom-[calc(3.5rem+max(16px,var(--safe-bottom)))] left-0 right-0 z-30 p-3 bg-[#FAF9F5]/95 backdrop-blur border-t border-[#E4E2DC] flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1 max-[360px]:hidden">
-            <p className="text-xs font-semibold text-[#162119] truncate">{displayName}</p>
-            <p className="text-sm font-bold text-[#162119] tabular-nums">
+        <div className="storefront-action-bar md:hidden fixed bottom-[calc(3.5rem+var(--safe-bottom))] left-0 right-0 z-30 py-2.5 bg-[#FAF9F5]/95 backdrop-blur border-t border-[#E4E2DC] flex items-center justify-between gap-2.5 shadow-[0_-4px_16px_rgba(27,67,50,0.06)]">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium text-[#5A655D] truncate">{displayName}</p>
+            <p className="text-sm font-bold text-[#162119] tabular-nums leading-tight">
               {formatPoishaToBdt(selectedVariant.salePricePoisha, locale)}
             </p>
           </div>
@@ -894,14 +912,20 @@ export function ProductDetailClient({
             <button
               type="button"
               onClick={() => handleAddToCart(false)}
-              className="min-h-[42px] px-3.5 py-2 rounded-lg border border-[var(--store-accent)] bg-[#FAF9F5] text-[var(--store-accent)] text-xs font-semibold cursor-pointer"
+              className="min-h-[44px] px-3 py-2 rounded-lg border border-[var(--store-accent)] bg-[#FAF9F5] text-[var(--store-accent)] text-xs font-semibold cursor-pointer whitespace-nowrap"
             >
-              {dict.common.addToCart}
+              {justAdded
+                ? locale === 'bn'
+                  ? 'যুক্ত'
+                  : 'Added'
+                : locale === 'bn'
+                ? 'কার্টে যোগ'
+                : 'Add to Cart'}
             </button>
             <button
               type="button"
               onClick={() => handleAddToCart(true)}
-              className="min-h-[42px] px-4 py-2 rounded-lg bg-[var(--store-accent)] text-[#FAF9F5] text-xs font-semibold cursor-pointer"
+              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-[var(--store-accent)] text-[#FAF9F5] text-xs font-semibold cursor-pointer whitespace-nowrap"
             >
               {dict.common.buyNow}
             </button>

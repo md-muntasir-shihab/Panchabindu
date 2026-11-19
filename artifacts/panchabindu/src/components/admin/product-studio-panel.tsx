@@ -44,8 +44,9 @@ import type {
 import type { VendorProfileRecord } from '@/lib/admin/phase4b-service';
 import type { OrderGridRowDTO } from '@/types/domain';
 import type { DistrictRateOverrideRecord } from '@/lib/admin/phase4b-service';
+import type { ModeratedReviewItemDTO } from '@/lib/admin/phase6-service';
 import { formatPoishaToBdt, parseTakaStringToPoisha } from '@/lib/money';
-import { formatLocaleNumber } from '@/lib/i18n/dictionaries';
+import { formatLocaleDateTime, formatLocaleNumber } from '@/lib/i18n/dictionaries';
 import { useLocaleStore } from '@/store/use-locale-store';
 
 const poishaToTaka = (p: number) => Math.round((p || 0) / 100);
@@ -69,6 +70,7 @@ interface ProductStudioPanelProps {
   vendors: VendorProfileRecord[];
   orders?: EnrichedOrderRow[];
   districtRates?: DistrictRateOverrideRecord[];
+  moderatedReviews?: ModeratedReviewItemDTO[];
   onRefresh: () => Promise<void>;
   currentUserId: string;
   userRole: string;
@@ -134,6 +136,7 @@ export function ProductManagementStudioPanel({
   vendors,
   orders = [],
   districtRates = [],
+  moderatedReviews = [],
   onRefresh,
   currentUserId,
   userRole,
@@ -142,7 +145,9 @@ export function ProductManagementStudioPanel({
   const storeLocale = useLocaleStore((s) => s.adminLocale);
   const locale = propLocale ?? storeLocale ?? 'en';
   const isBn = locale === 'bn';
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'connectivity'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'reviews' | 'connectivity'>('products');
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [moderatingReviewId, setModeratingReviewId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [selectedVendorFilter, setSelectedVendorFilter] = useState<string>('all');
@@ -556,6 +561,17 @@ export function ProductManagementStudioPanel({
         </button>
         <button
           type="button"
+          onClick={() => setActiveTab('reviews')}
+          className={`min-h-11 max-w-full px-4 py-2.5 border-b-2 text-left transition-colors ${
+            activeTab === 'reviews'
+              ? 'border-ink text-ink font-bold'
+              : 'border-transparent text-muted hover:text-ink'
+          }`}
+        >
+          {isBn ? 'রিভিউ মডারেশন' : 'Review Moderation'} ({moderatedReviews.length})
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('connectivity')}
           className={`min-h-11 max-w-full px-4 py-2.5 border-b-2 text-left transition-colors ${
             activeTab === 'connectivity'
@@ -937,6 +953,178 @@ export function ProductManagementStudioPanel({
             })}
           </div>
         </div>
+      )}
+
+      {/* TAB: PRODUCT REVIEW MODERATION */}
+      {activeTab === 'reviews' && (
+        <section className="space-y-4" aria-label={isBn ? 'রিভিউ মডারেশন' : 'Review Moderation'}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="font-bold text-ink text-sm">
+                {isBn ? 'ভেরিফায়েড পারচেজ রিভিউ মডারেশন' : 'Verified-Purchase Review Moderation'}
+              </h2>
+              <p className="text-xs text-muted">
+                {isBn
+                  ? 'স্টোরফ্রন্টে প্রকাশের আগে গ্রাহকের রিভিউ অনুমোদন বা প্রত্যাখ্যান করুন।'
+                  : 'Approve or reject customer reviews before they appear publicly on product pages.'}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-1.5 text-xs">
+              {(
+                [
+                  ['all', isBn ? 'সব' : 'All'],
+                  ['pending', isBn ? 'অপেক্ষমাণ' : 'Pending'],
+                  ['approved', isBn ? 'অনুমোদিত' : 'Approved'],
+                  ['rejected', isBn ? 'প্রত্যাখ্যাত' : 'Rejected'],
+                ] as const
+              ).map(([statusKey, labelText]) => (
+                <button
+                  key={statusKey}
+                  type="button"
+                  onClick={() => setReviewFilter(statusKey)}
+                  className={`min-h-[38px] px-3 border transition-colors ${
+                    reviewFilter === statusKey
+                      ? 'border-ink bg-ink text-bg font-semibold'
+                      : 'border-border bg-surface text-muted hover:text-ink'
+                  }`}
+                >
+                  {labelText}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {moderatedReviews.filter(
+            (r) => reviewFilter === 'all' || r.moderationStatus === reviewFilter
+          ).length === 0 ? (
+            <div className="p-6 border border-border bg-surface text-xs text-muted">
+              {isBn ? 'এই ফিল্টারে কোনো রিভিউ নেই।' : 'No reviews match this filter.'}
+            </div>
+          ) : (
+            <div className="divide-y divide-border border border-border bg-surface">
+              {moderatedReviews
+                .filter((r) => reviewFilter === 'all' || r.moderationStatus === reviewFilter)
+                .map((rev) => (
+                  <div
+                    key={rev.reviewId}
+                    className="p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 text-xs"
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold text-ink">{rev.productNameBn}</span>
+                        <span className="font-mono text-muted">{rev.publicSku}</span>
+                        <span className="font-semibold text-ink tabular-nums">
+                          {rev.rating}/5
+                        </span>
+                        <span className="text-muted">
+                          · {rev.moderationStatus}
+                          {rev.isVerifiedPurchase
+                            ? isBn
+                              ? ' · ভেরিফায়েড'
+                              : ' · Verified'
+                            : ''}
+                        </span>
+                      </div>
+                      <p className="text-ink text-sm break-words">{rev.comment}</p>
+                      <p className="text-muted tabular-nums">
+                        {rev.customerName} · {formatLocaleDateTime(rev.createdAt, locale)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 shrink-0">
+                      <button
+                        type="button"
+                        disabled={
+                          moderatingReviewId === rev.reviewId ||
+                          rev.moderationStatus === 'approved'
+                        }
+                        onClick={async () => {
+                          setModeratingReviewId(rev.reviewId);
+                          try {
+                            const res = await fetch('/api/admin/workspace', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                operation: 'moderate_product_review',
+                                reviewId: rev.reviewId,
+                                decision: 'approved',
+                              }),
+                            });
+                            const data = (await res.json()) as {
+                              success?: boolean;
+                              errorBn?: string;
+                            };
+                            if (!res.ok || !data.success) {
+                              setFeedbackMsg({
+                                type: 'error',
+                                text:
+                                  data.errorBn ||
+                                  (isBn ? 'রিভিউ আপডেট ব্যর্থ।' : 'Failed to update review.'),
+                              });
+                            } else {
+                              setFeedbackMsg({
+                                type: 'success',
+                                text: isBn ? 'রিভিউ অনুমোদিত হয়েছে।' : 'Review approved.',
+                              });
+                              await onRefresh();
+                            }
+                          } finally {
+                            setModeratingReviewId(null);
+                          }
+                        }}
+                        className="min-h-[40px] px-3 border border-border bg-bg text-ink font-medium hover:border-ink disabled:opacity-40"
+                      >
+                        {isBn ? 'অনুমোদন' : 'Approve'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={
+                          moderatingReviewId === rev.reviewId ||
+                          rev.moderationStatus === 'rejected'
+                        }
+                        onClick={async () => {
+                          setModeratingReviewId(rev.reviewId);
+                          try {
+                            const res = await fetch('/api/admin/workspace', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                operation: 'moderate_product_review',
+                                reviewId: rev.reviewId,
+                                decision: 'rejected',
+                              }),
+                            });
+                            const data = (await res.json()) as {
+                              success?: boolean;
+                              errorBn?: string;
+                            };
+                            if (!res.ok || !data.success) {
+                              setFeedbackMsg({
+                                type: 'error',
+                                text:
+                                  data.errorBn ||
+                                  (isBn ? 'রিভিউ আপডেট ব্যর্থ।' : 'Failed to update review.'),
+                              });
+                            } else {
+                              setFeedbackMsg({
+                                type: 'success',
+                                text: isBn ? 'রিভিউ প্রত্যাখ্যাত হয়েছে।' : 'Review rejected.',
+                              });
+                              await onRefresh();
+                            }
+                          } finally {
+                            setModeratingReviewId(null);
+                          }
+                        }}
+                        className="min-h-[40px] px-3 border border-danger/40 text-danger font-medium hover:bg-danger/10 disabled:opacity-40"
+                      >
+                        {isBn ? 'প্রত্যাখ্যান' : 'Reject'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </section>
       )}
 
       {/* These checks describe the current workspace data, not end-to-end integration health. */}

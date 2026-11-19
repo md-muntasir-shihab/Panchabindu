@@ -123,9 +123,16 @@ export const manifest = backendRoute(async () => {
   return ApiResponse.json({
     name: `${siteSettings.brandNameBn} — ${siteSettings.brandNameEn}`,
     short_name: siteSettings.brandNameEn, description: siteSettings.taglineBn,
-    start_url: '/', display: 'standalone', background_color: '#FFFFFF',
+    start_url: '/', display: 'standalone', background_color: '#FDFCF8',
     theme_color: config.accentColor,
-    icons: [{ src: config.faviconUrl || '/favicon.ico', sizes: 'any' }],
+    icons: config.faviconUrl
+      ? [{ src: config.faviconUrl, sizes: 'any' }]
+      : [
+          { src: '/favicon-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/favicon-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' },
+        ],
   }, { headers: { 'content-type': 'application/manifest+json' } });
 });
 

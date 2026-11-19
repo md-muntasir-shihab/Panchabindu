@@ -1,11 +1,16 @@
 // Applies serialized Next-style Metadata objects to document.head.
 type ImageLike = string | { url?: string };
+type IconLike = string | { url?: string; sizes?: string; type?: string };
 export interface PageMetadata {
   title?: string | { absolute?: string; default?: string };
   description?: string;
   robots?: { index?: boolean; follow?: boolean } | string;
   alternates?: { canonical?: string };
-  icons?: { icon?: string; apple?: string };
+  icons?: {
+    icon?: IconLike | IconLike[];
+    shortcut?: IconLike | IconLike[];
+    apple?: IconLike | IconLike[];
+  };
   openGraph?: { title?: string; description?: string; type?: string; images?: ImageLike[] | ImageLike };
   twitter?: { card?: string; title?: string; description?: string; images?: ImageLike[] | ImageLike };
 }
@@ -15,6 +20,17 @@ const MARK = 'data-page-meta';
 function imgs(v: ImageLike[] | ImageLike | undefined): string[] {
   if (!v) return [];
   return (Array.isArray(v) ? v : [v]).map((i) => (typeof i === 'string' ? i : i.url ?? '')).filter(Boolean);
+}
+
+function normalizeIcons(v: IconLike | IconLike[] | undefined): Array<{ href: string; sizes?: string; type?: string }> {
+  if (!v) return [];
+  return (Array.isArray(v) ? v : [v])
+    .map((item) =>
+      typeof item === 'string'
+        ? { href: item }
+        : { href: item.url ?? '', sizes: item.sizes, type: item.type }
+    )
+    .filter((item) => Boolean(item.href));
 }
 
 function add(tag: 'meta' | 'link', attrs: Record<string, string>) {
@@ -36,8 +52,27 @@ export function applyMetadata(meta: PageMetadata | undefined) {
     add('meta', { name: 'robots', content });
   }
   if (meta.alternates?.canonical) add('link', { rel: 'canonical', href: meta.alternates.canonical });
-  if (meta.icons?.icon) add('link', { rel: 'icon', href: meta.icons.icon });
-  if (meta.icons?.apple) add('link', { rel: 'apple-touch-icon', href: meta.icons.apple });
+  if (meta.icons) {
+    document.head
+      .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]')
+      .forEach((el) => el.remove());
+    for (const icon of normalizeIcons(meta.icons.icon)) {
+      const attrs: Record<string, string> = { rel: 'icon', href: icon.href };
+      if (icon.type) attrs.type = icon.type;
+      if (icon.sizes) attrs.sizes = icon.sizes;
+      add('link', attrs);
+    }
+    for (const shortcut of normalizeIcons(meta.icons.shortcut)) {
+      const attrs: Record<string, string> = { rel: 'shortcut icon', href: shortcut.href };
+      if (shortcut.type) attrs.type = shortcut.type;
+      add('link', attrs);
+    }
+    for (const apple of normalizeIcons(meta.icons.apple)) {
+      const attrs: Record<string, string> = { rel: 'apple-touch-icon', href: apple.href };
+      if (apple.sizes) attrs.sizes = apple.sizes;
+      add('link', attrs);
+    }
+  }
   const og = meta.openGraph;
   if (og) {
     if (og.title) add('meta', { property: 'og:title', content: og.title });

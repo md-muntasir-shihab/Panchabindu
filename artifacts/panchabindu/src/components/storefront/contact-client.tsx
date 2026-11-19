@@ -136,9 +136,9 @@ export function ContactClient({
 
   return (
     <StorefrontShell siteSettings={siteSettings} categories={categories}>
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:py-12 space-y-12">
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-4 py-5 sm:py-12 space-y-8 sm:space-y-12">
         {/* Breadcrumb & Title */}
-        <div className="space-y-2 border-b border-[#E4E2DC] pb-6">
+        <div className="space-y-2 border-b border-[#E4E2DC] pb-5 sm:pb-6">
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 text-xs text-[#5A655D] hover:text-[var(--store-accent)] transition-colors"
@@ -146,12 +146,12 @@ export function ContactClient({
             <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
             <span>{locale === 'bn' ? 'হোমে ফিরে যান' : 'Back to Home'}</span>
           </Link>
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
             <div>
-              <p className="text-xs font-semibold text-[var(--store-accent)] uppercase tracking-wider">
+              <p className="text-[11px] sm:text-xs font-semibold text-[var(--store-accent)] uppercase tracking-wider">
                 {locale === 'bn' ? 'আমাদের পরিচয় ও গ্রাহক সেবা' : 'About Us & Support'}
               </p>
-              <h1 className="text-2xl sm:text-4xl font-bold text-[#162119] tracking-tight mt-1">
+              <h1 className="text-2xl sm:text-4xl font-bold text-[#162119] tracking-tight mt-1 [text-wrap:balance]">
                 {titleText}
               </h1>
             </div>
@@ -162,15 +162,15 @@ export function ContactClient({
         </div>
 
         {/* 2-Column Split: Left Story / Right Form */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 lg:gap-14 items-start">
           {/* Left Column: About Our Heritage & Consignment Model (7 cols) */}
-          <div className="lg:col-span-7 space-y-8">
+          <div className="lg:col-span-7 space-y-6 sm:space-y-8 min-w-0">
             {/* Story Card */}
-            <div className="p-6 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-4">
+            <div className="p-4 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-3.5 sm:space-y-4">
               <span className="text-xs font-semibold text-[var(--store-accent)] tracking-wide">
                 {locale === 'bn' ? 'আমাদের গল্প ও দর্শন' : 'Our Story & Heritage'}
               </span>
-              <h2 className="text-xl sm:text-2xl font-bold text-[#162119] leading-snug">
+              <h2 className="text-lg sm:text-2xl font-bold text-[#162119] leading-snug">
                 {storyTitle}
               </h2>
               <p className="text-sm text-[#5A655D] leading-relaxed">
@@ -181,60 +181,60 @@ export function ContactClient({
               </p>
 
               {/* Trust Pillars Inside Story */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">{siteSettings.trustBadges.map(badge => <div key={badge.id} className="p-3.5 rounded-xl border border-[#E4E2DC] bg-[#FAF9F5]"><ShieldCheck className="w-4 h-4 text-[var(--store-accent)]" /><p className="text-xs font-bold mt-2">{locale === 'bn' ? badge.labelBn : badge.labelEn}</p><p className="text-[11px] text-[#5A655D] mt-1">{locale === 'bn' ? badge.descBn : badge.descEn}</p></div>)}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">{siteSettings.trustBadges.map(badge => <div key={badge.id} className="p-3.5 rounded-xl border border-[#E4E2DC] bg-[#FAF9F5]"><ShieldCheck className="w-4 h-4 text-[var(--store-accent)]" /><p className="text-xs font-bold mt-2">{locale === 'bn' ? badge.labelBn : badge.labelEn}</p><p className="text-[11px] text-[#5A655D] mt-1">{locale === 'bn' ? badge.descBn : badge.descEn}</p></div>)}</div>
             </div>
 
             {/* Direct Contact Channels Card */}
-            <div className="p-6 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#FAF9F5] space-y-4">
+            <div className="p-4 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#FAF9F5] space-y-4">
               <h3 className="text-base font-bold text-[#162119]">
                 {locale === 'bn' ? 'সরাসরি যোগাযোগের ঠিকানা ও মাধ্যম' : 'Contact Channels & Hub'}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+                <a href={`tel:${siteSettings.supportPhone}`} className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9] hover:border-[var(--store-accent)] transition-colors min-w-0">
                   <PhoneCall className="w-4 h-4 text-[var(--store-accent)] shrink-0 mt-0.5" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-[#162119]">
                       {locale === 'bn' ? 'হেল্পলাইন ও কল সাপোর্ট' : 'Customer Helpline'}
                     </p>
-                    <p className="text-sm font-bold text-[#162119] tabular-nums mt-0.5">
+                    <p className="text-sm font-bold text-[#162119] tabular-nums mt-0.5 break-all">
                       {siteSettings.supportPhone}
                     </p>
                     <p className="text-[11px] text-[#5A655D] mt-0.5">
                       {helplineHours}
                     </p>
                   </div>
-                </div>
+                </a>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9]">
+                <a href={`mailto:${siteSettings.supportEmail || 'support@panchabindu.com.bd'}`} className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9] hover:border-[var(--store-accent)] transition-colors min-w-0">
                   <Mail className="w-4 h-4 text-[var(--store-accent)] shrink-0 mt-0.5" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-[#162119]">
                       {locale === 'bn' ? 'অফিসিয়াল ইমেইল' : 'Email Support'}
                     </p>
-                    <p className="font-medium text-[#162119] mt-0.5">
+                    <p className="font-medium text-[#162119] mt-0.5 break-all">
                       {siteSettings.supportEmail || 'support@panchabindu.com.bd'}
                     </p>
                     <p className="text-[11px] text-[#5A655D] mt-0.5">
                       {locale === 'bn' ? '২৪ ঘণ্টার মধ্যে রিপ্লাই' : 'Response within 24h'}
                     </p>
                   </div>
-                </div>
+                </a>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9]">
+                <div className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9] min-w-0">
                   <MapPin className="w-4 h-4 text-[var(--store-accent)] shrink-0 mt-0.5" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-[#162119]">
                       {locale === 'bn' ? 'সেন্ট্রাল ওয়্যারহাউস ও অফিস' : 'Central Warehouse Hub'}
                     </p>
-                    <p className="text-muted mt-0.5 leading-snug">
+                    <p className="text-muted mt-0.5 leading-snug break-words">
                       {warehouseAddress}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9]">
+                <Link href="/order-tracking" className="flex items-start gap-3 p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9] hover:border-[var(--store-accent)] transition-colors min-w-0">
                   <Clock className="w-4 h-4 text-[var(--store-accent)] shrink-0 mt-0.5" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-[#162119]">
                       {locale === 'bn' ? 'ডেলিভারি ট্র্যাকিং সাপোর্ট' : 'Delivery Tracking'}
                     </p>
@@ -244,19 +244,19 @@ export function ContactClient({
                         : 'Track parcel status with order number'}
                     </p>
                   </div>
-                </div>
+                </Link>
               </div>
             </div>
           </div>
 
           {/* Right Column: Customer Message & Inquiry Form (5 cols) */}
-          <div className="lg:col-span-5">
-            <div className="p-6 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-5">
+          <div className="lg:col-span-5 min-w-0">
+            <div className="p-4 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-5">
               <div>
                 <p className="text-xs font-semibold text-[var(--store-accent)]">
                   {locale === 'bn' ? 'বার্তা পাঠান' : 'Send a Message'}
                 </p>
-                <h3 className="text-xl font-bold text-[#162119] mt-0.5">
+                <h3 className="text-lg sm:text-xl font-bold text-[#162119] mt-0.5">
                   {locale === 'bn'
                     ? 'আপনার জিজ্ঞাসা বা মতামত জানান'
                     : 'Customer Inquiry / Feedback'}
@@ -296,7 +296,7 @@ export function ContactClient({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={locale === 'bn' ? 'যেমন: তানভীর আহমেদ' : 'e.g. Tanvir Ahmed'}
-                    className="w-full min-h-[42px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[var(--store-accent)]"
+                    className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[var(--store-accent)]"
                   />
                 </div>
 
@@ -310,7 +310,7 @@ export function ContactClient({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="017XXXXXXXX"
-                    className="w-full min-h-[42px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[var(--store-accent)]"
+                    className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[var(--store-accent)]"
                   />
                 </div>
 
@@ -323,7 +323,7 @@ export function ContactClient({
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder={locale === 'bn' ? 'যেমন: পণ্য সম্পর্কে জিজ্ঞাসা' : 'e.g. Product inquiry'}
-                    className="w-full min-h-[42px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[var(--store-accent)]"
+                    className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl focus:outline-none focus:border-[var(--store-accent)]"
                   />
                 </div>
 
@@ -348,7 +348,7 @@ export function ContactClient({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full min-h-[46px] px-5 py-3 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 disabled:opacity-50"
+                  className="w-full min-h-[46px] px-5 py-3 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" aria-hidden="true" />
                   <span>

@@ -83,20 +83,19 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <article
-      className="group flex flex-col justify-between bg-transparent"
+      className="group flex flex-col justify-between bg-transparent min-w-0"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div>
-        {/* 4:5 Frameless Portrait Image Canvas */}
-        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[#F2EFE9] border border-[#E4E2DC]/70">
+      <div className="min-w-0">
+        {/* 4:5 Editorial Portrait Image Canvas */}
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-[#F9F8F3] border border-[#E5E2D9]">
           <Link
             href={`/product/${product.slug}`}
             className="block w-full h-full relative"
             aria-label={displayName}
           >
             <img
-              
               src={activeImage}
               alt={displayName}
               referrerPolicy="no-referrer"
@@ -104,23 +103,23 @@ export function ProductCard({ product }: ProductCardProps) {
               className="object-cover transition-transform duration-500 ease-out group-hover:scale-105" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
           </Link>
 
-          {/* Subtle Top-Left Editorial Status Tag */}
-          <div className="absolute top-3 left-3 flex flex-col gap-1 z-10 pointer-events-none">
+          {/* Subtle Top-Left Editorial Status Tag (bounded to avoid colliding with wishlist button on 360px 2-col) */}
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 max-w-[calc(100%-3.25rem)] sm:max-w-[calc(100%-4rem)] flex flex-col gap-1 z-10 pointer-events-none">
             {isOutOfStock ? (
-              <span className="px-2.5 py-1 text-[11px] font-semibold bg-[#FAF9F5]/95 backdrop-blur-sm text-[#B91C1C] rounded-md border border-[#E4E2DC]">
+              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-[#FDFCF8]/95 text-[#B91C1C] border border-[#E5E2D9] truncate">
                 {dict.common.outOfStock}
               </span>
             ) : isLowStock ? (
-              <span className="px-2.5 py-1 text-[11px] font-semibold bg-[#FAF9F5]/95 backdrop-blur-sm text-[#B45309] rounded-md border border-[#E4E2DC]">
+              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-[#FDFCF8]/95 text-[#A84A28] border border-[#E5E2D9] truncate">
                 {dict.common.lowStockRemaining(totalStock)}
               </span>
             ) : product.isFreeDelivery ? (
-              <span className="px-2.5 py-1 text-[11px] font-semibold bg-[#FAF9F5]/95 backdrop-blur-sm text-[var(--store-accent)] rounded-md border border-[#E4E2DC]">
+              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-[#FDFCF8]/95 text-[#1B4332] border border-[#E5E2D9] truncate">
                 {dict.common.freeDelivery}
               </span>
             ) : product.requiresAdvanceCourierCharge ? (
-              <span className="px-2.5 py-1 text-[10px] font-semibold bg-[#FAF9F5]/95 backdrop-blur-sm text-[#B45309] rounded-md border border-[#B45309]/30">
-                {locale === 'bn' ? 'অগ্রিম কুরিয়ার চার্জ' : 'Advance Courier'}
+              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-[#FDFCF8]/95 text-[#A84A28] border border-[#E5E2D9] truncate">
+                {locale === 'bn' ? 'অগ্রিম চার্জ' : 'Advance'}
               </span>
             ) : null}
           </div>
@@ -138,11 +137,11 @@ export function ProductCard({ product }: ProductCardProps) {
                 ? `Remove ${displayName} from wishlist`
                 : `Add ${displayName} to wishlist`
             }
-            className="absolute top-3 right-3 min-w-[40px] min-h-[40px] w-10 h-10 flex items-center justify-center rounded-full bg-[#FAF9F5]/90 backdrop-blur-sm text-[#162119] border border-[#E4E2DC]/80 hover:bg-white hover:border-[var(--store-accent)] cursor-pointer z-10 transition-all active:scale-95"
+            className="absolute top-2 right-2 sm:top-3 sm:right-3 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-[#FDFCF8]/90 text-[#1B4332] border border-[#E5E2D9] hover:bg-white hover:border-[#1B4332] cursor-pointer z-10 transition-all active:scale-95"
           >
             <Heart
-              className={`w-4 h-4 transition-colors ${
-                isWishlisted ? 'fill-[var(--store-accent)] text-[var(--store-accent)]' : 'text-[#162119]'
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
+                isWishlisted ? 'fill-[#A84A28] text-[#A84A28]' : 'text-[#1B4332]'
               }`}
               aria-hidden="true"
             />
@@ -154,16 +153,16 @@ export function ProductCard({ product }: ProductCardProps) {
               type="button"
               disabled={isOutOfStock}
               onClick={handleQuickAdd}
-              className={`w-full min-h-[42px] px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm ${
+              className={`w-full min-h-[42px] px-4 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.12em] flex items-center justify-center gap-2 transition-all cursor-pointer ${
                 isOutOfStock
-                  ? 'bg-[#FAF9F5]/90 text-[#5A655D] border border-[#E4E2DC] cursor-not-allowed'
-                  : 'bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 active:scale-[0.98]'
+                  ? 'bg-[#FDFCF8]/95 text-[#1B4332]/50 border border-[#E5E2D9] cursor-not-allowed'
+                  : 'bg-[var(--store-accent)] text-white hover:opacity-90 active:scale-[0.98]'
               }`}
             >
               {justAdded ? (
-                <Check className="w-4 h-4" aria-hidden="true" />
+                <Check className="w-3.5 h-3.5" aria-hidden="true" />
               ) : (
-                <ShoppingBag className="w-4 h-4" aria-hidden="true" />
+                <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
               )}
               <span>
                 {isOutOfStock
@@ -179,22 +178,22 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Frameless Editorial Typography Below Image */}
-        <div className="pt-3.5 space-y-1">
-          {/* Unboxed Metadata Line (Zero-Pill Discipline) */}
-          <div className="flex items-center gap-1.5 text-[11px] text-[#5A655D]">
-            <span className="inline-flex items-center gap-1 font-medium text-[#162119]">
-              <Star className="w-3.5 h-3.5 fill-[var(--store-accent)] text-[var(--store-accent)]" aria-hidden="true" />
-              <span className="tabular-nums">
+        <div className="pt-2.5 sm:pt-3.5 space-y-1 min-w-0">
+          {/* Unboxed Metadata Line */}
+          <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] text-[#1B4332]/65 min-w-0 overflow-hidden">
+            <span className="inline-flex items-center gap-0.5 sm:gap-1 font-medium text-[#1B4332] shrink-0">
+              <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-[#A84A28] text-[#A84A28]" aria-hidden="true" />
+              <span className="font-mono tabular-nums">
                 {locale === 'bn' ? toBanglaDigits(ratingValue) : ratingValue}
               </span>
-              <span className="text-[#5A655D] font-normal">
+              <span className="text-[#1B4332]/55 font-normal">
                 ({formatLocaleNumber(product.reviewCount, locale)})
               </span>
             </span>
             {!isOutOfStock && (
               <>
-                <span aria-hidden="true">·</span>
-                <span className="text-[#15803D] font-medium">
+                <span aria-hidden="true" className="shrink-0">·</span>
+                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.05em] text-[#15803D] truncate">
                   {dict.common.inStock}
                 </span>
               </>
@@ -204,20 +203,20 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Product Name */}
           <Link
             href={`/product/${product.slug}`}
-            className="block text-sm sm:text-[15px] font-semibold text-[#162119] group-hover:text-[var(--store-accent)] line-clamp-2 leading-snug transition-colors"
+            className="block font-display text-[15px] sm:text-lg font-semibold text-[#1B4332] group-hover:text-[#A84A28] line-clamp-2 leading-snug transition-colors"
           >
             {displayName}
           </Link>
 
-          {/* Price Row (Exact Tabular Poisha) */}
-          <div className="flex items-baseline gap-2 pt-0.5 tabular-nums">
-            <span className="text-sm sm:text-base font-bold text-[#162119]">
+          {/* Price Row */}
+          <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-0.5 tabular-nums">
+            <span className="text-sm sm:text-base font-semibold text-[#1B4332]">
               {formatPoishaToBdt(primaryVariant.salePricePoisha, locale)}
             </span>
             {primaryVariant.compareAtPricePoisha &&
               primaryVariant.compareAtPricePoisha >
                 primaryVariant.salePricePoisha && (
-                <span className="text-xs text-[#5A655D] line-through">
+                <span className="text-[11px] sm:text-xs text-[#1B4332]/50 line-through">
                   {formatPoishaToBdt(primaryVariant.compareAtPricePoisha, locale)}
                 </span>
               )}
@@ -225,31 +224,33 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
       </div>
 
-      {/* Mobile Touch-Accessible Quick-Add Button (< 640px, >= 44px touch target) */}
-      <div className="sm:hidden pt-2.5">
+      {/* Mobile Touch-Accessible Quick-Add Button */}
+      <div className="sm:hidden pt-2">
         <button
           type="button"
           disabled={isOutOfStock}
           onClick={handleQuickAdd}
-          className={`w-full min-h-[44px] px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+          className={`w-full min-h-[44px] px-2.5 py-2 rounded-lg font-mono text-[10px] uppercase tracking-[0.06em] flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
             isOutOfStock
-              ? 'bg-[#F2EFE9] text-[#5A655D] border border-[#E4E2DC] cursor-not-allowed'
-              : 'bg-[var(--store-accent)] text-[#FAF9F5] active:scale-[0.98]'
+              ? 'bg-[#F9F8F3] text-[#1B4332]/50 border border-[#E5E2D9] cursor-not-allowed'
+              : 'bg-[var(--store-accent)] text-white active:scale-[0.98]'
           }`}
         >
           {justAdded ? (
-            <Check className="w-3.5 h-3.5" aria-hidden="true" />
+            <Check className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           ) : (
-            <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
+            <ShoppingBag className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           )}
-          <span>
+          <span className="truncate">
             {isOutOfStock
               ? dict.common.outOfStock
               : justAdded
               ? locale === 'bn'
                 ? 'যুক্ত হয়েছে'
                 : 'Added'
-              : dict.common.addToCart}
+              : locale === 'bn'
+              ? 'কার্টে যোগ'
+              : 'Add to Cart'}
           </span>
         </button>
       </div>

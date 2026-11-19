@@ -39,11 +39,14 @@ import type {
 import { formatPoishaToBdt } from '@/lib/money';
 import { formatLocaleNumber } from '@/lib/i18n/dictionaries';
 import { Badge, Button, Input } from '../ui/primitives';
+import { CourierBulkCsvPanel } from './courier-bulk-csv-panel';
+import type { OrderGridRowDTO } from '@/types/domain';
 
 export interface Phase6LiveOpsPanelProps {
   locale: 'bn' | 'en';
   overview: Phase6WorkspaceOverviewDTO;
   availableOrderNos: string[];
+  orders?: Array<Partial<OrderGridRowDTO>>;
   onRefreshWorkspace: () => Promise<void>;
 }
 
@@ -57,6 +60,7 @@ export function Phase6LiveOpsPanel({
   locale,
   overview,
   availableOrderNos,
+  orders = [],
   onRefreshWorkspace,
 }: Phase6LiveOpsPanelProps) {
   const [activeSubTab, setActiveSubTab] =
@@ -918,6 +922,38 @@ export function Phase6LiveOpsPanel({
               )}
             </div>
           </div>
+
+          {/* Interactive Date-Range Courier Bulk CSV Studio */}
+          {orders.length > 0 && (
+            <CourierBulkCsvPanel
+              orders={orders}
+              onExecuteOperation={async (payload) => {
+                const res = await fetch('/api/admin/workspace', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                });
+                const data = (await res.json()) as {
+                  success: boolean;
+                  messageBn?: string;
+                  errorBn?: string;
+                };
+                if (data.success) {
+                  setFeedback({
+                    type: 'success',
+                    message:
+                      data.messageBn || 'কুরিয়ার ও এরিয়া তথ্য সফলভাবে সিঙ্ক হয়েছে।',
+                  });
+                  await onRefreshWorkspace();
+                } else {
+                  setFeedback({
+                    type: 'error',
+                    message: data.errorBn || 'আপডেট ব্যর্থ হয়েছে।',
+                  });
+                }
+              }}
+            />
+          )}
 
           {/* Bulk Courier Booking CSV Export Preview */}
           <div className="p-4 border border-border bg-bg rounded-[var(--radius-md)] space-y-3">

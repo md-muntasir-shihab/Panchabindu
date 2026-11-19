@@ -14,7 +14,10 @@ import type {
   PaymentMethod,
 } from '../../types/database.types';
 import type {
+  BdPostServiceType,
+  CustomerDefaultProfileRecord,
   OrderGridRowDTO,
+  PathaoItemType,
   Poisha,
   PromoRuleInput,
   StorefrontProductDTO,
@@ -31,6 +34,10 @@ import {
   getDistrictDeliveryRates,
   getUpazilaById,
 } from '../geo/bd-geocode';
+import {
+  isValidBdPostCode,
+  resolveGeoCourierDefaults,
+} from '../geo/bd-courier-geo';
 import {
   applyBasisPointsHalfUp,
   buildOrderItemPricingSnapshot,
@@ -210,6 +217,22 @@ export interface SiteSettingsRecord {
     { titleBn: string; titleEn: string; contentBn: string; contentEn: string }
   >;
   aboutContactPage?: AboutContactPageSettings;
+  pathaoDefaultStoreName?: string;
+  pathaoDefaultItemType?: PathaoItemType;
+  courierSenderNameBn?: string;
+  courierSenderPhone?: string;
+  courierSenderAddressBn?: string;
+  courierSenderPostCode?: string;
+  defaultBdPostServiceType?: BdPostServiceType;
+  districtRateOverrides?: Record<
+    number,
+    {
+      base1KgPoisha: Poisha;
+      extraPerKgPoisha: Poisha;
+      bdPostPerKgPoisha: Poisha;
+      isFreeDeliveryDistrict: boolean;
+    }
+  >;
 }
 
 export interface AboutContactPageSettings {
@@ -368,10 +391,91 @@ export interface ErpPersistentState {
   abandonedCarts: AbandonedCartSnapshot[];
   inquiries: CustomerInquiryRecord[];
   manualBkashSubmissions?: ManualBkashSubmissionRecord[];
+  customerProfiles?: Record<string, CustomerDefaultProfileRecord>;
 }
 
 const DATA_DIR = path.join(process.cwd(), '.data');
 const DATA_FILE = path.join(DATA_DIR, 'erp-store.json');
+const PHASE4B_RATES_FILE = path.join(DATA_DIR, 'erp-phase4b-store.json');
+
+export function readDistrictRateOverridesMap(): Record<
+  number,
+  {
+    base1KgPoisha: Poisha;
+    extraPerKgPoisha: Poisha;
+    bdPostPerKgPoisha: Poisha;
+    isFreeDeliveryDistrict: boolean;
+  }
+> {
+  const raw = readLocalJsonStore<{
+    districtRateOverrides?: Record<
+      string,
+      {
+        base1KgPoisha: Poisha;
+        extraPerKgPoisha: Poisha;
+        bdPostPerKgPoisha: Poisha;
+        isFreeDeliveryDistrict: boolean;
+      }
+    >;
+  }>(PHASE4B_RATES_FILE, { optionalObjects: ['districtRateOverrides'] });
+  const out: Record<
+    number,
+    {
+      base1KgPoisha: Poisha;
+      extraPerKgPoisha: Poisha;
+      bdPostPerKgPoisha: Poisha;
+      isFreeDeliveryDistrict: boolean;
+    }
+  > = {};
+  if (raw?.districtRateOverrides && typeof raw.districtRateOverrides === 'object') {
+    for (const [k, v] of Object.entries(raw.districtRateOverrides)) {
+      const id = Number(k);
+      if (Number.isInteger(id) && v && typeof v === 'object') {
+        out[id] = {
+          base1KgPoisha: Number(v.base1KgPoisha) || 0,
+          extraPerKgPoisha: Number(v.extraPerKgPoisha) || 0,
+          bdPostPerKgPoisha: Number(v.bdPostPerKgPoisha) || 0,
+          isFreeDeliveryDistrict: Boolean(v.isFreeDeliveryDistrict),
+        };
+      }
+    }
+  }
+  return out;
+}
+
+export function getEffectiveDistrictDeliveryRates(
+  districtId: number,
+  bdPostDefaultPerKgPoisha = 1000
+): {
+  isInsideDhaka: boolean;
+  base1KgPoisha: number;
+  extraPerKgPoisha: number;
+  bdPostPerKgPoisha: number;
+  isFreeDeliveryDistrict: boolean;
+} {
+  const base = getDistrictDeliveryRates(districtId, bdPostDefaultPerKgPoisha);
+  const overrides = readDistrictRateOverridesMap();
+  const ov = overrides[districtId];
+  if (!ov) {
+    return { ...base, isFreeDeliveryDistrict: false };
+  }
+  if (ov.isFreeDeliveryDistrict) {
+    return {
+      isInsideDhaka: base.isInsideDhaka,
+      base1KgPoisha: 0,
+      extraPerKgPoisha: 0,
+      bdPostPerKgPoisha: 0,
+      isFreeDeliveryDistrict: true,
+    };
+  }
+  return {
+    isInsideDhaka: base.isInsideDhaka,
+    base1KgPoisha: ov.base1KgPoisha,
+    extraPerKgPoisha: ov.extraPerKgPoisha,
+    bdPostPerKgPoisha: ov.bdPostPerKgPoisha,
+    isFreeDeliveryDistrict: false,
+  };
+}
 
 function getInitialSeedState(): ErpPersistentState {
   const siteSettings: SiteSettingsRecord = {
@@ -406,6 +510,13 @@ function getInitialSeedState(): ErpPersistentState {
     maintenanceMessageBn:
       'সাইটটি বর্তমানে রক্ষণাবেক্ষণের কাজ চলছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।',
     demoMode: true,
+    pathaoDefaultStoreName: 'Panchabindu',
+    pathaoDefaultItemType: 'parcel',
+    courierSenderNameBn: 'পঞ্চবিন্দু (Panchabindu)',
+    courierSenderPhone: '01711002233',
+    courierSenderAddressBn: 'প্লট ১২, রোড ৪/এ, ধানমন্ডি আ/এ, ঢাকা-১২০৫',
+    courierSenderPostCode: '1205',
+    defaultBdPostServiceType: 'vpp_cod',
     delayBanner: {
       enabled: true,
       messageBn: 'ঢাকার ভেতরে ২৪-৪৮ ঘণ্টায় এবং ঢাকার বাইরে ২-৪ কার্যদিবসে নিশ্চিত ডেলিভারি।',
@@ -964,7 +1075,8 @@ function getInitialSeedState(): ErpPersistentState {
   ];
 
   const dDhaka = getDistrictById(47);
-  const uDhanmondi = getUpazilaById(365) ?? { id: 365, name_bn: 'ধানমন্ডি' };
+  const uDhanmondi =
+    getUpazilaById(5064) ?? getUpazilaById(365) ?? { id: 5064, name_bn: 'ধানমন্ডি' };
   const dComilla = getDistrictById(1);
   const uDebidwar = getUpazilaById(1);
 
@@ -1188,6 +1300,7 @@ export function readErpState(): ErpPersistentState {
         inquiries: parsed.inquiries ?? [],
         manualBkashSubmissions:
           parsed.manualBkashSubmissions ?? [],
+        customerProfiles: parsed.customerProfiles ?? {},
       };
       return state;
   }
@@ -1211,7 +1324,11 @@ const PUBLIC_SETTINGS_KEYS = [
 
 export type PublicSafeSiteSettingsDTO = Pick<SiteSettingsRecord,
   typeof PUBLIC_SETTINGS_KEYS[number] | 'delayBanner' | 'promoCampaign' |
-  'trustBadges' | 'heroBanners' | 'homepageSections' | 'legalPages' | 'aboutContactPage' | 'storefront'>;
+  'trustBadges' | 'heroBanners' | 'homepageSections' | 'legalPages' | 'aboutContactPage' | 'storefront' | 'districtRateOverrides'> &
+  Partial<Pick<SiteSettingsRecord,
+    'pathaoDefaultStoreName' | 'pathaoDefaultItemType' | 'courierSenderNameBn' |
+    'courierSenderPhone' | 'courierSenderAddressBn' | 'courierSenderPostCode' | 'defaultBdPostServiceType'
+  >>;
 
 function pickFields<T, K extends keyof T>(value: T, keys: readonly K[]): Pick<T, K> {
   return Object.fromEntries(keys.map((key) => [key, value[key]])) as Pick<T, K>;
@@ -1228,9 +1345,11 @@ function mapPublicCategory(value: CategoryRecord): CategoryRecord {
 export function sanitizeSiteSettingsForPublic(
   settings: PublicSafeSiteSettingsDTO
 ): PublicSafeSiteSettingsDTO {
+  const overrides = readDistrictRateOverridesMap();
   return {
     ...pickFields(settings, PUBLIC_SETTINGS_KEYS),
     storefront: getStorefrontConfig(settings),
+    ...(Object.keys(overrides).length > 0 ? { districtRateOverrides: overrides } : {}),
     delayBanner: pickFields(settings.delayBanner, ['enabled', 'messageBn', 'messageEn']),
     promoCampaign: pickFields(settings.promoCampaign, ['enabled', 'titleBn', 'titleEn', 'code', 'discountLabelBn', 'discountLabelEn']),
     trustBadges: settings.trustBadges.map((v) => pickFields(v, ['id', 'labelBn', 'labelEn', 'descBn', 'descEn'])),
@@ -2646,11 +2765,20 @@ export function reviewManualBkashSubmission(
     return { success: false, errorBn: 'অর্ডারটি খুঁজে পাওয়া যায়নি।' };
   }
 
-  const sub = state.manualBkashSubmissions.find(
-    (s) =>
-      s.orderNo.toUpperCase() === orderNoUpper &&
-      (!input.trxId || s.trxId.toUpperCase() === input.trxId.trim().toUpperCase())
-  );
+  const trimmedTrx = input.trxId?.trim().toUpperCase();
+  const sub =
+    state.manualBkashSubmissions.find(
+      (s) =>
+        s.orderNo.toUpperCase() === orderNoUpper &&
+        (trimmedTrx
+          ? s.trxId.toUpperCase() === trimmedTrx
+          : s.status === 'pending_verification' || s.status === 'under_review')
+    ) ??
+    state.manualBkashSubmissions.find(
+      (s) =>
+        s.orderNo.toUpperCase() === orderNoUpper &&
+        (!trimmedTrx || s.trxId.toUpperCase() === trimmedTrx)
+    );
 
   if (!sub) {
     return {
@@ -2734,6 +2862,26 @@ export function reviewManualBkashSubmission(
   sub.reviewedByUsername = checkerCtx.username;
   sub.reviewNoteBn = input.reviewNoteBn?.trim() || null;
   sub.reviewedAt = nowIso;
+
+  const stillHasPendingClaim = state.manualBkashSubmissions.some(
+    (s) =>
+      s.orderNo.toUpperCase() === orderNoUpper &&
+      (s.status === 'pending_verification' || s.status === 'under_review')
+  );
+  if (stillHasPendingClaim) {
+    targetOrder.nextBestAction = 'VERIFY_BKASH_TRX';
+  } else if (targetOrder.nextBestAction === 'VERIFY_BKASH_TRX') {
+    targetOrder.nextBestAction =
+      targetOrder.status === 'pending_confirmation'
+        ? 'CALL_TO_CONFIRM'
+        : targetOrder.status === 'confirmed'
+        ? 'READY_TO_PACK'
+        : targetOrder.status === 'packed'
+        ? targetOrder.trackingCode
+          ? 'HANDOVER_TO_COURIER'
+          : 'READY_TO_BOOK_COURIER'
+        : 'COMPLETED';
+  }
 
   if (input.decision === 'approved' && prevStatus !== 'approved') {
     const posting = postVerifiedManualBkashPaymentJournal({ submissionId: sub.submissionId, orderNo: targetOrder.orderNo,

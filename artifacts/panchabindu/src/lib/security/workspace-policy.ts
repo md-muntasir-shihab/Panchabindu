@@ -31,13 +31,16 @@ export const WORKSPACE_ACTIONS = {
   upsert_product: ['catalog', 'update'], delete_product: ['catalog', 'delete'], upsert_category: ['catalog', 'update'],
   update_inquiry_status: ['messaging', 'update'], update_about_contact_settings: ['settings_control_center', 'update'],
   review_manual_bkash: ['finance', 'update'], input_manual_mfs: ['finance', 'create'],
+  update_order_courier_meta: ['orders', 'update'],
+  auto_sync_orders_geo: ['orders', 'update'],
+  preview_courier_bulk_csv: ['couriers', 'read'],
 } as const satisfies Record<string, readonly [PermissionModuleKey, PermissionAction]>;
 
 export function canExecuteWorkspaceAction(ctx: ActorSecurityContext | null, operation: string): boolean {
   if (!canAccessAdminWorkspace(ctx) || !ctx || !Object.hasOwn(WORKSPACE_ACTIONS, operation)) return false;
-  if (['create_flash_campaign', 'promote_matured_escrow', 'trigger_sheets_sync', 'run_scheduled_job_now', 'sync_courier_tracking', 'simulate_courier_webhook', 'create_system_backup_snapshot'].includes(operation)) return false;
+  if (['create_flash_campaign', 'promote_matured_escrow', 'run_scheduled_job_now', 'sync_courier_tracking', 'simulate_courier_webhook'].includes(operation)) return false;
   const [module, action] = WORKSPACE_ACTIONS[operation as keyof typeof WORKSPACE_ACTIONS];
   // Catalog editing is cost-bearing; a separate field-safe staff editor remains gated.
-  if (['upsert_product', 'upsert_category', 'delete_product', 'generate_print_slips', 'upsert_blacklist'].includes(operation) && ctx.roleSlug !== 'super_admin') return false;
+  if (['upsert_product', 'upsert_category', 'delete_product', 'generate_print_slips', 'upsert_blacklist', 'trigger_sheets_sync', 'create_system_backup_snapshot'].includes(operation) && ctx.roleSlug !== 'super_admin') return false;
   return hasModulePermission(ctx, module, action);
 }

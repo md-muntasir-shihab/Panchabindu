@@ -1359,6 +1359,131 @@ export function executeAutomationRuleSimulation(
 // 8. MODULE J: GOOGLE SHEETS ONE-WAY MIRROR SYNC
 // ============================================================================
 
+function resolveGoogleSheetsWebhookUrl(): string | null {
+  const candidate = (
+    process.env.GOOGLE_SHEETS_APPS_SCRIPT_URL ||
+    process.env.GOOGLE_SHEETS_WEBHOOK_URL ||
+    ''
+  ).trim();
+  if (!candidate || /your-|placeholder|example\.com/i.test(candidate)) {
+    return null;
+  }
+  return /^https?:\/\//i.test(candidate) ? candidate : null;
+}
+
+function buildGoogleSheetsMirrorPayload(mode: 'incremental' | 'full_resync') {
+  const erpState = readErpState();
+  const p4bStore = readPhase4BStore();
+  const p4cStore = readPhase4CStore();
+
+  const ordersRows = erpState.orders.map((o) => ({
+    orderNo: o.orderNo,
+    status: o.status,
+    customerName: o.customerName,
+    customerPhone: o.customerPhone,
+    totalPayableBdt: Number((o.totalPayablePoisha / 100).toFixed(2)),
+    codCollectableBdt: Number((o.codCollectablePoisha / 100).toFixed(2)),
+    courierProvider: o.courierProvider ?? '',
+    trackingCode: o.trackingCode ?? '',
+    createdAt: o.createdAt,
+  }));
+
+  const orderItemsRows = erpState.orderLines.map((l) => ({
+    orderId: l.orderId,
+    productNameBn: l.productNameBn,
+    variantTitleBn: l.variantTitleBn,
+    publicSku: l.publicSku,
+    quantity: l.quantity,
+    unitSalePriceBdt: Number((l.snapUnitSalePricePoisha / 100).toFixed(2)),
+  }));
+
+  const inventoryRows = erpState.products.flatMap((p) =>
+    p.variants.map((v) => ({
+      productId: p.productId,
+      productNameBn: p.nameBn,
+      publicSku: v.publicSku,
+      variantTitleBn: v.titleBn,
+      stockOnHand: v.stockOnHand,
+      stockReserved: v.stockReserved,
+      salePriceBdt: Number((v.salePricePoisha / 100).toFixed(2)),
+    }))
+  );
+
+  const vendorLedgerRows = p4bStore.vendorLedger.map((e) => ({
+    id: e.id,
+    vendorId: e.vendorId,
+    orderNo: e.orderNo ?? '',
+    entryType: e.entryType,
+    amountBdt: Number((e.amountPoisha / 100).toFixed(2)),
+    escrowBucket: e.escrowBucket,
+    createdAt: e.createdAt,
+  }));
+
+  const payoutRows = p4bStore.payoutRequests.map((p) => ({
+    payoutId: p.payoutId,
+    vendorId: p.vendorId,
+    amountBdt: Number((p.requestedAmountPoisha / 100).toFixed(2)),
+    status: p.status,
+    requestedAt: p.requestedAt,
+  }));
+
+  const expenseRows = p4cStore.expenses
+    .filter((e) => e.category !== 'ad_spend')
+    .map((e) => ({
+      id: e.id,
+      category: e.category,
+      amountBdt: Number((e.amountPoisha / 100).toFixed(2)),
+      expenseDate: e.expenseDate,
+      noteBn: e.noteBn,
+    }));
+
+  const adSpendRows = p4cStore.expenses
+    .filter((e) => e.category === 'ad_spend')
+    .map((e) => ({
+      id: e.id,
+      sourceChannel: e.sourceChannel,
+      campaignName: e.campaignName,
+      amountBdt: Number((e.amountPoisha / 100).toFixed(2)),
+      expenseDate: e.expenseDate,
+    }));
+
+  const customerMap = new Map<string, { phone: string; name: string; ordersCount: number }>();
+  for (const o of erpState.orders) {
+    const existing = customerMap.get(o.customerPhone);
+    if (existing) {
+      existing.ordersCount += 1;
+    } else {
+      customerMap.set(o.customerPhone, {
+        phone: o.customerPhone,
+        name: o.customerName,
+        ordersCount: 1,
+      });
+    }
+  }
+  const customerRows = Array.from(customerMap.values());
+
+  const tabs: Record<string, unknown[]> = {
+    Orders: ordersRows,
+    'Order Items': orderItemsRows,
+    Inventory: inventoryRows,
+    'Vendor Ledger': vendorLedgerRows,
+    Payouts: payoutRows,
+    Expenses: expenseRows,
+    'Ad Spend': adSpendRows,
+    Customers: customerRows,
+  };
+
+  const rowsExportedCount = Object.values(tabs).reduce((acc, list) => acc + list.length, 0);
+
+  return {
+    mode,
+    exportedAt: new Date().toISOString(),
+    tabsSynced: Object.keys(tabs),
+    rowsExportedCount,
+    tabs,
+  };
+}
+
 export function triggerGoogleSheetsOneWaySync(
   ctx: ActorSecurityContext,
   mode: 'incremental' | 'full_resync'
@@ -1374,47 +1499,26 @@ export function triggerGoogleSheetsOneWaySync(
     };
   }
 
-  const erpState = readErpState();
-  const p4bStore = readPhase4BStore();
   const p4cStore = readPhase4CStore();
   const adminStore = readAdminStore();
-
-  const tabsSynced = [
-    'Orders',
-    'Order Items',
-    'Inventory',
-    'Vendor Ledger',
-    'Payouts',
-    'Expenses',
-    'Ad Spend',
-    'Customers',
-  ];
-
-  const rowsExportedCount =
-    erpState.orders.length +
-    erpState.orderLines.length +
-    erpState.products.length +
-    p4bStore.vendorLedger.length +
-    p4bStore.payoutRequests.length +
-    p4cStore.expenses.length;
-
+  const mirror = buildGoogleSheetsMirrorPayload(mode);
   const webhookConnected = Boolean(
-    p4cStore.encryptedCredentialsVault['GOOGLE_SHEETS_WEBHOOK_URL'] ||
-      process.env.GOOGLE_SHEETS_WEBHOOK_URL
+    resolveGoogleSheetsWebhookUrl() ||
+      p4cStore.encryptedCredentialsVault['GOOGLE_SHEETS_WEBHOOK_URL']
   );
 
   const job: SheetsSyncJobRecord = {
     id: `sync-${Date.now()}`,
     mode,
-    tabsSynced,
-    rowsExportedCount,
+    tabsSynced: mirror.tabsSynced,
+    rowsExportedCount: mirror.rowsExportedCount,
     webhookConnected,
     status: webhookConnected ? 'pushed_to_webhook' : 'mirrored_local_snapshot',
     summaryBn: webhookConnected
-      ? `৮টি ট্যাবের মোট ${rowsExportedCount}টি রো গুগল শিট ওয়েবহুকে One-Way Mirror হিসেবে পুশ করা হয়েছে।`
-      : `গুগল শিট ওয়েবহুক সংযুক্ত নেই (Not Connected — Setup Guide)। ৮টি ট্যাবের ${rowsExportedCount}টি রো লোকাল মিরর স্ন্যাপশটে প্রস্তুত করা হয়েছে।`,
+      ? `৮টি ট্যাবের মোট ${mirror.rowsExportedCount}টি রো গুগল শিট ওয়েবহুকে One-Way Mirror হিসেবে পুশ করা হয়েছে।`
+      : `গুগল শিট ওয়েবহুক সংযুক্ত নেই (Not Connected — Setup Guide)। ৮টি ট্যাবের ${mirror.rowsExportedCount}টি রো লোকাল মিরর স্ন্যাপশটে প্রস্তুত করা হয়েছে।`,
     triggeredByUsername: ctx.username,
-    createdAt: new Date().toISOString(),
+    createdAt: mirror.exportedAt,
   };
 
   p4cStore.sheetsSyncHistory.unshift(job);
@@ -1427,11 +1531,143 @@ export function triggerGoogleSheetsOneWaySync(
     targetType: 'system',
     targetId: job.id,
     summaryBn: job.summaryBn,
-    metadata: { mode, rowsExportedCount, webhookConnected },
+    metadata: {
+      mode,
+      rowsExportedCount: mirror.rowsExportedCount,
+      webhookConnected,
+    },
   });
 
   writePhase4CStore(p4cStore);
+  writeAdminStore(adminStore);
   return { success: true, job };
+}
+
+export async function executeGoogleSheetsOneWaySync(
+  ctx: ActorSecurityContext,
+  mode: 'incremental' | 'full_resync'
+): Promise<{
+  success: boolean;
+  code?: string;
+  errorBn?: string;
+  errorEn?: string;
+  job?: SheetsSyncJobRecord;
+  snapshotPayload?: ReturnType<typeof buildGoogleSheetsMirrorPayload>;
+}> {
+  if (ctx.roleSlug !== 'super_admin') {
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      errorBn: 'শুধুমাত্র সুপার অ্যাডমিন মাস্টার গুগল শিট সিঙ্ক ট্রিগার করতে পারবেন।',
+      errorEn: 'Only super admins can trigger Google Sheets mirror sync.',
+    };
+  }
+
+  const p4cStore = readPhase4CStore();
+  const adminStore = readAdminStore();
+  const mirror = buildGoogleSheetsMirrorPayload(mode);
+  const webhookUrl = resolveGoogleSheetsWebhookUrl();
+
+  if (!webhookUrl) {
+    const job: SheetsSyncJobRecord = {
+      id: `sync-${Date.now()}`,
+      mode,
+      tabsSynced: mirror.tabsSynced,
+      rowsExportedCount: mirror.rowsExportedCount,
+      webhookConnected: false,
+      status: 'mirrored_local_snapshot',
+      summaryBn: `GOOGLE_SHEETS_APPS_SCRIPT_URL কনফিগার করা নেই। ৮টি ট্যাবের ${mirror.rowsExportedCount}টি রো লোকাল মিরর স্ন্যাপশট হিসেবে প্রস্তুত করা হয়েছে।`,
+      triggeredByUsername: ctx.username,
+      createdAt: mirror.exportedAt,
+    };
+
+    p4cStore.sheetsSyncHistory.unshift(job);
+    appendImmutableAuditLog(adminStore, {
+      actorUserId: ctx.userId,
+      actorUsername: ctx.username,
+      actorRole: ctx.roleSlug,
+      actionCode: 'GOOGLE_SHEETS_LOCAL_SNAPSHOT',
+      targetType: 'system',
+      targetId: job.id,
+      summaryBn: job.summaryBn,
+      metadata: { mode, rowsExportedCount: mirror.rowsExportedCount, webhookConnected: false },
+    });
+    writePhase4CStore(p4cStore);
+    writeAdminStore(adminStore);
+    return { success: true, code: 'SHEETS_LOCAL_SNAPSHOT', job, snapshotPayload: mirror };
+  }
+
+  const sharedSecret = (process.env.GOOGLE_SHEETS_SHARED_SECRET || '').trim();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(sharedSecret ? { 'X-Panchabindu-Secret': sharedSecret } : {}),
+      },
+      body: JSON.stringify({
+        mode: mirror.mode,
+        exportedAt: mirror.exportedAt,
+        sharedSecret: sharedSecret || undefined,
+        tabs: mirror.tabs,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return {
+        success: false,
+        code: 'SHEETS_WEBHOOK_HTTP_ERROR',
+        errorBn: `Google Apps Script ওয়েবহুক HTTP ${response.status} রিটার্ন করেছে। ওয়েব অ্যাপ ডিপ্লয়মেন্ট ও পারমিশন চেক করুন।`,
+        errorEn: `Google Apps Script webhook returned HTTP ${response.status}. Check Web App deployment permissions.`,
+      };
+    }
+
+    const job: SheetsSyncJobRecord = {
+      id: `sync-${Date.now()}`,
+      mode,
+      tabsSynced: mirror.tabsSynced,
+      rowsExportedCount: mirror.rowsExportedCount,
+      webhookConnected: true,
+      status: 'pushed_to_webhook',
+      summaryBn: `৮টি ট্যাবের মোট ${mirror.rowsExportedCount}টি রো লাইভ Google Apps Script ওয়েবহুকে সফলভাবে পুশ হয়েছে।`,
+      triggeredByUsername: ctx.username,
+      createdAt: mirror.exportedAt,
+    };
+
+    p4cStore.sheetsSyncHistory.unshift(job);
+    appendImmutableAuditLog(adminStore, {
+      actorUserId: ctx.userId,
+      actorUsername: ctx.username,
+      actorRole: ctx.roleSlug,
+      actionCode: 'GOOGLE_SHEETS_ONE_WAY_SYNC',
+      targetType: 'system',
+      targetId: job.id,
+      summaryBn: job.summaryBn,
+      metadata: {
+        mode,
+        rowsExportedCount: mirror.rowsExportedCount,
+        webhookConnected: true,
+        httpStatus: response.status,
+      },
+    });
+    writePhase4CStore(p4cStore);
+    writeAdminStore(adminStore);
+    return { success: true, job, snapshotPayload: mirror };
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : 'Network failure';
+    return {
+      success: false,
+      code: 'SHEETS_WEBHOOK_NETWORK_ERROR',
+      errorBn: `Google Apps Script ওয়েবহুকে সংযোগ ব্যর্থ হয়েছে: ${reason.slice(0, 100)}`,
+      errorEn: `Failed to reach Google Apps Script webhook: ${reason.slice(0, 100)}`,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 // ============================================================================
@@ -1491,7 +1727,7 @@ const CREDENTIAL_DEFINITIONS: Array<{
     labelBn: 'Google Apps Script Web App URL (One-Way Mirror)',
     category: 'sync',
     setupGuideBn:
-      'মাস্টার গুগল শিটে Extensions → Apps Script-এ নিচের Code.gs পেস্ট করে Deploy as Web App URL এখানে দিন।',
+      'মাস্টার গুগল শিটে Extensions → Apps Script-এ Code.gs পেস্ট করে Deploy as Web App URL সার্ভার Env (GOOGLE_SHEETS_APPS_SCRIPT_URL)-এ দিন।',
   },
 ];
 
@@ -1503,13 +1739,19 @@ export function getMaskedCredentialsList(): MaskedCredentialStatusDTO[] {
 
   return CREDENTIAL_DEFINITIONS.map((def) => {
     const saved = p4cStore.encryptedCredentialsVault[def.keyName];
-    const envVal = process.env[def.keyName];
-    const isConfigured = Boolean(saved || envVal);
+    const envVal =
+      def.keyName === 'GOOGLE_SHEETS_WEBHOOK_URL'
+        ? process.env.GOOGLE_SHEETS_APPS_SCRIPT_URL ||
+          process.env.GOOGLE_SHEETS_WEBHOOK_URL
+        : process.env[def.keyName];
+    const isConfigured = Boolean(
+      saved || (envVal && !/your-|placeholder|example\.com/i.test(envVal))
+    );
 
     let maskedPreview = 'Not Configured';
     if (saved) {
       maskedPreview = saved.maskedPreview;
-    } else if (envVal && envVal.length >= 4) {
+    } else if (envVal && envVal.length >= 4 && isConfigured) {
       maskedPreview = `••••••••${envVal.slice(-4)}`;
     }
 

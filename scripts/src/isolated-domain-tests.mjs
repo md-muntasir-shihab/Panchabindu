@@ -36,6 +36,7 @@ const suites = {
     'lib/inventory/phase3-integrity.test.ts',
     'lib/finance/phase4-ledger.test.ts',
     'lib/courier/phase5-courier-notification.test.ts',
+    'lib/admin/manual-courier-vendor.test.ts',
   ],
 };
 const suite = process.argv[2];

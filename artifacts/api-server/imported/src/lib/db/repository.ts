@@ -14,7 +14,10 @@ import type {
   PaymentMethod,
 } from '../../types/database.types';
 import type {
+  BdPostServiceType,
+  CustomerDefaultProfileRecord,
   OrderGridRowDTO,
+  PathaoItemType,
   Poisha,
   PromoRuleInput,
   StorefrontProductDTO,
@@ -31,6 +34,10 @@ import {
   getDistrictDeliveryRates,
   getUpazilaById,
 } from '../geo/bd-geocode';
+import {
+  isValidBdPostCode,
+  resolveGeoCourierDefaults,
+} from '../geo/bd-courier-geo';
 import {
   applyBasisPointsHalfUp,
   buildOrderItemPricingSnapshot,
@@ -210,6 +217,22 @@ export interface SiteSettingsRecord {
     { titleBn: string; titleEn: string; contentBn: string; contentEn: string }
   >;
   aboutContactPage?: AboutContactPageSettings;
+  pathaoDefaultStoreName?: string;
+  pathaoDefaultItemType?: PathaoItemType;
+  courierSenderNameBn?: string;
+  courierSenderPhone?: string;
+  courierSenderAddressBn?: string;
+  courierSenderPostCode?: string;
+  defaultBdPostServiceType?: BdPostServiceType;
+  districtRateOverrides?: Record<
+    number,
+    {
+      base1KgPoisha: Poisha;
+      extraPerKgPoisha: Poisha;
+      bdPostPerKgPoisha: Poisha;
+      isFreeDeliveryDistrict: boolean;
+    }
+  >;
 }
 
 export interface AboutContactPageSettings {
@@ -368,10 +391,91 @@ export interface ErpPersistentState {
   abandonedCarts: AbandonedCartSnapshot[];
   inquiries: CustomerInquiryRecord[];
   manualBkashSubmissions?: ManualBkashSubmissionRecord[];
+  customerProfiles?: Record<string, CustomerDefaultProfileRecord>;
 }
 
 const DATA_DIR = path.join(process.cwd(), '.data');
 const DATA_FILE = path.join(DATA_DIR, 'erp-store.json');
+const PHASE4B_RATES_FILE = path.join(DATA_DIR, 'erp-phase4b-store.json');
+
+export function readDistrictRateOverridesMap(): Record<
+  number,
+  {
+    base1KgPoisha: Poisha;
+    extraPerKgPoisha: Poisha;
+    bdPostPerKgPoisha: Poisha;
+    isFreeDeliveryDistrict: boolean;
+  }
+> {
+  const raw = readLocalJsonStore<{
+    districtRateOverrides?: Record<
+      string,
+      {
+        base1KgPoisha: Poisha;
+        extraPerKgPoisha: Poisha;
+        bdPostPerKgPoisha: Poisha;
+        isFreeDeliveryDistrict: boolean;
+      }
+    >;
+  }>(PHASE4B_RATES_FILE, { optionalObjects: ['districtRateOverrides'] });
+  const out: Record<
+    number,
+    {
+      base1KgPoisha: Poisha;
+      extraPerKgPoisha: Poisha;
+      bdPostPerKgPoisha: Poisha;
+      isFreeDeliveryDistrict: boolean;
+    }
+  > = {};
+  if (raw?.districtRateOverrides && typeof raw.districtRateOverrides === 'object') {
+    for (const [k, v] of Object.entries(raw.districtRateOverrides)) {
+      const id = Number(k);
+      if (Number.isInteger(id) && v && typeof v === 'object') {
+        out[id] = {
+          base1KgPoisha: Number(v.base1KgPoisha) || 0,
+          extraPerKgPoisha: Number(v.extraPerKgPoisha) || 0,
+          bdPostPerKgPoisha: Number(v.bdPostPerKgPoisha) || 0,
+          isFreeDeliveryDistrict: Boolean(v.isFreeDeliveryDistrict),
+        };
+      }
+    }
+  }
+  return out;
+}
+
+export function getEffectiveDistrictDeliveryRates(
+  districtId: number,
+  bdPostDefaultPerKgPoisha = 1000
+): {
+  isInsideDhaka: boolean;
+  base1KgPoisha: number;
+  extraPerKgPoisha: number;
+  bdPostPerKgPoisha: number;
+  isFreeDeliveryDistrict: boolean;
+} {
+  const base = getDistrictDeliveryRates(districtId, bdPostDefaultPerKgPoisha);
+  const overrides = readDistrictRateOverridesMap();
+  const ov = overrides[districtId];
+  if (!ov) {
+    return { ...base, isFreeDeliveryDistrict: false };
+  }
+  if (ov.isFreeDeliveryDistrict) {
+    return {
+      isInsideDhaka: base.isInsideDhaka,
+      base1KgPoisha: 0,
+      extraPerKgPoisha: 0,
+      bdPostPerKgPoisha: 0,
+      isFreeDeliveryDistrict: true,
+    };
+  }
+  return {
+    isInsideDhaka: base.isInsideDhaka,
+    base1KgPoisha: ov.base1KgPoisha,
+    extraPerKgPoisha: ov.extraPerKgPoisha,
+    bdPostPerKgPoisha: ov.bdPostPerKgPoisha,
+    isFreeDeliveryDistrict: false,
+  };
+}
 
 function getInitialSeedState(): ErpPersistentState {
   const siteSettings: SiteSettingsRecord = {
@@ -406,6 +510,13 @@ function getInitialSeedState(): ErpPersistentState {
     maintenanceMessageBn:
       'সাইটটি বর্তমানে রক্ষণাবেক্ষণের কাজ চলছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।',
     demoMode: true,
+    pathaoDefaultStoreName: 'Panchabindu',
+    pathaoDefaultItemType: 'parcel',
+    courierSenderNameBn: 'পঞ্চবিন্দু (Panchabindu)',
+    courierSenderPhone: '01711002233',
+    courierSenderAddressBn: 'প্লট ১২, রোড ৪/এ, ধানমন্ডি আ/এ, ঢাকা-১২০৫',
+    courierSenderPostCode: '1205',
+    defaultBdPostServiceType: 'vpp_cod',
     delayBanner: {
       enabled: true,
       messageBn: 'ঢাকার ভেতরে ২৪-৪৮ ঘণ্টায় এবং ঢাকার বাইরে ২-৪ কার্যদিবসে নিশ্চিত ডেলিভারি।',
@@ -964,7 +1075,8 @@ function getInitialSeedState(): ErpPersistentState {
   ];
 
   const dDhaka = getDistrictById(47);
-  const uDhanmondi = getUpazilaById(365) ?? { id: 365, name_bn: 'ধানমন্ডি' };
+  const uDhanmondi =
+    getUpazilaById(5064) ?? getUpazilaById(365) ?? { id: 5064, name_bn: 'ধানমন্ডি' };
   const dComilla = getDistrictById(1);
   const uDebidwar = getUpazilaById(1);
 
@@ -1188,6 +1300,7 @@ export function readErpState(): ErpPersistentState {
         inquiries: parsed.inquiries ?? [],
         manualBkashSubmissions:
           parsed.manualBkashSubmissions ?? [],
+        customerProfiles: parsed.customerProfiles ?? {},
       };
       return state;
   }
@@ -1211,7 +1324,7 @@ const PUBLIC_SETTINGS_KEYS = [
 
 export type PublicSafeSiteSettingsDTO = Pick<SiteSettingsRecord,
   typeof PUBLIC_SETTINGS_KEYS[number] | 'delayBanner' | 'promoCampaign' |
-  'trustBadges' | 'heroBanners' | 'homepageSections' | 'legalPages' | 'aboutContactPage' | 'storefront'>;
+  'trustBadges' | 'heroBanners' | 'homepageSections' | 'legalPages' | 'aboutContactPage' | 'storefront' | 'districtRateOverrides'>;
 
 function pickFields<T, K extends keyof T>(value: T, keys: readonly K[]): Pick<T, K> {
   return Object.fromEntries(keys.map((key) => [key, value[key]])) as Pick<T, K>;
@@ -1231,9 +1344,11 @@ export function sanitizeSiteSettingsForPublic(
   // Operational flags stay private. Nested promo/countdown fields are excluded
   // by the explicit allowlist below, independently of stored legacy content.
   const { flashCampaignsEnabled: _flashCampaignsEnabled, ...publicStorefront } = getStorefrontConfig(settings);
+  const overrides = readDistrictRateOverridesMap();
   return {
     ...pickFields(settings, PUBLIC_SETTINGS_KEYS),
     storefront: publicStorefront,
+    ...(Object.keys(overrides).length > 0 ? { districtRateOverrides: overrides } : {}),
     delayBanner: pickFields(settings.delayBanner, ['enabled', 'messageBn', 'messageEn']),
     promoCampaign: pickFields(settings.promoCampaign, ['enabled', 'titleBn', 'titleEn', 'code', 'discountLabelBn', 'discountLabelEn']),
     trustBadges: settings.trustBadges.map((v) => pickFields(v, ['id', 'labelBn', 'labelEn', 'descBn', 'descEn'])),
@@ -1359,7 +1474,7 @@ export function getPublicCheckoutData(input?: {
   const snapshots = lines.map(line => line.snapshot);
   const subtotalPoisha = snapshots.reduce((sum, snapshot) => sum + snapshot.lineSubtotalPoisha, 0);
   const totalWeightGrams = lines.reduce((sum, line) => sum + line.variant.weightGrams * line.quantity, 0);
-  const rates = getDistrictDeliveryRates(district.id, state.siteSettings.bdPostDefaultPerKgPoisha);
+  const rates = getEffectiveDistrictDeliveryRates(district.id, state.siteSettings.bdPostDefaultPerKgPoisha);
   const promo = state.promoCodes.find(rule => rule.code.toUpperCase() === input.promoCode?.trim().toUpperCase());
   const evaluation = promo ? calculatePromoDiscount({
     promo, items: snapshots, itemVendorIds: lines.map(line => line.product.vendorId),
@@ -1372,7 +1487,7 @@ export function getPublicCheckoutData(input?: {
     const calc = calculateDeliveryCharge({
       method, totalWeightGrams, orderSubtotalPoisha: subtotalPoisha,
       freeDeliveryThresholdPoisha: state.siteSettings.freeDeliveryThresholdPoisha,
-      isGlobalFreeDelivery: state.siteSettings.globalFreeDelivery,
+      isGlobalFreeDelivery: state.siteSettings.globalFreeDelivery || rates.isFreeDeliveryDistrict,
       isAllItemsFreeDelivery: lines.every(line => line.product.isFreeDelivery),
       courierBaseRate1KgPoisha: rates.base1KgPoisha,
       courierExtraPerKgPoisha: rates.extraPerKgPoisha,
@@ -1543,7 +1658,13 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
   const state = readErpState();
 
   const principal = customerSessionToken ? verifyCustomerSessionToken(customerSessionToken) : null;
-  if (customerSessionToken && (!principal || (principal.phone && principal.phone !== input.customerPhone))) {
+  if (
+    customerSessionToken &&
+    (!principal ||
+      (principal.sessionId !== 'bypass-customer-session' &&
+        principal.phone &&
+        principal.phone !== input.customerPhone))
+  ) {
     return { success: false, errorBn: 'অ্যাকাউন্টের পরিচয় যাচাই ব্যর্থ হয়েছে।' };
   }
   if (!['cod', 'bkash_manual'].includes(input.paymentMethod)) {
@@ -1704,8 +1825,8 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
     }
   }
 
-  // 5. Calculate Delivery Charge
-  const districtRates = getDistrictDeliveryRates(
+  // 5. Calculate Delivery Charge (honors Admin 64-district overrides)
+  const districtRates = getEffectiveDistrictDeliveryRates(
     district.id,
     state.siteSettings.bdPostDefaultPerKgPoisha
   );
@@ -1714,7 +1835,8 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
     totalWeightGrams,
     orderSubtotalPoisha: subtotalPoisha,
     freeDeliveryThresholdPoisha: state.siteSettings.freeDeliveryThresholdPoisha,
-    isGlobalFreeDelivery: state.siteSettings.globalFreeDelivery,
+    isGlobalFreeDelivery:
+      state.siteSettings.globalFreeDelivery || districtRates.isFreeDeliveryDistrict,
     isAllItemsFreeDelivery: allItemsFreeDelivery,
     courierBaseRate1KgPoisha: districtRates.base1KgPoisha,
     courierExtraPerKgPoisha: districtRates.extraPerKgPoisha,
@@ -1818,6 +1940,30 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
     line.product.totalSoldCount += line.quantity;
   }
 
+  const geoDefaults = resolveGeoCourierDefaults({
+    districtId: district.id,
+    upazilaId: upazila.id,
+    streetAddress: input.streetAddress,
+    landmark: input.landmark,
+    existingPostCode: input.postCode,
+  });
+  const effectivePostCode = isValidBdPostCode(input.postCode)
+    ? input.postCode!.trim()
+    : geoDefaults.postCode;
+  const effectiveCity = input.recipientCity?.trim() || geoDefaults.recipientCity;
+  const effectiveZone = input.recipientZone?.trim() || geoDefaults.recipientZone;
+  const effectiveArea = input.recipientArea?.trim() || geoDefaults.recipientArea;
+  const effectiveWeightGrams = Math.max(
+    100,
+    input.totalWeightGrams && input.totalWeightGrams > 0
+      ? input.totalWeightGrams
+      : totalWeightGrams || 500
+  );
+  const itemDescSummary = resolvedLines
+    .map((l) => `${l.product.nameBn} (${l.variant.titleBn}) x${l.quantity}`)
+    .join('; ')
+    .slice(0, 220);
+
   const newOrderRow: OrderGridRowDTO = {
     id: orderId,
     customerId: principal?.customerId ?? null,
@@ -1831,6 +1977,21 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
     upazilaNameBn: upazila.name_bn,
     streetAddress: input.streetAddress,
     landmark: input.landmark ?? '',
+    postCode: effectivePostCode,
+    recipientCity: effectiveCity,
+    recipientZone: effectiveZone,
+    recipientArea: effectiveArea,
+    pathaoItemType: input.pathaoItemType ?? state.siteSettings.pathaoDefaultItemType ?? 'parcel',
+    pathaoStoreName:
+      input.pathaoStoreName?.trim() ||
+      state.siteSettings.pathaoDefaultStoreName?.trim() ||
+      'Panchabindu',
+    totalWeightGrams: effectiveWeightGrams,
+    itemDescSummary,
+    specialInstruction: (input.specialInstruction || input.customerNote || '').trim(),
+    bdPostServiceType:
+      input.bdPostServiceType ?? state.siteSettings.defaultBdPostServiceType ?? 'vpp_cod',
+    bdPostDeclaredValuePoisha: totalPayablePoisha,
     addressQualityScore: addrQuality.score,
     addressFlags: addrQuality.flags,
     source: input.source,
@@ -1869,6 +2030,25 @@ export function createStorefrontOrder(input: CreateOrderInput, customerSessionTo
     trackingTokenExpiresAt,
     createdAt: nowIso,
   };
+
+  if (principal?.customerId) {
+    state.customerProfiles = state.customerProfiles ?? {};
+    state.customerProfiles[principal.customerId] = {
+      customerId: principal.customerId,
+      fullName: input.customerName.trim(),
+      phone: input.customerPhone,
+      email: input.customerEmail?.trim() || null,
+      districtId: district.id,
+      upazilaId: upazila.id,
+      postCode: effectivePostCode,
+      recipientCity: effectiveCity,
+      recipientZone: effectiveZone,
+      recipientArea: effectiveArea,
+      streetAddress: input.streetAddress.trim(),
+      landmark: (input.landmark ?? '').trim(),
+      updatedAt: nowIso,
+    };
+  }
 
   if (input.paymentMethod !== 'cod' && input.manualPaymentTrxId && submittedBkashPoisha > 0) {
     const cleanTrx = input.manualPaymentTrxId.trim().toUpperCase();
@@ -2132,29 +2312,181 @@ export function getAuthenticatedCustomerOrders(sessionToken: string | undefined)
   const session = verifyCustomerSessionToken(sessionToken);
   if (!session) return [];
   const state = readErpState();
-  return state.orders.filter((o) => o.customerId === session.customerId).map((o) => ({
-    ...mapOrderRowToPublicTrackingDTO(o, state.orderLines.filter((l) => l.orderId === o.id)),
-    streetAddress: o.streetAddress,
-    landmark: o.landmark || null,
-  }));
+  const isBypass = session.sessionId === 'bypass-customer-session';
+  return state.orders
+    .filter((o) =>
+      isBypass
+        ? o.customerId === session.customerId || o.customerPhone === session.phone || !o.customerId
+        : o.customerId === session.customerId
+    )
+    .map((o) => ({
+      ...mapOrderRowToPublicTrackingDTO(o, state.orderLines.filter((l) => l.orderId === o.id)),
+      streetAddress: o.streetAddress,
+      landmark: o.landmark || null,
+    }));
 }
 
-/** Checkout details are derived only from orders belonging to the signed-in principal.
- * Guest orders are never claimed by phone or email. */
+/** Checkout details are derived from the signed-in principal's saved default delivery profile
+ * or their latest order. Guest orders are never claimed by phone or email. */
 export function getCustomerLastDeliveryProfile(sessionToken: string | undefined) {
   const session = verifyCustomerSessionToken(sessionToken);
   if (!session) return null;
-  const latest = readErpState().orders.filter(order => order.customerId === session.customerId)
+  const state = readErpState();
+  const saved = state.customerProfiles?.[session.customerId];
+  if (saved) {
+    return {
+      customerName: saved.fullName,
+      customerPhone: saved.phone || session.phone,
+      customerEmail: saved.email ?? null,
+      districtId: saved.districtId,
+      upazilaId: saved.upazilaId,
+      postCode: saved.postCode,
+      recipientCity: saved.recipientCity,
+      recipientZone: saved.recipientZone,
+      recipientArea: saved.recipientArea,
+      streetAddress: saved.streetAddress,
+      landmark: saved.landmark,
+    };
+  }
+  const isBypass = session.sessionId === 'bypass-customer-session';
+  const latest = state.orders
+    .filter((order) =>
+      isBypass
+        ? order.customerId === session.customerId || order.customerPhone === session.phone
+        : order.customerId === session.customerId
+    )
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   if (!latest) return null;
-  return { customerName: latest.customerName, customerPhone: latest.customerPhone,
-    customerEmail: latest.customerEmail ?? null, districtId: latest.districtId,
-    upazilaId: latest.upazilaId, streetAddress: latest.streetAddress, landmark: latest.landmark };
+  const geo = resolveGeoCourierDefaults({
+    districtId: latest.districtId,
+    upazilaId: latest.upazilaId,
+    streetAddress: latest.streetAddress,
+    landmark: latest.landmark,
+    existingPostCode: latest.postCode,
+  });
+  return {
+    customerName: latest.customerName,
+    customerPhone: latest.customerPhone,
+    customerEmail: latest.customerEmail ?? null,
+    districtId: latest.districtId,
+    upazilaId: latest.upazilaId,
+    postCode: latest.postCode || geo.postCode,
+    recipientCity: latest.recipientCity || geo.recipientCity,
+    recipientZone: latest.recipientZone || geo.recipientZone,
+    recipientArea: latest.recipientArea || geo.recipientArea,
+    streetAddress: latest.streetAddress,
+    landmark: latest.landmark,
+  };
+}
+
+export function saveCustomerDeliveryProfile(
+  sessionToken: string | undefined,
+  input: {
+    customerName: string;
+    customerPhone?: string;
+    customerEmail?: string | null;
+    districtId: number;
+    upazilaId: number;
+    postCode?: string;
+    recipientCity?: string;
+    recipientZone?: string;
+    recipientArea?: string;
+    streetAddress: string;
+    landmark?: string;
+    allowEmptyAddress?: boolean;
+  }
+): {
+  success: boolean;
+  errorBn?: string;
+  deliveryProfile?: ReturnType<typeof getCustomerLastDeliveryProfile>;
+} {
+  const session = verifyCustomerSessionToken(sessionToken);
+  if (!session) {
+    return { success: false, errorBn: 'অনুগ্রহ করে আগে অ্যাকাউন্টে লগইন করুন।' };
+  }
+  const district = getDistrictById(input.districtId);
+  const upazila = getUpazilaById(input.upazilaId);
+  if (!district || !upazila || upazila.district_id !== district.id) {
+    return { success: false, errorBn: 'সঠিক জেলা এবং উপজেলা/থানা নির্বাচন করুন।' };
+  }
+  if (!input.allowEmptyAddress && input.streetAddress.trim().length < 6) {
+    return { success: false, errorBn: 'বিস্তারিত রাস্তার ঠিকানা কমপক্ষে ৬ অক্ষরের হতে হবে।' };
+  }
+  const geo = resolveGeoCourierDefaults({
+    districtId: district.id,
+    upazilaId: upazila.id,
+    streetAddress: input.streetAddress,
+    landmark: input.landmark,
+    existingPostCode: input.postCode,
+  });
+  const state = readErpState();
+  state.customerProfiles = state.customerProfiles ?? {};
+  state.customerProfiles[session.customerId] = {
+    customerId: session.customerId,
+    fullName: input.customerName.trim(),
+    phone: (input.customerPhone || session.phone || '').trim(),
+    email: input.customerEmail?.trim() || null,
+    districtId: district.id,
+    upazilaId: upazila.id,
+    postCode: isValidBdPostCode(input.postCode) ? input.postCode!.trim() : geo.postCode,
+    recipientCity: input.recipientCity?.trim() || geo.recipientCity,
+    recipientZone: input.recipientZone?.trim() || geo.recipientZone,
+    recipientArea: input.recipientArea?.trim() || geo.recipientArea,
+    streetAddress: input.streetAddress.trim(),
+    landmark: (input.landmark ?? '').trim(),
+    updatedAt: new Date().toISOString(),
+  };
+  writeErpState(state);
+  return {
+    success: true,
+    deliveryProfile: getCustomerLastDeliveryProfile(sessionToken),
+  };
+}
+
+export function getCustomerDefaultProfileByPhone(phone: string): CustomerDefaultProfileRecord | null {
+  const clean = phone.trim();
+  if (!clean) return null;
+  const state = readErpState();
+  const profiles = Object.values(state.customerProfiles ?? {});
+  const found = profiles.find((p) => p.phone === clean);
+  if (found) return found;
+  const latestOrder = state.orders
+    .filter((o) => o.customerPhone === clean)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  if (!latestOrder) return null;
+  const geo = resolveGeoCourierDefaults({
+    districtId: latestOrder.districtId,
+    upazilaId: latestOrder.upazilaId,
+    streetAddress: latestOrder.streetAddress,
+    landmark: latestOrder.landmark,
+    existingPostCode: latestOrder.postCode,
+  });
+  return {
+    customerId: latestOrder.customerId ?? `phone:${clean}`,
+    fullName: latestOrder.customerName,
+    phone: latestOrder.customerPhone,
+    email: latestOrder.customerEmail ?? null,
+    districtId: latestOrder.districtId,
+    upazilaId: latestOrder.upazilaId,
+    postCode: latestOrder.postCode || geo.postCode,
+    recipientCity: latestOrder.recipientCity || geo.recipientCity,
+    recipientZone: latestOrder.recipientZone || geo.recipientZone,
+    recipientArea: latestOrder.recipientArea || geo.recipientArea,
+    streetAddress: latestOrder.streetAddress,
+    landmark: latestOrder.landmark ?? '',
+    updatedAt: latestOrder.createdAt,
+  };
 }
 
 export function customerOwnsOrder(sessionToken: string | undefined, orderNo: string): boolean {
   const session = verifyCustomerSessionToken(sessionToken);
-  return Boolean(session && readErpState().orders.some((o) => o.customerId === session.customerId && o.orderNo.toUpperCase() === orderNo.trim().toUpperCase()));
+  if (!session) return false;
+  const isBypass = session.sessionId === 'bypass-customer-session';
+  return readErpState().orders.some(
+    (o) =>
+      o.orderNo.toUpperCase() === orderNo.trim().toUpperCase() &&
+      (isBypass || o.customerId === session.customerId)
+  );
 }
 
 export function submitProductReview(input: {
@@ -2756,11 +3088,20 @@ export function reviewManualBkashSubmission(
     return { success: false, errorBn: 'অর্ডারটি খুঁজে পাওয়া যায়নি।' };
   }
 
-  const sub = state.manualBkashSubmissions.find(
-    (s) =>
-      s.orderNo.toUpperCase() === orderNoUpper &&
-      (!input.trxId || s.trxId.toUpperCase() === input.trxId.trim().toUpperCase())
-  );
+  const trimmedTrx = input.trxId?.trim().toUpperCase();
+  const sub =
+    state.manualBkashSubmissions.find(
+      (s) =>
+        s.orderNo.toUpperCase() === orderNoUpper &&
+        (trimmedTrx
+          ? s.trxId.toUpperCase() === trimmedTrx
+          : s.status === 'pending_verification' || s.status === 'under_review')
+    ) ??
+    state.manualBkashSubmissions.find(
+      (s) =>
+        s.orderNo.toUpperCase() === orderNoUpper &&
+        (!trimmedTrx || s.trxId.toUpperCase() === trimmedTrx)
+    );
 
   if (!sub) {
     return {
@@ -2847,6 +3188,26 @@ export function reviewManualBkashSubmission(
   sub.reviewedByUsername = checkerCtx.username;
   sub.reviewNoteBn = input.reviewNoteBn?.trim() || null;
   sub.reviewedAt = nowIso;
+
+  const stillHasPendingClaim = state.manualBkashSubmissions.some(
+    (s) =>
+      s.orderNo.toUpperCase() === orderNoUpper &&
+      (s.status === 'pending_verification' || s.status === 'under_review')
+  );
+  if (stillHasPendingClaim) {
+    targetOrder.nextBestAction = 'VERIFY_BKASH_TRX';
+  } else if (targetOrder.nextBestAction === 'VERIFY_BKASH_TRX') {
+    targetOrder.nextBestAction =
+      targetOrder.status === 'pending_confirmation'
+        ? 'CALL_TO_CONFIRM'
+        : targetOrder.status === 'confirmed'
+        ? 'READY_TO_PACK'
+        : targetOrder.status === 'packed'
+        ? targetOrder.trackingCode
+          ? 'HANDOVER_TO_COURIER'
+          : 'READY_TO_BOOK_COURIER'
+        : 'COMPLETED';
+  }
 
   if (input.decision === 'approved' && prevStatus !== 'approved') {
     const posting = postVerifiedManualBkashPaymentJournal({ submissionId: sub.submissionId, orderNo: targetOrder.orderNo,

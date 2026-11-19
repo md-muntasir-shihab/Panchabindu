@@ -96,6 +96,890 @@ function PrintBrandMark({ name, logoUrl, compact = false }: { name: string; logo
   </span>;
 }
 
+export async function executeNativeSlipPrint({
+  printableEl,
+  layoutMode,
+  locale,
+}: {
+  printableEl: HTMLElement;
+  layoutMode: 'a4_3part' | 'thermal_4x6';
+  locale: 'bn' | 'en';
+}): Promise<void> {
+  let frame: HTMLIFrameElement | null = null;
+  try {
+    frame = document.createElement('iframe');
+    frame.setAttribute('title', 'Print preview');
+    Object.assign(frame.style, {
+      position: 'fixed',
+      width: layoutMode === 'thermal_4x6' ? '101.6mm' : '210mm',
+      height: '297mm',
+      left: '-10000px',
+      top: '0',
+      opacity: '0',
+      border: '0',
+    });
+    document.body.appendChild(frame);
+    const doc = frame.contentDocument;
+    const win = frame.contentWindow;
+    if (!doc || !win) {
+      frame.remove();
+      throw new Error('প্রিন্ট উইন্ডো তৈরি করা যায়নি। / Could not open print window.');
+    }
+    doc.open();
+    doc.write(
+      '<!doctype html><html><head><meta charset="utf-8"><base href="' +
+        document.baseURI.replace(/"/g, '&quot;') +
+        '"></head><body></body></html>'
+    );
+    doc.close();
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
+    const waits = styles.map((node) => {
+      const clone = node.cloneNode(true) as HTMLElement;
+      doc.head.appendChild(clone);
+      if (clone.tagName !== 'LINK') return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        clone.addEventListener('load', () => resolve(), { once: true });
+        clone.addEventListener('error', () => resolve(), { once: true });
+        setTimeout(resolve, 2500);
+      });
+    });
+    const pageStyle = doc.createElement('style');
+    const paperWidthMm = layoutMode === 'thermal_4x6' ? 101.6 : 210;
+    const paperHeightMm = layoutMode === 'thermal_4x6' ? 152.4 : 297;
+    // Apply the same physical layout in the hidden frame and at print time so
+    // measurement is meaningful. Each order is a separate page; never clip data.
+    pageStyle.textContent = `@page { size: ${layoutMode === 'thermal_4x6' ? '101.6mm 152.4mm' : 'A4 portrait'}; margin: 0; }
+      html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+      .print-slips { margin: 0 !important; padding: 0 !important; }
+      .print-a4-sheet, .print-thermal-sheet { box-sizing: border-box; width: calc(${paperWidthMm}mm / var(--print-scale, 1)) !important; zoom: var(--print-scale, 1); max-width: none !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 4mm !important; display: block !important; break-after: page; page-break-after: always; overflow: visible !important; }
+      .print-a4-sheet:last-child, .print-thermal-sheet:last-child { break-after: auto; page-break-after: auto; }
+      .print-slip-part { box-sizing: border-box; min-height: 0 !important; break-inside: avoid; }
+      .print-slips .overflow-x-auto { overflow: visible !important; }
+      .print-slips table { width: 100% !important; table-layout: fixed; overflow-wrap: anywhere; }
+      .print-slips td, .print-slips th { overflow-wrap: anywhere; word-break: break-word; }
+      .print-slips img { max-width: 100%; }
+      @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`;
+    doc.head.appendChild(pageStyle);
+    const printContent = printableEl.cloneNode(true) as HTMLElement;
+    // Remove deselected parts from the printable document, not just visually hide them.
+    printContent.querySelectorAll<HTMLElement>('.print-slip-part').forEach((part) => {
+      if (part.style.display === 'none') part.remove();
+    });
+    doc.body.appendChild(printContent);
+    for (const image of Array.from(doc.images)) image.loading = 'eager';
+    await Promise.all(waits);
+    if (doc.fonts) await doc.fonts.ready;
+    await Promise.all(
+      Array.from(doc.images).map((image) =>
+        image.complete
+          ? Promise.resolve()
+          : new Promise<void>((resolve) => {
+              image.onload = image.onerror = () => resolve();
+              setTimeout(resolve, 2000);
+            })
+      )
+    );
+    for (const image of Array.from(doc.querySelectorAll<HTMLImageElement>('.print-brand-logo'))) {
+      if (!image.complete || image.naturalWidth === 0) image.remove();
+    }
+    if (!CSS.supports('zoom', '1')) {
+      throw new Error(
+        locale === 'bn'
+          ? 'এই ব্রাউজারে এক পৃষ্ঠায় ফিট করা সমর্থিত নয়। Chrome বা Edge ব্যবহার করুন।'
+          : 'This browser cannot fit the slip on one page. Use Chrome or Edge.'
+      );
+    }
+    const maxHeightPx = ((paperHeightMm - 2) * 96) / 25.4;
+    const maxWidthPx = (paperWidthMm * 96) / 25.4;
+    const sheets = Array.from(
+      doc.querySelectorAll<HTMLElement>('.print-a4-sheet, .print-thermal-sheet')
+    );
+    for (const sheet of sheets) {
+      let scale = 1;
+      for (let attempt = 0; attempt < 6; attempt++) {
+        sheet.style.setProperty('--print-scale', String(scale));
+        const bounds = sheet.getBoundingClientRect();
+        if (bounds.height <= maxHeightPx && bounds.width <= maxWidthPx + 1) break;
+        scale *= Math.min(maxHeightPx / bounds.height, maxWidthPx / bounds.width) * 0.99;
+      }
+      const bounds = sheet.getBoundingClientRect();
+      const protrudes = Array.from(sheet.querySelectorAll<HTMLElement>('*')).some((element) => {
+        const rect = element.getBoundingClientRect();
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          (rect.right > bounds.right + 2 ||
+            rect.left < bounds.left - 2 ||
+            rect.bottom > bounds.bottom + 2)
+        );
+      });
+      if (
+        scale < 0.65 ||
+        bounds.height > maxHeightPx ||
+        bounds.width > maxWidthPx + 1 ||
+        protrudes
+      ) {
+        throw new Error(
+          locale === 'bn'
+            ? 'এক পৃষ্ঠায় স্পষ্টভাবে দেখানোর জন্য তথ্য বেশি। A4-এ কম অংশ বেছে নিন বা আলাদা কপি প্রিন্ট করুন; কোনো তথ্য কাটা হয়নি।'
+            : 'Too much content to fit legibly on one page. Select fewer A4 parts or print separate copies; no information was clipped.'
+        );
+      }
+    }
+    win.onafterprint = () => frame?.remove();
+    win.focus();
+    win.print();
+    setTimeout(() => frame?.remove(), 120000);
+  } catch (error) {
+    frame?.remove();
+    throw error;
+  }
+}
+
+export interface PrintableSlipsDocumentProps {
+  slips: OrderPrintSlipBundle[];
+  layoutMode: 'a4_3part' | 'thermal_4x6';
+  visibleParts: boolean[];
+  printConfig: PrintTemplateConfig;
+  siteSettings: PublicSafeSiteSettingsDTO;
+  locale: 'bn' | 'en';
+  isSuperAdmin: boolean;
+  isVendor: boolean;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+}
+
+export function PrintableSlipsDocument({
+  slips,
+  layoutMode,
+  visibleParts,
+  printConfig,
+  siteSettings,
+  locale,
+  isSuperAdmin,
+  isVendor,
+  containerRef,
+}: PrintableSlipsDocumentProps) {
+  const brandName =
+    (locale === 'bn' ? siteSettings.brandNameBn : siteSettings.brandNameEn) ||
+    siteSettings.brandNameBn ||
+    siteSettings.brandNameEn;
+  const logoUrl = siteSettings.storefront?.logoUrl;
+  const heightScale = Math.min(
+    1,
+    275 / (printConfig.part1HeightMm + printConfig.part2HeightMm + printConfig.part3HeightMm)
+  );
+
+  return (
+    <div ref={containerRef} className="print-slips space-y-6 print:space-y-0">
+      {slips.map((slip) => {
+        const p12 = slip.customerAndCourierPart;
+        const p3 = slip.internalPart3;
+
+        if (layoutMode === 'thermal_4x6') {
+          return (
+            <div
+              key={slip.orderNo}
+              className="print-thermal-sheet max-w-[101.6mm] mx-auto border-2 border-ink bg-bg text-ink p-4 space-y-3 print:break-after-page"
+            >
+              <div className="flex items-center justify-between border-b border-border pb-2">
+                <div className="flex items-center gap-2">
+                  <PrintBrandMark name={brandName} logoUrl={logoUrl} />
+                  <div>
+                    <p className="text-[10px] font-mono uppercase text-muted">
+                      <LocalizedText source={"4x6 THERMAL COURIER STICKER"} area="admin" />{" "}
+                    </p>
+                    <p className="text-xs font-bold text-ink">
+                      <LocalizedText source={"প্রেরক:"} area="admin" />{" "}{brandName} ({siteSettings.supportPhone})
+                    </p>
+                  </div>
+                </div>
+                <Badge status="info">{p12.courierProvider.toUpperCase()}</Badge>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 py-1">
+                <div>
+                  <Code128BarcodeSvg value={p12.trackingCode || p12.orderNo} height={40} />
+                  {!p12.trackingCode && <p className="text-[9px]">অর্ডার বারকোড / Order barcode</p>}
+                </div>
+                {p12.trackingUrl && (
+                  <QRCodeSVG value={new URL(p12.trackingUrl, window.location.origin).href} size={56} />
+                )}
+              </div>
+
+              <div className="p-2 border border-border rounded-[var(--radius-sm)] space-y-1 text-xs">
+                <p className="font-bold text-sm text-ink">
+                  <LocalizedText source={"প্রাপক:"} area="admin" />{" "}{p12.customerName}
+                </p>
+                <p className="font-mono font-bold text-ink">
+                  <LocalizedText source={"মোবাইল:"} area="admin" />{" "}{p12.customerPhone}
+                </p>
+                <p className="text-ink">
+                  {localizedField(p12, "upazilaNameBn", locale)}, {localizedField(p12, "districtNameBn", locale)}
+                  {p12.postCode ? ` (${p12.postCode})` : ''} — {p12.streetAddress}
+                </p>
+                {(p12.recipientCity || p12.recipientZone) && (
+                  <p className="font-mono text-[10.5px] text-ink">
+                    Pathao: {p12.recipientCity || '—'} → {p12.recipientZone || '—'}
+                    {p12.recipientArea ? ` → ${p12.recipientArea}` : ''}
+                    {p12.totalWeightGrams ? ` · ${(p12.totalWeightGrams / 1000).toFixed(2)}kg` : ''}
+                  </p>
+                )}
+                {p12.landmark && (
+                  <p className="text-muted text-[11px]">
+                    <LocalizedText source={"ল্যান্ডমার্ক:"} area="admin" />{" "}{p12.landmark}
+                  </p>
+                )}
+              </div>
+
+              {/* Large COD Box */}
+              <div className="p-2.5 border-2 border-ink bg-surface text-center">
+                <p className="text-[10px] font-bold uppercase text-muted">
+                  <LocalizedText source={"ডেলিভারির সময় প্রদেয় (COD COLLECTABLE)"} area="admin" />{" "}
+                </p>
+                <p className="text-2xl font-bold font-mono tabular-nums text-ink">
+                  {formatPoishaToBdt(p12.codCollectablePoisha, locale)}
+                </p>
+              </div>
+
+              <div className="text-[10px] font-mono text-muted flex justify-between pt-1 border-t border-border">
+                <span><LocalizedText source={"Order:"} area="admin" />{" "}{p12.orderNo}</span>
+                <span><LocalizedText source={"CNS:"} area="admin" />{" "}{p12.consignmentId || '—'}</span>
+              </div>
+            </div>
+          );
+        }
+
+        // Default: Professional A4 3-Part Portrait Layout (210mm x 297mm)
+        return (
+          <div
+            key={slip.orderNo}
+            className="print-a4-sheet w-full max-w-[210mm] min-h-[290mm] mx-auto border border-border bg-bg text-ink p-3 sm:p-4 space-y-2.5 print:border-0 print:p-[5mm] print:space-y-1.5 print:break-after-page"
+          >
+            {/* PART 1: CUSTOMER INVOICE (গ্রাহক ইনভয়েস — ZERO COST LEAK) */}
+            <div
+              className="print-slip-part print-customer-part border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg"
+              style={{
+                minHeight: `${printConfig.part1HeightMm * heightScale}mm`,
+                display: visibleParts[0] ? undefined : 'none',
+              }}
+            >
+              <div className="flex items-start justify-between border-b border-border pb-1.5 gap-2">
+                <div className="flex items-center gap-2">
+                  <PrintBrandMark name={brandName} logoUrl={logoUrl} />
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-surface border border-border rounded text-ink">
+                        <LocalizedText source={"PART 1 ·"} area="admin" />{" "}{localizedField(printConfig, "part1TitleBn", locale)}
+                      </span>
+                      <span className="text-[9px] font-mono text-muted">
+                        <LocalizedText source={"A4 Official Copy"} area="admin" />{" "}
+                      </span>
+                    </div>
+                    <h2 className="text-xs sm:text-sm font-bold text-ink leading-tight mt-0.5">
+                      {brandName}
+                    </h2>
+                    <p className="text-[9.5px] text-muted leading-tight">
+                      <LocalizedText source={"হেল্পলাইন:"} area="admin" />{" "}{siteSettings.supportPhone}{" "}
+                      <LocalizedText source={"· ইস্যু তারিখ:"} area="admin" />{' '}
+                      {new Date(p12.createdAt).toLocaleDateString('bn-BD')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right font-mono tabular-nums space-y-0.5">
+                  <p className="text-xs font-bold text-ink bg-surface px-2 py-0.5 border border-border rounded">
+                    <LocalizedText source={"ইনভয়েস:"} area="admin" />{" "}{p12.orderNo}
+                  </p>
+                  <p className="text-[9.5px] text-ink font-semibold">
+                    <LocalizedText source={"পেমেন্ট:"} area="admin" />{" "}{p12.paymentMethod.toUpperCase()} ({p12.paymentStatus})
+                  </p>
+                  <p className="text-[9px] text-muted">
+                    <LocalizedText source={"কুরিয়ার:"} area="admin" />{" "}{p12.courierProvider.toUpperCase()} · {p12.trackingCode}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 text-[10.5px]">
+                {/* Customer Address Box */}
+                <div className="sm:col-span-4 border border-border rounded-[var(--radius-sm)] p-2 bg-surface/50 space-y-0.5">
+                  <p className="text-[9px] font-mono uppercase text-muted font-bold">
+                    <LocalizedText source={"গ্রাহকের বিবরণ (BILL & SHIP TO)"} area="admin" />{" "}
+                  </p>
+                  <p className="font-bold text-ink text-[11px]">{p12.customerName}</p>
+                  <p className="font-mono font-bold text-ink text-[10.5px]">
+                    <LocalizedText source={"মোবাইল:"} area="admin" />{" "}{p12.customerPhone}
+                  </p>
+                  <p className="text-ink text-[10px] leading-snug">
+                    {localizedField(p12, "upazilaNameBn", locale)}, {localizedField(p12, "districtNameBn", locale)}
+                    {p12.postCode ? ` (পোস্টকোড: ${p12.postCode})` : ''} — {p12.streetAddress}
+                  </p>
+                  {(p12.recipientCity || p12.recipientZone) && (
+                    <p className="font-mono text-[9px] text-muted">
+                      Zone: {p12.recipientCity} → {p12.recipientZone}
+                      {p12.totalWeightGrams ? ` · ${(p12.totalWeightGrams / 1000).toFixed(2)}kg` : ''}
+                    </p>
+                  )}
+                  {p12.landmark && (
+                    <p className="text-muted text-[9.5px]">
+                      <LocalizedText source={"ল্যান্ডমার্ক:"} area="admin" />{" "}{p12.landmark}
+                    </p>
+                  )}
+                </div>
+
+                {/* Customer Itemized Table */}
+                <div className="sm:col-span-8 flex flex-col justify-between">
+                  <table className="w-full text-left border-collapse text-[9.5px] tabular-nums">
+                    <thead>
+                      <tr className="border-b border-border bg-surface text-ink font-bold">
+                        <th className="py-1 px-1.5">#</th>
+                        <th className="py-1 px-1.5"><LocalizedText source={"পণ্যের বিবরণ ও ভ্যারিয়েন্ট (Public SKU)"} area="admin" /></th>
+                        <th className="py-1 px-1.5 text-center"><LocalizedText source={"পরিমাণ"} area="admin" /></th>
+                        <th className="py-1 px-1.5 text-right"><LocalizedText source={"একক মূল্য"} area="admin" /></th>
+                        <th className="py-1 px-1.5 text-right"><LocalizedText source={"মোট মূল্য"} area="admin" /></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {p12.items.map((item, idx) => (
+                        <tr key={idx}>
+                          <td className="py-1 px-1.5 font-mono text-muted">{idx + 1}</td>
+                          <td className="py-1 px-1.5">
+                            <div className="flex items-center gap-1.5">
+                              {item.imageUrl && (
+                                <div className="relative w-5 h-5 border border-border rounded overflow-hidden shrink-0">
+                                  <img
+                                    src={item.imageUrl}
+                                    alt={item.productNameBn}
+                                    referrerPolicy="no-referrer"
+                                    className="object-cover"
+                                    loading="lazy"
+                                    decoding="async"
+                                    style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }}
+                                  />
+                                </div>
+                              )}
+                              <div className="leading-tight">
+                                <span className="font-semibold text-ink">
+                                  {localizedField(item, "productNameBn", locale)}
+                                </span>{' '}
+                                <span className="text-muted text-[9px]">
+                                  ({localizedField(item, "variantTitleBn", locale)})
+                                </span>
+                                <div className="font-mono text-[8.5px] text-muted">
+                                  <LocalizedText source={"SKU:"} area="admin" />{" "}{item.publicSku}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-1 px-1.5 text-center font-mono font-bold">
+                            {formatLocaleNumber(item.quantity, locale)}
+                          </td>
+                          <td className="py-1 px-1.5 text-right font-mono">
+                            {formatPoishaToBdt(item.unitSalePricePoisha, locale)}
+                          </td>
+                          <td className="py-1 px-1.5 text-right font-mono font-bold text-ink">
+                            {formatPoishaToBdt(item.lineSubtotalPoisha, locale)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* Customer Bill Breakdown Strip */}
+                  <div className="mt-1.5 pt-1 border-t border-border flex flex-wrap items-center justify-between gap-1 text-[9.5px]">
+                    <span className="text-muted text-[9px] max-w-[52%] leading-tight">
+                      * {localizedField(printConfig, "footerNoteBn", locale)}
+                    </span>
+                    <div className="font-mono tabular-nums flex flex-wrap items-center gap-2 bg-surface px-2 py-1 rounded border border-border">
+                      <span>
+                        <LocalizedText source={"সাবটোটাল:"} area="admin" />{' '}
+                        <strong>{formatPoishaToBdt(p12.subtotalPoisha, locale)}</strong>
+                      </span>
+                      {p12.discountPoisha > 0 && (
+                        <span>
+                          <LocalizedText source={"ছাড়: -"} area="admin" />{" "}{formatPoishaToBdt(p12.discountPoisha, locale)}
+                        </span>
+                      )}
+                      <span>
+                        <LocalizedText source={"ডেলিভারি:"} area="admin" />{' '}
+                        {formatPoishaToBdt(p12.deliveryChargePoisha, locale)}
+                      </span>
+                      <span>
+                        {locale === 'bn' ? 'সর্বমোট:' : 'Total:'}{' '}
+                        <strong>{formatPoishaToBdt(p12.totalPayablePoisha, locale)}</strong>
+                      </span>
+                      {p12.advancePaidPoisha > 0 && (
+                        <span>
+                          <LocalizedText source={"অগ্রিম: -"} area="admin" />{" "}{formatPoishaToBdt(p12.advancePaidPoisha, locale)}
+                        </span>
+                      )}
+                      <span className="font-bold text-ink border-l border-border pl-2">
+                        <LocalizedText source={"ডেলিভারিতে প্রদেয় (COD):"} area="admin" />{' '}
+                        {formatPoishaToBdt(p12.codCollectablePoisha, locale)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CUT LINE 1 */}
+            <div
+              style={{
+                display: visibleParts[0] && (visibleParts[1] || visibleParts[2]) ? undefined : 'none',
+              }}
+              className="flex items-center gap-2 text-[8.5px] font-mono text-muted py-0"
+            >
+              <Scissors className="w-3 h-3 shrink-0" aria-hidden="true" />
+              <div className="flex-1 border-t border-dashed border-ink" />
+              <span><LocalizedText source={"✂ CUT HERE (PART 1 CUSTOMER COPY / PART 2 COURIER BOX LABEL)"} area="admin" /></span>
+              <div className="flex-1 border-t border-dashed border-ink" />
+            </div>
+
+            {/* PART 2: COURIER BOX STICKER (কুরিয়ার বক্স স্টিকার) */}
+            <div
+              className="print-slip-part print-courier-part border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg"
+              style={{
+                minHeight: `${printConfig.part2HeightMm * heightScale}mm`,
+                display: visibleParts[1] ? undefined : 'none',
+              }}
+            >
+              <div className="flex items-center justify-between border-b border-border pb-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <PrintBrandMark name={brandName} logoUrl={logoUrl} compact />
+                  <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-surface border border-border rounded text-ink">
+                    <LocalizedText source={"PART 2 ·"} area="admin" />{" "}{localizedField(printConfig, "part2TitleBn", locale)}
+                  </span>
+                  <span className="text-[10px] font-bold text-ink">
+                    <LocalizedText source={"প্রেরক:"} area="admin" />{" "}{brandName}{" "}
+                    <LocalizedText source={"(হেল্পলাইন:"} area="admin" />{' '}{siteSettings.supportPhone})
+                  </span>
+                </div>
+                <div className="text-right font-mono text-[10px] tabular-nums">
+                  <span className="font-bold uppercase px-1.5 py-0.5 bg-ink text-bg rounded">
+                    {p12.courierProvider}
+                  </span>{' '}
+                  · <span className="font-bold">{p12.consignmentId || '—'}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                <div className="sm:col-span-5 text-[10.5px] space-y-0.5 border-r border-border pr-2">
+                  <p className="text-[8.5px] font-mono uppercase text-muted font-bold">
+                    <LocalizedText source={"ডেলিভারি ঠিকানা (DELIVER TO)"} area="admin" />{" "}
+                  </p>
+                  <p className="font-bold text-ink text-xs">
+                    <LocalizedText source={"প্রাপক:"} area="admin" />{" "}{p12.customerName}
+                  </p>
+                  <p className="font-mono font-bold text-ink text-[11px]">
+                    <LocalizedText source={"ফোন:"} area="admin" />{" "}{p12.customerPhone}
+                  </p>
+                  <p className="text-ink text-[10px] leading-snug font-medium">
+                    {localizedField(p12, "upazilaNameBn", locale)}, {localizedField(p12, "districtNameBn", locale)}
+                    {p12.postCode ? ` [${p12.postCode}]` : ''} — {p12.streetAddress}
+                  </p>
+                  {(p12.recipientCity || p12.recipientZone) && (
+                    <p className="font-mono text-[9px] text-ink">
+                      Pathao: {p12.recipientCity} → {p12.recipientZone}
+                      {p12.totalWeightGrams ? ` · ${(p12.totalWeightGrams / 1000).toFixed(2)}kg` : ''}
+                    </p>
+                  )}
+                  {p12.senderAddressBn && (
+                    <p className="text-muted text-[8.5px]">
+                      প্রেরক ঠিকানা: {p12.senderAddressBn} {p12.senderPostCode ? `(${p12.senderPostCode})` : ''}
+                    </p>
+                  )}
+                  {p12.landmark && (
+                    <p className="text-muted text-[9.5px]">
+                      <LocalizedText source={"ল্যান্ডমার্ক:"} area="admin" />{" "}{p12.landmark}
+                    </p>
+                  )}
+                </div>
+
+                <div className="sm:col-span-4 flex items-center justify-center gap-2.5 py-0.5">
+                  <div className="text-center">
+                    <Code128BarcodeSvg value={p12.trackingCode || p12.orderNo} height={34} />
+                    {!p12.trackingCode && <p>অর্ডার বারকোড / Order barcode</p>}
+                  </div>
+                  {p12.trackingUrl && (
+                    <QRCodeSVG value={new URL(p12.trackingUrl, window.location.origin).href} size={46} />
+                  )}
+                </div>
+
+                <div className="sm:col-span-3 border-2 border-ink bg-surface p-1.5 text-center rounded-[var(--radius-sm)]">
+                  <p className="text-[8.5px] font-bold uppercase text-muted">
+                    <LocalizedText source={"ডেলিভারির সময় প্রদেয় (COD)"} area="admin" />{" "}
+                  </p>
+                  <p className="text-base sm:text-lg font-bold font-mono tabular-nums text-ink leading-tight">
+                    {formatPoishaToBdt(p12.codCollectablePoisha, locale)}
+                  </p>
+                  <p className="text-[8.5px] font-mono text-muted">
+                    <LocalizedText source={"Order:"} area="admin" />{" "}{p12.orderNo}{" "}
+                    <LocalizedText source={"· পিস:"} area="admin" />{' '}
+                    {p12.items.reduce((acc, i) => acc + i.quantity, 0)}
+                    <LocalizedText source={"টি"} area="admin" />{" "}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* CUT LINE 2 */}
+            <div
+              style={{ display: visibleParts[1] && visibleParts[2] ? undefined : 'none' }}
+              className="flex items-center gap-2 text-[8.5px] font-mono text-muted py-0"
+            >
+              <Scissors className="w-3 h-3 shrink-0" aria-hidden="true" />
+              <div className="flex-1 border-t border-dashed border-ink" />
+              <span>
+                <LocalizedText source={"✂ CUT HERE — PART 3 ADMIN, ACCOUNTS & WAREHOUSE MASTER RECORD (অ্যাডমিন ও হিসাব সংরক্ষণ কপি)"} area="admin" />{" "}
+              </span>
+              <div className="flex-1 border-t border-dashed border-ink" />
+            </div>
+
+            {/* PART 3: ADMIN, ACCOUNTS & WAREHOUSE MASTER COPY */}
+            <div
+              className="print-slip-part print-internal-part border-2 border-ink rounded-[var(--radius-sm)] p-2.5 bg-surface/60 space-y-2"
+              style={{
+                minHeight: `${printConfig.part3HeightMm * heightScale}mm`,
+                display: visibleParts[2] ? undefined : 'none',
+              }}
+            >
+              {/* Part 3 Header & Operational Telemetry Strip */}
+              <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-border pb-1.5">
+                <div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <PrintBrandMark name={brandName} logoUrl={logoUrl} compact />
+                    <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-ink text-bg rounded">
+                      <LocalizedText source={"PART 3 ·"} area="admin" />{" "}{localizedField(printConfig, "part3TitleBn", locale)}
+                    </span>
+                    <span className="text-[9.5px] font-mono font-bold text-ink">
+                      <LocalizedText source={"অর্ডার:"} area="admin" />{" "}{p3.orderNo}
+                    </span>
+                    <span className="text-[9px] font-mono text-muted">
+                      <LocalizedText source={"· এসক্রো রুল:"} area="admin" />{" "}{localizedField(p3, "estimatedMaturityDaysLabelBn", locale)}
+                    </span>
+                  </div>
+                  <p className="text-[9px] text-muted mt-0.5 font-mono">
+                    <LocalizedText source={"গ্রাহক:"} area="admin" />{" "}{p3.customerName ?? p12.customerName} (
+                    {p3.customerPhone ?? p12.customerPhone}<LocalizedText source={") · সোর্স:"} area="admin" />{' '}
+                    {(p3.orderSource ?? 'storefront').toUpperCase()}{" "}
+                    <LocalizedText source={"· কল স্ট্যাটাস:"} area="admin" />{' '}
+                    {p3.callStatus ?? '—'}{" "}
+                    <LocalizedText source={"(চেষ্টা:"} area="admin" />{' '}
+                    {p3.callAttempts == null ? '—' : formatLocaleNumber(p3.callAttempts, locale)}
+                    <LocalizedText source={") · ঝুঁকি:"} area="admin" />{' '}
+                    {p3.fraudRiskTierBn ?? '—'}{" "}
+                    <LocalizedText source={"(স্কোর:"} area="admin" />{' '}
+                    {p3.addressQualityScore == null ? '—' : formatLocaleNumber(p3.addressQualityScore, locale)}%)
+                    {p3.postCode ? ` · পোস্টকোড: ${p3.postCode}` : ''}
+                    {p3.recipientCity ? ` · ${p3.recipientCity}→${p3.recipientZone}` : ''}
+                    {p3.totalWeightGrams ? ` · ${(p3.totalWeightGrams / 1000).toFixed(2)}kg` : ''}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 font-mono text-[9px]">
+                  <span className="px-1.5 py-0.5 rounded border border-border bg-bg text-ink font-bold">
+                    <LocalizedText source={"প্রিন্ট:"} area="admin" />{" "}{formatLocaleNumber(p3.printCount, locale)}{" "}
+                    <LocalizedText source={"বার"} area="admin" />{" "}
+                  </span>
+                  {p3.isReprintWarning && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-warning bg-bg text-warning font-bold">
+                      <AlertTriangle className="w-2.5 h-2.5" />
+                      <span><LocalizedText source={"ডুপ্লিকেট প্রিন্ট সতর্কতা"} area="admin" /></span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Exhaustive Line-Item Product, Supplier & Financial Breakdown Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-[8.5px] leading-tight tabular-nums">
+                  <thead>
+                    <tr className="border-b border-ink/40 bg-bg text-ink font-bold">
+                      <th className="py-1 px-1">#</th>
+                      <th className="py-1 px-1"><LocalizedText source={"সাপ্লায়ার ও লট (Supplier & Lot)"} area="admin" /></th>
+                      <th className="py-1 px-1">
+                        <LocalizedText source={"পণ্য, ভ্যারিয়েন্ট, Public ও Internal SKU (Bin)"} area="admin" />{" "}
+                      </th>
+                      <th className="py-1 px-1 text-center"><LocalizedText source={"পরিমাণ"} area="admin" /></th>
+                      {(isSuperAdmin || isVendor) && (
+                        <>
+                          <th className="py-1 px-1 text-right"><LocalizedText source={"একক কেনা (Cost)"} area="admin" />{" "}</th>
+                          <th className="py-1 px-1 text-right"><LocalizedText source={"সাপ্লায়ার লাভ (Profit)"} area="admin" />{" "}</th>
+                          <th className="py-1 px-1 text-right"><LocalizedText source={"সাপ্লায়ার প্রদেয় (Payable)"} area="admin" />{" "}</th>
+                        </>
+                      )}
+                      {isSuperAdmin && (
+                        <>
+                          <th className="py-1 px-1 text-right"><LocalizedText source={"কমিশন ও গ্রস মার্জিন"} area="admin" />{" "}</th>
+                          <th className="py-1 px-1 text-right"><LocalizedText source={"প্রোমো ছাড় ও নিট মার্জিন"} area="admin" />{" "}</th>
+                        </>
+                      )}
+                      <th className="py-1 px-1 text-right"><LocalizedText source={"খুচরা বিক্রয় (Sale)"} area="admin" /></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border bg-bg/70">
+                    {p3.lines.map((line, idx) => (
+                      <tr key={idx}>
+                        <td className="py-1 px-1 font-mono text-muted">{line.lineNo ?? idx + 1}</td>
+                        <td className="py-1 px-1">
+                          <div className="font-bold text-ink">
+                            {line.vendorBusinessName} ({line.vendorCode})
+                          </div>
+                          <div className="font-mono text-[8px] text-muted">
+                            {line.consignmentLotRef || '—'}
+                            {line.vendorContactPhone ? ` · ${line.vendorContactPhone}` : ''}
+                            {line.vendorPayoutMethodBn ? ` · ${line.vendorPayoutMethodBn}` : ''}
+                          </div>
+                        </td>
+                        <td className="py-1 px-1">
+                          <div className="font-semibold text-ink">
+                            {localizedField(line, "productNameBn", locale)}{' '}
+                            <span className="text-muted font-normal">
+                              ({localizedField(line, "variantTitleBn", locale)})
+                            </span>
+                          </div>
+                          <div className="font-mono text-[8px] text-muted">
+                            <LocalizedText source={"Public:"} area="admin" />{" "}
+                            <strong className="text-ink">{line.publicSku}</strong>{" "}
+                            <LocalizedText source={"· Vendor SKU:"} area="admin" />{' '}
+                            <strong className="text-ink">{line.internalVendorSku}</strong> ·{' '}
+                            {line.warehouseBinCode || '—'} · {line.weightGrams ?? '—'}
+                            <LocalizedText source={"g"} area="admin" />{" "}
+                          </div>
+                        </td>
+                        <td className="py-1 px-1 text-center font-mono font-bold text-ink">
+                          {formatLocaleNumber(line.quantity, locale)}<LocalizedText source={"টি"} area="admin" />{" "}
+                        </td>
+                        {(isSuperAdmin || isVendor) && (
+                          <>
+                            <td className="py-1 px-1 text-right font-mono">
+                              <div>{formatPoishaToBdt(line.snapSupplierCostPoisha ?? 0, locale)}</div>
+                              <div className="text-[7.5px] text-muted">
+                                <LocalizedText source={"মোট:"} area="admin" />{' '}
+                                {formatPoishaToBdt(
+                                  line.lineSupplierCostTotalPoisha ??
+                                    (line.snapSupplierCostPoisha ?? 0) * line.quantity,
+                                  locale
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-1 px-1 text-right font-mono">
+                              <div>+{formatPoishaToBdt(line.snapSupplierProfitPoisha ?? 0, locale)}</div>
+                              <div className="text-[7.5px] text-muted">
+                                <LocalizedText source={"মোট:"} area="admin" />{' '}
+                                {formatPoishaToBdt(line.lineSupplierProfitTotalPoisha ?? 0, locale)}
+                              </div>
+                            </td>
+                            <td className="py-1 px-1 text-right font-mono font-bold text-ink">
+                              <div>
+                                {formatPoishaToBdt(
+                                  line.lineSupplierPayableTotalPoisha ??
+                                    (line.snapSupplierPayablePoisha ?? 0) * line.quantity,
+                                  locale
+                                )}
+                              </div>
+                              <div className="text-[7.5px] font-normal text-muted">
+                                <LocalizedText source={"একক:"} area="admin" />{' '}
+                                {formatPoishaToBdt(line.snapSupplierPayablePoisha ?? 0, locale)}
+                              </div>
+                            </td>
+                          </>
+                        )}
+                        {isSuperAdmin && (
+                          <>
+                            <td className="py-1 px-1 text-right font-mono">
+                              <div className="font-semibold text-ink">
+                                {formatPoishaToBdt(
+                                  line.linePlatformMarginTotalPoisha ??
+                                    (line.snapPlatformMarginPoisha ?? 0) * line.quantity,
+                                  locale
+                                )}
+                              </div>
+                              <div className="text-[7.5px] text-muted">
+                                {((line.commissionBp ?? 0) / 100).toFixed(1)}
+                                <LocalizedText source={"% (একক:"} area="admin" />{' '}
+                                {formatPoishaToBdt(line.snapPlatformMarginPoisha ?? 0, locale)})
+                              </div>
+                            </td>
+                            <td className="py-1 px-1 text-right font-mono">
+                              <div className="font-bold text-success">
+                                {formatPoishaToBdt(
+                                  line.lineNetPlatformMarginPoisha ??
+                                    (line.snapPlatformMarginPoisha ?? 0) * line.quantity,
+                                  locale
+                                )}
+                              </div>
+                              <div className="text-[7.5px] text-muted">
+                                <LocalizedText source={"ছাড়: -"} area="admin" />{" "}
+                                {formatPoishaToBdt(line.allocatedPromoDiscountPoisha ?? 0, locale)}
+                              </div>
+                            </td>
+                          </>
+                        )}
+                        <td className="py-1 px-1 text-right font-mono font-bold text-ink">
+                          <div>{formatPoishaToBdt(line.lineSaleSubtotalPoisha ?? 0, locale)}</div>
+                          <div className="text-[7.5px] font-normal text-muted">
+                            <LocalizedText source={"একক:"} area="admin" />{' '}
+                            {formatPoishaToBdt(line.unitSalePricePoisha ?? 0, locale)}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Super Admin Complete Financial & Supplier Reconciliation Matrix */}
+              {isSuperAdmin && p3.accountingSummary && (
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 text-[8.5px] font-mono tabular-nums">
+                  {/* Left: Per-Vendor Escrow Payable Breakdown */}
+                  <div className="sm:col-span-5 border border-border rounded-[var(--radius-sm)] p-1.5 bg-bg space-y-1">
+                    <p className="font-bold text-ink uppercase text-[8px] border-b border-border pb-0.5">
+                      <LocalizedText source={"সাপ্লায়ার-ভিত্তিক প্রদেয় ও পেআউট বিভাজন (SUPPLIER ESCROW SPLIT)"} area="admin" />{" "}
+                    </p>
+                    {p3.accountingSummary.vendorSplitBreakdown.map((vs) => (
+                      <div
+                        key={vs.vendorCode}
+                        className="flex items-center justify-between gap-1 border-b border-border/60 last:border-0 pb-0.5"
+                      >
+                        <div className="leading-tight">
+                          <span className="font-bold text-ink">
+                            {vs.vendorCode} · {localizedField(vs, "vendorNameBn", locale)}
+                          </span>
+                          <div className="text-[7.5px] text-muted">
+                            {localizedField(vs, "payoutMethodBn", locale)} ({vs.payoutAccountNo}) ·{' '}
+                            {vs.totalUnits}{" "}<LocalizedText source={"পিস"} area="admin" />{" "}
+                          </div>
+                        </div>
+                        <div className="text-right leading-tight">
+                          <span className="font-bold text-ink">
+                            <LocalizedText source={"প্রদেয়:"} area="admin" />{' '}
+                            {formatPoishaToBdt(vs.supplierPayablePoisha, locale)}
+                          </span>
+                          <div className="text-[7.5px] text-muted">
+                            <LocalizedText source={"কেনা:"} area="admin" />{' '}
+                            {formatPoishaToBdt(vs.supplierCostPoisha, locale)}{' '}
+                            <LocalizedText source={"| লাভ:"} area="admin" />{' '}
+                            {formatPoishaToBdt(vs.supplierProfitPoisha, locale)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Right: Order-Level P&L, Delivery, bKash & Net Profit Ledger */}
+                  <div className="sm:col-span-7 border border-border rounded-[var(--radius-sm)] p-1.5 bg-bg">
+                    <p className="font-bold text-ink uppercase text-[8px] border-b border-border pb-0.5 mb-1">
+                      <LocalizedText source={"পূর্ণাঙ্গ অর্ডার হিসাব-নিকাশ ও নিট প্ল্যাটফর্ম লাভ (ORDER P&L & LEDGER SUMMARY)"} area="admin" />{" "}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-0.5 leading-snug">
+                      <div className="flex justify-between">
+                        <span className="text-muted"><LocalizedText source={"পণ্যের মোট বিক্রয়:"} area="admin" /></span>
+                        <span className="font-bold text-ink">
+                          {formatPoishaToBdt(p3.accountingSummary.grossMerchandiseSubtotalPoisha, locale)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted">
+                          <LocalizedText source={"প্রোমো ছাড় ("} area="admin" />{p3.accountingSummary.promoCode ?? 'N/A'}):
+                        </span>
+                        <span className="text-danger">
+                          -{formatPoishaToBdt(p3.accountingSummary.promoDiscountPoisha, locale)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted"><LocalizedText source={"ডেলিভারি (গ্রাহক/আনুমানিক):"} area="admin" /></span>
+                        <span>
+                          {formatPoishaToBdt(p3.accountingSummary.customerDeliveryChargePoisha, locale)} /{' '}
+                          {formatPoishaToBdt(p3.accountingSummary.estimatedActualCourierCostPoisha, locale)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted"><LocalizedText source={"মোট সাপ্লায়ার কেনা দাম:"} area="admin" /></span>
+                        <span>{formatPoishaToBdt(p3.accountingSummary.totalSupplierCostPoisha, locale)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted"><LocalizedText source={"মোট সাপ্লায়ার লাভ:"} area="admin" /></span>
+                        <span>+{formatPoishaToBdt(p3.accountingSummary.totalSupplierProfitPoisha, locale)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-ink">
+                        <span><LocalizedText source={"সাপ্লায়ার প্রদেয় (Escrow):"} area="admin" /></span>
+                        <span>{formatPoishaToBdt(p3.accountingSummary.totalSupplierPayableEscrowPoisha, locale)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted">
+                          <LocalizedText source={"অগ্রিম ("} area="admin" />{p3.manualPaymentTrxId ?? 'COD'}):
+                        </span>
+                        <span>{formatPoishaToBdt(p3.accountingSummary.advancePaidPoisha, locale)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-ink">
+                        <span><LocalizedText source={"কুরিয়ার সিওডি প্রাপ্য:"} area="admin" /></span>
+                        <span>{formatPoishaToBdt(p3.accountingSummary.codCollectablePoisha, locale)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted"><LocalizedText source={"প্যাকিং ও ভ্যাট (৫%):"} area="admin" /></span>
+                        <span>
+                          -{formatPoishaToBdt(
+                            p3.accountingSummary.packagingMaterialCostPoisha +
+                              p3.accountingSummary.estimatedVatOnMarginPoisha,
+                            locale
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-1 pt-1 border-t border-border flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[8px] text-muted">
+                        <LocalizedText source={"হিসাব সূত্র: গ্রস মার্জিন ("} area="admin" />{" "}
+                        {formatPoishaToBdt(p3.accountingSummary.grossPlatformMarginPoisha, locale)}
+                        <LocalizedText source={") - ছাড় - ডেলিভারি ভর্তুকি - প্যাকিং - ৫% ভ্যাট"} area="admin" />{" "}
+                      </span>
+                      <span className="text-[9.5px] font-bold text-success bg-surface px-2 py-0.5 rounded border border-border">
+                        <LocalizedText source={"আনুমানিক নিট প্ল্যাটফর্ম লাভ (Estimated Net Profit):"} area="admin" />{' '}
+                        {formatPoishaToBdt(p3.accountingSummary.netPlatformRetainedProfitPoisha, locale)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Warehouse QC Checklist, Staff Notes & 3-Role Signature Strip */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 border-t border-border text-[8.5px] items-end">
+                <div className="sm:col-span-7 space-y-1">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                    {printConfig.checklistItemsBn.filter((chk) => chk.trim()).map((chk, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1 text-ink font-medium">
+                        <CheckSquare className="w-2.5 h-2.5 text-ink shrink-0" />
+                        <span>{chk}</span>
+                      </span>
+                    ))}
+                  </div>
+                  {p3.internalStaffNote && (
+                    <p className="font-mono text-[8px] text-ink bg-bg px-1.5 py-0.5 rounded border border-border">
+                      <LocalizedText source={"স্টাফ নোট:"} area="admin" />{" "}{p3.internalStaffNote}
+                    </p>
+                  )}
+                </div>
+
+                <div className="sm:col-span-5 grid grid-cols-3 gap-1.5 text-center font-mono text-[8px] pt-2">
+                  <div className="border-t border-ink pt-0.5 text-muted">
+                    <LocalizedText source={"প্যাকিং অফিসার"} area="admin" />{" "}
+                  </div>
+                  <div className="border-t border-ink pt-0.5 text-muted">
+                    <LocalizedText source={"কিউসি যাচাইকারী"} area="admin" />{" "}
+                  </div>
+                  <div className="border-t border-ink pt-0.5 text-muted">
+                    <LocalizedText source={"অ্যাডমিন / হিসাব রক্ষণ"} area="admin" />{" "}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export interface PrintEnginePanelProps {
   locale: 'bn' | 'en';
   isSuperAdmin: boolean;
@@ -120,8 +1004,6 @@ export function PrintEnginePanel({
 }: PrintEnginePanelProps) {
   // Navigation & Sub-Tabs
   const [activeSubTab, setActiveSubTab] = React.useState<PrintSubTab>('queue');
-  const brandName = (locale === 'bn' ? siteSettings.brandNameBn : siteSettings.brandNameEn) || siteSettings.brandNameBn || siteSettings.brandNameEn;
-  const logoUrl = siteSettings.storefront?.logoUrl;
 
   // Print Queue Controls
   const [selectedOrderNos, setSelectedOrderNos] =
@@ -265,11 +1147,8 @@ export function PrintEnginePanel({
     );
   }, [filteredAndSortedSlips, selectedOrderNos]);
 
-  const heightScale = Math.min(1, 275 / (printConfig.part1HeightMm + printConfig.part2HeightMm + printConfig.part3HeightMm));
-
   const handlePrint = async () => {
     if (!activeSlipsToPrint.length || !printableRef.current) return;
-    let frame: HTMLIFrameElement | null = null;
     setLoadingSlips(true);
     setFeedback(null);
     try {
@@ -282,86 +1161,15 @@ export function PrintEnginePanel({
       if (!res.ok || !data.success) throw new Error(data.errorBn || 'প্রিন্ট অনুরোধ ব্যর্থ। / Print request failed.');
       const updates = new Map<string, OrderPrintSlipBundle>(data.slips.map((slip: OrderPrintSlipBundle) => [slip.orderNo, slip]));
       flushSync(() => setSlips(previous => previous.map(slip => updates.get(slip.orderNo) || slip)));
-      frame = document.createElement('iframe');
-      frame.setAttribute('title', 'Print preview');
-      Object.assign(frame.style, { position: 'fixed', width: layoutMode === 'thermal_4x6' ? '101.6mm' : '210mm', height: '297mm', left: '-10000px', top: '0', opacity: '0', border: '0' });
-      document.body.appendChild(frame);
-      const doc = frame.contentDocument;
-      const win = frame.contentWindow;
-      if (!doc || !win || !printableRef.current) { frame.remove(); throw new Error('প্রিন্ট উইন্ডো তৈরি করা যায়নি। / Could not open print window.'); }
-      doc.open();
-      doc.write('<!doctype html><html><head><meta charset="utf-8"><base href="' + document.baseURI.replace(/"/g, '&quot;') + '"></head><body></body></html>');
-      doc.close();
-      const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
-      const waits = styles.map(node => {
-        const clone = node.cloneNode(true) as HTMLElement;
-        doc.head.appendChild(clone);
-        if (clone.tagName !== 'LINK') return Promise.resolve();
-        return new Promise<void>(resolve => {
-          clone.addEventListener('load', () => resolve(), { once: true });
-          clone.addEventListener('error', () => resolve(), { once: true });
-          setTimeout(resolve, 2500);
-        });
+      if (!printableRef.current) throw new Error('প্রিন্ট উইন্ডো তৈরি করা যায়নি। / Could not open print window.');
+      await executeNativeSlipPrint({
+        printableEl: printableRef.current,
+        layoutMode,
+        locale,
       });
-      const pageStyle = doc.createElement('style');
-      const paperWidthMm = layoutMode === 'thermal_4x6' ? 101.6 : 210;
-      const paperHeightMm = layoutMode === 'thermal_4x6' ? 152.4 : 297;
-      // Apply the same physical layout in the hidden frame and at print time so
-      // measurement is meaningful. Each order is a separate page; never clip data.
-      pageStyle.textContent = `@page { size: ${layoutMode === 'thermal_4x6' ? '101.6mm 152.4mm' : 'A4 portrait'}; margin: 0; }
-        html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
-        .print-slips { margin: 0 !important; padding: 0 !important; }
-        .print-a4-sheet, .print-thermal-sheet { box-sizing: border-box; width: calc(${paperWidthMm}mm / var(--print-scale, 1)) !important; zoom: var(--print-scale, 1); max-width: none !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 4mm !important; display: block !important; break-after: page; page-break-after: always; overflow: visible !important; }
-        .print-a4-sheet:last-child, .print-thermal-sheet:last-child { break-after: auto; page-break-after: auto; }
-        .print-slip-part { box-sizing: border-box; min-height: 0 !important; break-inside: avoid; }
-        .print-slips .overflow-x-auto { overflow: visible !important; }
-        .print-slips table { width: 100% !important; table-layout: fixed; overflow-wrap: anywhere; }
-        .print-slips td, .print-slips th { overflow-wrap: anywhere; word-break: break-word; }
-        .print-slips img { max-width: 100%; }
-        @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`;
-      doc.head.appendChild(pageStyle);
-      const printContent = printableRef.current.cloneNode(true) as HTMLElement;
-      // Remove deselected parts from the printable document, not just visually hide them.
-      printContent.querySelectorAll<HTMLElement>('.print-slip-part').forEach(part => { if (part.style.display === 'none') part.remove(); });
-      doc.body.appendChild(printContent);
-      for (const image of Array.from(doc.images)) image.loading = 'eager';
-      await Promise.all(waits);
-      if (doc.fonts) await doc.fonts.ready;
-      await Promise.all(Array.from(doc.images).map(image => image.complete ? Promise.resolve() : new Promise<void>(resolve => {
-        image.onload = image.onerror = () => resolve(); setTimeout(resolve, 2000);
-      })));
-      for (const image of Array.from(doc.querySelectorAll<HTMLImageElement>('.print-brand-logo'))) {
-        if (!image.complete || image.naturalWidth === 0) image.remove();
-      }
-      if (!CSS.supports('zoom', '1')) throw new Error(locale === 'bn' ? 'এই ব্রাউজারে এক পৃষ্ঠায় ফিট করা সমর্থিত নয়। Chrome বা Edge ব্যবহার করুন।' : 'This browser cannot fit the slip on one page. Use Chrome or Edge.');
-      const maxHeightPx = (paperHeightMm - 2) * 96 / 25.4;
-      const maxWidthPx = paperWidthMm * 96 / 25.4;
-      const sheets = Array.from(doc.querySelectorAll<HTMLElement>('.print-a4-sheet, .print-thermal-sheet'));
-      for (const sheet of sheets) {
-        let scale = 1;
-        for (let attempt = 0; attempt < 6; attempt++) {
-          sheet.style.setProperty('--print-scale', String(scale));
-          const bounds = sheet.getBoundingClientRect();
-          if (bounds.height <= maxHeightPx && bounds.width <= maxWidthPx + 1) break;
-          scale *= Math.min(maxHeightPx / bounds.height, maxWidthPx / bounds.width) * 0.99;
-        }
-        const bounds = sheet.getBoundingClientRect();
-        const protrudes = Array.from(sheet.querySelectorAll<HTMLElement>('*')).some(element => {
-          const rect = element.getBoundingClientRect();
-          return rect.width > 0 && rect.height > 0 && (rect.right > bounds.right + 2 || rect.left < bounds.left - 2 || rect.bottom > bounds.bottom + 2);
-        });
-        if (scale < 0.65 || bounds.height > maxHeightPx || bounds.width > maxWidthPx + 1 || protrudes) {
-          throw new Error(locale === 'bn' ? 'এক পৃষ্ঠায় স্পষ্টভাবে দেখানোর জন্য তথ্য বেশি। A4-এ কম অংশ বেছে নিন বা আলাদা কপি প্রিন্ট করুন; কোনো তথ্য কাটা হয়নি।' : 'Too much content to fit legibly on one page. Select fewer A4 parts or print separate copies; no information was clipped.');
-        }
-      }
-      win.onafterprint = () => frame?.remove();
-      win.focus();
-      win.print();
       // Browsers do not report whether the dialog was cancelled or paper was printed.
       setFeedback(locale === 'bn' ? 'প্রিন্ট অনুরোধ নথিভুক্ত হয়েছে। প্রিন্ট ডায়ালগে কাগজের আকার ও স্কেল যাচাই করুন; বাতিল করলেও অনুরোধের সংখ্যা থাকবে।' : 'Print request recorded. Check paper size and scale in the print dialog; cancelled requests are also counted.');
-      setTimeout(() => frame?.remove(), 120000);
     } catch (error) {
-      frame?.remove();
       setFeedback(error instanceof Error ? error.message : 'প্রিন্ট ব্যর্থ। / Print failed.');
     } finally { setLoadingSlips(false); }
   };
@@ -644,755 +1452,17 @@ export function PrintEnginePanel({
           {/* ====================================================================
               PRINTABLE SLIPS CONTAINER (RENDERED NATIVELY ON BROWSER PRINT)
              ==================================================================== */}
-          <div ref={printableRef} className="print-slips space-y-6 print:space-y-0">
-            {activeSlipsToPrint.map((slip) => {
-              const p12 = slip.customerAndCourierPart;
-              const p3 = slip.internalPart3;
-
-              if (layoutMode === 'thermal_4x6') {
-                return (
-                  <div
-                    key={slip.orderNo}
-                    className="print-thermal-sheet max-w-[101.6mm] mx-auto border-2 border-ink bg-bg text-ink p-4 space-y-3 print:break-after-page"
-                  >
-                    <div className="flex items-center justify-between border-b border-border pb-2">
-                      <div className="flex items-center gap-2">
-                        <PrintBrandMark name={brandName} logoUrl={logoUrl} />
-                        <div><p className="text-[10px] font-mono uppercase text-muted">
-                          <LocalizedText source={"4x6 THERMAL COURIER STICKER"} area="admin" />{" "}</p>
-                        <p className="text-xs font-bold text-ink">
-                          <LocalizedText source={"প্রেরক:"} area="admin" />{" "}{brandName} ({siteSettings.supportPhone})
-                        </p></div>
-                      </div>
-                      <Badge status="info">{p12.courierProvider.toUpperCase()}</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2 py-1">
-                      <div><Code128BarcodeSvg value={p12.trackingCode || p12.orderNo} height={40} />{!p12.trackingCode && <p className="text-[9px]">অর্ডার বারকোড / Order barcode</p>}</div>
-                      {p12.trackingUrl && <QRCodeSVG value={new URL(p12.trackingUrl, window.location.origin).href} size={56} />}
-                    </div>
-
-                    <div className="p-2 border border-border rounded-[var(--radius-sm)] space-y-1 text-xs">
-                      <p className="font-bold text-sm text-ink">
-                        <LocalizedText source={"প্রাপক:"} area="admin" />{" "}{p12.customerName}
-                      </p>
-                      <p className="font-mono font-bold text-ink">
-                        <LocalizedText source={"মোবাইল:"} area="admin" />{" "}{p12.customerPhone}
-                      </p>
-                      <p className="text-ink">
-                        {localizedField(p12, "upazilaNameBn", locale)}, {localizedField(p12, "districtNameBn", locale)} — {p12.streetAddress}
-                      </p>
-                      {p12.landmark && (
-                        <p className="text-muted text-[11px]">
-                          <LocalizedText source={"ল্যান্ডমার্ক:"} area="admin" />{" "}{p12.landmark}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Large COD Box */}
-                    <div className="p-2.5 border-2 border-ink bg-surface text-center">
-                      <p className="text-[10px] font-bold uppercase text-muted">
-                        <LocalizedText source={"ডেলিভারির সময় প্রদেয় (COD COLLECTABLE)"} area="admin" />{" "}</p>
-                      <p className="text-2xl font-bold font-mono tabular-nums text-ink">
-                        {formatPoishaToBdt(p12.codCollectablePoisha, locale)}
-                      </p>
-                    </div>
-
-                    <div className="text-[10px] font-mono text-muted flex justify-between pt-1 border-t border-border">
-                      <span><LocalizedText source={"Order:"} area="admin" />{" "}{p12.orderNo}</span>
-                      <span><LocalizedText source={"CNS:"} area="admin" />{" "}{p12.consignmentId || '—'}</span>
-                    </div>
-                  </div>
-                );
-              }
-
-              // Default: Professional A4 3-Part Portrait Layout (210mm x 297mm)
-              return (
-                <div
-                  key={slip.orderNo}
-                  className="print-a4-sheet w-full max-w-[210mm] min-h-[290mm] mx-auto border border-border bg-bg text-ink p-3 sm:p-4 space-y-2.5 print:border-0 print:p-[5mm] print:space-y-1.5 print:break-after-page"
-                >
-                  {/* ==========================================================
-                      PART 1: CUSTOMER INVOICE (গ্রাহক ইনভয়েস — ZERO COST LEAK)
-                     ========================================================== */}
-                  <div className="print-slip-part print-customer-part border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg" style={{ minHeight: `${printConfig.part1HeightMm * heightScale}mm`, display: visibleParts[0] ? undefined : 'none' }}>
-                    <div className="flex items-start justify-between border-b border-border pb-1.5 gap-2">
-                      <div className="flex items-center gap-2">
-                        <PrintBrandMark name={brandName} logoUrl={logoUrl} />
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-surface border border-border rounded text-ink">
-                              <LocalizedText source={"PART 1 ·"} area="admin" />{" "}{localizedField(printConfig, "part1TitleBn", locale)}
-                            </span>
-                            <span className="text-[9px] font-mono text-muted">
-                              <LocalizedText source={"A4 Official Copy"} area="admin" />{" "}</span>
-                          </div>
-                          <h2 className="text-xs sm:text-sm font-bold text-ink leading-tight mt-0.5">
-                            {brandName}
-                          </h2>
-                          <p className="text-[9.5px] text-muted leading-tight">
-                            <LocalizedText source={"হেল্পলাইন:"} area="admin" />{" "}{siteSettings.supportPhone} {" "}<LocalizedText source={"· ইস্যু তারিখ:"} area="admin" />{' '}
-                            {new Date(p12.createdAt).toLocaleDateString('bn-BD')}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-right font-mono tabular-nums space-y-0.5">
-                        <p className="text-xs font-bold text-ink bg-surface px-2 py-0.5 border border-border rounded">
-                          <LocalizedText source={"ইনভয়েস:"} area="admin" />{" "}{p12.orderNo}
-                        </p>
-                        <p className="text-[9.5px] text-ink font-semibold">
-                          <LocalizedText source={"পেমেন্ট:"} area="admin" />{" "}{p12.paymentMethod.toUpperCase()} ({p12.paymentStatus})
-                        </p>
-                        <p className="text-[9px] text-muted">
-                          <LocalizedText source={"কুরিয়ার:"} area="admin" />{" "}{p12.courierProvider.toUpperCase()} · {p12.trackingCode}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 text-[10.5px]">
-                      {/* Customer Address Box */}
-                      <div className="sm:col-span-4 border border-border rounded-[var(--radius-sm)] p-2 bg-surface/50 space-y-0.5">
-                        <p className="text-[9px] font-mono uppercase text-muted font-bold">
-                          <LocalizedText source={"গ্রাহকের বিবরণ (BILL & SHIP TO)"} area="admin" />{" "}</p>
-                        <p className="font-bold text-ink text-[11px]">
-                          {p12.customerName}
-                        </p>
-                        <p className="font-mono font-bold text-ink text-[10.5px]">
-                          <LocalizedText source={"মোবাইল:"} area="admin" />{" "}{p12.customerPhone}
-                        </p>
-                        <p className="text-ink text-[10px] leading-snug">
-                          {localizedField(p12, "upazilaNameBn", locale)}, {localizedField(p12, "districtNameBn", locale)} —{' '}
-                          {p12.streetAddress}
-                        </p>
-                        {p12.landmark && (
-                          <p className="text-muted text-[9.5px]">
-                            <LocalizedText source={"ল্যান্ডমার্ক:"} area="admin" />{" "}{p12.landmark}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Customer Itemized Table */}
-                      <div className="sm:col-span-8 flex flex-col justify-between">
-                        <table className="w-full text-left border-collapse text-[9.5px] tabular-nums">
-                          <thead>
-                            <tr className="border-b border-border bg-surface text-ink font-bold">
-                              <th className="py-1 px-1.5">#</th>
-                              <th className="py-1 px-1.5"><LocalizedText source={"পণ্যের বিবরণ ও ভ্যারিয়েন্ট (Public SKU)"} area="admin" /></th>
-                              <th className="py-1 px-1.5 text-center"><LocalizedText source={"পরিমাণ"} area="admin" /></th>
-                              <th className="py-1 px-1.5 text-right"><LocalizedText source={"একক মূল্য"} area="admin" /></th>
-                              <th className="py-1 px-1.5 text-right"><LocalizedText source={"মোট মূল্য"} area="admin" /></th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border">
-                            {p12.items.map((item, idx) => (
-                              <tr key={idx}>
-                                <td className="py-1 px-1.5 font-mono text-muted">
-                                  {idx + 1}
-                                </td>
-                                <td className="py-1 px-1.5">
-                                  <div className="flex items-center gap-1.5">
-                                    {item.imageUrl && <div className="relative w-5 h-5 border border-border rounded overflow-hidden shrink-0">
-                                      <img
-                                        src={item.imageUrl}
-                                        alt={item.productNameBn}
-                                        referrerPolicy="no-referrer"
-                                        className="object-cover" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
-                                    </div>}
-                                    <div className="leading-tight">
-                                      <span className="font-semibold text-ink">
-                                        {localizedField(item, "productNameBn", locale)}
-                                      </span>{' '}
-                                      <span className="text-muted text-[9px]">
-                                        ({localizedField(item, "variantTitleBn", locale)})
-                                      </span>
-                                      <div className="font-mono text-[8.5px] text-muted">
-                                        <LocalizedText source={"SKU:"} area="admin" />{" "}{item.publicSku}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="py-1 px-1.5 text-center font-mono font-bold">
-                                  {formatLocaleNumber(item.quantity, locale)}
-                                </td>
-                                <td className="py-1 px-1.5 text-right font-mono">
-                                  {formatPoishaToBdt(
-                                    item.unitSalePricePoisha,
-                                    locale
-                                  )}
-                                </td>
-                                <td className="py-1 px-1.5 text-right font-mono font-bold text-ink">
-                                  {formatPoishaToBdt(
-                                    item.lineSubtotalPoisha,
-                                    locale
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-
-                        {/* Customer Bill Breakdown Strip */}
-                        <div className="mt-1.5 pt-1 border-t border-border flex flex-wrap items-center justify-between gap-1 text-[9.5px]">
-                          <span className="text-muted text-[9px] max-w-[52%] leading-tight">
-                            * {localizedField(printConfig, "footerNoteBn", locale)}
-                          </span>
-                          <div className="font-mono tabular-nums flex flex-wrap items-center gap-2 bg-surface px-2 py-1 rounded border border-border">
-                            <span>
-                              <LocalizedText source={"সাবটোটাল:"} area="admin" />{' '}
-                              <strong>
-                                {formatPoishaToBdt(p12.subtotalPoisha, locale)}
-                              </strong>
-                            </span>
-                            {p12.discountPoisha > 0 && (
-                              <span>
-                                <LocalizedText source={"ছাড়: -"} area="admin" />{" "}{formatPoishaToBdt(p12.discountPoisha, locale)}
-                              </span>
-                            )}
-                            <span>
-                              <LocalizedText source={"ডেলিভারি:"} area="admin" />{' '}
-                              {formatPoishaToBdt(
-                                p12.deliveryChargePoisha,
-                                locale
-                              )}
-                            </span>
-                            <span>{locale === 'bn' ? 'সর্বমোট:' : 'Total:'} <strong>{formatPoishaToBdt(p12.totalPayablePoisha, locale)}</strong></span>
-                            {p12.advancePaidPoisha > 0 && (
-                              <span>
-                                <LocalizedText source={"অগ্রিম: -"} area="admin" />{" "}{formatPoishaToBdt(
-                                  p12.advancePaidPoisha,
-                                  locale
-                                )}
-                              </span>
-                            )}
-                            <span className="font-bold text-ink border-l border-border pl-2">
-                              <LocalizedText source={"ডেলিভারিতে প্রদেয় (COD):"} area="admin" />{' '}
-                              {formatPoishaToBdt(
-                                p12.codCollectablePoisha,
-                                locale
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* CUT LINE 1 */}
-                  <div style={{ display: visibleParts[0] && (visibleParts[1] || visibleParts[2]) ? undefined : 'none' }} className="flex items-center gap-2 text-[8.5px] font-mono text-muted py-0">
-                    <Scissors className="w-3 h-3 shrink-0" aria-hidden="true" />
-                    <div className="flex-1 border-t border-dashed border-ink" />
-                    <span><LocalizedText source={"✂ CUT HERE (PART 1 CUSTOMER COPY / PART 2 COURIER BOX LABEL)"} area="admin" /></span>
-                    <div className="flex-1 border-t border-dashed border-ink" />
-                  </div>
-
-                  {/* ==========================================================
-                      PART 2: COURIER BOX STICKER (কুরিয়ার বক্স স্টিকার)
-                     ========================================================== */}
-                  <div className="print-slip-part print-courier-part border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg" style={{ minHeight: `${printConfig.part2HeightMm * heightScale}mm`, display: visibleParts[1] ? undefined : 'none' }}>
-                    <div className="flex items-center justify-between border-b border-border pb-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <PrintBrandMark name={brandName} logoUrl={logoUrl} compact />
-                        <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-surface border border-border rounded text-ink">
-                          <LocalizedText source={"PART 2 ·"} area="admin" />{" "}{localizedField(printConfig, "part2TitleBn", locale)}
-                        </span>
-                        <span className="text-[10px] font-bold text-ink">
-                          <LocalizedText source={"প্রেরক:"} area="admin" />{" "}{brandName} {" "}<LocalizedText source={"(হেল্পলাইন:"} area="admin" />{' '}
-                          {siteSettings.supportPhone})
-                        </span>
-                      </div>
-                      <div className="text-right font-mono text-[10px] tabular-nums">
-                        <span className="font-bold uppercase px-1.5 py-0.5 bg-ink text-bg rounded">
-                          {p12.courierProvider}
-                        </span>{' '}
-                        · <span className="font-bold">{p12.consignmentId || '—'}</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-                      <div className="sm:col-span-5 text-[10.5px] space-y-0.5 border-r border-border pr-2">
-                        <p className="text-[8.5px] font-mono uppercase text-muted font-bold">
-                          <LocalizedText source={"ডেলিভারি ঠিকানা (DELIVER TO)"} area="admin" />{" "}</p>
-                        <p className="font-bold text-ink text-xs">
-                          <LocalizedText source={"প্রাপক:"} area="admin" />{" "}{p12.customerName}
-                        </p>
-                        <p className="font-mono font-bold text-ink text-[11px]">
-                          <LocalizedText source={"ফোন:"} area="admin" />{" "}{p12.customerPhone}
-                        </p>
-                        <p className="text-ink text-[10px] leading-snug font-medium">
-                          {localizedField(p12, "upazilaNameBn", locale)}, {localizedField(p12, "districtNameBn", locale)} —{' '}
-                          {p12.streetAddress}
-                        </p>
-                        {p12.landmark && (
-                          <p className="text-muted text-[9.5px]">
-                            <LocalizedText source={"ল্যান্ডমার্ক:"} area="admin" />{" "}{p12.landmark}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="sm:col-span-4 flex items-center justify-center gap-2.5 py-0.5">
-                        <div className="text-center">
-                          <Code128BarcodeSvg value={p12.trackingCode || p12.orderNo} height={34} />
-                          {!p12.trackingCode && <p>অর্ডার বারকোড / Order barcode</p>}
-                        </div>
-                        {p12.trackingUrl && <QRCodeSVG value={new URL(p12.trackingUrl, window.location.origin).href} size={46} />}
-                      </div>
-
-                      <div className="sm:col-span-3 border-2 border-ink bg-surface p-1.5 text-center rounded-[var(--radius-sm)]">
-                        <p className="text-[8.5px] font-bold uppercase text-muted">
-                          <LocalizedText source={"ডেলিভারির সময় প্রদেয় (COD)"} area="admin" />{" "}</p>
-                        <p className="text-base sm:text-lg font-bold font-mono tabular-nums text-ink leading-tight">
-                          {formatPoishaToBdt(p12.codCollectablePoisha, locale)}
-                        </p>
-                        <p className="text-[8.5px] font-mono text-muted">
-                          <LocalizedText source={"Order:"} area="admin" />{" "}{p12.orderNo} {" "}<LocalizedText source={"· পিস:"} area="admin" />{' '}
-                          {p12.items.reduce((acc, i) => acc + i.quantity, 0)}<LocalizedText source={"টি"} area="admin" />{" "}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* CUT LINE 2 */}
-                  <div style={{ display: visibleParts[1] && visibleParts[2] ? undefined : 'none' }} className="flex items-center gap-2 text-[8.5px] font-mono text-muted py-0">
-                    <Scissors className="w-3 h-3 shrink-0" aria-hidden="true" />
-                    <div className="flex-1 border-t border-dashed border-ink" />
-                    <span>
-                      <LocalizedText source={"✂ CUT HERE — PART 3 ADMIN, ACCOUNTS & WAREHOUSE MASTER RECORD (অ্যাডমিন ও হিসাব সংরক্ষণ কপি)"} area="admin" />{" "}</span>
-                    <div className="flex-1 border-t border-dashed border-ink" />
-                  </div>
-
-                  {/* ==========================================================
-                      PART 3: ADMIN, ACCOUNTS & WAREHOUSE MASTER COPY
-                      (পূর্ণাঙ্গ প্রোডাক্ট, সাপ্লায়ার, কেনা দাম, লাভ, মার্জিন ও হিসাব ব্রেকডাউন)
-                     ========================================================== */}
-                  <div className="print-slip-part print-internal-part border-2 border-ink rounded-[var(--radius-sm)] p-2.5 bg-surface/60 space-y-2" style={{ minHeight: `${printConfig.part3HeightMm * heightScale}mm`, display: visibleParts[2] ? undefined : 'none' }}>
-                    {/* Part 3 Header & Operational Telemetry Strip */}
-                    <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-border pb-1.5">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <PrintBrandMark name={brandName} logoUrl={logoUrl} compact />
-                          <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 bg-ink text-bg rounded">
-                            <LocalizedText source={"PART 3 ·"} area="admin" />{" "}{localizedField(printConfig, "part3TitleBn", locale)}
-                          </span>
-                          <span className="text-[9.5px] font-mono font-bold text-ink">
-                            <LocalizedText source={"অর্ডার:"} area="admin" />{" "}{p3.orderNo}
-                          </span>
-                          <span className="text-[9px] font-mono text-muted">
-                            <LocalizedText source={"· এসক্রো রুল:"} area="admin" />{" "}{localizedField(p3, "estimatedMaturityDaysLabelBn", locale)}
-                          </span>
-                        </div>
-                        <p className="text-[9px] text-muted mt-0.5 font-mono">
-                          <LocalizedText source={"গ্রাহক:"} area="admin" />{" "}{p3.customerName ?? p12.customerName} (
-                          {p3.customerPhone ?? p12.customerPhone}<LocalizedText source={") · সোর্স:"} area="admin" />{' '}
-                          {(p3.orderSource ?? 'storefront').toUpperCase()} {" "}<LocalizedText source={"· কল স্ট্যাটাস:"} area="admin" />{' '}
-                          {p3.callStatus ?? '—'} {" "}<LocalizedText source={"(চেষ্টা:"} area="admin" />{' '}
-                          {p3.callAttempts == null ? '—' : formatLocaleNumber(p3.callAttempts, locale)}<LocalizedText source={") · ঝুঁকি:"} area="admin" />{' '}
-                          {p3.fraudRiskTierBn ?? '—'} {" "}<LocalizedText source={"(স্কোর:"} area="admin" />{' '}
-                          {p3.addressQualityScore == null ? '—' : formatLocaleNumber(p3.addressQualityScore, locale)}%)
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 font-mono text-[9px]">
-                        <span className="px-1.5 py-0.5 rounded border border-border bg-bg text-ink font-bold">
-                          <LocalizedText source={"প্রিন্ট:"} area="admin" />{" "}{formatLocaleNumber(p3.printCount, locale)} {" "}<LocalizedText source={"বার"} area="admin" />{" "}</span>
-                        {p3.isReprintWarning && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-warning bg-bg text-warning font-bold">
-                            <AlertTriangle className="w-2.5 h-2.5" />
-                            <span><LocalizedText source={"ডুপ্লিকেট প্রিন্ট সতর্কতা"} area="admin" /></span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Exhaustive Line-Item Product, Supplier & Financial Breakdown Table */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse text-[8.5px] leading-tight tabular-nums">
-                        <thead>
-                          <tr className="border-b border-ink/40 bg-bg text-ink font-bold">
-                            <th className="py-1 px-1">#</th>
-                            <th className="py-1 px-1"><LocalizedText source={"সাপ্লায়ার ও লট (Supplier & Lot)"} area="admin" /></th>
-                            <th className="py-1 px-1">
-                              <LocalizedText source={"পণ্য, ভ্যারিয়েন্ট, Public ও Internal SKU (Bin)"} area="admin" />{" "}</th>
-                            <th className="py-1 px-1 text-center"><LocalizedText source={"পরিমাণ"} area="admin" /></th>
-                            {(isSuperAdmin || isVendor) && (
-                              <>
-                                <th className="py-1 px-1 text-right">
-                                  <LocalizedText source={"একক কেনা (Cost)"} area="admin" />{" "}</th>
-                                <th className="py-1 px-1 text-right">
-                                  <LocalizedText source={"সাপ্লায়ার লাভ (Profit)"} area="admin" />{" "}</th>
-                                <th className="py-1 px-1 text-right">
-                                  <LocalizedText source={"সাপ্লায়ার প্রদেয় (Payable)"} area="admin" />{" "}</th>
-                              </>
-                            )}
-                            {isSuperAdmin && (
-                              <>
-                                <th className="py-1 px-1 text-right">
-                                  <LocalizedText source={"কমিশন ও গ্রস মার্জিন"} area="admin" />{" "}</th>
-                                <th className="py-1 px-1 text-right">
-                                  <LocalizedText source={"প্রোমো ছাড় ও নিট মার্জিন"} area="admin" />{" "}</th>
-                              </>
-                            )}
-                            <th className="py-1 px-1 text-right"><LocalizedText source={"খুচরা বিক্রয় (Sale)"} area="admin" /></th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border bg-bg/70">
-                          {p3.lines.map((line, idx) => (
-                            <tr key={idx}>
-                              <td className="py-1 px-1 font-mono text-muted">
-                                {line.lineNo ?? idx + 1}
-                              </td>
-                              <td className="py-1 px-1">
-                                <div className="font-bold text-ink">
-                                  {line.vendorBusinessName} ({line.vendorCode})
-                                </div>
-                                <div className="font-mono text-[8px] text-muted">
-                                  {line.consignmentLotRef || '—'}
-                                  {line.vendorContactPhone
-                                    ? ` · ${line.vendorContactPhone}`
-                                    : ''}
-                                  {line.vendorPayoutMethodBn
-                                    ? ` · ${line.vendorPayoutMethodBn}`
-                                    : ''}
-                                </div>
-                              </td>
-                              <td className="py-1 px-1">
-                                <div className="font-semibold text-ink">
-                                  {localizedField(line, "productNameBn", locale)}{' '}
-                                  <span className="text-muted font-normal">
-                                    ({localizedField(line, "variantTitleBn", locale)})
-                                  </span>
-                                </div>
-                                <div className="font-mono text-[8px] text-muted">
-                                  <LocalizedText source={"Public:"} area="admin" />{" "}<strong className="text-ink">{line.publicSku}</strong> {" "}<LocalizedText source={"· Vendor SKU:"} area="admin" />{' '}
-                                  <strong className="text-ink">
-                                    {line.internalVendorSku}
-                                  </strong>{' '}
-                                  · {line.warehouseBinCode || '—'} ·{' '}
-                                  {line.weightGrams ?? '—'}<LocalizedText source={"g"} area="admin" />{" "}</div>
-                              </td>
-                              <td className="py-1 px-1 text-center font-mono font-bold text-ink">
-                                {formatLocaleNumber(line.quantity, locale)}<LocalizedText source={"টি"} area="admin" />{" "}</td>
-                              {(isSuperAdmin || isVendor) && (
-                                <>
-                                  <td className="py-1 px-1 text-right font-mono">
-                                    <div>
-                                      {formatPoishaToBdt(
-                                        line.snapSupplierCostPoisha ?? 0,
-                                        locale
-                                      )}
-                                    </div>
-                                    <div className="text-[7.5px] text-muted">
-                                      <LocalizedText source={"মোট:"} area="admin" />{' '}
-                                      {formatPoishaToBdt(
-                                        line.lineSupplierCostTotalPoisha ??
-                                          (line.snapSupplierCostPoisha ?? 0) *
-                                            line.quantity,
-                                        locale
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="py-1 px-1 text-right font-mono">
-                                    <div>
-                                      +
-                                      {formatPoishaToBdt(
-                                        line.snapSupplierProfitPoisha ?? 0,
-                                        locale
-                                      )}
-                                    </div>
-                                    <div className="text-[7.5px] text-muted">
-                                      <LocalizedText source={"মোট:"} area="admin" />{' '}
-                                      {formatPoishaToBdt(
-                                        line.lineSupplierProfitTotalPoisha ?? 0,
-                                        locale
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="py-1 px-1 text-right font-mono font-bold text-ink">
-                                    <div>
-                                      {formatPoishaToBdt(
-                                        line.lineSupplierPayableTotalPoisha ??
-                                          (line.snapSupplierPayablePoisha ?? 0) *
-                                            line.quantity,
-                                        locale
-                                      )}
-                                    </div>
-                                    <div className="text-[7.5px] font-normal text-muted">
-                                      <LocalizedText source={"একক:"} area="admin" />{' '}
-                                      {formatPoishaToBdt(
-                                        line.snapSupplierPayablePoisha ?? 0,
-                                        locale
-                                      )}
-                                    </div>
-                                  </td>
-                                </>
-                              )}
-                              {isSuperAdmin && (
-                                <>
-                                  <td className="py-1 px-1 text-right font-mono">
-                                    <div className="font-semibold text-ink">
-                                      {formatPoishaToBdt(
-                                        line.linePlatformMarginTotalPoisha ??
-                                          (line.snapPlatformMarginPoisha ?? 0) *
-                                            line.quantity,
-                                        locale
-                                      )}
-                                    </div>
-                                    <div className="text-[7.5px] text-muted">
-                                      {((line.commissionBp ?? 0) / 100).toFixed(1)}<LocalizedText source={"% (একক:"} area="admin" />{' '}
-                                      {formatPoishaToBdt(
-                                        line.snapPlatformMarginPoisha ?? 0,
-                                        locale
-                                      )}
-                                      )
-                                    </div>
-                                  </td>
-                                  <td className="py-1 px-1 text-right font-mono">
-                                    <div className="font-bold text-success">
-                                      {formatPoishaToBdt(
-                                        line.lineNetPlatformMarginPoisha ??
-                                          (line.snapPlatformMarginPoisha ?? 0) *
-                                            line.quantity,
-                                        locale
-                                      )}
-                                    </div>
-                                    <div className="text-[7.5px] text-muted">
-                                      <LocalizedText source={"ছাড়: -"} area="admin" />{" "}{formatPoishaToBdt(
-                                        line.allocatedPromoDiscountPoisha ?? 0,
-                                        locale
-                                      )}
-                                    </div>
-                                  </td>
-                                </>
-                              )}
-                              <td className="py-1 px-1 text-right font-mono font-bold text-ink">
-                                <div>
-                                  {formatPoishaToBdt(
-                                    line.lineSaleSubtotalPoisha ?? 0,
-                                    locale
-                                  )}
-                                </div>
-                                <div className="text-[7.5px] font-normal text-muted">
-                                  <LocalizedText source={"একক:"} area="admin" />{' '}
-                                  {formatPoishaToBdt(
-                                    line.unitSalePricePoisha ?? 0,
-                                    locale
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Super Admin Complete Financial & Supplier Reconciliation Matrix */}
-                    {isSuperAdmin && p3.accountingSummary && (
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 text-[8.5px] font-mono tabular-nums">
-                        {/* Left: Per-Vendor Escrow Payable Breakdown */}
-                        <div className="sm:col-span-5 border border-border rounded-[var(--radius-sm)] p-1.5 bg-bg space-y-1">
-                          <p className="font-bold text-ink uppercase text-[8px] border-b border-border pb-0.5">
-                            <LocalizedText source={"সাপ্লায়ার-ভিত্তিক প্রদেয় ও পেআউট বিভাজন (SUPPLIER ESCROW SPLIT)"} area="admin" />{" "}</p>
-                          {p3.accountingSummary.vendorSplitBreakdown.map(
-                            (vs) => (
-                              <div
-                                key={vs.vendorCode}
-                                className="flex items-center justify-between gap-1 border-b border-border/60 last:border-0 pb-0.5"
-                              >
-                                <div className="leading-tight">
-                                  <span className="font-bold text-ink">
-                                    {vs.vendorCode} · {localizedField(vs, "vendorNameBn", locale)}
-                                  </span>
-                                  <div className="text-[7.5px] text-muted">
-                                    {localizedField(vs, "payoutMethodBn", locale)} ({vs.payoutAccountNo}) ·{' '}
-                                    {vs.totalUnits} {" "}<LocalizedText source={"পিস"} area="admin" />{" "}</div>
-                                </div>
-                                <div className="text-right leading-tight">
-                                  <span className="font-bold text-ink">
-                                    <LocalizedText source={"প্রদেয়:"} area="admin" />{' '}
-                                    {formatPoishaToBdt(
-                                      vs.supplierPayablePoisha,
-                                      locale
-                                    )}
-                                  </span>
-                                  <div className="text-[7.5px] text-muted">
-                                    <LocalizedText source={"কেনা:"} area="admin" />{' '}
-                                    {formatPoishaToBdt(
-                                      vs.supplierCostPoisha,
-                                      locale
-                                    )}{' '}
-                                    <LocalizedText source={"| লাভ:"} area="admin" />{' '}
-                                    {formatPoishaToBdt(
-                                      vs.supplierProfitPoisha,
-                                      locale
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            )
-                          )}
-                        </div>
-
-                        {/* Right: Order-Level P&L, Delivery, bKash & Net Profit Ledger */}
-                        <div className="sm:col-span-7 border border-border rounded-[var(--radius-sm)] p-1.5 bg-bg">
-                          <p className="font-bold text-ink uppercase text-[8px] border-b border-border pb-0.5 mb-1">
-                            <LocalizedText source={"পূর্ণাঙ্গ অর্ডার হিসাব-নিকাশ ও নিট প্ল্যাটফর্ম লাভ (ORDER P&L & LEDGER SUMMARY)"} area="admin" />{" "}</p>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-0.5 leading-snug">
-                            <div className="flex justify-between">
-                              <span className="text-muted"><LocalizedText source={"পণ্যের মোট বিক্রয়:"} area="admin" /></span>
-                              <span className="font-bold text-ink">
-                                {formatPoishaToBdt(
-                                  p3.accountingSummary
-                                    .grossMerchandiseSubtotalPoisha,
-                                  locale
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted">
-                                <LocalizedText source={"প্রোমো ছাড় ("} area="admin" />{p3.accountingSummary.promoCode ?? 'N/A'}):
-                              </span>
-                              <span className="text-danger">
-                                -
-                                {formatPoishaToBdt(
-                                  p3.accountingSummary.promoDiscountPoisha,
-                                  locale
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted"><LocalizedText source={"ডেলিভারি (গ্রাহক/আনুমানিক):"} area="admin" /></span>
-                              <span>
-                                {formatPoishaToBdt(
-                                  p3.accountingSummary
-                                    .customerDeliveryChargePoisha,
-                                  locale
-                                )}{' '}
-                                /{' '}
-                                {formatPoishaToBdt(
-                                  p3.accountingSummary
-                                    .estimatedActualCourierCostPoisha,
-                                  locale
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted"><LocalizedText source={"মোট সাপ্লায়ার কেনা দাম:"} area="admin" /></span>
-                              <span>
-                                {formatPoishaToBdt(
-                                  p3.accountingSummary.totalSupplierCostPoisha,
-                                  locale
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted"><LocalizedText source={"মোট সাপ্লায়ার লাভ:"} area="admin" /></span>
-                              <span>
-                                +
-                                {formatPoishaToBdt(
-                                  p3.accountingSummary
-                                    .totalSupplierProfitPoisha,
-                                  locale
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex justify-between font-bold text-ink">
-                              <span><LocalizedText source={"সাপ্লায়ার প্রদেয় (Escrow):"} area="admin" /></span>
-                              <span>
-                                {formatPoishaToBdt(
-                                  p3.accountingSummary
-                                    .totalSupplierPayableEscrowPoisha,
-                                  locale
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted">
-                                <LocalizedText source={"অগ্রিম ("} area="admin" />{p3.manualPaymentTrxId ?? 'COD'}):
-                              </span>
-                              <span>
-                                {formatPoishaToBdt(
-                                  p3.accountingSummary.advancePaidPoisha,
-                                  locale
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex justify-between font-bold text-ink">
-                              <span><LocalizedText source={"কুরিয়ার সিওডি প্রাপ্য:"} area="admin" /></span>
-                              <span>
-                                {formatPoishaToBdt(
-                                  p3.accountingSummary.codCollectablePoisha,
-                                  locale
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted"><LocalizedText source={"প্যাকিং ও ভ্যাট (৫%):"} area="admin" /></span>
-                              <span>
-                                -
-                                {formatPoishaToBdt(
-                                  p3.accountingSummary
-                                    .packagingMaterialCostPoisha +
-                                    p3.accountingSummary
-                                      .estimatedVatOnMarginPoisha,
-                                  locale
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="mt-1 pt-1 border-t border-border flex flex-wrap items-center justify-between gap-2">
-                            <span className="text-[8px] text-muted">
-                              <LocalizedText source={"হিসাব সূত্র: গ্রস মার্জিন ("} area="admin" />{" "}{formatPoishaToBdt(
-                                p3.accountingSummary.grossPlatformMarginPoisha,
-                                locale
-                              )}
-                              <LocalizedText source={") - ছাড় - ডেলিভারি ভর্তুকি - প্যাকিং - ৫% ভ্যাট"} area="admin" />{" "}</span>
-                            <span className="text-[9.5px] font-bold text-success bg-surface px-2 py-0.5 rounded border border-border">
-                              <LocalizedText source={"আনুমানিক নিট প্ল্যাটফর্ম লাভ (Estimated Net Profit):"} area="admin" />{' '}
-                              {formatPoishaToBdt(
-                                p3.accountingSummary
-                                  .netPlatformRetainedProfitPoisha,
-                                locale
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Warehouse QC Checklist, Staff Notes & 3-Role Signature Strip */}
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 border-t border-border text-[8.5px] items-end">
-                      <div className="sm:col-span-7 space-y-1">
-                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
-                          {printConfig.checklistItemsBn.filter(chk => chk.trim()).map((chk, idx) => (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center gap-1 text-ink font-medium"
-                            >
-                              <CheckSquare className="w-2.5 h-2.5 text-ink shrink-0" />
-                              <span>{chk}</span>
-                            </span>
-                          ))}
-                        </div>
-                        {p3.internalStaffNote && (
-                          <p className="font-mono text-[8px] text-ink bg-bg px-1.5 py-0.5 rounded border border-border">
-                            <LocalizedText source={"স্টাফ নোট:"} area="admin" />{" "}{p3.internalStaffNote}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="sm:col-span-5 grid grid-cols-3 gap-1.5 text-center font-mono text-[8px] pt-2">
-                        <div className="border-t border-ink pt-0.5 text-muted">
-                          <LocalizedText source={"প্যাকিং অফিসার"} area="admin" />{" "}</div>
-                        <div className="border-t border-ink pt-0.5 text-muted">
-                          <LocalizedText source={"কিউসি যাচাইকারী"} area="admin" />{" "}</div>
-                        <div className="border-t border-ink pt-0.5 text-muted">
-                          <LocalizedText source={"অ্যাডমিন / হিসাব রক্ষণ"} area="admin" />{" "}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <PrintableSlipsDocument
+            slips={activeSlipsToPrint}
+            layoutMode={layoutMode}
+            visibleParts={visibleParts}
+            printConfig={printConfig}
+            siteSettings={siteSettings}
+            locale={locale}
+            isSuperAdmin={isSuperAdmin}
+            isVendor={isVendor}
+            containerRef={printableRef}
+          />
         </div>
       )}
 

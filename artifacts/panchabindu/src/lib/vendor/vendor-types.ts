@@ -30,6 +30,7 @@ export interface VendorProfileDTO {
   joinedAt: string;
   onboardingAnsweredCount: number;
   onboardingTotalQuestions: number;
+  onboardingAnswers: Array<{ key: string; questionBn: string; answer: string }>;
   restrictionNoteBn: string | null;
 }
 
@@ -78,6 +79,11 @@ export interface VendorOrderDTO {
   status: string;
   paymentStatus: string;
   deliveryMethod: string;
+  courierProvider: string | null;
+  consignmentId: string | null;
+  trackingCode: string | null;
+  dispatchedAt: string | null;
+  deliveredAt: string | null;
   districtNameBn: string;
   upazilaNameBn: string;
   createdAt: string;
@@ -102,6 +108,10 @@ export interface VendorLedgerEntryDTO {
   amountPoisha: number;
   orderNo: string | null;
   descriptionBn: string;
+  referenceNo: string | null;
+  paymentMethodBn: string | null;
+  proofUrl: string | null;
+  noteBn: string | null;
   createdAt: string;
   maturesAt: string | null;
 }
@@ -109,11 +119,16 @@ export interface VendorLedgerEntryDTO {
 export interface VendorPayoutDTO {
   payoutId: string;
   requestedAmountPoisha: number;
+  feePoisha: number;
+  netPaidPoisha: number;
   payoutMethodBn: string;
   payoutAccountMasked: string;
   status: string;
   rejectionReasonBn: string | null;
   paymentTrxId: string | null;
+  proofUrl: string | null;
+  noteBn: string | null;
+  entryType: string | null;
   requestedAt: string;
   resolvedAt: string | null;
 }
@@ -128,11 +143,27 @@ export interface VendorLotDTO {
   qcAcceptedQty: number | null;
   qcRejectedQty: number | null;
   unitSupplierCostPoisha: number;
+  totalValuePoisha: number;
   challanRef: string;
   status: string;
   noteBn: string;
+  qcProofUrl: string | null;
+  dispatchedAt: string;
+  receivedAt: string | null;
   createdAt: string;
   reviewedAt: string | null;
+}
+
+export interface VendorApprovedReviewDTO {
+  reviewId: string;
+  productId: string;
+  productNameBn: string;
+  productNameEn: string;
+  reviewerLabel: string;
+  rating: number;
+  comment: string;
+  isVerifiedPurchase: boolean;
+  createdAt: string;
 }
 
 export interface VendorProposalDTO {
@@ -181,6 +212,9 @@ export interface VendorWorkspaceDTO {
     payoutHoldPoisha: number;
     clawbackDebtPoisha: number;
     withdrawablePoisha: number;
+    totalEarnedPoisha: number;
+    totalPaidPoisha: number;
+    totalOwedPoisha: number;
   };
   counters: {
     activeProducts: number;
@@ -190,6 +224,8 @@ export interface VendorWorkspaceDTO {
     pendingProposals: number;
     pendingPayouts: number;
     openOrders: number;
+    openSupportTickets: number;
+    approvedReviews: number;
   };
   products: VendorProductDTO[];
   orders: VendorOrderDTO[];
@@ -198,6 +234,7 @@ export interface VendorWorkspaceDTO {
   payouts: VendorPayoutDTO[];
   lots: VendorLotDTO[];
   proposals: VendorProposalDTO[];
+  approvedReviews: VendorApprovedReviewDTO[];
   scorecard: VendorScorecardDTO | null;
   selfServiceRequests: VendorRequestDTO[];
   categories: Array<{ id: string; nameBn: string; nameEn: string }>;
@@ -305,9 +342,14 @@ export interface AdminVendorPayoutRowDTO {
   status: AdminPayoutStatus;
   requestedAmountPoisha: number;
   estimatedFeePoisha: number;
+  feePoisha: number;
   netPayablePoisha: number;
+  netPaidPoisha: number;
   payoutMethodBn: string;
   payoutAccountMasked: string;
+  senderAccountNo: string | null;
+  noteBn: string | null;
+  entryType: string;
   requestedByUsername: string;
   requestedAt: string;
   resolvedAt: string | null;
@@ -348,6 +390,9 @@ export interface AdminVendorPayoutVendorRollupDTO {
   paidCount: number;
   paidPoisha: number;
   outstandingPoisha: number;
+  totalEarnedPoisha: number;
+  totalOwedPoisha: number;
+  parcelCount: number;
   lastPaidAt: string | null;
   balance: {
     pendingPoisha: number;

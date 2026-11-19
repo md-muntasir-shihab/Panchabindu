@@ -1,52 +1,40 @@
 'use client';
 
 // src/components/vendor/vendor-client.tsx
-// Consignment vendor panel: login gate (first-login password change + 2FA
-// enrollment) followed by a full self-service dashboard.
+// Minimalist 6-tab consignment vendor workspace governed by Admin permissions.
 // Server contract: /api/vendor/* returns whitelisted DTOs only — no platform
-// margin, no net profit, no customer PII, no other vendor's data.
-// Admin controls every capability via /api/admin/vendors (capability matrix,
-// commission, escrow hold, suspension, request approval).
+// margin, no net profit, no customer PII, no unapproved reviews, no other vendor data.
 
 import { SupportPanel } from '@/components/vendor/support-panel';
 import { KycPanel } from '@/components/vendor/kyc-panel';
 import { AccountSecurity } from '@/components/security/account-security';
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   AlertTriangle,
-  ArrowRightLeft,
-  BadgeCheck,
-  Boxes,
   ClipboardList,
   Coins,
   LayoutDashboard,
-  Loader2,
+  MessageSquare,
   Package,
-  PackagePlus,
-  Percent,
-  Receipt,
   RefreshCw,
   ShieldCheck,
   Store,
-  Truck,
   Wallet,
 } from 'lucide-react';
 import { useLocaleStore } from '@/store/use-locale-store';
 import { localizedFetch } from '@/lib/i18n/localized-fetch';
 import { formatLocaleNumber } from '@/lib/i18n/dictionaries';
 import { formatPoishaToBdt } from '@/lib/money';
-import { Badge, Button, Card, EmptyState, Input, Select, Skeleton } from '@/components/ui/primitives';
+import { Badge, Button, Card, Input, Skeleton } from '@/components/ui/primitives';
+import { ResponsiveSheet } from '@/components/ui/responsive-sheet';
 import { cn } from '@/lib/utils';
 import {
   DashboardTab,
   EarningsTab,
   OrdersTab,
-  ReturnsTab,
-  PayoutsTab,
   ProductsTab,
   ProfileTab,
-  ProposalsTab,
-  StockTab,
+  parseTaka,
 } from '@/components/vendor/vendor-tabs';
 import type {
   VendorWorkspaceDTO,
@@ -58,36 +46,28 @@ const vendorFetch = (input: RequestInfo | URL, init?: RequestInit) =>
 
 const CSRF_KEY = 'bg_vendor_csrf_token';
 
-type TabKey =
+export type VendorTabKey =
   | 'overview'
   | 'products'
-  | 'stock'
   | 'orders'
-  | 'returns'
-  | 'support'
   | 'earnings'
-  | 'payouts'
-  | 'proposals'
+  | 'support'
   | 'profile';
 
 interface TabDef {
-  key: TabKey;
+  key: VendorTabKey;
   labelBn: string;
   labelEn: string;
   icon: React.ReactNode;
 }
 
 const TABS: TabDef[] = [
-  { key: 'overview', labelBn: 'ড্যাশবোর্ড', labelEn: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" aria-hidden="true" /> },
-  { key: 'products', labelBn: 'পণ্য ও স্টক', labelEn: 'Products & Stock', icon: <Package className="h-4 w-4" aria-hidden="true" /> },
-  { key: 'stock', labelBn: 'চালান (LOT)', labelEn: 'Challans (LOT)', icon: <Truck className="h-4 w-4" aria-hidden="true" /> },
-  { key: 'orders', labelBn: 'অর্ডার', labelEn: 'Orders', icon: <ClipboardList className="h-4 w-4" aria-hidden="true" /> },
-  { key: 'support', labelBn: 'সহায়তা', labelEn: 'Support', icon: <ClipboardList className="h-4 w-4" aria-hidden="true" /> },
-  { key: 'returns', labelBn: 'রিটার্ন', labelEn: 'Returns', icon: <ArrowRightLeft className="h-4 w-4" aria-hidden="true" /> },
-  { key: 'earnings', labelBn: 'আয় ও এসক্রো', labelEn: 'Earnings & Escrow', icon: <Coins className="h-4 w-4" aria-hidden="true" /> },
-  { key: 'payouts', labelBn: 'পেআউট', labelEn: 'Payouts', icon: <Wallet className="h-4 w-4" aria-hidden="true" /> },
-  { key: 'proposals', labelBn: 'মূল্য প্রস্তাব', labelEn: 'Price Proposals', icon: <Percent className="h-4 w-4" aria-hidden="true" /> },
-  { key: 'profile', labelBn: 'প্রোফাইল', labelEn: 'Profile', icon: <Store className="h-4 w-4" aria-hidden="true" /> },
+  { key: 'overview', labelBn: 'ড্যাশবোর্ড', labelEn: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+  { key: 'products', labelBn: 'পণ্য ও ইতিহাস', labelEn: 'Products & History', icon: <Package className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+  { key: 'orders', labelBn: 'অর্ডার ও রিটার্ন', labelEn: 'Orders & Returns', icon: <ClipboardList className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+  { key: 'earnings', labelBn: 'আয় ও এসক্রো', labelEn: 'Earnings & Escrow', icon: <Coins className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+  { key: 'support', labelBn: 'সহায়তা', labelEn: 'Support', icon: <MessageSquare className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+  { key: 'profile', labelBn: 'প্রোফাইল', labelEn: 'Profile', icon: <Store className="h-4 w-4 shrink-0" aria-hidden="true" /> },
 ];
 
 export function VendorClient() {
@@ -105,11 +85,15 @@ export function VendorClient() {
   const [workspace, setWorkspace] = useState<VendorWorkspaceDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<TabKey>('overview');
+  const [tab, setTab] = useState<VendorTabKey>('overview');
   const [toast, setToast] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [error, setError] = useState('');
 
-  // login form state
+  // Payout Drawer state
+  const [payoutOpen, setPayoutOpen] = useState(false);
+  const [payoutAmount, setPayoutAmount] = useState('');
+
+  // Login form state
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [totp, setTotp] = useState('');
@@ -177,7 +161,6 @@ export function VendorClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** POST helper with CSRF + locale, refreshing the workspace afterwards. */
   const send = useCallback(
     async (
       path: string,
@@ -413,15 +396,28 @@ export function VendorClient() {
   }
 
   const { profile, capabilities, escrow, counters, rules } = workspace;
+  const holdDays = profile.escrowHoldDaysOverride ?? rules.globalEscrowHoldDays;
+
+  const payoutPoisha = parseTaka(payoutAmount);
+  const payoutBelowMin = payoutPoisha !== null && payoutPoisha < rules.minPayoutRequestPoisha;
+  const payoutOverBalance = payoutPoisha !== null && payoutPoisha > escrow.withdrawablePoisha;
+
+  const openPayoutDrawer = () => {
+    if (escrow.withdrawablePoisha >= rules.minPayoutRequestPoisha && !payoutAmount) {
+      setPayoutAmount(String(Math.floor(escrow.withdrawablePoisha / 100)));
+    }
+    setPayoutOpen(true);
+  };
 
   return (
     <div lang={bn ? 'bn' : 'en'} className="min-h-[100dvh] bg-bg text-ink">
       <header className="sticky top-0 z-30 border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-3 py-2.5 sm:px-4">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-3 py-3 sm:px-4">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold">{bn ? profile.businessNameBn : profile.businessNameEn}</p>
-            <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-muted">
-              <span className="font-mono">{profile.vendorCode}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-sm font-bold tracking-tight">
+                {bn ? profile.businessNameBn : profile.businessNameEn}
+              </p>
               <Badge status={profile.status === 'active' ? 'success' : profile.status === 'suspended' ? 'danger' : 'warning'}>
                 {profile.status === 'active'
                   ? t('সক্রিয়', 'Active')
@@ -429,38 +425,63 @@ export function VendorClient() {
                   ? t('স্থগিত', 'Suspended')
                   : profile.status}
               </Badge>
-              <span>{t('কমিশন', 'Commission')}: {profile.defaultCommissionBp === null ? t('গ্লোবাল', 'Global') : `${profile.defaultCommissionBp / 100}%`}</span>
-              <span>{t('এসক্রো হোল্ড', 'Escrow hold')}: {profile.escrowHoldDaysOverride ?? rules.globalEscrowHoldDays} {t('দিন', 'days')}</span>
             </div>
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted tabular-nums">
+              <span className="font-mono">{profile.vendorCode}</span>
+              <span aria-hidden="true">·</span>
+              <span>
+                {t('কমিশন', 'Commission')}:{' '}
+                {profile.defaultCommissionBp === null ? t('গ্লোবাল', 'Global') : `${profile.defaultCommissionBp / 100}%`}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>
+                {t('হোল্ড পিরিয়ড', 'Escrow hold')}: {num(holdDays)} {t('দিন', 'days')}
+              </span>
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => void refresh()} aria-label={t('রিফ্রেশ', 'Refresh')}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              className="whitespace-nowrap shrink-0"
+              leftIcon={<Wallet className="h-4 w-4" aria-hidden="true" />}
+              onClick={openPayoutDrawer}
+            >
+              {t('পেআউট অনুরোধ', 'Request Payout')}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => void refresh()}
+              aria-label={t('রিফ্রেশ', 'Refresh')}
+              className="shrink-0"
+            >
               <RefreshCw className={cn('h-4 w-4', busy && 'animate-spin')} aria-hidden="true" />
             </Button>
-            <Button variant="outline" size="sm" onClick={toggleLocale}>
+            <Button variant="outline" size="sm" onClick={toggleLocale} className="whitespace-nowrap shrink-0">
               {bn ? 'English' : 'বাংলা'}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => void handleLogout()} isLoading={busy}>
-              {t('লগআউট', 'Log out')}
-            </Button>
+            {csrfRef.current !== 'bypass-vendor-csrf-token' && (
+              <Button variant="outline" size="sm" onClick={() => void handleLogout()} isLoading={busy} className="whitespace-nowrap shrink-0">
+                {t('লগআউট', 'Log out')}
+              </Button>
+            )}
           </div>
         </div>
 
         <nav aria-label={t('ভেন্ডর প্যানেল মেনু', 'Vendor panel navigation')} className="mx-auto max-w-6xl overflow-x-auto px-3 sm:px-4">
-          <ul className="flex min-w-max gap-1 pb-2">
+          <ul className="flex min-w-max gap-1.5 pb-2.5">
             {TABS.map((item) => {
               const active = item.key === tab;
               const badge =
                 item.key === 'products'
-                  ? counters.draftProducts
-                  : item.key === 'stock'
-                  ? counters.pendingLots
+                  ? counters.lowStockVariants
                   : item.key === 'orders'
                   ? counters.openOrders
-                  : item.key === 'payouts'
+                  : item.key === 'earnings'
                   ? counters.pendingPayouts
-                  : item.key === 'proposals'
-                  ? counters.pendingProposals
+                  : item.key === 'support'
+                  ? counters.openSupportTickets
                   : 0;
               return (
                 <li key={item.key}>
@@ -469,7 +490,7 @@ export function VendorClient() {
                     onClick={() => setTab(item.key)}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] border px-3 text-xs font-semibold transition-colors',
+                      'flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] border px-3 text-xs font-semibold transition-colors cursor-pointer',
                       active ? 'border-ink bg-ink text-bg' : 'border-border bg-bg text-ink hover:bg-surface'
                     )}
                   >
@@ -478,7 +499,7 @@ export function VendorClient() {
                     {badge > 0 && (
                       <span
                         className={cn(
-                          'ml-0.5 inline-flex min-w-[18px] justify-center rounded-full border px-1 text-[10px] font-bold',
+                          'ml-0.5 inline-flex min-w-[18px] justify-center rounded-full border px-1 text-[10px] font-bold tabular-nums',
                           active ? 'border-bg text-bg' : 'border-warning text-warning'
                         )}
                       >
@@ -495,7 +516,7 @@ export function VendorClient() {
 
       <main className="mx-auto max-w-6xl space-y-6 px-3 py-4 sm:px-4 sm:py-6">
         {profile.restrictionNoteBn && (
-          <div role="status" className="flex items-start gap-2 rounded-[var(--radius-md)] border border-warning bg-bg p-3 text-xs">
+          <div role="status" className="flex items-start gap-2 rounded-[var(--radius-md)] border border-warning bg-surface p-3 text-xs">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
             <p className="text-ink">
               <span className="font-semibold">{t('অ্যাডমিন নোট', 'Admin note')}: </span>
@@ -505,35 +526,161 @@ export function VendorClient() {
         )}
 
         {tab === 'overview' && (
-          <DashboardTab workspace={workspace} onNavigate={setTab} t={t} num={num} money={money} />
+          <DashboardTab
+            workspace={workspace}
+            onNavigate={setTab}
+            onOpenPayout={openPayoutDrawer}
+            t={t}
+            num={num}
+            money={money}
+            bn={bn}
+          />
         )}
         {tab === 'products' && (
           <ProductsTab workspace={workspace} send={send} busy={busy} t={t} num={num} money={money} bn={bn} />
         )}
-        {tab === 'stock' && (
-          <StockTab workspace={workspace} send={send} busy={busy} t={t} num={num} money={money} />
+        {tab === 'orders' && <OrdersTab workspace={workspace} t={t} num={num} money={money} bn={bn} />}
+        {tab === 'earnings' && (
+          <EarningsTab workspace={workspace} onOpenPayout={openPayoutDrawer} t={t} num={num} money={money} />
         )}
-        {tab === 'orders' && <OrdersTab workspace={workspace} t={t} num={num} money={money} />}
         {tab === 'support' && <SupportPanel locale={locale} mode="vendor" />}
-        {tab === 'returns' && <ReturnsTab workspace={workspace} t={t} num={num} money={money} />}
-        {tab === 'earnings' && <EarningsTab workspace={workspace} t={t} num={num} money={money} />}
-        {tab === 'payouts' && (
-          <PayoutsTab workspace={workspace} send={send} busy={busy} t={t} num={num} money={money} />
-        )}
-        {tab === 'proposals' && (
-          <ProposalsTab workspace={workspace} send={send} busy={busy} t={t} num={num} money={money} />
-        )}
         {tab === 'profile' && (
-          <><ProfileTab workspace={workspace} send={send} busy={busy} t={t} num={num} money={money} bn={bn} /><KycPanel locale={locale} mode="vendor" /><AccountSecurity locale={locale} csrfKey={CSRF_KEY} /></>
+          <div className="space-y-6">
+            <ProfileTab workspace={workspace} send={send} busy={busy} t={t} num={num} money={money} bn={bn} />
+            <KycPanel locale={locale} mode="vendor" />
+            <AccountSecurity locale={locale} csrfKey={CSRF_KEY} />
+          </div>
         )}
 
         <footer className="border-t border-border pt-3 text-[11px] text-muted">
           {t(
-            'আপনার প্ল্যাটফর্ম মার্জিন ও নিট লাভ কখনো এই প্যানেলে দেখানো হয় না। কাস্টমারের ফোন ও ঠিকানা প্ল্যাটফর্ম সুরক্ষিত রাখে।',
-            'Your platform margin and net profit are never shown here. Customer phone numbers and addresses stay protected by the platform.'
+            'ক্যাটালগ মূল্য, স্টক গ্রহণ ও কাস্টমার তথ্য অ্যাডমিন দ্বারা পরিচালিত ও সুরক্ষিত। আপনার নিজের ক্রয়মূল্য, স্টক ও ৭ দিনের এসক্রো পেআউট বিবরণ এখানে স্বচ্ছভাবে প্রদর্শিত হয়।',
+            'Catalog pricing, stock receiving, and customer privacy are governed by Admin. Your supplier prices, receiving history, and 7-day escrow settlements remain transparent here.'
           )}
         </footer>
       </main>
+
+      <ResponsiveSheet
+        open={payoutOpen}
+        onOpenChange={setPayoutOpen}
+        title={t('পেআউট অনুরোধ করুন', 'Request Payout')}
+        description={t(
+          'উত্তোলনযোগ্য (Available) ব্যালেন্স থেকে টাকা তোলার অনুরোধ পাঠান। অ্যাডমিন অনুমোদনের পর পেমেন্ট সম্পন্ন হবে।',
+          'Submit a payout request from your Available balance. Funds are disbursed after admin approval.'
+        )}
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="rounded-[var(--radius-md)] border border-border bg-surface p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                {t('উত্তোলনযোগ্য ব্যালেন্স', 'Withdrawable balance')}
+              </p>
+              <p className="mt-1 text-lg font-bold tabular-nums text-success">
+                {money(escrow.withdrawablePoisha)}
+              </p>
+            </div>
+            <div className="rounded-[var(--radius-md)] border border-border bg-surface p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                {t('পেআউট অ্যাকাউন্ট', 'Payout account')}
+              </p>
+              <p className="mt-1 text-sm font-bold text-ink">{profile.payoutMethodBn}</p>
+              <p className="font-mono text-xs text-muted">{profile.payoutAccountMasked}</p>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted tabular-nums">
+            {t('সর্বনিম্ন অনুরোধ সীমা', 'Minimum payout request')}:{' '}
+            <span className="font-semibold text-ink">{money(rules.minPayoutRequestPoisha)}</span>
+            {' · '}
+            {t('হোল্ডে থাকা', 'Locked in 7-day hold')}:{' '}
+            <span className="font-semibold text-ink">{money(escrow.lockedPoisha)}</span>
+          </p>
+
+          {!capabilities.canRequestPayout ? (
+            <div role="status" className="flex items-start gap-2 rounded-[var(--radius-md)] border border-warning bg-surface p-3 text-xs">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+              <p className="text-ink">
+                {t(
+                  'পেআউট অনুরোধের সুবিধা বর্তমানে অ্যাডমিন কর্তৃক সীমাবদ্ধ রয়েছে। প্রয়োজনে সাপোর্টে বার্তা পাঠান।',
+                  'Payout requests are currently restricted by Admin. Contact Support if needed.'
+                )}
+              </p>
+            </div>
+          ) : (
+            <form
+              className="space-y-3"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                if (payoutPoisha === null || payoutBelowMin || payoutOverBalance) return;
+                const ok = await send(
+                  '/api/vendor/payouts',
+                  { requestedAmountPoisha: payoutPoisha },
+                  {
+                    bn: 'পেআউট অনুরোধ জমা হয়েছে; অ্যাডমিন অনুমোদনের অপেক্ষায়।',
+                    en: 'Payout request submitted and awaiting admin approval.',
+                  }
+                );
+                if (ok) {
+                  setPayoutAmount('');
+                  setPayoutOpen(false);
+                }
+              }}
+            >
+              <label className="block space-y-1 text-xs font-medium">
+                <span>{t('টাকার পরিমাণ (৳)', 'Amount (৳)')}</span>
+                <input
+                  className="w-full min-h-[44px] rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm tabular-nums text-ink focus:outline-2 focus:outline-offset-0 focus:outline-ink"
+                  inputMode="decimal"
+                  value={payoutAmount}
+                  onChange={(e) => setPayoutAmount(e.target.value)}
+                  placeholder={String(rules.minPayoutRequestPoisha / 100)}
+                  required
+                />
+              </label>
+
+              {payoutBelowMin && (
+                <p role="alert" className="text-xs text-danger">
+                  {t(
+                    `সর্বনিম্ন ${money(rules.minPayoutRequestPoisha)} অনুরোধ করা যাবে।`,
+                    `Minimum request is ${money(rules.minPayoutRequestPoisha)}.`
+                  )}
+                </p>
+              )}
+              {payoutOverBalance && (
+                <p role="alert" className="text-xs text-danger">
+                  {t(
+                    'উত্তোলনযোগ্য ব্যালেন্সের বেশি অনুরোধ করা যাবে না।',
+                    'Cannot exceed your withdrawable balance.'
+                  )}
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  isLoading={busy}
+                  disabled={payoutPoisha === null || payoutBelowMin || payoutOverBalance}
+                  className="min-h-[44px]"
+                >
+                  {t('পেআউট অনুরোধ পাঠান', 'Submit Payout Request')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setPayoutOpen(false);
+                    setTab('earnings');
+                  }}
+                  className="min-h-[44px]"
+                >
+                  {t('পূর্ণ পেআউট ইতিহাস দেখুন', 'View Payout History')}
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
+      </ResponsiveSheet>
 
       {toast && (
         <div
@@ -548,7 +695,7 @@ export function VendorClient() {
             type="button"
             onClick={() => setToast(null)}
             aria-label={t('বন্ধ করুন', 'Dismiss')}
-            className="min-h-[32px] min-w-[32px] rounded-[var(--radius-sm)] border border-border text-xs text-muted"
+            className="min-h-[32px] min-w-[32px] rounded-[var(--radius-sm)] border border-border text-xs text-muted cursor-pointer"
           >
             ×
           </button>

@@ -56,6 +56,8 @@ import type {
   CourierRemittanceLedgerRecord,
   DistrictRateOverrideRecord,
   ImmutableVendorLedgerRecord,
+  ManualCourierAccountsSummary,
+  ManualCourierParcelRecord,
   PickupBatchRecord,
   ReturnResolutionRecord,
   VendorPayoutRequestRecord,
@@ -64,9 +66,10 @@ import type {
 import { formatPoishaToBdt } from '@/lib/money';
 import { formatLocaleNumber } from '@/lib/i18n/dictionaries';
 import { getLiveCourierTrackingUrl } from '@/lib/courier/tracking-urls';
-import { Badge, Button, Card, Input } from '../ui/primitives';
+import { Badge, Button, Card, InfoTooltip, Input } from '../ui/primitives';
 import { Code128BarcodeSvg } from './print-engine-panel';
 import { CourierReceivablesPanel } from './courier-receivables-panel';
+import { CourierBulkCsvPanel } from './courier-bulk-csv-panel';
 
 const VENDOR_ONBOARDING_15_QUESTIONS: Array<{
   key: string;
@@ -160,6 +163,8 @@ export interface Courier360AndRatesPanelProps {
   isVendor: boolean;
   brandNameBn: string;
   courier360: Courier360ProviderSummary[];
+  manualCourierParcels?: ManualCourierParcelRecord[];
+  courierAccountsSummary?: ManualCourierAccountsSummary | null;
   pickupBatches: PickupBatchRecord[];
   remittanceLedger: CourierRemittanceLedgerRecord[];
   courierClaims: CourierClaimRecord[];
@@ -170,9 +175,18 @@ export interface Courier360AndRatesPanelProps {
 }
 
 export function Courier360AndRatesPanel({
-  locale, isSuperAdmin, districtRates, orders = [], remittanceLedger, courierClaims, pickupBatches, onRefreshWorkspace,
+  locale,
+  isSuperAdmin,
+  districtRates,
+  orders = [],
+  remittanceLedger,
+  courierClaims,
+  pickupBatches,
+  manualCourierParcels = [],
+  courierAccountsSummary = null,
+  onRefreshWorkspace,
 }: Courier360AndRatesPanelProps) {
-  const [subTab, setSubTab] = React.useState<'overview' | 'district_rates'>('overview');
+  const [subTab, setSubTab] = React.useState<'overview' | 'bulk_csv' | 'district_rates'>('overview');
   const [feedback, setFeedback] = React.useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedDistrictId, setSelectedDistrictId] = React.useState<number>(47);
   const selectedDistRecord = districtRates.find(d => d.districtId === selectedDistrictId) ?? districtRates[0];
@@ -193,15 +207,47 @@ export function Courier360AndRatesPanel({
   if (!isSuperAdmin) return <section role="note" className="p-4 border border-border rounded">{locale === 'bn' ? 'কুরিয়ার আর্থিক হিসাব শুধু সুপার অ্যাডমিন দেখতে পারবেন।' : 'Courier financial details are available to super admins only.'}</section>;
   return <section className="space-y-5">
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
-      <div><h1 className="text-xl font-bold">{locale === 'bn' ? 'কুরিয়ার হিসাব ও অর্ডার' : 'Courier accounts and orders'}</h1><p className="text-xs text-muted">{locale === 'bn' ? 'দোকানে নথিভুক্ত তথ্য; লাইভ কুরিয়ার ডেটা নয়।' : 'Store records, not live courier data.'}</p></div>
+      <div><h1 className="text-xl font-bold">{locale === 'bn' ? 'কুরিয়ার হিসাব, বাল্ক CSV ইমপোর্ট শিট ও ডেলিভারি রেট' : 'Courier accounts, Bulk CSV & District rates'}</h1><p className="text-xs text-muted">{locale === 'bn' ? 'Pathao / Steadfast / BD Post বাল্ক CSV এক্সপোর্ট, পার্সেল ডিসপ্যাচ ও রেমিট্যান্স সমন্বয়।' : 'Pathao / Steadfast / BD Post bulk CSV export, parcel dispatch, and remittance reconciliation.'}</p></div>
       <Button variant="outline" size="sm" onClick={onRefreshWorkspace}>{locale === 'bn' ? 'রিফ্রেশ' : 'Refresh'}</Button>
     </div>
     {feedback && <div role="status" className="p-3 border border-border rounded text-sm">{feedback.text}</div>}
     <div className="flex flex-wrap gap-2 border-b border-border pb-2">
       <Button variant={subTab === 'overview' ? 'primary' : 'outline'} size="sm" onClick={() => setSubTab('overview')}>{locale === 'bn' ? 'কুরিয়ারের হিসাব' : 'Courier accounts'}</Button>
+      <Button variant={subTab === 'bulk_csv' ? 'primary' : 'outline'} size="sm" onClick={() => setSubTab('bulk_csv')}>{locale === 'bn' ? 'Pathao / Steadfast / BD Post বাল্ক CSV' : 'Bulk Courier CSV Export'}</Button>
       <Button variant={subTab === 'district_rates' ? 'primary' : 'outline'} size="sm" onClick={() => setSubTab('district_rates')}>{locale === 'bn' ? 'জেলাভিত্তিক রেট' : 'District rates'}</Button>
     </div>
-    {subTab === 'overview' && <CourierReceivablesPanel locale={locale} orders={orders} ledger={remittanceLedger} claims={courierClaims} batches={pickupBatches} />}
+    {subTab === 'bulk_csv' && (
+      <CourierBulkCsvPanel
+        orders={orders}
+        onExecuteOperation={async (payload) => {
+          const res = await fetch('/api/admin/workspace', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (data.success) {
+            setFeedback({ type: 'success', text: data.messageBn || 'কুরিয়ার ও এরিয়া তথ্য সফলভাবে আপডেট হয়েছে।' });
+            await onRefreshWorkspace();
+          } else {
+            setFeedback({ type: 'error', text: data.errorBn || 'আপডেট ব্যর্থ হয়েছে।' });
+          }
+        }}
+      />
+    )}
+    {subTab === 'overview' && (
+      <CourierReceivablesPanel
+        locale={locale}
+        orders={orders}
+        ledger={remittanceLedger}
+        claims={courierClaims}
+        batches={pickupBatches}
+        manualCourierParcels={manualCourierParcels}
+        courierAccountsSummary={courierAccountsSummary}
+        districtRates={districtRates}
+        onRefreshWorkspace={onRefreshWorkspace}
+      />
+    )}
       {subTab === 'district_rates' && isSuperAdmin && (
         <Card surface="bg" padding="md" className="space-y-4">
           <div className="border-b border-border pb-2">
@@ -334,6 +380,7 @@ export interface VendorEscrowAndReturnPanelProps {
   ledgerEntries: ImmutableVendorLedgerRecord[];
   payoutRequests: VendorPayoutRequestRecord[];
   returnResolutions: ReturnResolutionRecord[];
+  manualCourierParcels?: ManualCourierParcelRecord[];
   availableOrderNos: string[];
   products?: Product360VariantDTO[];
   orders?: OrderGridRowDTO[];
@@ -350,6 +397,7 @@ export function VendorEscrowAndReturnPanel({
   ledgerEntries,
   payoutRequests,
   returnResolutions,
+  manualCourierParcels = [],
   availableOrderNos,
   products,
   orders,
@@ -408,6 +456,45 @@ export function VendorEscrowAndReturnPanel({
   const [showInitiateModal, setShowInitiateModal] = React.useState(false);
   const [initiateStep, setInitiateStep] = React.useState<1 | 2>(1);
   const [initiateError, setInitiateError] = React.useState<string | null>(null);
+
+  // Manual Vendor Ledger Entry State
+  const [showManualLedgerForm, setShowManualLedgerForm] = React.useState(false);
+  const [manLedgerBucket, setManLedgerBucket] = React.useState<'pending' | 'locked' | 'available'>('available');
+  const [manLedgerDir, setManLedgerDir] = React.useState<'credit' | 'debit'>('credit');
+  const [manLedgerOrderNo, setManLedgerOrderNo] = React.useState('');
+  const [manLedgerAmountTaka, setManLedgerAmountTaka] = React.useState('');
+  const [manLedgerMethod, setManLedgerMethod] = React.useState('বিকাশ (bKash)');
+  const [manLedgerRef, setManLedgerRef] = React.useState('');
+  const [manLedgerDesc, setManLedgerDesc] = React.useState('');
+  const [manLedgerProofUrl, setManLedgerProofUrl] = React.useState('');
+  const [manLedgerNote, setManLedgerNote] = React.useState('');
+  const [manLedgerTime, setManLedgerTime] = React.useState(() => {
+    const d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+  });
+
+  // Direct Immediate Vendor Settlement State
+  const [showDirectPayForm, setShowDirectPayForm] = React.useState(false);
+  const [dirAmountTaka, setDirAmountTaka] = React.useState('');
+  const [dirFeeTaka, setDirFeeTaka] = React.useState('0');
+  const [dirMethod, setDirMethod] = React.useState('বিকাশ (bKash)');
+  const [dirSenderAcc, setDirSenderAcc] = React.useState('');
+  const [dirReceiverAcc, setDirReceiverAcc] = React.useState('');
+  const [dirTrxId, setDirTrxId] = React.useState('');
+  const [dirProofUrl, setDirProofUrl] = React.useState('');
+  const [dirNote, setDirNote] = React.useState('');
+  const [dirPaidAt, setDirPaidAt] = React.useState(() => {
+    const d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+  });
+  const [dirAutoCredit, setDirAutoCredit] = React.useState(false);
+  const [manualSaving, setManualSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    if (activeVendorSummary?.profile.payoutAccountNo && !dirReceiverAcc) {
+      setDirReceiverAcc(activeVendorSummary.profile.payoutAccountNo);
+    }
+  }, [activeVendorSummary, dirReceiverAcc]);
 
   // Interactive Cash-out / Send-Money Fee Calculator Channel inside Dossier
   const [selectedFeeChannel, setSelectedFeeChannel] = React.useState<
@@ -526,6 +613,32 @@ export function VendorEscrowAndReturnPanel({
       );
     });
   }, [orders, inspectingVendorId, inspectedProducts]);
+
+  const inspectedParcels = React.useMemo(() => {
+    if (!inspectingVendorId) return [];
+    const orderNos = new Set(inspectedOrders.map((o) => o.orderNo));
+    return manualCourierParcels.filter(
+      (p) =>
+        p.vendorIds.includes(inspectingVendorId) ||
+        (p.orderNo ? orderNos.has(p.orderNo) : false)
+    );
+  }, [manualCourierParcels, inspectingVendorId, inspectedOrders]);
+
+  const activeVendorPaidPoisha = React.useMemo(() => {
+    if (!activeVendorSummary) return 0;
+    return payoutRequests
+      .filter((p) => p.vendorId === activeVendorSummary.profile.vendorId && p.status === 'paid')
+      .reduce((sum, p) => sum + p.requestedAmountPoisha, 0);
+  }, [payoutRequests, activeVendorSummary]);
+
+  const activeVendorTotalOwedPoisha = activeVendorSummary
+    ? Math.max(
+        0,
+        activeVendorSummary.balance.pendingPoisha +
+          activeVendorSummary.balance.lockedPoisha +
+          activeVendorSummary.balance.withdrawablePoisha
+      )
+    : 0;
 
   // Exact integer Poisha fee calculation helper
   const computeFeeBreakdownPoisha = (
@@ -848,8 +961,42 @@ export function VendorEscrowAndReturnPanel({
         </div>
       </Card>
 
-      {/* 3. Executive 5-Bucket Escrow Summary Cards (4-Solid Token Lock) */}
+      {/* 3. Total Owed vs Paid & 5-Bucket Escrow Summary Cards */}
       {activeVendorSummary && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-4 border-2 border-ink bg-bg rounded-[var(--radius-md)] flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-ink flex items-center gap-1">
+                  <span>{locale === 'bn' ? 'ভেন্ডরের মোট পাওনা আছে (Total Owed)' : 'Total Payable Owed to Vendor'}</span>
+                  <InfoTooltip termKey="supplier_payable" locale={locale} />
+                </p>
+                <p className="text-[11px] text-muted">
+                  {locale === 'bn'
+                    ? 'পেন্ডিং + লকড + উত্তোলনযোগ্য (ক্লব্যাক বাদে)'
+                    : 'Pending + Locked + Withdrawable (after clawback)'}
+                </p>
+              </div>
+              <p className="text-2xl font-bold font-mono tabular-nums text-ink">
+                {formatPoishaToBdt(activeVendorTotalOwedPoisha, locale)}
+              </p>
+            </div>
+            <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-ink">
+                  {locale === 'bn' ? 'ভেন্ডরকে মোট দেওয়া হয়েছে (Total Paid)' : 'Total Paid to Vendor'}
+                </p>
+                <p className="text-[11px] text-muted">
+                  {locale === 'bn'
+                    ? 'সব পরিশোধিত (Paid) পেআউটের মোট'
+                    : 'Sum of all settled/paid disbursements'}
+                </p>
+              </div>
+              <p className="text-2xl font-bold font-mono tabular-nums text-success">
+                {formatPoishaToBdt(activeVendorPaidPoisha, locale)}
+              </p>
+            </div>
+          </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* 1. Pending Escrow */}
           <div className="p-4 border border-border bg-surface rounded-[var(--radius-md)] space-y-2">
@@ -997,6 +1144,7 @@ export function VendorEscrowAndReturnPanel({
             </div>
             <p className="text-[11px] text-muted"><LocalizedText source={"পরবর্তী পেআউট থেকে সমন্বয় হবে"} area="admin" /></p>
           </div>
+        </div>
         </div>
       )}
 
@@ -1274,14 +1422,205 @@ export function VendorEscrowAndReturnPanel({
                 {brandNameBn} {" "}<LocalizedText source={"— অফিশিয়াল ভেন্ডর লেজার স্টেটমেন্ট ("} area="admin" />{" "}{localizedField(activeVendorSummary?.profile, "businessNameBn", locale)})
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {isSuperAdmin && activeVendorSummary && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={showManualLedgerForm ? 'primary' : 'outline'}
+                  onClick={() => setShowManualLedgerForm((v) => !v)}
+                  leftIcon={<PlusCircle className="w-3.5 h-3.5" aria-hidden="true" />}
+                >
+                  {locale === 'bn' ? 'ম্যানুয়াল লেজার এন্ট্রি (যোগ/কর্তন)' : 'Manual Ledger Entry'}
+                </Button>
+              )}
               <Badge status="info"><LocalizedText source={"APPEND-ONLY · IMMUTABLE"} area="admin" /></Badge>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
-                <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
-                <span><LocalizedText source={"Real-Time Maturity Active"} area="admin" /></span>
-              </span>
             </div>
           </div>
+
+          {showManualLedgerForm && isSuperAdmin && activeVendorSummary && (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setFeedback(null);
+                const amountPoisha = Math.round((Number(manLedgerAmountTaka) || 0) * 100);
+                if (amountPoisha <= 0) {
+                  setFeedback({ type: 'error', text: locale === 'bn' ? 'সঠিক পরিমাণ (৳) লিখুন।' : 'Enter a valid amount.' });
+                  return;
+                }
+                setManualSaving(true);
+                try {
+                  const res = await fetch('/api/admin/workspace', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      operation: 'record_manual_vendor_ledger',
+                      vendorId: activeVendorSummary.profile.vendorId,
+                      orderNo: manLedgerOrderNo.trim() || null,
+                      escrowBucket: manLedgerBucket,
+                      direction: manLedgerDir,
+                      amountPoisha,
+                      descriptionBn: manLedgerDesc.trim(),
+                      referenceNo: manLedgerRef.trim() || null,
+                      paymentMethodBn: manLedgerMethod.trim() || null,
+                      proofUrl: manLedgerProofUrl.trim() || null,
+                      noteBn: manLedgerNote.trim() || null,
+                      eventTimestamp: manLedgerTime ? new Date(manLedgerTime).toISOString() : undefined,
+                    }),
+                  });
+                  const data = (await res.json()) as { success?: boolean; errorBn?: string };
+                  if (!res.ok || !data.success) {
+                    setFeedback({ type: 'error', text: data.errorBn ?? 'ম্যানুয়াল লেজার এন্ট্রি ব্যর্থ হয়েছে।' });
+                    return;
+                  }
+                  setFeedback({
+                    type: 'success',
+                    text: `${activeVendorSummary.profile.businessNameBn}-এর লেজারে এন্ট্রি সফলভাবে যুক্ত হয়েছে।`,
+                  });
+                  setShowManualLedgerForm(false);
+                  setManLedgerAmountTaka('');
+                  setManLedgerDesc('');
+                  setManLedgerRef('');
+                  setManLedgerProofUrl('');
+                  setManLedgerNote('');
+                  await onRefreshWorkspace();
+                } finally {
+                  setManualSaving(false);
+                }
+              }}
+              className="p-4 border border-ink rounded-[var(--radius-md)] bg-surface space-y-3 text-xs"
+            >
+              <div className="flex items-center justify-between border-b border-border pb-2">
+                <strong className="text-ink">
+                  {locale === 'bn'
+                    ? `ম্যানুয়াল লেজার এন্ট্রি (${activeVendorSummary.profile.businessNameBn})`
+                    : `Manual Ledger Entry (${activeVendorSummary.profile.businessNameBn})`}
+                </strong>
+                <span className="text-[11px] text-muted">
+                  {locale === 'bn' ? 'প্রমাণসহ পাওনা যোগ বা সমন্বয়' : 'Credit or debit with proof'}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <label className="block space-y-1">
+                  <span className="font-semibold text-ink">{locale === 'bn' ? 'ধরন *' : 'Direction *'}</span>
+                  <select
+                    value={manLedgerDir}
+                    onChange={(e) => setManLedgerDir(e.target.value as 'credit' | 'debit')}
+                    className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)]"
+                  >
+                    <option value="credit">{locale === 'bn' ? '+ পাওনা যোগ (Credit)' : '+ Credit (Add Payable)'}</option>
+                    <option value="debit">{locale === 'bn' ? '- সমন্বয় / কর্তন (Debit)' : '- Debit (Deduct)'}</option>
+                  </select>
+                </label>
+                <label className="block space-y-1">
+                  <span className="font-semibold text-ink">{locale === 'bn' ? 'এসক্রো বাকেট *' : 'Bucket *'}</span>
+                  <select
+                    value={manLedgerBucket}
+                    onChange={(e) => setManLedgerBucket(e.target.value as 'pending' | 'locked' | 'available')}
+                    className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)]"
+                  >
+                    <option value="available">Available ({locale === 'bn' ? 'উত্তোলনযোগ্য' : 'Withdrawable'})</option>
+                    <option value="locked">Locked ({locale === 'bn' ? 'হোল্ড পিরিয়ড' : 'On Hold'})</option>
+                    <option value="pending">Pending ({locale === 'bn' ? 'ইন-ট্রানজিট' : 'Pending'})</option>
+                  </select>
+                </label>
+                <label className="block space-y-1">
+                  <span className="font-semibold text-ink">{locale === 'bn' ? 'টাকার পরিমাণ (৳) *' : 'Amount (৳) *'}</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    value={manLedgerAmountTaka}
+                    onChange={(e) => setManLedgerAmountTaka(e.target.value)}
+                    placeholder="500"
+                    className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                    required
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="font-semibold text-ink">{locale === 'bn' ? 'সময় *' : 'Timestamp *'}</span>
+                  <input
+                    type="datetime-local"
+                    value={manLedgerTime}
+                    onChange={(e) => setManLedgerTime(e.target.value)}
+                    className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                    required
+                  />
+                </label>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <label className="block space-y-1">
+                  <span className="font-semibold text-ink">{locale === 'bn' ? 'অর্ডার নম্বর (ঐচ্ছিক)' : 'Order No (optional)'}</span>
+                  <select
+                    value={manLedgerOrderNo}
+                    onChange={(e) => setManLedgerOrderNo(e.target.value)}
+                    className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                  >
+                    <option value="">{locale === 'bn' ? '— স্বতন্ত্র (অর্ডার ছাড়া) —' : '— Standalone —'}</option>
+                    {availableOrderNos.map((no) => (
+                      <option key={no} value={no}>{no}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block space-y-1">
+                  <span className="font-semibold text-ink">{locale === 'bn' ? 'মাধ্যম' : 'Method'}</span>
+                  <input
+                    value={manLedgerMethod}
+                    onChange={(e) => setManLedgerMethod(e.target.value)}
+                    placeholder="বিকাশ / ব্যাংক / অফিস নগদ"
+                    className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)]"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="font-semibold text-ink">{locale === 'bn' ? 'রেফারেন্স / TrxID' : 'Reference / TrxID'}</span>
+                  <input
+                    value={manLedgerRef}
+                    onChange={(e) => setManLedgerRef(e.target.value)}
+                    placeholder="REF-1001"
+                    className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                  />
+                </label>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <label className="block space-y-1">
+                  <span className="font-semibold text-ink">{locale === 'bn' ? 'বিবরণ *' : 'Description *'}</span>
+                  <input
+                    value={manLedgerDesc}
+                    onChange={(e) => setManLedgerDesc(e.target.value)}
+                    placeholder="যেমন: ম্যানুয়াল পার্সেল বিক্রয় পাওনা / বোনাস / ড্যামেজ সমন্বয়"
+                    className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)]"
+                    required
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="font-semibold text-ink">{locale === 'bn' ? 'প্রমাণ লিংক (URL)' : 'Proof URL'}</span>
+                  <input
+                    value={manLedgerProofUrl}
+                    onChange={(e) => setManLedgerProofUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="font-semibold text-ink">{locale === 'bn' ? 'অতিরিক্ত নোট' : 'Note'}</span>
+                  <input
+                    value={manLedgerNote}
+                    onChange={(e) => setManLedgerNote(e.target.value)}
+                    placeholder={locale === 'bn' ? 'ঐচ্ছিক নোট' : 'Optional note'}
+                    className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)]"
+                  />
+                </label>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowManualLedgerForm(false)}>
+                  {locale === 'bn' ? 'বাতিল' : 'Cancel'}
+                </Button>
+                <Button type="submit" variant="primary" size="sm" isLoading={manualSaving}>
+                  {locale === 'bn' ? 'লেজারে সংরক্ষণ করুন' : 'Save Ledger Entry'}
+                </Button>
+              </div>
+            </form>
+          )}
 
           {/* Ledger Filter & Search Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-surface p-3 border border-border rounded-[var(--radius-md)] text-xs">
@@ -1338,11 +1677,16 @@ export function VendorEscrowAndReturnPanel({
                       <td className="p-3 font-mono text-[11px]">
                         <div className="font-bold text-ink">{entry.id}</div>
                         <div className="text-muted">
-                          {new Date(entry.createdAt).toLocaleDateString('bn-BD')}
+                          {new Date(entry.eventTimestamp ?? entry.createdAt).toLocaleString(
+                            locale === 'bn' ? 'bn-BD' : 'en-GB'
+                          )}
                         </div>
                       </td>
                       <td className="p-3 font-mono font-semibold text-ink">
-                        {entry.orderNo ?? '—'}
+                        <div>{entry.orderNo ?? '—'}</div>
+                        {entry.referenceNo && (
+                          <div className="text-[10px] text-muted">Ref: {entry.referenceNo}</div>
+                        )}
                       </td>
                       <td className="p-3 font-mono">
                         <Badge
@@ -1370,8 +1714,25 @@ export function VendorEscrowAndReturnPanel({
                           </div>
                         )}
                       </td>
-                      <td className="p-3 text-ink max-w-md leading-relaxed">
-                        {localizedField(entry, "descriptionBn", locale)}
+                      <td className="p-3 text-ink max-w-md leading-relaxed space-y-0.5">
+                        <div>{localizedField(entry, "descriptionBn", locale)}</div>
+                        {entry.paymentMethodBn && (
+                          <div className="text-[11px] text-muted">{entry.paymentMethodBn}</div>
+                        )}
+                        {entry.noteBn && (
+                          <div className="text-[11px] text-muted">{entry.noteBn}</div>
+                        )}
+                        {entry.proofUrl && (
+                          <a
+                            href={entry.proofUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] underline text-ink"
+                          >
+                            <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                            <span>{locale === 'bn' ? 'প্রমাণ দেখুন' : 'View proof'}</span>
+                          </a>
+                        )}
                       </td>
                       <td
                         className={`p-3 text-right font-mono font-bold tabular-nums text-sm ${
@@ -1588,15 +1949,31 @@ export function VendorEscrowAndReturnPanel({
             </h2>
 
             {activeVendorSummary ? (
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  setInitiateStep(1);
-                  setInitiateError(null);
-                  setShowInitiateModal(true);
-                }}
-                className="space-y-4 text-xs"
-              >
+              <div className="space-y-4 text-xs">
+                <div className="flex gap-1.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={!showDirectPayForm ? 'primary' : 'outline'}
+                    onClick={() => setShowDirectPayForm(false)}
+                  >
+                    {locale === 'bn' ? 'স্ট্যান্ডার্ড রিকোয়েস্ট' : 'Standard Request'}
+                  </Button>
+                  {isSuperAdmin && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={showDirectPayForm ? 'primary' : 'outline'}
+                      onClick={() => {
+                        setShowDirectPayForm(true);
+                        setDirReceiverAcc(activeVendorSummary.profile.payoutAccountNo);
+                      }}
+                    >
+                      {locale === 'bn' ? 'সরাসরি পরিশোধ (প্রমাণসহ)' : 'Pay Now with Proof'}
+                    </Button>
+                  )}
+                </div>
+
                 <div className="p-3.5 border border-border bg-surface rounded-[var(--radius-md)] space-y-1">
                   <span className="text-[11px] font-bold text-muted">
                     <LocalizedText source={"সর্বোচ্চ উত্তোলনযোগ্য ব্যালেন্স (Withdrawable):"} area="admin" />{" "}</span>
@@ -1608,29 +1985,210 @@ export function VendorEscrowAndReturnPanel({
                   </p>
                 </div>
 
-                <Input
-                  label="উত্তোলনের পরিমাণ (৳) *"
-                  type="number"
-                  value={payoutAmountTaka}
-                  onChange={(e) => setPayoutAmountTaka(e.target.value)}
-                  placeholder="1000"
-                  required
-                />
+                {!showDirectPayForm ? (
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      setInitiateStep(1);
+                      setInitiateError(null);
+                      setShowInitiateModal(true);
+                    }}
+                    className="space-y-3"
+                  >
+                    <Input
+                      label="উত্তোলনের পরিমাণ (৳) *"
+                      type="number"
+                      value={payoutAmountTaka}
+                      onChange={(e) => setPayoutAmountTaka(e.target.value)}
+                      placeholder="1000"
+                      required
+                    />
 
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="md"
-                  className="w-full"
-                  onClick={() => {
-                    setInitiateStep(1);
-                    setInitiateError(null);
-                    setShowInitiateModal(true);
-                  }}
-                  leftIcon={<Wallet className="w-4 h-4" aria-hidden="true" />}
-                >
-                  <LocalizedText source={"Initiate Payout (উইজার্ড ওপেন করুন)"} area="admin" />{" "}</Button>
-              </form>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="md"
+                      className="w-full"
+                      onClick={() => {
+                        setInitiateStep(1);
+                        setInitiateError(null);
+                        setShowInitiateModal(true);
+                      }}
+                      leftIcon={<Wallet className="w-4 h-4" aria-hidden="true" />}
+                    >
+                      <LocalizedText source={"Initiate Payout (উইজার্ড ওপেন করুন)"} area="admin" />{" "}
+                    </Button>
+                  </form>
+                ) : (
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      setFeedback(null);
+                      const amtPoisha = Math.round((Number(dirAmountTaka) || 0) * 100);
+                      const feePoisha = Math.round((Number(dirFeeTaka) || 0) * 100);
+                      if (amtPoisha < 100) {
+                        setFeedback({ type: 'error', text: 'কমপক্ষে ৳১ পরিশোধ করুন।' });
+                        return;
+                      }
+                      setManualSaving(true);
+                      try {
+                        const res = await fetch('/api/admin/workspace', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            operation: 'direct_vendor_payout',
+                            vendorId: activeVendorSummary.profile.vendorId,
+                            requestedAmountPoisha: amtPoisha,
+                            feePoisha,
+                            payoutMethodBn: dirMethod,
+                            payoutAccountNo: dirReceiverAcc || activeVendorSummary.profile.payoutAccountNo,
+                            senderAccountNo: dirSenderAcc || null,
+                            paymentTrxId: dirTrxId,
+                            proofUrl: dirProofUrl || null,
+                            noteBn: dirNote || null,
+                            paidAt: dirPaidAt ? new Date(dirPaidAt).toISOString() : undefined,
+                            creditAndSettleIfInsufficient: dirAutoCredit,
+                          }),
+                        });
+                        const data = (await res.json()) as { success?: boolean; errorBn?: string };
+                        if (!res.ok || !data.success) {
+                          setFeedback({ type: 'error', text: data.errorBn ?? 'সরাসরি পেআউট ব্যর্থ হয়েছে।' });
+                          return;
+                        }
+                        setFeedback({
+                          type: 'success',
+                          text: `ভেন্ডর ${activeVendorSummary.profile.businessNameBn}-কে ৳${amtPoisha / 100} সরাসরি পরিশোধ ও প্রমাণ সংরক্ষণ হয়েছে।`,
+                        });
+                        setDirAmountTaka('');
+                        setDirTrxId('');
+                        setDirProofUrl('');
+                        setDirNote('');
+                        await onRefreshWorkspace();
+                      } finally {
+                        setManualSaving(false);
+                      }
+                    }}
+                    className="space-y-2.5"
+                  >
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="block space-y-1">
+                        <span className="font-semibold text-ink">{locale === 'bn' ? 'পরিমাণ (৳) *' : 'Amount (৳) *'}</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="1"
+                          value={dirAmountTaka}
+                          onChange={(e) => setDirAmountTaka(e.target.value)}
+                          placeholder="1000"
+                          className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                          required
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="font-semibold text-ink">{locale === 'bn' ? 'চার্জ / ফি (৳)' : 'Fee (৳)'}</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={dirFeeTaka}
+                          onChange={(e) => setDirFeeTaka(e.target.value)}
+                          className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                        />
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="block space-y-1">
+                        <span className="font-semibold text-ink">{locale === 'bn' ? 'মাধ্যম *' : 'Method *'}</span>
+                        <select
+                          value={dirMethod}
+                          onChange={(e) => setDirMethod(e.target.value)}
+                          className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)]"
+                        >
+                          <option value="বিকাশ (bKash)">বিকাশ (bKash)</option>
+                          <option value="ব্যাংক ট্রান্সফার (Bank Transfer)">ব্যাংক ট্রান্সফার (Bank)</option>
+                          <option value="নগদ ক্যাশ / অফিস (Cash)">নগদ ক্যাশ / অফিস (Cash)</option>
+                        </select>
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="font-semibold text-ink">{locale === 'bn' ? 'প্রাপকের নম্বর *' : 'Receiver Acc *'}</span>
+                        <input
+                          value={dirReceiverAcc}
+                          onChange={(e) => setDirReceiverAcc(e.target.value)}
+                          className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                          required
+                        />
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="block space-y-1">
+                        <span className="font-semibold text-ink">{locale === 'bn' ? 'প্রেরকের নম্বর (আমাদের)' : 'Sender Account'}</span>
+                        <input
+                          value={dirSenderAcc}
+                          onChange={(e) => setDirSenderAcc(e.target.value)}
+                          placeholder="017..."
+                          className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="font-semibold text-ink">{locale === 'bn' ? 'TrxID / রেফারেন্স *' : 'TrxID / Ref *'}</span>
+                        <input
+                          value={dirTrxId}
+                          onChange={(e) => setDirTrxId(e.target.value)}
+                          placeholder="BKASH-9988"
+                          className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                          required
+                        />
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="block space-y-1">
+                        <span className="font-semibold text-ink">{locale === 'bn' ? 'পরিশোধের সময় *' : 'Paid At *'}</span>
+                        <input
+                          type="datetime-local"
+                          value={dirPaidAt}
+                          onChange={(e) => setDirPaidAt(e.target.value)}
+                          className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                          required
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="font-semibold text-ink">{locale === 'bn' ? 'প্রমাণ লিংক (URL)' : 'Proof URL'}</span>
+                        <input
+                          value={dirProofUrl}
+                          onChange={(e) => setDirProofUrl(e.target.value)}
+                          placeholder="https://..."
+                          className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)] font-mono"
+                        />
+                      </label>
+                    </div>
+                    <label className="block space-y-1">
+                      <span className="font-semibold text-ink">{locale === 'bn' ? 'মন্তব্য / নোট' : 'Note'}</span>
+                      <input
+                        value={dirNote}
+                        onChange={(e) => setDirNote(e.target.value)}
+                        placeholder={locale === 'bn' ? 'পরিশোধের বিবরণ' : 'Settlement note'}
+                        className="w-full min-h-[44px] px-3 py-2 bg-bg border border-border rounded-[var(--radius-md)]"
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 p-2 border border-border rounded-[var(--radius-sm)] bg-surface cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={dirAutoCredit}
+                        onChange={(e) => setDirAutoCredit(e.target.checked)}
+                        className="accent-ink"
+                      />
+                      <span>
+                        {locale === 'bn'
+                          ? 'Available কম থাকলে স্বতন্ত্র/অগ্রিম পাওনা যোগ করে পরিশোধ করুন'
+                          : 'Auto-credit advance if withdrawable is insufficient'}
+                      </span>
+                    </label>
+                    <Button type="submit" variant="primary" size="md" className="w-full" isLoading={manualSaving}>
+                      {locale === 'bn' ? 'সরাসরি পেমেন্ট ও প্রমাণ সংরক্ষণ' : 'Save Direct Payment & Proof'}
+                    </Button>
+                  </form>
+                )}
+              </div>
             ) : (
               <p className="text-xs text-muted"><LocalizedText source={"কোনো ভেন্ডর নির্বাচন করা হয়নি।"} area="admin" /></p>
             )}
@@ -1650,8 +2208,8 @@ export function VendorEscrowAndReturnPanel({
                   <LocalizedText source={"কোনো পেআউট রিকোয়েস্ট নেই।"} area="admin" />{" "}</p>
               ) : (
                 payoutRequests.map((p) => {
-                  const estCharge = Math.round((p.requestedAmountPoisha * 185) / 10000);
-                  const estNet = Math.max(0, p.requestedAmountPoisha - estCharge);
+                  const estCharge = p.feePoisha ?? Math.round((p.requestedAmountPoisha * 185) / 10000);
+                  const estNet = p.netPaidPoisha ?? Math.max(0, p.requestedAmountPoisha - estCharge);
 
                   return (
                     <div
@@ -1666,6 +2224,11 @@ export function VendorEscrowAndReturnPanel({
                           <span className="text-muted font-medium ml-2">
                             · <strong>{localizedField(p, "vendorNameBn", locale)}</strong> ({p.vendorCode})
                           </span>
+                          {p.entryType === 'direct_settlement' && (
+                            <Badge status="info" className="ml-2">
+                              {locale === 'bn' ? 'সরাসরি' : 'Direct'}
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 font-mono">
                           <span className="font-bold text-ink text-base">
@@ -1689,13 +2252,20 @@ export function VendorEscrowAndReturnPanel({
                         <span>
                           <LocalizedText source={"মাধ্যম:"} area="admin" />{" "}<strong className="text-ink">{localizedField(p, "payoutMethodBn", locale)}</strong> (
                           {p.payoutAccountNo})
+                          {p.senderAccountNo ? ` · প্রেরক: ${p.senderAccountNo}` : ''}
                           {p.paymentTrxId ? ` · TrxID: ${p.paymentTrxId}` : ''}
+                          {p.noteBn ? ` · নোট: ${p.noteBn}` : ''}
                           {p.rejectionReasonBn
                             ? ` · বাতিলের কারণ: ${p.rejectionReasonBn}`
                             : ''}
+                          {p.proofUrl && (
+                            <a href={p.proofUrl} target="_blank" rel="noreferrer" className="ml-2 underline text-ink">
+                              {locale === 'bn' ? 'প্রমাণ' : 'Proof'}
+                            </a>
+                          )}
                         </span>
                         <span className="font-mono">
-                          <LocalizedText source={"ক্যাশ-আউট চার্জ (১.৮৫%):"} area="admin" />{' '}
+                          <LocalizedText source={"চার্জ:"} area="admin" />{' '}
                           <strong className="text-danger">
                             -{formatPoishaToBdt(estCharge, locale)}
                           </strong>{' '}
@@ -2208,7 +2778,7 @@ export function VendorEscrowAndReturnPanel({
                 }`}
               >
                 <Truck className="w-3.5 h-3.5" />
-                <span><LocalizedText source={"কুরিয়ার ডিসপ্যাচ লগ ("} area="admin" />{inspectedOrders.length})</span>
+                <span><LocalizedText source={"কুরিয়ার ডিসপ্যাচ লগ ("} area="admin" />{inspectedParcels.length + inspectedOrders.filter(o => !inspectedParcels.some(p => p.orderNo === o.orderNo)).length})</span>
               </button>
 
               <button
@@ -2580,16 +3150,82 @@ export function VendorEscrowAndReturnPanel({
               </div>
             )}
 
-            {/* TAB 4: COURIER DISPATCHES TIMELINE */}
+            {/* TAB 4: COURIER DISPATCHES TIMELINE (MANUAL PARCELS + ORDERS) */}
             {dossierTab === 'dispatches' && (
               <div className="space-y-3 text-xs max-h-[52vh] overflow-y-auto pr-1">
-                {inspectedOrders.length === 0 ? (
+                {inspectedParcels.map((p) => {
+                  const badgeStyle = getCourierBadgeStyle(p.courierProvider);
+                  return (
+                    <div
+                      key={p.parcelId}
+                      className="p-3.5 border border-border rounded-[var(--radius-md)] bg-surface space-y-2"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="font-bold text-ink text-xs">{p.parcelId}</span>
+                          {p.orderNo && <Badge status="info">{p.orderNo}</Badge>}
+                          <span className="text-muted text-[11px]">
+                            {new Date(p.dispatchedAt).toLocaleString(locale === 'bn' ? 'bn-BD' : 'en-GB')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className={`px-2 py-0.5 rounded-[var(--radius-sm)] text-[10px] font-bold ${badgeStyle.bg}`}>
+                            {badgeStyle.label}
+                          </span>
+                          <Badge status={p.status === 'delivered' || p.status === 'settled' ? 'success' : 'warning'}>
+                            {p.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                        <div>
+                          <LocalizedText source={"গন্তব্য:"} area="admin" />{' '}
+                          <strong className="text-ink">{p.districtNameBn}{p.upazilaNameBn ? `, ${p.upazilaNameBn}` : ''}</strong>{' '}
+                          <span className="text-muted">({p.destinationAddressBn})</span>
+                        </div>
+                        <div>
+                          <LocalizedText source={"ট্র্যাকিং / কনসাইনমেন্ট:"} area="admin" />{' '}
+                          <strong className="font-mono text-ink">{p.trackingCode} / {p.consignmentId}</strong>
+                        </div>
+                        <div>
+                          <LocalizedText source={"পদ্ধতি ও সময়:"} area="admin" />{' '}
+                          <strong className="text-ink">{p.deliveryMethodBn}</strong>
+                          {p.deliveredAt && (
+                            <span className="ml-1 text-success">
+                              (ডেলিভারি: {new Date(p.deliveredAt).toLocaleString(locale === 'bn' ? 'bn-BD' : 'en-GB')})
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <LocalizedText source={"COD / চার্জ:"} area="admin" />{' '}
+                          <strong className="font-mono text-success">{formatPoishaToBdt(p.collectableCodPoisha, locale)}</strong>
+                          {' / '}
+                          <strong className="font-mono text-danger">{formatPoishaToBdt(p.courierChargePoisha, locale)}</strong>
+                        </div>
+                      </div>
+                      {(p.proofRef || p.proofUrl || p.noteBn) && (
+                        <div className="text-[11px] text-muted border-t border-border pt-1.5 flex flex-wrap gap-3">
+                          {p.proofRef && <span className="font-mono">Ref: {p.proofRef}</span>}
+                          {p.proofUrl && (
+                            <a href={p.proofUrl} target="_blank" rel="noreferrer" className="underline text-ink">
+                              {locale === 'bn' ? 'প্রমাণ দেখুন' : 'View proof'}
+                            </a>
+                          )}
+                          {p.noteBn && <span>{p.noteBn}</span>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {inspectedParcels.length === 0 && inspectedOrders.length === 0 ? (
                   <div className="py-12 text-center text-muted border border-dashed border-border rounded-[var(--radius-md)]">
                     <Truck className="w-8 h-8 mx-auto mb-2 text-muted/40" />
                     <p><LocalizedText source={"কোনো কুরিয়ার ডিসপ্যাচ রেকর্ড পাওয়া যায়নি।"} area="admin" /></p>
                   </div>
                 ) : (
-                  inspectedOrders.map((o) => {
+                  inspectedOrders
+                    .filter((o) => !inspectedParcels.some((p) => p.orderNo === o.orderNo))
+                    .map((o) => {
                     const badgeStyle = getCourierBadgeStyle(o.courierProvider);
                     const rowItems =
                       (

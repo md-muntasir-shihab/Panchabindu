@@ -136,10 +136,10 @@ export function OrderTrackingClient({
 
   return (
     <StorefrontShell siteSettings={siteSettings} categories={categories}>
-      <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-3.5 sm:px-4 py-5 sm:py-8 space-y-5 sm:space-y-6">
         {/* Top Lookup Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
-          <div>
+          <div className="min-w-0">
             <Link
               href="/"
               className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-ink mb-1"
@@ -152,7 +152,7 @@ export function OrderTrackingClient({
                 ? 'অর্ডারের বিস্তারিত'
                 : 'Order details'}
             </h1>
-            <p className="mt-1 text-sm text-muted">{locale === 'bn' ? 'এখানে সাইটে নথিভুক্ত অবস্থা দেখানো হয়; লাইভ কুরিয়ার ট্র্যাকিং সংযুক্ত নয়।' : 'This shows the status recorded by the store; live courier tracking is not connected.'}</p>
+            <p className="mt-1 text-xs sm:text-sm text-muted">{locale === 'bn' ? 'এখানে সাইটে নথিভুক্ত অবস্থা দেখানো হয়; লাইভ কুরিয়ার ট্র্যাকিং সংযুক্ত নয়।' : 'This shows the status recorded by the store; live courier tracking is not connected.'}</p>
           </div>
 
           <form onSubmit={handleLookupSubmit} className="flex items-center gap-2 w-full sm:w-auto min-w-0">
@@ -162,12 +162,13 @@ export function OrderTrackingClient({
               onChange={(e) => setLookupInput(e.target.value)}
               placeholder={locale === 'bn' ? 'অর্ডার আইডি অথবা trk_...' : 'Order ID or trk_...'}
               aria-label={locale === 'bn' ? 'অর্ডার আইডি বা ট্র্যাকিং টোকেন' : 'Order ID or tracking token'}
-              className="min-w-0 flex-1 sm:w-56 min-h-[44px] px-3 py-1.5 text-xs font-mono bg-surface text-ink border border-border rounded-[var(--radius-md)]"
+              className="min-w-0 flex-1 sm:w-56 min-h-[44px] px-3 py-1.5 text-sm sm:text-xs font-mono bg-surface text-ink border border-border rounded-[var(--radius-md)]"
             />
             <Button
               type="submit"
               variant="outline"
               size="sm"
+              className="min-h-[44px] shrink-0"
               leftIcon={<Search className="w-3.5 h-3.5" aria-hidden="true" />}
             >
               {locale === 'bn' ? 'ট্র্যাক করুন' : 'Track'}
@@ -184,16 +185,16 @@ export function OrderTrackingClient({
             {!signedIn && <Link href={`/account?returnTo=tracking&orderNo=${encodeURIComponent(initialOrderNo)}`} className="inline-flex min-h-[44px] items-center px-4 border border-border rounded-[var(--radius-md)] font-semibold">{locale === 'bn' ? 'লগইন করুন' : 'Sign in'}</Link>}
           </Card>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-5 sm:space-y-6">
             {/* Order Header Banner */}
             <Card surface="surface" padding="md" className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs text-muted">
                       {locale === 'bn' ? 'অর্ডার নম্বর:' : 'Order No:'}
                     </span>
-                    <span className="text-base font-mono font-bold text-ink">
+                    <span className="text-sm sm:text-base font-mono font-bold text-ink break-all">
                       {order.orderNo}
                     </span>
                     <Badge
@@ -215,13 +216,13 @@ export function OrderTrackingClient({
                 </div>
 
                 {order.trackingCode && (
-                  <div className="p-2.5 border border-border rounded-[var(--radius-sm)] bg-bg text-xs">
+                  <div className="p-2.5 border border-border rounded-[var(--radius-sm)] bg-bg text-xs max-w-full">
                     <span className="text-muted">
                       {locale === 'bn'
                         ? 'কুরিয়ার ট্র্যাকিং কোড:'
                         : 'Courier Tracking:'}
                     </span>{' '}
-                    <span className="font-mono font-bold text-ink">
+                    <span className="font-mono font-bold text-ink break-all">
                       {order.trackingCode}
                     </span>
                   </div>

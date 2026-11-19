@@ -652,7 +652,10 @@ export function appendImmutableAuditLog(
   return record;
 }
 
-export function deriveNextBestAction(order: OrderGridRowDTO): NextBestActionCode {
+export function deriveNextBestAction(
+  order: OrderGridRowDTO,
+  manualBkashSubmissions?: Array<{ orderNo: string; status: string }>
+): NextBestActionCode {
   if (order.status === 'cancelled' || order.status === 'returned') {
     return 'COMPLETED';
   }
@@ -662,10 +665,21 @@ export function deriveNextBestAction(order: OrderGridRowDTO): NextBestActionCode
   if (order.addressQualityScore < 70) {
     return 'FIX_ADDRESS';
   }
-  if (
-    order.paymentMethod === 'bkash_manual' &&
-    order.paymentStatus === 'partial_verified'
-  ) {
+  const submissions =
+    manualBkashSubmissions ?? readErpState().manualBkashSubmissions ?? [];
+  const orderNoUpper = (order.orderNo ?? '').trim().toUpperCase();
+  const orderSubs = orderNoUpper
+    ? submissions.filter((s) => s.orderNo.trim().toUpperCase() === orderNoUpper)
+    : [];
+  const hasPendingBkashClaim =
+    orderSubs.some(
+      (s) => s.status === 'pending_verification' || s.status === 'under_review'
+    ) ||
+    (orderSubs.length === 0 &&
+      order.paymentMethod === 'bkash_manual' &&
+      Boolean(order.manualPaymentTrxId) &&
+      order.paymentStatus === 'unpaid');
+  if (hasPendingBkashClaim) {
     return 'VERIFY_BKASH_TRX';
   }
   if (order.isAdvanceMandatory && order.advancePaidPoisha <= 0) {
@@ -1061,7 +1075,10 @@ export function getSanitizedOrdersForActor(
       lineSubtotalPoisha: l.lineSubtotalPoisha,
     }));
 
-    const computedNextAction = deriveNextBestAction(ord);
+    const computedNextAction = deriveNextBestAction(
+      ord,
+      erpState.manualBkashSubmissions
+    );
     const enriched: Record<string, unknown> = {
       ...ord,
       nextBestAction: computedNextAction,

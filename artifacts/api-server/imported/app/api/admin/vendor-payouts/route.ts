@@ -12,6 +12,7 @@ import { getActorSecurityContext } from '@/src/lib/admin/phase4a-service';
 import type { ActorSecurityContext } from '@/src/types/permissions';
 import {
   adminCreateVendorPayout,
+  adminDirectPayout,
   adminResolveVendorPayout,
   getAdminVendorPayoutRegister,
 } from '@/src/lib/vendor/vendor-payout-register';
@@ -19,8 +20,7 @@ import {
 // ADMIN → VENDOR PAYOUT REGISTER
 //   GET  : every payout ever raised, with per-vendor roll-ups, life-cycle trail,
 //          maker-checker state and the totals an accountant reconciles against.
-//   POST : create a payout, approve, reject (releases the hold), or mark paid
-//          with a TrxID and proof. All four are audited.
+//   POST : create a payout, direct settle immediately with proof, approve, reject, or mark paid.
 // Super admin only. Money movement never happens in the browser.
 
 function sessionActor(
@@ -53,6 +53,16 @@ async function handleGET(req: NextRequest) {
   );
 }
 
+const safeProofUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine(
+    (v) => !v || v.startsWith('https://') || v.startsWith('http://') || v.startsWith('/'),
+    'প্রুফ লিংক অবশ্যই https://, http:// অথবা অভ্যন্তরীণ পাথ (/) হতে হবে।'
+  )
+  .optional();
+
 const payoutActions = z.discriminatedUnion('operation', [
   z
     .object({
@@ -65,12 +75,32 @@ const payoutActions = z.discriminatedUnion('operation', [
     .strict(),
   z
     .object({
+      operation: z.literal('direct_payout'),
+      vendorId: z.string().min(1).max(64),
+      requestedAmountPoisha: z.number().int().min(100).max(100_000_000),
+      feePoisha: z.number().int().min(0).max(10_000_000).optional(),
+      payoutMethodBn: z.string().trim().min(2).max(80),
+      payoutAccountNo: z.string().trim().min(2).max(60),
+      senderAccountNo: z.string().trim().max(60).optional(),
+      paymentTrxId: z.string().trim().min(3).max(80),
+      proofUrl: safeProofUrlSchema,
+      noteBn: z.string().trim().max(500).optional(),
+      paidAt: z.string().trim().max(64).optional(),
+      creditAndSettleIfInsufficient: z.boolean().optional(),
+    })
+    .strict(),
+  z
+    .object({
       operation: z.literal('resolve_payout'),
       payoutId: z.string().min(1).max(80),
       decision: z.enum(['approve', 'reject', 'mark_paid']),
       rejectionReasonBn: z.string().trim().max(400).optional(),
       paymentTrxId: z.string().trim().max(80).optional(),
-      proofUrl: z.string().trim().max(500).optional(),
+      proofUrl: safeProofUrlSchema,
+      feePoisha: z.number().int().min(0).max(10_000_000).optional(),
+      senderAccountNo: z.string().trim().max(60).optional(),
+      noteBn: z.string().trim().max(500).optional(),
+      paidAt: z.string().trim().max(64).optional(),
       selfApprovalOverrideReasonBn: z.string().trim().max(240).optional(),
     })
     .strict(),
@@ -106,7 +136,7 @@ async function handlePOST(req: NextRequest) {
   const parsed = payoutActions.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { success: false, errorBn: 'পেআউট অনুরোধের তথ্য সঠিক নয়।' },
+      { success: false, errorBn: parsed.error.issues[0]?.message ?? 'পেআউট অনুরোধের তথ্য সঠিক নয়।' },
       { status: 400 }
     );
   }
@@ -114,6 +144,11 @@ async function handlePOST(req: NextRequest) {
   const payload = parsed.data;
   if (payload.operation === 'create_payout') {
     const result = adminCreateVendorPayout(auth.actor, payload);
+    return NextResponse.json(result, { status: result.success ? 201 : 400 });
+  }
+
+  if (payload.operation === 'direct_payout') {
+    const result = adminDirectPayout(auth.actor, payload);
     return NextResponse.json(result, { status: result.success ? 201 : 400 });
   }
 

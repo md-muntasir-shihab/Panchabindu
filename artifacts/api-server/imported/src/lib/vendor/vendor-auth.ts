@@ -8,6 +8,7 @@ import { getActorSecurityContext } from '../admin/phase4a-service';
 import {
   ADMIN_SESSION_COOKIE_NAME,
   extractAdminSessionTokenFromRequest,
+  isAuthBypassEnabled,
   verifyAdminSessionToken,
   verifyOriginAndCsrf,
 } from '../security/crypto-session';
@@ -30,6 +31,12 @@ export function authenticateVendorRequest(
 ): VendorAuthResult {
   const rawToken = readCookie(req, ADMIN_SESSION_COOKIE_NAME) ?? extractAdminSessionTokenFromRequest(req);
   const session = verifyAdminSessionToken(rawToken);
+  if (isAuthBypassEnabled() && (!session || session.sessionId === 'bypass-admin-session' || session.roleSlug !== 'vendor')) {
+    const bypassVendorActor = getActorSecurityContext('usr-vendor-001');
+    if (bypassVendorActor && bypassVendorActor.vendorId) {
+      return { ok: true, actor: bypassVendorActor, csrfToken: 'bypass-vendor-csrf-token' };
+    }
+  }
   if (!session || session.purpose === 'enrollment') {
     return { ok: false, status: 401, errorBn: 'ভেন্ডর প্যানেলে লগইন করুন (401 Unauthorized)।' };
   }

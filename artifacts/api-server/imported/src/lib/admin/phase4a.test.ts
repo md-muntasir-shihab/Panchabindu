@@ -195,16 +195,33 @@ test('Phase 4A Case 3: Smart Order Entry 24h Duplicate Guard & Override Reason',
   assert.ok(allowedDup.orderNo);
 });
 
-test('Phase 4A Case 4: Orders Grid One-Click Actions & Immutable Audit Log Recording', () => {
+test('Phase 4A Case 4: Orders Grid One-Click Actions, Today Queue Sync & Immutable Audit Log Recording', () => {
   const adminCtx = getActorSecurityContext('usr-super-admin')!;
   const beforeSnap = getAdminWorkspaceSnapshot('usr-super-admin');
   const beforeAuditCount = beforeSnap.auditLogs?.length ?? 0;
+
+  // Before any new pending submission, ORD-261106-0002's seeded bKash claim is already approved,
+  // so verifyBkashCount must match pending manualBkashSubmissions (0).
+  const initialPendingClaims = (readErpState().manualBkashSubmissions ?? []).filter(
+    (s) => s.status === 'pending_verification' || s.status === 'under_review'
+  ).length;
+  assert.equal(initialPendingClaims, 0);
+  assert.equal(beforeSnap.todayQueues?.verifyBkashCount, initialPendingClaims);
 
   const order = readErpState().orders.find(order => order.orderNo === 'ORD-261106-0002')!;
   const submission = submitManualBkashPayment({ orderNo: order.orderNo, senderPhone: order.customerPhone,
     trxId: `SYNTHETIC-${Date.now()}`, submittedAmountPoisha: 1000, idempotencyKey: `review-${Date.now()}`,
   });
   assert.equal(submission.success, true);
+
+  // While submission is pending_verification, both counters must increment to 1
+  const pendingSnap = getAdminWorkspaceSnapshot('usr-super-admin');
+  const pendingClaimsCount = (readErpState().manualBkashSubmissions ?? []).filter(
+    (s) => s.status === 'pending_verification' || s.status === 'under_review'
+  ).length;
+  assert.equal(pendingClaimsCount, 1);
+  assert.equal(pendingSnap.todayQueues?.verifyBkashCount, 1);
+
   const actionRes = executeOrderGridAction(adminCtx, {
     orderNos: ['ORD-261106-0002'], actionType: 'verify_bkash',
     staffNote: 'Synthetic merchant statement and payment amount verified.',
@@ -212,6 +229,12 @@ test('Phase 4A Case 4: Orders Grid One-Click Actions & Immutable Audit Log Recor
   assert.equal(actionRes.success, true);
 
   const afterSnap = getAdminWorkspaceSnapshot('usr-super-admin');
+  const afterPendingClaimsCount = (readErpState().manualBkashSubmissions ?? []).filter(
+    (s) => s.status === 'pending_verification' || s.status === 'under_review'
+  ).length;
+  assert.equal(afterPendingClaimsCount, 0);
+  assert.equal(afterSnap.todayQueues?.verifyBkashCount, 0);
+
   const afterAuditCount = afterSnap.auditLogs?.length ?? 0;
   assert.ok(
     afterAuditCount > beforeAuditCount ||
@@ -260,3 +283,257 @@ test('full order amendments cannot bypass payment, tracking or lifecycle workflo
   assert.equal(amended.order?.status, order.status);
   assert.equal(amended.order?.paymentStatus, 'unpaid');
 });
+
+test('attach_tracking supports custom courier, editable tracking URL, and atomic ship/out_for_delivery transitions', () => {
+  const actor = getActorSecurityContext('usr-super-admin')!;
+  const created = createSmartAdminOrder(actor, {
+    idempotencyKey: `dispatch-test-${Date.now()}`,
+    customerName: 'কাস্টম কুরিয়ার টেস্ট',
+    customerPhone: '01718887766',
+    districtId: 47,
+    upazilaId: 365,
+    streetAddress: 'বাড়ি ১২, রোড ৪, মিরপুর ১০',
+    landmark: 'গোলচত্বরের পাশে',
+    source: 'phone_call',
+    deliveryMethod: 'courier',
+    paymentMethod: 'cod',
+    advancePaidPoisha: 0,
+    customerNote: '',
+    internalStaffNote: '',
+    duplicateOverrideReason: 'Dispatch test',
+    items: [
+      {
+        productId: '00000000-0000-4000-8000-000000000101',
+        variantId: '00000000-0000-4000-8000-000000000201',
+        quantity: 1,
+      },
+    ],
+  });
+  assert.equal(created.success, true);
+  const orderNo = created.orderNo!;
+
+  // Mark synthetic order as not requiring mandatory advance so confirmed -> packed can run
+  const stateForPack = readErpState();
+  const createdOrd = stateForPack.orders.find((o) => o.orderNo === orderNo)!;
+  createdOrd.isAdvanceMandatory = false;
+  writeErpState(stateForPack);
+
+  // Move to confirmed -> packed
+  assert.equal(
+    executeOrderGridAction(actor, {
+      orderNos: [orderNo],
+      actionType: 'update_status',
+      newStatus: 'confirmed',
+    }).results[0].ok,
+    true
+  );
+  assert.equal(
+    executeOrderGridAction(actor, {
+      orderNos: [orderNo],
+      actionType: 'update_status',
+      newStatus: 'packed',
+    }).results[0].ok,
+    true
+  );
+
+  // Reject unsafe URL
+  const unsafeUrlRes = executeOrderGridAction(actor, {
+    orderNos: [orderNo],
+    actionType: 'attach_tracking',
+    courierProvider: 'manual',
+    customCourierName: 'সুন্দরবন কুরিয়ার',
+    trackingCode: 'SB-1001',
+    customTrackingUrl: 'javascript:alert(1)',
+    advanceToStatus: 'shipped',
+  });
+  assert.equal(unsafeUrlRes.results[0].ok, false);
+
+  // Reject custom courier without name
+  const missingNameRes = executeOrderGridAction(actor, {
+    orderNos: [orderNo],
+    actionType: 'attach_tracking',
+    courierProvider: 'manual',
+    customCourierName: ' ',
+    trackingCode: 'SB-1001',
+    advanceToStatus: 'shipped',
+  });
+  assert.equal(missingNameRes.results[0].ok, false);
+
+  // Save custom courier + custom tracking link and atomically advance packed -> shipped
+  const shippedRes = executeOrderGridAction(actor, {
+    orderNos: [orderNo],
+    actionType: 'attach_tracking',
+    courierProvider: 'manual',
+    customCourierName: 'সুন্দরবন কুরিয়ার',
+    trackingCode: 'SB-778899',
+    customTrackingUrl: 'https://sundarban.example.com/track/SB-778899',
+    advanceToStatus: 'shipped',
+  });
+  assert.equal(shippedRes.results[0].ok, true);
+  let saved = readErpState().orders.find((o) => o.orderNo === orderNo)!;
+  assert.equal(saved.status, 'shipped');
+  assert.equal(saved.courierProvider, 'manual');
+  assert.equal(saved.customCourierName, 'সুন্দরবন কুরিয়ার');
+  assert.equal(saved.trackingCode, 'SB-778899');
+  assert.equal(saved.customTrackingUrl, 'https://sundarban.example.com/track/SB-778899');
+
+  // Edit tracking link right before Out for Delivery and advance shipped -> out_for_delivery
+  const ofdRes = executeOrderGridAction(actor, {
+    orderNos: [orderNo],
+    actionType: 'attach_tracking',
+    courierProvider: 'manual',
+    customCourierName: 'এস.এ পরিবহন',
+    trackingCode: 'SA-990011',
+    customTrackingUrl: 'https://saparibahan.example.com/track/SA-990011',
+    advanceToStatus: 'out_for_delivery',
+  });
+  assert.equal(ofdRes.results[0].ok, true);
+  saved = readErpState().orders.find((o) => o.orderNo === orderNo)!;
+  assert.equal(saved.status, 'out_for_delivery');
+  assert.equal(saved.customCourierName, 'এস.এ পরিবহন');
+  assert.equal(saved.trackingCode, 'SA-990011');
+  assert.equal(saved.customTrackingUrl, 'https://saparibahan.example.com/track/SA-990011');
+});
+
+test('all-stage order editing works on packed, shipped, and advance-paid orders with stage-aware stock reconciliation', async () => {
+  const { updateFullOrderDetails } = await import('./phase4a-service');
+  const actor = getActorSecurityContext('usr-super-admin')!;
+  const created = createSmartAdminOrder(actor, {
+    idempotencyKey: `allstage-${Date.now()}`,
+    customerName: 'অল-স্টেজ টেস্ট গ্রাহক',
+    customerPhone: '01715554433',
+    districtId: 47,
+    upazilaId: 365,
+    streetAddress: 'বাড়ি ৫, রোড ২, ধানমন্ডি',
+    landmark: 'রবীন্দ্র সরোবরের পাশে',
+    source: 'facebook',
+    deliveryMethod: 'courier',
+    paymentMethod: 'bkash_manual',
+    advancePaidPoisha: 0,
+    customerNote: '',
+    internalStaffNote: '',
+    duplicateOverrideReason: 'All-stage edit test',
+    items: [
+      {
+        productId: '00000000-0000-4000-8000-000000000101',
+        variantId: '00000000-0000-4000-8000-000000000201',
+        quantity: 1,
+      },
+    ],
+  });
+  assert.equal(created.success, true);
+  const orderNo = created.orderNo!;
+
+  // 1) Attach tracking even while order is still pending_confirmation
+  const pendingTrack = executeOrderGridAction(actor, {
+    orderNos: [orderNo],
+    actionType: 'attach_tracking',
+    courierProvider: 'steadfast',
+    trackingCode: 'SF-PRE-101',
+  });
+  assert.equal(pendingTrack.results[0].ok, true);
+
+  // 2) Simulate verified advance paid and advance to packed -> shipped
+  const state = readErpState();
+  const ord = state.orders.find((o) => o.orderNo === orderNo)!;
+  const line = state.orderLines.find((l) => l.orderId === ord.id)!;
+  ord.isAdvanceMandatory = false;
+  ord.advancePaidPoisha = 50000; // ৳500 verified advance
+  ord.paymentStatus = 'partial_verified';
+  ord.codCollectablePoisha = Math.max(0, ord.totalPayablePoisha - 50000);
+  writeErpState(state);
+
+  assert.equal(
+    executeOrderGridAction(actor, {
+      orderNos: [orderNo],
+      actionType: 'update_status',
+      newStatus: 'confirmed',
+    }).results[0].ok,
+    true
+  );
+  assert.equal(
+    executeOrderGridAction(actor, {
+      orderNos: [orderNo],
+      actionType: 'update_status',
+      newStatus: 'packed',
+    }).results[0].ok,
+    true
+  );
+
+  // 3) Edit customer, delivery, custom courier metadata while packed + advance paid
+  const packedOrder = readErpState().orders.find((o) => o.orderNo === orderNo)!;
+  const packedEdit = updateFullOrderDetails(actor, {
+    ...packedOrder,
+    customerName: 'আপডেটেড প্যাকড গ্রাহক',
+    deliveryChargePoisha: 12000,
+    courierProvider: 'manual',
+    customCourierName: 'সুন্দরবন কুরিয়ার',
+    customTrackingUrl: 'https://sundarban.example.com/t/SF-PRE-101',
+    items: [
+      {
+        variantId: line.variantId,
+        quantity: 1,
+        unitSalePricePoisha: line.snapUnitSalePricePoisha,
+      },
+    ],
+  });
+  assert.equal(packedEdit.success, true);
+  assert.equal(packedEdit.order?.customerName, 'আপডেটেড প্যাকড গ্রাহক');
+  assert.equal(packedEdit.order?.customCourierName, 'সুন্দরবন কুরিয়ার');
+  assert.equal(
+    packedEdit.order?.codCollectablePoisha,
+    packedEdit.order!.totalPayablePoisha - 50000
+  );
+
+  // 4) Ship order and verify post-ship quantity edit adjusts stockOnHand & stockAvailable
+  assert.equal(
+    executeOrderGridAction(actor, {
+      orderNos: [orderNo],
+      actionType: 'update_status',
+      newStatus: 'shipped',
+    }).results[0].ok,
+    true
+  );
+  const beforeShipEdit = readErpState();
+  const variantBefore = beforeShipEdit.products
+    .flatMap((p) => p.variants)
+    .find((v) => v.variantId === line.variantId)!;
+  const shippedOrder = beforeShipEdit.orders.find((o) => o.orderNo === orderNo)!;
+  const shippedEdit = updateFullOrderDetails(actor, {
+    ...shippedOrder,
+    items: [
+      {
+        variantId: line.variantId,
+        quantity: 2,
+        unitSalePricePoisha: line.snapUnitSalePricePoisha,
+      },
+    ],
+  });
+  assert.equal(shippedEdit.success, true);
+  const variantAfter = readErpState().products
+    .flatMap((p) => p.variants)
+    .find((v) => v.variantId === line.variantId)!;
+  assert.equal(variantAfter.stockOnHand, variantBefore.stockOnHand - 1);
+  assert.equal(variantAfter.stockAvailable, variantBefore.stockAvailable - 1);
+  assert.equal(variantAfter.stockReserved, variantBefore.stockReserved);
+
+  // 5) Deliver order and verify tracking can still be corrected post-delivery
+  assert.equal(
+    executeOrderGridAction(actor, {
+      orderNos: [orderNo],
+      actionType: 'update_status',
+      newStatus: 'delivered',
+    }).results[0].ok,
+    true
+  );
+  const deliveredTrack = executeOrderGridAction(actor, {
+    orderNos: [orderNo],
+    actionType: 'attach_tracking',
+    courierProvider: 'manual',
+    customCourierName: 'সুন্দরবন কুরিয়ার',
+    trackingCode: 'SB-FINAL-999',
+  });
+  assert.equal(deliveredTrack.results[0].ok, true);
+});
+
+

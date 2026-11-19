@@ -24,15 +24,15 @@ export interface VendorCapabilityFlags {
 }
 
 export const DEFAULT_VENDOR_CAPABILITIES: VendorCapabilityFlags = {
-  canCreateProduct: true,
-  canEditProduct: true,
-  canChangeProductStatus: true,
-  canSubmitConsignmentLot: true,
-  canSubmitPriceProposal: true,
+  canCreateProduct: false,
+  canEditProduct: false,
+  canChangeProductStatus: false,
+  canSubmitConsignmentLot: false,
+  canSubmitPriceProposal: false,
   canRequestPayout: true,
-  canEditProfile: true,
-  canEditPayoutProfile: true,
-  canSubmitOnboardingAnswers: true,
+  canEditProfile: false,
+  canEditPayoutProfile: false,
+  canSubmitOnboardingAnswers: false,
   maxActiveProducts: 0,
 };
 

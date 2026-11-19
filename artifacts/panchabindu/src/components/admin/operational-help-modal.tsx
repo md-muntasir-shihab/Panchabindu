@@ -16,32 +16,46 @@ interface OperationalHelpGuideItem {
 }
 
 export const OPERATIONAL_HELP_GUIDE: Record<AdminTabKey, OperationalHelpGuideItem> = {
-  contact_management: {
-    titleBn: 'গ্রাহক যোগাযোগ ও বার্তা ব্যবস্থাপনা',
-    titleEn: 'Customer Contact and Inquiry Management',
-    purposeBn: 'কন্টাক্ট ফর্মের বার্তা নিরাপদে পর্যালোচনা ও অনুসরণ করা।',
-    purposeEn: 'Review and track contact form inquiries securely.',
-    workflowBn: ['বার্তা খুঁজে নির্বাচন করুন।', 'দায়িত্বপ্রাপ্ত, অগ্রাধিকার, অবস্থা ও অভ্যন্তরীণ নোট নির্ধারণ করে সংরক্ষণ করুন।', 'প্রয়োজনে কল বা WhatsApp ব্যবহার করে যোগাযোগ করুন।'],
-    workflowEn: ['Search and select an inquiry.', 'Save the assignee, priority, status and internal notes.', 'Contact the customer by phone or WhatsApp as needed.'],
-    rulesBn: ['স্ট্যাটাস পরিবর্তন করলে স্বয়ংক্রিয়ভাবে বার্তা পাঠানো হয় না।', 'শুধু সুপার অ্যাডমিন গ্রাহকের বার্তা দেখতে ও পরিচালনা করতে পারেন।'],
-    rulesEn: ['Changing status does not send a message.', 'Only super admins can view and manage inquiries.'],
+  crm_contacts: {
+    titleBn: 'সিআরএম ও কন্টাক্টস (CRM & Contacts)',
+    titleEn: 'CRM & Contacts Directory',
+    purposeBn: 'গ্রাহক ডিরেক্টরি, অর্ডার ইতিহাস, ঝুঁকি বিশ্লেষণ, পরিত্যক্ত কার্ট রিকভারি এবং ব্ল্যাকলিস্ট এক জায়গায় পরিচালনা করুন।',
+    purposeEn: 'Manage the unified customer directory, order history, risk score, abandoned cart recovery, and fraud blacklist in one place.',
+    workflowBn: [
+      '১. কন্টাক্ট ডিরেক্টরি থেকে নাম, ফোন বা অর্ডার দিয়ে গ্রাহকের ৩৬০ প্রোফাইল দেখুন।',
+      '২. পরিত্যক্ত কার্ট ট্যাব থেকে WhatsApp বা SMS রিমাইন্ডার পাঠান অথবা এক ক্লিকে অর্ডারে কনভার্ট করুন।',
+      '৩. ভুয়া অর্ডার বা ফ্রড নম্বর ব্ল্যাকলিস্ট ট্যাবে যুক্ত বা অপসারণ করুন।',
+    ],
+    workflowEn: [
+      '1. Inspect any customer 360 profile by name, phone, or order number in the Contacts Directory.',
+      '2. Follow up on abandoned carts via WhatsApp/SMS or convert directly to an order.',
+      '3. Add or remove fraudulent phone numbers from the Blacklist tab.',
+    ],
+    rulesBn: [
+      '• ব্ল্যাকলিস্টেড নম্বর চেকআউট ও স্মার্ট অর্ডার এন্ট্রিতে স্বয়ংক্রিয়ভাবে সতর্কতা দেখায়।',
+      '• ব্ল্যাকলিস্ট পরিবর্তন শুধুমাত্র সুপার অ্যাডমিনের জন্য সংরক্ষিত।',
+    ],
+    rulesEn: [
+      '• Blacklisted numbers automatically flag risk during checkout and smart order entry.',
+      '• Blacklist mutations are restricted to Super Admin accounts.',
+    ],
   },
   today_screen: {
     titleBn: 'আজকের অপারেশনাল কমান্ড সেন্টার (Today Command)',
     titleEn: 'Today Operational Command Center',
-    purposeBn: 'দৈনিক অর্ডারের লাইভ ভেরিফিকেশন, অ্যাড্রেস ফিক্স, বিকাশ TrxID অটো-ম্যাচিং এবং ১-ক্লিক কুরিয়ার বুকিং প্রসেসিং।',
-    purposeEn: 'Daily order live verification, address quality score checks, bKash manual TrxID verification, and 1-click courier booking.',
+    purposeBn: 'দৈনিক অর্ডারের লাইভ ভেরিফিকেশন, অ্যাড্রেস ফিক্স, বিকাশ TrxID যাচাই এবং ম্যানুয়াল কুরিয়ার ট্র্যাকিং ও হ্যান্ডওভার প্রসেসিং।',
+    purposeEn: 'Daily order live verification, address quality score checks, bKash manual TrxID verification, and manual courier tracking & handover.',
     workflowBn: [
       '১. ফোন কনফার্মেশন কিউ থেকে অর্ডারসমূহ ডায়াল করে নিশ্চিত করুন।',
       '২. ঠিকানা স্কোরে লাল থাকলে বাসা/রোড নম্বর গ্রাহকের সাথে কথা বলে আপডেট করুন।',
       '৩. ম্যানুয়াল বিকাশ টাকা জমা নিশ্চিত করে TrxID স্টেটমেন্ট ভেরিফাই করুন।',
-      '৪. প্যাকিং ও পিকআপ চালানের জন্য প্রস্তুত অর্ডারে "বুক কুরিয়ার" ক্লিক করুন।',
+      '৪. প্যাকড অর্ডারে কুরিয়ার ট্র্যাকিং কোড যুক্ত করে ম্যানুয়াল হ্যান্ডওভার সম্পন্ন করুন।',
     ],
     workflowEn: [
       '1. Process call verification queue by dialing pending customer orders.',
       '2. If address score shows warning, confirm street & house details with the customer.',
       '3. Match manual bKash TrxID entries against official transaction statement.',
-      '4. Dispatch packed orders directly into Steadfast or Pathao courier pickup batch.',
+      '4. Attach manual courier tracking codes to packed orders for pickup handover.',
     ],
     rulesBn: [
       '• প্রতিটি পেমেন্ট ট্রানজেকশন ডুপ্লিকেট চেকিং দিয়ে সুরক্ষিত।',
@@ -220,52 +234,52 @@ export const OPERATIONAL_HELP_GUIDE: Record<AdminTabKey, OperationalHelpGuideIte
       '• Financial metrics are restricted to Super Admin and Finance Manager roles.',
     ],
   },
-  phase6_ops: {
-    titleBn: 'লাইভ অপারেশনস, কার্ট রিকভারি সিআরএম, কুরিয়ার ওয়েবহুক ও ব্যাকআপ',
-    titleEn: 'Live Operations, Cart Recovery CRM, Courier Webhooks & System Backup',
-    purposeBn: 'পরিত্যক্ত কার্ট রিকভারি (WhatsApp/Call), লাইভ কুরিয়ার ওয়েবহুক রিসিভার এবং ব্যাকআপ স্ন্যাপশট।',
-    purposeEn: 'Abandoned cart recovery suite via WhatsApp/call, live courier webhooks receiver, customer CRM and disaster recovery.',
+  messaging_hub: {
+    titleBn: 'মেসেজিং ইনবক্স ও টেমপ্লেট (Messaging)',
+    titleEn: 'Messaging — Customer Inbox, Vendor Inbox & Templates',
+    purposeBn: 'কাস্টমার ইনকোয়ারি, ভেন্ডর সাপোর্ট মেসেজ এবং দ্বিভাষিক অর্ডার মেসেজ টেমপ্লেট ও অটোমেশন রুলস।',
+    purposeEn: 'Unified inbox for customer inquiries and vendor support threads, plus bilingual order templates and automation rules.',
     workflowBn: [
-      '১. চেকআউটে অসম্পন্ন অর্ডারসমূহ নির্বাচন করে WhatsApp এ রিকভারি লিঙ্ক পাঠান।',
-      '২. কুরিয়ার ওয়েবহুক ফিডে পাঠাও/স্টিডফাস্ট রিয়েল-টাইম ডেলিভারি আপডেট পর্যবেক্ষণ করুন।',
-      '৩. ভেরিফায়েড প্রোডাক্ট রিভিউ অনুমোদন করুন যা স্টোরফ্রন্টে ব্যাজ হিসেবে দেখাবে।',
+      '১. কাস্টমার ইনবক্সে স্টোরফ্রন্ট থেকে আসা মেসেজের স্ট্যাটাস, অগ্রাধিকার ও অভ্যন্তরীণ নোট আপডেট করুন।',
+      '২. ভেন্ডর ইনবক্সে ভেন্ডরদের সাপোর্ট টিকিটের উত্তর দিন বা সমাধান হলে টিকিট বন্ধ করুন।',
+      '৩. টেমপ্লেট ট্যাবে অর্ডারের জন্য ফ্রি wa.me / SMS মেসেজ তৈরি ও অটোমেশন রুলস পরিচালনা করুন।',
     ],
     workflowEn: [
-      '1. Review abandoned cart sessions and trigger 1-click WhatsApp recovery messages.',
-      '2. Monitor incoming webhook signatures for real-time courier status updates.',
-      '3. Moderate verified customer product reviews and ratings.',
+      '1. Triage storefront customer inquiries in Customer Inbox with status, priority, and internal notes.',
+      '2. Reply to or close vendor support tickets directly inside Vendor Inbox.',
+      '3. Generate free wa.me / SMS order messages and manage automation rules in Templates.',
     ],
     rulesBn: [
-      '• ওয়েবহুক সিকিউরিটি HMAC-SHA256 হ্যাশ চেক ছাড়া ডাটা প্রসেস করবে না।',
-      '• সিস্টেমের সম্পূর্ণ স্ন্যাপশট SHA-256 চেকসাম সহ ব্যাকআপ হিসেবে ডাউনলোডযোগ্য।',
+      '• কল বা WhatsApp ডিপ-লিংক বাইরের অ্যাপে খোলে; স্বয়ংক্রিয়ভাবে কোনো মেসেজ পাঠানো হয় না।',
+      '• অটোমেশন রুলস ডিফল্টে Dry-Run মোডে থাকে এবং কিল-সুইচ দিয়ে তাৎক্ষণিক বন্ধ করা যায়।',
     ],
     rulesEn: [
-      '• Webhook signatures are verified using HMAC-SHA256.',
-      '• Full system JSON backup incorporates SHA-256 integrity checksums.',
+      '• Call and WhatsApp links open externally; no customer message is dispatched silently.',
+      '• Automation rules default to Dry-Run and can be halted immediately via the global kill-switch.',
     ],
   },
-  messaging_automation: {
-    titleBn: 'মেসেজিং টেমপ্লেট, ট্রিপল-গার্ড অটোমেশন ও শিট সিঙ্ক (Messaging & Sync)',
-    titleEn: 'Messaging Templates, Automation Rules & Google Sheets Sync',
-    purposeBn: 'গ্রাহক এসএমএস/ওয়াটসঅ্যাপ মেসেজ টেমপ্লেট, সিকিউরিটি ট্রিপল-গার্ড অটোমেশন ও ১-মুখী গুগল শিট মিরর।',
-    purposeEn: 'Dynamic customer SMS/WhatsApp message templates, automation rules matrix, customer blacklist and 1-way Google Sheets mirror.',
+  sync_health: {
+    titleBn: 'সিঙ্ক ও লাইভ কানেকশন হেলথ (Sync & Health)',
+    titleEn: 'Google Sheets Sync & Live Connectivity Health',
+    purposeBn: 'Supabase, Vercel, কুরিয়ার, Cron এবং ফ্রন্টএন্ড-ব্যাকএন্ড সংযোগের লাইভ অবস্থা যাচাই এবং Google Sheets ওয়ান-ওয়ে মিরর সিঙ্ক।',
+    purposeEn: 'Live connectivity diagnostics for Supabase, Vercel, couriers, cron, and API bridge alongside Google Sheets one-way mirror sync.',
     workflowBn: [
-      '১. অর্ডার কনফার্মেশন ও ট্র্যাকিং লিঙ্কের দ্বিভাষিক মেসেজ টেমপ্লেট তৈরি ও এডিট করুন।',
-      '২. অটোমেশন রুলে Dry-Run সিমুলেশন চালিয়ে নিশ্চিত হোন বা Global Kill-Switch অন করুন।',
-      '৩. গুগল শিট ১-মুখী সিঙ্ক বাটনে ক্লিক করে ডেটাবেসের কপি স্কিপ্ট মারফত শিটে পাঠাল।',
+      '১. লাইভ হেলথ ট্যাবে Supabase RPC ল্যাটেন্সি, Vercel রানটাইম, মিডিয়া স্টোরেজ ও Env ক্রেডেনশিয়াল অবস্থা দেখুন।',
+      '২. Google Sheets সিঙ্ক ট্যাবে ইনক্রিমেন্টাল বা ফুল রিসিঙ্ক চালান অথবা ৮-ট্যাব JSON স্ন্যাপশট ডাউনলোড করুন।',
+      '৩. Apps Script (Code.gs) কপি করে Google Sheet-এ ডিপ্লয় করুন এবং URL সার্ভার Env-এ সেট করুন।',
     ],
     workflowEn: [
-      '1. Edit dynamic variables in customer SMS/WhatsApp templates (Tracking URL, COD amount, items).',
-      '2. Test automation rules in Dry-Run mode or toggle Global Kill-Switch in emergencies.',
-      '3. Trigger Incremental or Full Resync to mirror ERP tables to Google Sheets via Code.gs.',
+      '1. Inspect live Supabase RPC latency, Vercel runtime, storage, and env readiness in Live Health.',
+      '2. Run Incremental or Full Resync in Google Sheets Sync, or download an 8-tab JSON snapshot.',
+      '3. Deploy the Code.gs Web App script in Google Sheets and set GOOGLE_SHEETS_APPS_SCRIPT_URL in server env.',
     ],
     rulesBn: [
-      '• গুগল শিট ইন্টিগ্রেশন শুধুমাত্র One-Way Mirror (শিটে এডিট করলে মূল ডাটাবেস পরিবর্তন হবে না)।',
-      '• ব্ল্যাকলিস্টেড গ্রাহকদের অর্ডার অটো-ফ্ল্যাগ করা হয়।',
+      '• এই ডায়াগনস্টিকে কখনোই কোনো API Key বা সিক্রেটের আসল মান দেখানো হয় না।',
+      '• গুগল শিট সিঙ্ক strictly One-Way Mirror — শিটে এডিট করলে ERP ডাটাবেজ বদলায় না।',
     ],
     rulesEn: [
-      '• Google Sheets sync is strictly One-Way Mirror (edits in Sheets never overwrite ERP).',
-      '• Blacklisted phone numbers auto-flag risk on incoming orders.',
+      '• Diagnostics never expose raw API keys or environment secrets.',
+      '• Google Sheets mirror is strictly one-way — edits in Sheets never overwrite the ERP database.',
     ],
   },
   print_engine: {
@@ -458,8 +472,18 @@ export function OperationalHelpModal({
   const isBn = locale === 'bn';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-      <div className="w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto bg-surface border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95">
+    <div
+      role="presentation"
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="operational-help-modal-title"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto bg-surface border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95"
+      >
         {/* Header Bar */}
         <div className="flex items-center justify-between p-4 bg-bg border-b border-border">
           <div className="flex items-center gap-2.5">
@@ -467,7 +491,7 @@ export function OperationalHelpModal({
               !
             </span>
             <div>
-              <h2 className="text-sm font-bold text-ink">
+              <h2 id="operational-help-modal-title" className="text-sm font-bold text-ink">
                 {isBn ? guide.titleBn : guide.titleEn}
               </h2>
               <p className="text-[11px] font-mono text-muted uppercase tracking-wider">
@@ -478,7 +502,8 @@ export function OperationalHelpModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-md border border-border bg-surface text-ink hover:bg-bg transition-colors"
+            aria-label={isBn ? 'বন্ধ করুন' : 'Close'}
+            className="min-w-11 min-h-11 flex items-center justify-center rounded-md border border-border bg-surface text-ink hover:bg-bg transition-colors cursor-pointer"
             title={isBn ? 'বন্ধ করুন' : 'Close'}
           >
             <X className="w-4 h-4" />
@@ -539,7 +564,7 @@ export function OperationalHelpModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 bg-ink text-bg font-bold text-xs rounded-md border border-ink hover:opacity-90 transition-opacity"
+            className="min-h-11 px-4 py-1.5 bg-ink text-bg font-bold text-xs rounded-md border border-ink hover:opacity-90 transition-opacity cursor-pointer"
           >
             {isBn ? 'ঠিক আছে (Close)' : 'Got it (Close)'}
           </button>

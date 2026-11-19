@@ -23,6 +23,7 @@ export const WORKSPACE_ACTIONS = {
   simulate_courier_webhook: ['settings_control_center', 'update'], reconcile_courier_csv: ['finance', 'update'],
   moderate_product_review: ['catalog', 'update'], create_system_backup_snapshot: ['settings_control_center', 'create'],
   submit_consignment_lot: ['inventory', 'create'], review_consignment_lot: ['inventory', 'update'],
+  record_admin_consignment_intake: ['inventory', 'update'],
   submit_price_proposal: ['vendors', 'update'], resolve_price_proposal: ['vendors', 'update'],
   create_flash_campaign: ['promos', 'create'], promote_matured_escrow: ['finance', 'update'],
   upsert_supplier_offer: ['vendors', 'update'], split_order_fulfillment_groups: ['orders', 'update'],
@@ -31,13 +32,20 @@ export const WORKSPACE_ACTIONS = {
   upsert_product: ['catalog', 'update'], delete_product: ['catalog', 'delete'], upsert_category: ['catalog', 'update'],
   update_inquiry_status: ['messaging', 'update'], update_about_contact_settings: ['settings_control_center', 'update'],
   review_manual_bkash: ['finance', 'update'], input_manual_mfs: ['finance', 'create'],
+  upsert_manual_courier_parcel: ['couriers', 'create'],
+  record_manual_courier_remittance: ['finance', 'update'],
+  record_manual_vendor_ledger: ['finance', 'update'],
+  direct_vendor_payout: ['payouts', 'update'],
+  update_order_courier_meta: ['orders', 'update'],
+  auto_sync_orders_geo: ['orders', 'update'],
+  preview_courier_bulk_csv: ['couriers', 'read'],
 } as const satisfies Record<string, readonly [PermissionModuleKey, PermissionAction]>;
 
 export function canExecuteWorkspaceAction(ctx: ActorSecurityContext | null, operation: string): boolean {
   if (!canAccessAdminWorkspace(ctx) || !ctx || !Object.hasOwn(WORKSPACE_ACTIONS, operation)) return false;
-  if (['create_flash_campaign', 'promote_matured_escrow', 'trigger_sheets_sync', 'run_scheduled_job_now', 'sync_courier_tracking', 'simulate_courier_webhook', 'create_system_backup_snapshot'].includes(operation)) return false;
+  if (['create_flash_campaign', 'promote_matured_escrow', 'run_scheduled_job_now', 'sync_courier_tracking', 'simulate_courier_webhook'].includes(operation)) return false;
   const [module, action] = WORKSPACE_ACTIONS[operation as keyof typeof WORKSPACE_ACTIONS];
   // Catalog editing is cost-bearing; a separate field-safe staff editor remains gated.
-  if (['upsert_product', 'upsert_category', 'delete_product', 'generate_print_slips', 'upsert_blacklist'].includes(operation) && ctx.roleSlug !== 'super_admin') return false;
+  if (['upsert_product', 'upsert_category', 'delete_product', 'generate_print_slips', 'upsert_blacklist', 'record_manual_courier_remittance', 'record_manual_vendor_ledger', 'direct_vendor_payout', 'trigger_sheets_sync', 'create_system_backup_snapshot'].includes(operation) && ctx.roleSlug !== 'super_admin') return false;
   return hasModulePermission(ctx, module, action);
 }

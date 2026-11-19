@@ -79,14 +79,27 @@ export function Phase7PortalPanel({
   >('consignment_lots');
   const [busyAction, setBusyAction] = useState<string | null>(null);
 
-  // 1. Consignment Dispatch Lot Form State
+  // 1. Consignment Dispatch / Admin Stock Intake Form State
   const [selectedLotVariantId, setSelectedLotVariantId] = useState<string>(
     productVariants[0]?.variantId ?? '00000000-0000-4000-8000-000000000201'
   );
   const [dispatchedQty, setDispatchedQty] = useState<string>('12');
+  const [intakeRejectedQty, setIntakeRejectedQty] = useState<string>('0');
+  const [intakeUnitCostBdt, setIntakeUnitCostBdt] = useState<string>(
+    typeof productVariants[0]?.supplierCostPoisha === 'number'
+      ? String(Math.round(productVariants[0].supplierCostPoisha / 100))
+      : '1500'
+  );
+  const [intakeDispatchedAt, setIntakeDispatchedAt] = useState<string>(() =>
+    new Date().toISOString().slice(0, 16)
+  );
+  const [intakeReceivedAt, setIntakeReceivedAt] = useState<string>(() =>
+    new Date().toISOString().slice(0, 16)
+  );
+  const [intakeProofUrl, setIntakeProofUrl] = useState<string>('');
   const [challanRef, setChallanRef] = useState<string>('CH-2026-110');
   const [lotNoteBn, setLotNoteBn] = useState<string>(
-    'নতুন কনসাইনমেন্ট স্টক চালান ওয়্যারহাউসে প্রেরিত।'
+    'নতুন কনসাইনমেন্ট স্টক চালান ওয়্যারহাউসে গৃহীত।'
   );
   const [qcRejectInputByLot, setQcRejectInputByLot] = useState<
     Record<string, string>
@@ -174,23 +187,44 @@ export function Phase7PortalPanel({
     e.preventDefault();
     setBusyAction('submit-lot');
     try {
+      const sentQtyNum = Math.max(1, Number(dispatchedQty) || 1);
+      const rejectedQtyNum = Math.max(0, Math.min(sentQtyNum, Number(intakeRejectedQty) || 0));
+      const unitCostPoisha = Math.round((Number(intakeUnitCostBdt) || 0) * 100);
+
+      const body = isVendor
+        ? {
+            operation: 'submit_consignment_lot',
+            variantId: selectedLotVariantId,
+            dispatchedQty: sentQtyNum,
+            challanRef,
+            noteBn: lotNoteBn,
+          }
+        : {
+            operation: 'record_admin_consignment_intake',
+            variantId: selectedLotVariantId,
+            dispatchedQty: sentQtyNum,
+            qcRejectedQty: rejectedQtyNum,
+            unitSupplierCostPoisha: unitCostPoisha >= 100 ? unitCostPoisha : undefined,
+            challanRef,
+            dispatchedAt: intakeDispatchedAt ? new Date(intakeDispatchedAt).toISOString() : undefined,
+            receivedAt: intakeReceivedAt ? new Date(intakeReceivedAt).toISOString() : undefined,
+            qcProofUrl: intakeProofUrl.trim() || undefined,
+            noteBn: lotNoteBn,
+          };
+
       const res = await fetch('/api/admin/workspace', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          operation: 'submit_consignment_lot',
-          variantId: selectedLotVariantId,
-          dispatchedQty: Math.max(1, Number(dispatchedQty) || 1),
-          challanRef,
-          noteBn: lotNoteBn,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        onNotify(data.errorBn ?? 'চালান জমা দেওয়া যায়নি।', 'error');
+        onNotify(data.errorBn ?? 'স্টক গ্রহণ রেকর্ড করা যায়নি।', 'error');
       } else {
         onNotify(
-          `কনসাইনমেন্ট লট (${data.lot?.lotCode}) সফলভাবে কিউসি কিউতে যোগ হয়েছে!`,
+          isVendor
+            ? `কনসাইনমেন্ট লট (${data.lot?.lotCode}) সফলভাবে কিউসি কিউতে যোগ হয়েছে!`
+            : `স্টক গ্রহণ সম্পন্ন (${data.lot?.lotCode}) — গৃহীত ${data.lot?.qcAcceptedQty} পিস স্টকে যোগ হয়েছে।`,
           'success'
         );
         await onRefreshWorkspace();
@@ -693,32 +727,50 @@ export function Phase7PortalPanel({
         </div>
       </div>
 
-      {/* TAB 1: CONSIGNMENT STOCK DISPATCH LOTS & WAREHOUSE QC QUEUE */}
+      {/* TAB 1: CONSIGNMENT STOCK RECEIVING INTAKE & WAREHOUSE QC HISTORY */}
       {activeSubTab === 'consignment_lots' && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left: Submit New Consignment Dispatch Lot */}
+          {/* Left: Admin Consignment Stock Receiving Intake */}
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-5">
             <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
               <PackagePlus className="h-4 w-4" />
-              <LocalizedText source={"নতুন কনসাইনমেন্ট স্টক চালান (Dispatch Lot) জমা দিন"} area="admin" />{" "}</h3>
+              {isVendor
+                ? 'নতুন কনসাইনমেন্ট স্টক চালান (Dispatch Lot) জমা দিন'
+                : isBn
+                ? 'অ্যাডমিন পণ্য গ্রহণ ও স্টক এন্ট্রি (Stock Receiving Intake)'
+                : 'Admin Stock Receiving & Consignment Intake'}
+            </h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              <LocalizedText source={"ভেন্ডর বা স্টাফ নতুন পণ্যের চালান পাঠালে এখানে এন্ট্রি দিন। ওয়্যারহাউস কিউসি অনুমোদনের সাথে সাথে `stockAvailable` স্বয়ংক্রিয়ভাবে বৃদ্ধি পাবে।"} area="admin" />{" "}</p>
+              {isVendor
+                ? 'চালান জমা দিলে ওয়্যারহাউস কিউসি অনুমোদনের পর স্টক যুক্ত হবে।'
+                : isBn
+                ? 'ভেন্ডর কবে কত পিস পণ্য পাঠিয়েছে এবং অ্যাডমিন কবে রিসিভ করেছে (তারিখ, দাম, পরিমাণ ও প্রমাণসহ) এন্ট্রি দিন। ভেন্ডর প্যানেলের ইতিহাস সাথে সাথে আপডেট হবে।'
+                : 'Record incoming vendor shipments with sent/received dates, quantities, unit price, and proof. Updates live stock and vendor history immediately.'}
+            </p>
 
             <form
               onSubmit={handleSubmitConsignmentLot}
-              className="mt-4 space-y-3.5"
+              className="mt-4 space-y-3"
             >
               <div>
                 <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                  <LocalizedText source={"প্রোডাক্ট ভ্যারিয়েন্ট ও পাবলিক SKU নির্বাচন করুন"} area="admin" />{" "}</label>
+                  {isBn ? 'প্রোডাক্ট ভ্যারিয়েন্ট ও SKU নির্বাচন করুন' : 'Select Product Variant & SKU'}
+                </label>
                 <select
                   value={selectedLotVariantId}
-                  onChange={(e) => setSelectedLotVariantId(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-xs text-[var(--color-ink)]"
+                  onChange={(e) => {
+                    const nextId = e.target.value;
+                    setSelectedLotVariantId(nextId);
+                    const matched = productVariants.find((v) => v.variantId === nextId);
+                    if (typeof matched?.supplierCostPoisha === 'number') {
+                      setIntakeUnitCostBdt(String(Math.round(matched.supplierCostPoisha / 100)));
+                    }
+                  }}
+                  className="mt-1 min-h-[44px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-xs text-[var(--color-ink)]"
                 >
                   {productVariants.map((v) => (
                     <option key={v.variantId} value={v.variantId}>
-                      {v.publicSku} — {localizedField(v, "productNameBn", locale)} ({localizedField(v, "variantTitleBn", locale)}<LocalizedText source={") [স্টক:"} area="admin" />{" "}{v.stockAvailable}]
+                      {v.publicSku} — {localizedField(v, "productNameBn", locale)} ({localizedField(v, "variantTitleBn", locale)}) [{isBn ? 'স্টক:' : 'Stock:'} {v.stockAvailable}]
                     </option>
                   ))}
                 </select>
@@ -727,61 +779,175 @@ export function Phase7PortalPanel({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                    <LocalizedText source={"পাঠানো পণ্যের সংখ্যা (পিস)"} area="admin" />{" "}</label>
+                    {isBn ? 'পাঠানো সংখ্যা (পিস)' : 'Sent Qty (pcs)'}
+                  </label>
                   <input
                     type="number"
                     min={1}
                     value={dispatchedQty}
                     onChange={(e) => setDispatchedQty(e.target.value)}
-                    className="mt-1 h-10 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 font-mono text-xs text-[var(--color-ink)]"
+                    className="mt-1 min-h-[44px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 font-mono text-xs text-[var(--color-ink)]"
+                    required
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                    <LocalizedText source={"চালান বা কুরিয়ার রেফারেন্স নম্বর"} area="admin" />{" "}</label>
-                  <input
-                    type="text"
-                    value={challanRef}
-                    onChange={(e) => setChallanRef(e.target.value)}
-                    className="mt-1 h-10 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 font-mono text-xs text-[var(--color-ink)]"
-                  />
-                </div>
+                {!isVendor ? (
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                      {isBn ? 'বাতিল / রিজেক্টেড (পিস)' : 'Rejected Qty (pcs)'}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={Math.max(0, Number(dispatchedQty) || 0)}
+                      value={intakeRejectedQty}
+                      onChange={(e) => setIntakeRejectedQty(e.target.value)}
+                      className="mt-1 min-h-[44px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 font-mono text-xs text-[var(--color-ink)]"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                      {isBn ? 'চালান / রেফারেন্স নম্বর' : 'Challan Ref'}
+                    </label>
+                    <input
+                      type="text"
+                      value={challanRef}
+                      onChange={(e) => setChallanRef(e.target.value)}
+                      className="mt-1 min-h-[44px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 font-mono text-xs text-[var(--color-ink)]"
+                      required
+                    />
+                  </div>
+                )}
               </div>
+
+              {!isVendor && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                        {isBn ? 'ইউনিট ক্রয়মূল্য (৳)' : 'Unit Price / Cost (৳)'}
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        step="1"
+                        value={intakeUnitCostBdt}
+                        onChange={(e) => setIntakeUnitCostBdt(e.target.value)}
+                        className="mt-1 min-h-[44px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 font-mono text-xs text-[var(--color-ink)]"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                        {isBn ? 'চালান / কুরিয়ার রেফ' : 'Challan / Courier Ref'}
+                      </label>
+                      <input
+                        type="text"
+                        value={challanRef}
+                        onChange={(e) => setChallanRef(e.target.value)}
+                        className="mt-1 min-h-[44px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 font-mono text-xs text-[var(--color-ink)]"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                        {isBn ? 'ভেন্ডর পাঠানোর তারিখ ও সময়' : 'Vendor Sent Date/Time'}
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={intakeDispatchedAt}
+                        onChange={(e) => setIntakeDispatchedAt(e.target.value)}
+                        className="mt-1 min-h-[44px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 font-mono text-[11px] text-[var(--color-ink)]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                        {isBn ? 'অ্যাডমিন রিসিভ তারিখ ও সময়' : 'Admin Received Date/Time'}
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={intakeReceivedAt}
+                        onChange={(e) => setIntakeReceivedAt(e.target.value)}
+                        className="mt-1 min-h-[44px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 font-mono text-[11px] text-[var(--color-ink)]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-[var(--radius-sm)] border border-border bg-surface px-3 py-2 text-[11px] text-muted tabular-nums">
+                    {isBn ? 'গৃহীত হবে:' : 'Accepted:'}{' '}
+                    <strong className="text-ink">
+                      {Math.max(0, (Number(dispatchedQty) || 0) - (Number(intakeRejectedQty) || 0))} {isBn ? 'পিস' : 'pcs'}
+                    </strong>
+                    {' · '}
+                    {isBn ? 'মোট ব্যাচ মূল্য:' : 'Batch value:'}{' '}
+                    <strong className="text-ink">
+                      {formatPoishaToBdt(
+                        Math.max(0, (Number(dispatchedQty) || 0) - (Number(intakeRejectedQty) || 0)) *
+                          Math.round((Number(intakeUnitCostBdt) || 0) * 100)
+                      )}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                      {isBn ? 'রিসিভ প্রমাণ লিংক / চালান ছবি URL (ঐচ্ছিক)' : 'Proof / Challan URL (optional)'}
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={intakeProofUrl}
+                      onChange={(e) => setIntakeProofUrl(e.target.value)}
+                      className="mt-1 min-h-[44px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-xs text-[var(--color-ink)]"
+                    />
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-[var(--color-ink)]">
-                  <LocalizedText source={"চালান নোট / বিবরণ"} area="admin" />{" "}</label>
+                  {isBn ? 'চালান ও রিসিভ নোট' : 'Intake / Receiving Note'}
+                </label>
                 <input
                   type="text"
                   value={lotNoteBn}
                   onChange={(e) => setLotNoteBn(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-xs text-[var(--color-ink)]"
+                  className="mt-1 min-h-[44px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-xs text-[var(--color-ink)]"
+                  required
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={busyAction === 'submit-lot'}
-                className="inline-flex min-h-11 py-2 w-full items-center justify-center gap-2 rounded-md bg-[var(--color-ink)] px-4 text-xs font-bold text-[var(--color-bg)] hover:opacity-90 disabled:opacity-50"
+                className="inline-flex min-h-11 py-2 w-full items-center justify-center gap-2 rounded-md bg-[var(--color-ink)] px-4 text-xs font-bold text-[var(--color-bg)] hover:opacity-90 disabled:opacity-50 cursor-pointer"
               >
                 <PackagePlus className="h-4 w-4" />
                 {busyAction === 'submit-lot'
-                  ? 'চালান জমা হচ্ছে...'
-                  : 'কনসাইনমেন্ট লট কিউতে জমা দিন'}
+                  ? (isBn ? 'সংরক্ষণ হচ্ছে...' : 'Recording...')
+                  : isVendor
+                  ? 'কনসাইনমেন্ট লট কিউতে জমা দিন'
+                  : (isBn ? 'পণ্য গ্রহণ ও স্টকে যোগ করুন' : 'Record Receipt & Add to Stock')}
               </button>
             </form>
           </div>
 
-          {/* Right: Consignment Lot QC Queue */}
+          {/* Right: Consignment Lot History & QC Queue */}
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-5 lg:col-span-7">
             <h3 className="text-sm font-bold text-[var(--color-ink)]">
-              <LocalizedText source={"ওয়্যারহাউস কনসাইনমেন্ট চালান ও কিউসি পরিদর্শন তালিকা ("} area="admin" />{lots.length})
+              <LocalizedText source={"ওয়্যারহাউস কনসাইনমেন্ট চালান ও রিসিভ ইতিহাস ("} area="admin" />{lots.length})
             </h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              <LocalizedText source={"কিউসি অনুমোদন করলে ত্রুটিমুক্ত পিসগুলো সরাসরি মূল প্রোডাক্ট ইনভেন্টরিতে যোগ হবে।"} area="admin" />{" "}</p>
+              <LocalizedText source={"প্রতিটি চালানের পাঠানো ও গ্রহণের তারিখ, পরিমাণ, ইউনিট মূল্য ও স্টক আপডেট ইতিহাস।"} area="admin" />
+            </p>
 
             <div className="mt-4 space-y-3">
-              {lots.map((lot) => (
+              {lots.map((lot) => {
+                const effectiveQty = lot.qcAcceptedQty ?? lot.dispatchedQty;
+                const totalVal = effectiveQty * lot.unitSupplierCostPoisha;
+                return (
                 <div
                   key={lot.lotId}
                   className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
@@ -811,16 +977,28 @@ export function Phase7PortalPanel({
                       </span>
                     </div>
                     <span className="font-mono text-xs font-bold tabular-nums text-[var(--color-ink)]">
-                      <LocalizedText source={"চালান:"} area="admin" />{" "}{lot.dispatchedQty} {" "}<LocalizedText source={"পিস · কস্ট:"} area="admin" />{' '}
-                      {formatPoishaToBdt(lot.unitSupplierCostPoisha)}<LocalizedText source={"/পিস"} area="admin" />{" "}</span>
+                      {lot.dispatchedQty} {isBn ? 'পিস' : 'pcs'} · {formatPoishaToBdt(lot.unitSupplierCostPoisha)}/{isBn ? 'পিস' : 'pc'} · {isBn ? 'মোট' : 'Total'} {formatPoishaToBdt(totalVal)}
+                    </span>
                   </div>
 
                   <p className="mt-1.5 text-xs font-semibold text-[var(--color-ink)]">
                     {localizedField(lot, "productNameBn", locale)} ({localizedField(lot, "variantTitleBn", locale)})
                   </p>
                   <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">
-                    <LocalizedText source={"ভেন্ডর:"} area="admin" />{" "}{localizedField(lot, "vendorNameBn", locale)} ({lot.vendorCode}<LocalizedText source={") · চালান রেফ:"} area="admin" />{' '}
-                    {lot.challanRef} {" "}<LocalizedText source={"· নোট:"} area="admin" />{" "}{localizedField(lot, "noteBn", locale)}
+                    {isBn ? 'ভেন্ডর:' : 'Vendor:'} {localizedField(lot, "vendorNameBn", locale)} ({lot.vendorCode}) · {isBn ? 'চালান রেফ:' : 'Ref:'} {lot.challanRef} · {isBn ? 'নোট:' : 'Note:'} {localizedField(lot, "noteBn", locale)}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-[var(--color-muted)] tabular-nums">
+                    {isBn ? 'পাঠানো:' : 'Sent:'} {new Date(lot.dispatchedAt ?? lot.createdAt).toLocaleString()}
+                    {' · '}
+                    {isBn ? 'রিসিভ:' : 'Received:'} {(lot.receivedAt ?? lot.reviewedAt) ? new Date((lot.receivedAt ?? lot.reviewedAt)!).toLocaleString() : (isBn ? 'অপেক্ষমাণ' : 'Pending')}
+                    {lot.qcProofUrl ? (
+                      <>
+                        {' · '}
+                        <a href={lot.qcProofUrl} target="_blank" rel="noreferrer" className="underline text-[var(--color-ink)]">
+                          {isBn ? 'প্রমাণ দেখুন' : 'View proof'}
+                        </a>
+                      </>
+                    ) : null}
                   </p>
 
                   {lot.status === 'pending_qc' && !isVendor && (
@@ -864,7 +1042,8 @@ export function Phase7PortalPanel({
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

@@ -12,13 +12,21 @@ import type {
   CourierProvider,
   OrderStatus,
 } from '../../types/database.types';
-import type { Poisha } from '../../types/domain';
+import type {
+  CourierBulkExportBundleDTO,
+  CourierFormatKey,
+  Poisha,
+} from '../../types/domain';
 import type { ActorSecurityContext } from '../../types/permissions';
 import {
   createStorefrontOrder,
   readErpState,
   writeErpState,
 } from '../db/repository';
+import {
+  buildCourierBulkExportBundle,
+  computeOrderWeightGrams,
+} from '../courier/bulk-csv-exporter';
 import { getDistrictById, getUpazilasByDistrict } from '../geo/bd-geocode';
 import { normalizeBdPhone } from '../validators';
 import {
@@ -176,6 +184,7 @@ export interface Phase6WorkspaceOverviewDTO {
   vendorScorecards: VendorScorecardRowDTO[];
   backupSnapshots: SystemBackupSnapshotMeta[];
   bookingCsvPreview: string;
+  courierBulkPreview?: CourierBulkExportBundleDTO;
 }
 
 const PHASE6_DATA_DIR = path.join(process.cwd(), '.data');
@@ -784,9 +793,43 @@ export function generateBulkCourierBookingCsv(): string {
     const codBdt = Math.round(ord.codCollectablePoisha / 100);
     const safeName = ord.customerName.replace(/,/g, ' ');
     const safeAddress = ord.streetAddress.replace(/,/g, ' ');
-    return `${ord.orderNo},${safeName},${ord.customerPhone},${ord.districtNameBn},${ord.upazilaNameBn},${safeAddress},${codBdt},${ord.courierProvider},500`;
+    const lines = erp.orderLines.filter((l) => l.orderId === ord.id);
+    const weightGrams = computeOrderWeightGrams(ord, lines, erp.products);
+    return `${ord.orderNo},${safeName},${ord.customerPhone},${ord.districtNameBn},${ord.upazilaNameBn},${safeAddress},${codBdt},${ord.courierProvider},${weightGrams}`;
   });
   return [header, ...rows].join('\n');
+}
+
+/**
+ * Generates Date-Range & Status-Filtered Official Courier Bulk Import CSV
+ * (Pathao 14-Column Official, Steadfast 6-Column, or Bangladesh Post 18-Column Manifest)
+ * with per-row red missing-field flags and optional forceIncludeFlagged toggle.
+ */
+export function generateCourierBulkExport(params?: {
+  format?: CourierFormatKey;
+  fromDate?: string;
+  toDate?: string;
+  statuses?: OrderStatus[];
+  courierFilter?: CourierProvider | 'all';
+  storeNameOverride?: string;
+  forceIncludeFlagged?: boolean;
+  orderNosFilter?: string[];
+}): CourierBulkExportBundleDTO {
+  const erp = readErpState();
+  return buildCourierBulkExportBundle({
+    format: params?.format ?? 'pathao',
+    orders: erp.orders,
+    orderLines: erp.orderLines,
+    products: erp.products,
+    siteSettings: erp.siteSettings,
+    fromDate: params?.fromDate,
+    toDate: params?.toDate,
+    statuses: params?.statuses,
+    courierFilter: params?.courierFilter ?? 'all',
+    storeNameOverride: params?.storeNameOverride,
+    forceIncludeFlagged: params?.forceIncludeFlagged ?? false,
+    orderNosFilter: params?.orderNosFilter,
+  });
 }
 
 /**
@@ -969,7 +1012,7 @@ export function moderateProductReview(
   if (prod) {
     const approvedForProd = erp.reviews.filter((r) => {
       if (r.productId !== prod.productId) return false;
-      const st = store.reviewModerationStatus[r.id]?.status ?? 'approved';
+      const st = store.reviewModerationStatus[r.id]?.status ?? 'pending';
       return st === 'approved';
     });
     prod.reviewCount = approvedForProd.length;
@@ -978,6 +1021,8 @@ export function moderateProductReview(
       prod.ratingAvgBp = Math.round(
         (sumRatings * 100) / approvedForProd.length
       );
+    } else {
+      prod.ratingAvgBp = 0;
     }
     writeErpState(erp);
   }
@@ -1210,5 +1255,12 @@ export function getPhase6WorkspaceOverview(
       : allScorecards,
     backupSnapshots: ctx.roleSlug === 'super_admin' ? store.backupSnapshots : [],
     bookingCsvPreview: isVendor ? '' : generateBulkCourierBookingCsv(),
+    courierBulkPreview: isVendor
+      ? undefined
+      : generateCourierBulkExport({
+          format: 'pathao',
+          statuses: ['confirmed', 'packed'],
+          forceIncludeFlagged: false,
+        }),
   };
 }

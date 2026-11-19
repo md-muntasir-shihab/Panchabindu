@@ -11,9 +11,9 @@
 // Backed by /api/admin/vendors (super admin only; vendors are refused).
 
 import * as React from 'react';
-import { SupportPanel } from '@/components/vendor/support-panel';
 import { KycPanel } from '@/components/vendor/kyc-panel';
 import {
+  Award,
   BadgeCheck,
   Building2,
   CheckCircle2,
@@ -21,6 +21,7 @@ import {
   Cog,
   Eye,
   KeyRound,
+  MessageSquare,
   Percent,
   PlusCircle,
   RefreshCw,
@@ -36,6 +37,7 @@ import { formatPoishaToBdt } from '@/lib/money';
 import { useLocaleStore } from '@/store/use-locale-store';
 import { Badge, Button, Card, EmptyState, Input, Skeleton } from '@/components/ui/primitives';
 import { cn } from '@/lib/utils';
+import type { VendorScorecardRowDTO } from '@/lib/admin/phase6-service';
 import type {
   AdminVendorControlSnapshot,
   AdminVendorRequestDTO,
@@ -43,10 +45,14 @@ import type {
   VendorCapabilityFlags,
 } from '@/lib/vendor/vendor-types';
 
-type SubTab = 'directory' | 'permissions' | 'requests';
+type SubTab = 'directory' | 'permissions' | 'requests' | 'scorecard';
 
 interface VendorControlPanelProps {
   locale?: 'bn' | 'en';
+  initialSubTab?: SubTab;
+  openSupportCount?: number;
+  vendorScorecards?: VendorScorecardRowDTO[];
+  onOpenVendorInbox?: () => void;
   onNotify?: (message: string, tone?: 'success' | 'error') => void;
 }
 
@@ -68,7 +74,14 @@ function parseTaka(value: string): number | null {
   return Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
 }
 
-export function VendorControlPanel({ locale: localeProp, onNotify }: VendorControlPanelProps) {
+export function VendorControlPanel({
+  locale: localeProp,
+  initialSubTab,
+  openSupportCount = 0,
+  vendorScorecards = [],
+  onOpenVendorInbox,
+  onNotify,
+}: VendorControlPanelProps) {
   const storeLocale = useLocaleStore((state) => state.adminLocale);
   const locale = localeProp ?? storeLocale;
   const bn = locale === 'bn';
@@ -79,10 +92,14 @@ export function VendorControlPanel({ locale: localeProp, onNotify }: VendorContr
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [loadError, setLoadError] = React.useState('');
-  const [subTab, setSubTab] = React.useState<SubTab>('directory');
+  const [subTab, setSubTab] = React.useState<SubTab>(initialSubTab ?? 'directory');
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [creating, setCreating] = React.useState(false);
   const [feedback, setFeedback] = React.useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+
+  React.useEffect(() => {
+    if (initialSubTab) setSubTab(initialSubTab);
+  }, [initialSubTab]);
 
   const notify = React.useCallback(
     (message: string, tone: 'success' | 'error' = 'success') => {
@@ -228,7 +245,8 @@ export function VendorControlPanel({ locale: localeProp, onNotify }: VendorContr
           [
             ['directory', t('ডাইরেক্টরি ও শর্তাবলি', 'Directory & terms'), <Building2 key="d" className="h-4 w-4" aria-hidden="true" />],
             ['permissions', t('ভেন্ডর কী পারবে', 'Vendor permissions'), <KeyRound key="k" className="h-4 w-4" aria-hidden="true" />],
-            ['requests', t('অনুরোধ ইনবক্স', 'Request inbox'), <ClipboardCheck key="c" className="h-4 w-4" aria-hidden="true" />],
+            ['requests', t('অনুরোধ ও KYC', 'Requests & KYC'), <ClipboardCheck key="c" className="h-4 w-4" aria-hidden="true" />],
+            ['scorecard', t('SLA স্কোরকার্ড', 'SLA Scorecard'), <Award key="s" className="h-4 w-4" aria-hidden="true" />],
           ] as Array<[SubTab, string, React.ReactNode]>
         ).map(([key, label, icon]) => (
           <button
@@ -289,10 +307,123 @@ export function VendorControlPanel({ locale: localeProp, onNotify }: VendorContr
         />
       )}
 
-      {subTab === 'requests' && <SupportPanel locale={locale} mode="admin" />}
+      {subTab === 'requests' && onOpenVendorInbox && (
+        <div className="rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="space-y-0.5">
+            <p className="font-semibold text-ink">
+              {t('ভেন্ডর সাপোর্ট মেসেজ এখন মেসেজিং ইনবক্সে', 'Vendor support messages live in Messaging')}
+            </p>
+            <p className="text-muted">
+              {openSupportCount > 0
+                ? t(
+                    `বর্তমানে ${openSupportCount}টি খোলা ভেন্ডর টিকিট রয়েছে।`,
+                    `There are currently ${openSupportCount} open vendor support tickets.`
+                  )
+                : t(
+                    'সব ভেন্ডর কথোপকথন ও উত্তর মেসেজিং → ভেন্ডর ইনবক্স থেকে পরিচালনা করুন।',
+                    'Manage all vendor conversations and replies from Messaging → Vendor Inbox.'
+                  )}
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            leftIcon={<MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />}
+            onClick={onOpenVendorInbox}
+          >
+            {t('ভেন্ডর ইনবক্স খুলুন', 'Open Vendor Inbox')}
+          </Button>
+        </div>
+      )}
       {subTab === 'requests' && <KycPanel locale={locale} mode="admin" />}
       {subTab === 'requests' && (
         <RequestsSection snapshot={snapshot} busy={busy} t={t} post={post} />
+      )}
+
+      {subTab === 'scorecard' && (
+        <Card surface="bg" padding="md" className="space-y-3">
+          <div>
+            <h3 className="text-sm font-bold text-ink">
+              {t('ভেন্ডর পারফরম্যান্স ও SLA স্কোরকার্ড', 'Vendor Performance & SLA Scorecard')}
+            </h3>
+            <p className="text-xs text-muted">
+              {t(
+                'বিক্রয়, রিটার্ন হার, ভেন্ডর প্রাপ্য এবং প্ল্যাটফর্ম মার্জিনের লাইভ সারাংশ।',
+                'Live summary of units sold, return rate, vendor payable, and platform margin.'
+              )}
+            </p>
+          </div>
+          {vendorScorecards.length === 0 ? (
+            <EmptyState
+              title={t('কোনো স্কোরকার্ড ডেটা নেই', 'No scorecard data yet')}
+              description={t(
+                'ভেন্ডরের অর্ডার সম্পন্ন হলে SLA স্কোরকার্ড স্বয়ংক্রিয়ভাবে হিসাব হবে।',
+                'SLA scorecards populate automatically as vendor orders are fulfilled.'
+              )}
+            />
+          ) : (
+            <div className="overflow-x-auto border border-border rounded-[var(--radius-md)] bg-surface">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-bg/60 text-muted">
+                    <th className="py-2.5 px-3 font-medium">{t('ভেন্ডর', 'Vendor')}</th>
+                    <th className="py-2.5 px-3 font-medium text-right">{t('পণ্য', 'Products')}</th>
+                    <th className="py-2.5 px-3 font-medium text-right">{t('বিক্রিত ইউনিট', 'Sold')}</th>
+                    <th className="py-2.5 px-3 font-medium text-right">{t('রিটার্ন হার', 'Return %')}</th>
+                    <th className="py-2.5 px-3 font-medium text-right">{t('মোট বিক্রয়', 'Gross Sales')}</th>
+                    <th className="py-2.5 px-3 font-medium text-right">{t('ভেন্ডর প্রাপ্য', 'Payable')}</th>
+                    <th className="py-2.5 px-3 font-medium text-right">{t('প্ল্যাটফর্ম মার্জিন', 'Margin')}</th>
+                    <th className="py-2.5 px-3 font-medium text-right">SLA</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {vendorScorecards.map((row) => (
+                    <tr key={row.vendorId} className="hover:bg-bg/40">
+                      <td className="py-2.5 px-3">
+                        <p className="font-semibold text-ink">{row.businessNameBn}</p>
+                        <p className="text-[11px] font-mono text-muted">
+                          {row.vendorCode} · {row.ownerNameBn}
+                        </p>
+                      </td>
+                      <td className="py-2.5 px-3 text-right tabular-nums text-ink">
+                        {row.activeProductsCount}
+                      </td>
+                      <td className="py-2.5 px-3 text-right tabular-nums text-ink">
+                        {row.totalUnitsSold}
+                      </td>
+                      <td className="py-2.5 px-3 text-right tabular-nums text-ink">
+                        {(row.returnRateBp / 100).toFixed(1)}%
+                      </td>
+                      <td className="py-2.5 px-3 text-right tabular-nums text-ink">
+                        {money(row.grossSalesPoisha)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right tabular-nums text-ink">
+                        {money(row.netVendorPayablePoisha)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right tabular-nums font-medium text-ink">
+                        {money(row.platformMarginGeneratedPoisha)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <Badge
+                          status={
+                            row.slaGrade === 'A+' || row.slaGrade === 'A'
+                              ? 'success'
+                              : row.slaGrade === 'B'
+                                ? 'warning'
+                                : 'danger'
+                          }
+                        >
+                          {row.slaGrade}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       )}
     </div>
   );

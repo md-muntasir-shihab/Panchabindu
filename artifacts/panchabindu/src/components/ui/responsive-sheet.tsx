@@ -16,6 +16,7 @@ export interface ResponsiveSheetProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
+  size?: 'default' | 'wide';
   children: React.ReactNode;
   footer?: React.ReactNode;
 }
@@ -25,12 +26,15 @@ export function ResponsiveSheet({
   onOpenChange,
   title,
   description,
+  size = 'default',
   children,
   footer,
 }: ResponsiveSheetProps) {
   const isMobile = useIsMobile();
   const descriptionId = React.useId();
   const locale = useLocaleStore((s) => s.locale);
+  const desktopWidthClass =
+    size === 'wide' ? 'max-w-[min(54rem,100vw)]' : 'max-w-[min(42rem,100vw)]';
 
   return (
     <Drawer.Root
@@ -39,13 +43,13 @@ export function ResponsiveSheet({
       direction={isMobile ? 'bottom' : 'right'}
     >
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-50 bg-ink/40" />
+        <Drawer.Overlay className="fixed inset-0 z-[70] bg-ink/40" />
         <Drawer.Content
           aria-describedby={description ? descriptionId : undefined}
           className={
             isMobile
-              ? 'fixed inset-x-0 bottom-0 z-50 mt-20 flex max-h-[calc(100dvh-max(1.25rem,var(--safe-top)))] flex-col rounded-t-[var(--radius-lg)] border-t border-border bg-bg text-ink focus:outline-none safe-bottom pl-[var(--safe-left)] pr-[var(--safe-right)]'
-              : 'fixed inset-y-0 right-0 z-50 flex w-full max-w-[min(42rem,100vw)] min-w-0 flex-col border-l border-border bg-bg text-ink focus:outline-none pt-[var(--safe-top)] pb-[var(--safe-bottom)] pr-[var(--safe-right)]'
+              ? 'fixed inset-x-0 bottom-0 z-[70] mt-20 flex max-h-[calc(100dvh-max(1.25rem,var(--safe-top)))] flex-col rounded-t-[var(--radius-lg)] border-t border-border bg-bg text-ink focus:outline-none safe-bottom pl-[var(--safe-left)] pr-[var(--safe-right)]'
+              : `fixed inset-y-0 right-0 z-[70] flex w-full ${desktopWidthClass} min-w-0 flex-col border-l border-border bg-bg text-ink focus:outline-none pt-[var(--safe-top)] pb-[var(--safe-bottom)] pr-[var(--safe-right)]`
           }
         >
           {isMobile && (

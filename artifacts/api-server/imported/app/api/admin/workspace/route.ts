@@ -12,6 +12,7 @@ import { z } from 'zod';
 import {
   adminResetUserSecurity,
   appendImmutableAuditLog,
+  autoSyncOrdersCourierGeo,
   createAdminUserBySuperAdmin,
   createSmartAdminOrder,
   executeOrderGridAction,
@@ -20,12 +21,15 @@ import {
   lookupCustomerHistoryByPhone,
   readAdminStore,
   updateFullOrderDetails,
+  updateOrderCourierMeta,
   upsertCustomRolePermissionMatrix,
   writeAdminStore,
 } from '@/src/lib/admin/phase4a-service';
 import {
+  adminDirectVendorSettlement,
   auditAndCloseVendorContract,
   computeCourier360Summary,
+  computeManualCourierAccountsSummary,
   confirmBatchHandoverShipped,
   createPickupBatchAndManifest,
   generateOrderPrintSlips,
@@ -34,18 +38,22 @@ import {
   processFourWayOrderReturn,
   readPhase4BStore,
   recordCourierRemittanceSettlement,
+  recordManualCourierRemittance,
+  recordManualVendorLedgerEntry,
   requestVendorPayout,
   resolveVendorPayoutRequest,
   submitVendorOnboarding15Q,
   syncAllCourierTrackingStatuses,
   updatePrintTemplateConfig,
   upsertDistrictDeliveryRateOverride,
+  upsertManualCourierParcel,
 } from '@/src/lib/admin/phase4b-service';
 import {
   addExpenseOrAdSpendEntry,
   computeFinancialMoneyMapAndPnl,
   computeProduct360List,
   executeAutomationRuleSimulation,
+  executeGoogleSheetsOneWaySync,
   getMaskedCredentialsList,
   readPhase4CStore,
   receiveConsignmentStockWithQc,
@@ -53,7 +61,6 @@ import {
   runScheduledJobNow,
   saveOrRevokeEncryptedCredential,
   toggleAutomationRuleOrKillSwitch,
-  triggerGoogleSheetsOneWaySync,
   updateMessageTemplateAndTrigger,
   updateSiteBrandingAndThresholds,
   upsertCustomerBlacklist,
@@ -67,6 +74,7 @@ import {
   simulateRoleFieldSanitization,
 } from '@/src/lib/admin/phase5-service';
 import {
+  generateCourierBulkExport,
   generateSystemBackupSnapshot,
   getPhase6WorkspaceOverview,
   moderateProductReview,
@@ -81,6 +89,7 @@ import {
   executeCustomerRefundWorkflow,
   getPhase7WorkspaceOverview,
   promoteMaturedEscrowEntriesBatch,
+  recordAdminConsignmentIntake,
   resolveCustomerRefundRequest,
   resolveLedgerReversalRequest,
   resolveVendorPriceProposal,
@@ -155,12 +164,52 @@ async function handleGET(req: NextRequest) {
     ...snapshot,
     csrfToken: session.csrfToken,
     // Amounts are claims until approved; keep this sensitive ledger view super-admin only.
-    manualPaymentSubmissions: isSuperAdmin ? (erpState.manualBkashSubmissions ?? []).map(({ orderNo, trxId, provider, submittedAmountPoisha, status, submittedAt }) => ({ orderNo, trxId, provider: provider ?? 'bkash', submittedAmountPoisha, status, submittedAt })) : [],
+    manualPaymentSubmissions: isSuperAdmin
+      ? (erpState.manualBkashSubmissions ?? []).map(
+          ({
+            submissionId,
+            orderNo,
+            trxId,
+            provider,
+            senderPhone,
+            senderPhoneMasked,
+            senderPhoneMatchesOrderPhone,
+            submittedAmountPoisha,
+            expectedPayablePoisha,
+            status,
+            submittedByRole,
+            submittedByUsername,
+            submittedAt,
+            reviewedByUsername,
+            reviewedAt,
+            reviewNoteBn,
+          }) => ({
+            submissionId,
+            orderNo,
+            trxId,
+            provider: provider ?? 'bkash',
+            senderPhone,
+            senderPhoneMasked,
+            senderPhoneMatchesOrderPhone,
+            submittedAmountPoisha,
+            expectedPayablePoisha,
+            status,
+            submittedByRole,
+            submittedByUsername,
+            submittedAt,
+            reviewedByUsername,
+            reviewedAt,
+            reviewNoteBn,
+          })
+        )
+      : [],
     emergencyStopActive: isSuperAdmin ? p4c.emergencyStopActive === true : undefined,
     siteSettings: isSuperAdmin ? erpState.siteSettings : sanitizeSiteSettingsForPublic(erpState.siteSettings),
     printConfig: p4b.printConfig,
     districtRates: isVendor ? [] : getAllDistrictDeliveryRatesWithOverrides(),
     courier360: isVendor ? [] : computeCourier360Summary(),
+    manualCourierParcels: isVendor ? [] : (p4b.manualCourierParcels ?? []),
+    courierAccountsSummary: isVendor ? null : computeManualCourierAccountsSummary(),
     pickupBatches: isVendor ? [] : p4b.pickupBatches,
     remittanceLedger: isVendor ? [] : p4b.courierRemittanceLedger,
     courierClaims: isVendor ? [] : p4b.courierClaims,
@@ -204,6 +253,26 @@ async function handleGET(req: NextRequest) {
     // Product Studio and Catalog Management
     categories: erpState.categories,
     vendors: isSuperAdmin ? p4b.vendors : [],
+    vendorSupportTickets: isSuperAdmin
+      ? (p4b.supportTickets ?? [])
+          .filter((ticket) => ticket.status === 'open')
+          .map((ticket) => {
+            const vendor = p4b.vendors.find((v) => v.vendorId === ticket.vendorId);
+            const lastMsg = ticket.messages[ticket.messages.length - 1];
+            return {
+              ticketId: ticket.ticketId,
+              vendorId: ticket.vendorId,
+              vendorCode: vendor?.vendorCode ?? ticket.vendorId,
+              vendorNameBn: vendor?.businessNameBn ?? 'ভেন্ডর',
+              subject: ticket.subject,
+              status: ticket.status,
+              lastSender: lastMsg?.sender ?? 'vendor',
+              messageCount: ticket.messages.length,
+              updatedAt: ticket.updatedAt,
+            };
+          })
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      : [],
     // Customer Inquiries & About/Contact Page Content
     inquiries: isSuperAdmin ? erpState.inquiries ?? [] : [],
     aboutContactPage: erpState.siteSettings.aboutContactPage,
@@ -234,8 +303,28 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
       'add_staff_note',
       'attach_tracking',
     ]),
-    trackingCode: z.string().trim().min(1).optional(),
-    consignmentId: z.string().trim().optional(),
+    trackingCode: z.string().trim().min(1).max(120).optional(),
+    consignmentId: z.string().trim().max(120).optional(),
+    customCourierName: z.string().trim().max(120).nullable().optional(),
+    customTrackingUrl: z
+      .string()
+      .trim()
+      .max(600)
+      .refine(
+        (v) => {
+          if (!v) return true;
+          try {
+            const u = new URL(v);
+            return u.protocol === 'https:' || u.protocol === 'http:';
+          } catch {
+            return false;
+          }
+        },
+        'ট্র্যাকিং লিংক অবশ্যই সঠিক http:// বা https:// URL হতে হবে।'
+      )
+      .nullable()
+      .optional(),
+    advanceToStatus: z.enum(['shipped', 'out_for_delivery']).optional(),
     newStatus: z
       .enum([
         'pending_confirmation',
@@ -279,6 +368,26 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     upazilaId: z.number().int().min(1),
     streetAddress: z.string().trim().min(2),
     landmark: z.string().trim().optional().default(''),
+    postCode: z.string().trim().max(10).optional(),
+    recipientCity: z.string().trim().max(80).optional(),
+    recipientZone: z.string().trim().max(120).optional(),
+    recipientArea: z.string().trim().max(120).optional(),
+    pathaoItemType: z.enum(['parcel', 'document', 'fragile']).optional(),
+    pathaoStoreName: z.string().trim().max(100).optional(),
+    totalWeightGrams: z.number().int().min(50).max(50000).optional(),
+    specialInstruction: z.string().trim().max(500).optional(),
+    bdPostServiceType: z
+      .preprocess((val) => {
+        if (typeof val !== 'string') return val;
+        const norm = val.trim().toLowerCase();
+        if (norm === 'vpp_cod' || norm === 'vpp_parcel') return 'VPP_PARCEL';
+        if (norm === 'gep') return 'GEP';
+        if (norm === 'ems' || norm === 'ems_dak') return 'EMS_DAK';
+        if (norm === 'registered_parcel') return 'REGISTERED_PARCEL';
+        return val.trim().toUpperCase();
+      }, z.enum(['GEP', 'VPP_PARCEL', 'REGISTERED_PARCEL', 'EMS_DAK']))
+      .optional(),
+    bdPostDeclaredValuePoisha: z.number().int().min(0).optional(),
     items: z
       .array(
         z.object({
@@ -310,6 +419,25 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
       'pathao',
       'bd_post',
     ]),
+    customCourierName: z.string().trim().max(120).nullable().optional(),
+    customTrackingUrl: z
+      .string()
+      .trim()
+      .max(600)
+      .refine(
+        (v) => {
+          if (!v) return true;
+          try {
+            const u = new URL(v);
+            return u.protocol === 'https:' || u.protocol === 'http:';
+          } catch {
+            return false;
+          }
+        },
+        'ট্র্যাকিং লিংক অবশ্যই সঠিক http:// বা https:// URL হতে হবে।'
+      )
+      .nullable()
+      .optional(),
     consignmentId: z.string().nullable().optional(),
     trackingCode: z.string().nullable().optional(),
     status: z.enum([
@@ -501,6 +629,10 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     rejectionReasonBn: z.string().optional(),
     paymentTrxId: z.string().optional(),
     proofUrl: z.string().optional(),
+    feePoisha: z.number().int().min(0).optional(),
+    senderAccountNo: z.string().optional(),
+    noteBn: z.string().optional(),
+    paidAt: z.string().optional(),
   }),
   z.object({
     operation: z.literal('submit_vendor_onboarding_15q'),
@@ -648,6 +780,17 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
       minPayoutRequestPoisha: z.number().int().min(100).optional(),
       maintenanceMode: z.boolean().optional(),
       maintenanceMessageBn: z.string().optional(),
+      pathaoDefaultStoreName: z.string().trim().max(100).optional(),
+      pathaoDefaultItemType: z
+        .enum(['parcel', 'document', 'fragile'])
+        .optional(),
+      courierSenderNameBn: z.string().trim().max(120).optional(),
+      courierSenderPhone: z.string().trim().max(30).optional(),
+      courierSenderAddressBn: z.string().trim().max(300).optional(),
+      courierSenderPostCode: z.string().trim().max(10).optional(),
+      defaultBdPostServiceType: z
+        .enum(['GEP', 'VPP_PARCEL', 'REGISTERED_PARCEL', 'EMS_DAK'])
+        .optional(),
     }),
   }),
   z.object({
@@ -733,6 +876,18 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     decision: z.enum(['approve', 'reject']),
     qcRejectedQty: z.number().int().min(0).optional(),
     noteBn: z.string().optional(),
+  }),
+  z.object({
+    operation: z.literal('record_admin_consignment_intake'),
+    variantId: z.string().min(1),
+    dispatchedQty: z.number().int().min(1),
+    qcRejectedQty: z.number().int().min(0).optional(),
+    unitSupplierCostPoisha: z.number().int().min(100).optional(),
+    challanRef: z.string().min(1),
+    dispatchedAt: z.string().optional(),
+    receivedAt: z.string().optional(),
+    qcProofUrl: z.string().optional(),
+    noteBn: z.string().min(1),
   }),
   z.object({
     operation: z.literal('submit_price_proposal'),
@@ -914,6 +1069,7 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     trxId: z.string().optional(),
     decision: z.enum(['under_review', 'approved', 'rejected', 'reversed']),
     reviewNoteBn: z.string().optional(),
+    selfApprovalOverrideReasonBn: z.string().optional(),
   }),
   z.object({
     operation: z.literal('input_manual_mfs'),
@@ -937,6 +1093,200 @@ const workspacePostSchema = z.discriminatedUnion('operation', [
     decision: z.enum(['approve', 'reject']),
     emergencySelfApprovalOverride: z.boolean().optional(),
     emergencyOverrideReasonBn: z.string().optional(),
+  }),
+  z.object({
+    operation: z.literal('upsert_manual_courier_parcel'),
+    parcelId: z.string().trim().max(80).optional(),
+    isStandalone: z.boolean(),
+    orderNo: z.string().trim().max(80).nullable().optional(),
+    courierProvider: z.enum(['pathao', 'steadfast', 'bd_post', 'manual']),
+    deliveryMethodBn: z.string().trim().min(2).max(120),
+    consignmentId: z.string().trim().max(80).optional(),
+    trackingCode: z.string().trim().max(80).optional(),
+    districtId: z.number().int().min(1).max(64).nullable().optional(),
+    districtNameBn: z.string().trim().max(80).optional(),
+    upazilaId: z.number().int().min(1).nullable().optional(),
+    upazilaNameBn: z.string().trim().max(80).optional(),
+    destinationAddressBn: z.string().trim().max(400),
+    dispatchedAt: z.string().trim().max(64).optional(),
+    deliveredAt: z.string().trim().max(64).nullable().optional(),
+    returnedAt: z.string().trim().max(64).nullable().optional(),
+    collectableCodPoisha: z.number().int().min(0).max(100_000_000),
+    courierChargePoisha: z.number().int().min(0).max(10_000_000),
+    riderName: z.string().trim().max(100).nullable().optional(),
+    riderPhone: z.string().trim().max(40).nullable().optional(),
+    status: z.enum(['dispatched', 'in_transit', 'delivered', 'returned', 'settled']),
+    proofRef: z.string().trim().max(120).nullable().optional(),
+    proofUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .refine(
+        (v) => !v || v.startsWith('https://') || v.startsWith('http://') || v.startsWith('/'),
+        'প্রুফ লিংক অবশ্যই https://, http:// অথবা / হতে হবে।'
+      )
+      .nullable()
+      .optional(),
+    noteBn: z.string().trim().max(600).optional(),
+    vendorIds: z.array(z.string().min(1)).optional(),
+  }),
+  z.object({
+    operation: z.literal('record_manual_courier_remittance'),
+    isStandalone: z.boolean(),
+    parcelId: z.string().trim().max(80).nullable().optional(),
+    orderNo: z.string().trim().max(80).nullable().optional(),
+    courierProvider: z.enum(['pathao', 'steadfast', 'bd_post', 'manual']),
+    consignmentId: z.string().trim().max(80).optional(),
+    settlementRef: z.string().trim().min(2).max(100),
+    paymentChannelBn: z.string().trim().min(2).max(100),
+    expectedCodPoisha: z.number().int().min(0).max(100_000_000),
+    courierFeeDeductedPoisha: z.number().int().min(0).max(10_000_000),
+    adjustmentPoisha: z.number().int().min(0).max(100_000_000).optional(),
+    remittedAmountPoisha: z.number().int().min(0).max(100_000_000),
+    settledAt: z.string().trim().max(64).optional(),
+    proofUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .refine(
+        (v) => !v || v.startsWith('https://') || v.startsWith('http://') || v.startsWith('/'),
+        'প্রুফ লিংক অবশ্যই https://, http:// অথবা / হতে হবে।'
+      )
+      .nullable()
+      .optional(),
+    noteBn: z.string().trim().max(600).optional(),
+  }),
+  z.object({
+    operation: z.literal('record_manual_vendor_ledger'),
+    vendorId: z.string().min(1).max(64),
+    orderNo: z.string().trim().max(80).nullable().optional(),
+    escrowBucket: z.enum(['pending', 'locked', 'available']),
+    direction: z.enum(['credit', 'debit']),
+    amountPoisha: z.number().int().min(1).max(100_000_000),
+    descriptionBn: z.string().trim().min(3).max(400),
+    referenceNo: z.string().trim().max(100).nullable().optional(),
+    paymentMethodBn: z.string().trim().max(100).nullable().optional(),
+    proofUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .refine(
+        (v) => !v || v.startsWith('https://') || v.startsWith('http://') || v.startsWith('/'),
+        'প্রুফ লিংক অবশ্যই https://, http:// অথবা / হতে হবে।'
+      )
+      .nullable()
+      .optional(),
+    noteBn: z.string().trim().max(600).nullable().optional(),
+    eventTimestamp: z.string().trim().max(64).optional(),
+    holdDays: z.number().int().min(0).max(60).optional(),
+  }),
+  z.object({
+    operation: z.literal('direct_vendor_payout'),
+    vendorId: z.string().min(1).max(64),
+    requestedAmountPoisha: z.number().int().min(100).max(100_000_000),
+    feePoisha: z.number().int().min(0).max(10_000_000).optional(),
+    payoutMethodBn: z.string().trim().min(2).max(100),
+    payoutAccountNo: z.string().trim().min(2).max(80),
+    senderAccountNo: z.string().trim().max(80).nullable().optional(),
+    paymentTrxId: z.string().trim().min(3).max(100),
+    proofUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .refine(
+        (v) => !v || v.startsWith('https://') || v.startsWith('http://') || v.startsWith('/'),
+        'প্রুফ লিংক অবশ্যই https://, http:// অথবা / হতে হবে।'
+      )
+      .nullable()
+      .optional(),
+    noteBn: z.string().trim().max(600).nullable().optional(),
+    paidAt: z.string().trim().max(64).optional(),
+    creditAndSettleIfInsufficient: z.boolean().optional(),
+  }),
+  z.object({
+    operation: z.literal('update_order_courier_meta'),
+    orderNo: z.string().min(1),
+    customerName: z.string().trim().min(2).max(120).optional(),
+    customerPhone: z.string().trim().min(11).max(20).optional(),
+    districtId: z.number().int().min(1).max(64).optional(),
+    upazilaId: z.number().int().min(1).optional(),
+    streetAddress: z.string().trim().min(2).max(350).optional(),
+    landmark: z.string().trim().max(160).optional(),
+    postCode: z.string().trim().max(10).optional(),
+    recipientCity: z.string().trim().max(80).optional(),
+    recipientZone: z.string().trim().max(120).optional(),
+    recipientArea: z.string().trim().max(120).optional(),
+    pathaoItemType: z.enum(['parcel', 'document', 'fragile']).optional(),
+    pathaoStoreName: z.string().trim().max(100).optional(),
+    totalWeightGrams: z.number().int().min(50).max(50000).optional(),
+    specialInstruction: z.string().trim().max(500).optional(),
+    bdPostServiceType: z
+      .preprocess((val) => {
+        if (typeof val !== 'string') return val;
+        const norm = val.trim().toLowerCase();
+        if (norm === 'vpp_cod' || norm === 'vpp_parcel') return 'VPP_PARCEL';
+        if (norm === 'gep') return 'GEP';
+        if (norm === 'ems' || norm === 'ems_dak') return 'EMS_DAK';
+        if (norm === 'registered_parcel') return 'REGISTERED_PARCEL';
+        return val.trim().toUpperCase();
+      }, z.enum(['GEP', 'VPP_PARCEL', 'REGISTERED_PARCEL', 'EMS_DAK']))
+      .optional(),
+    bdPostDeclaredValuePoisha: z.number().int().min(0).optional(),
+    courierProvider: z
+      .enum(['pathao', 'steadfast', 'bd_post', 'manual'])
+      .optional(),
+    customCourierName: z.string().trim().max(120).nullable().optional(),
+    customTrackingUrl: z
+      .string()
+      .trim()
+      .max(600)
+      .refine(
+        (v) => {
+          if (!v) return true;
+          try {
+            const u = new URL(v);
+            return u.protocol === 'https:' || u.protocol === 'http:';
+          } catch {
+            return false;
+          }
+        },
+        'ট্র্যাকিং লিংক অবশ্যই সঠিক http:// বা https:// URL হতে হবে।'
+      )
+      .nullable()
+      .optional(),
+    autoSyncGeo: z.boolean().optional(),
+  }),
+  z.object({
+    operation: z.literal('auto_sync_orders_geo'),
+    orderNos: z.array(z.string().min(1)).optional(),
+    overwriteExisting: z.boolean().optional(),
+  }),
+  z.object({
+    operation: z.literal('preview_courier_bulk_csv'),
+    format: z.enum(['pathao', 'steadfast', 'bd_post']).optional(),
+    fromDate: z.string().trim().max(32).optional(),
+    toDate: z.string().trim().max(32).optional(),
+    statuses: z
+      .array(
+        z.enum([
+          'pending_confirmation',
+          'confirmed',
+          'packed',
+          'shipped',
+          'out_for_delivery',
+          'delivered',
+          'return_initiated',
+          'returned',
+          'cancelled',
+        ])
+      )
+      .optional(),
+    courierFilter: z
+      .enum(['all', 'pathao', 'steadfast', 'bd_post', 'manual'])
+      .optional(),
+    storeNameOverride: z.string().trim().max(100).optional(),
+    forceIncludeFlagged: z.boolean().optional(),
+    orderNosFilter: z.array(z.string().min(1)).optional(),
   }),
 ]);
 
@@ -1048,6 +1398,30 @@ async function handlePOST(req: NextRequest) {
     if (payload.operation === 'update_full_order') {
       const res = updateFullOrderDetails(ctx, payload);
       return NextResponse.json(res, { status: res.success ? 200 : 400 });
+    }
+
+    if (payload.operation === 'update_order_courier_meta') {
+      const res = updateOrderCourierMeta(ctx, payload);
+      return NextResponse.json(res, { status: res.success ? 200 : 400 });
+    }
+
+    if (payload.operation === 'auto_sync_orders_geo') {
+      const res = autoSyncOrdersCourierGeo(ctx, payload);
+      return NextResponse.json(res, { status: res.success ? 200 : 400 });
+    }
+
+    if (payload.operation === 'preview_courier_bulk_csv') {
+      const bundle = generateCourierBulkExport({
+        format: payload.format,
+        fromDate: payload.fromDate,
+        toDate: payload.toDate,
+        statuses: payload.statuses,
+        courierFilter: payload.courierFilter,
+        storeNameOverride: payload.storeNameOverride,
+        forceIncludeFlagged: payload.forceIncludeFlagged,
+        orderNosFilter: payload.orderNosFilter,
+      });
+      return NextResponse.json({ success: true, bundle });
     }
 
     if (payload.operation === 'record_dispatched_message') {
@@ -1255,7 +1629,7 @@ async function handlePOST(req: NextRequest) {
     }
 
     if (payload.operation === 'trigger_sheets_sync') {
-      const res = triggerGoogleSheetsOneWaySync(ctx, payload.mode);
+      const res = await executeGoogleSheetsOneWaySync(ctx, payload.mode);
       return NextResponse.json(res, { status: res.success ? 200 : 400 });
     }
 
@@ -1371,6 +1745,11 @@ async function handlePOST(req: NextRequest) {
     if (payload.operation === 'review_consignment_lot') {
       const res = reviewConsignmentDispatchLot(ctx, payload);
       return NextResponse.json(res, { status: res.success ? 200 : 400 });
+    }
+
+    if (payload.operation === 'record_admin_consignment_intake') {
+      const res = recordAdminConsignmentIntake(ctx, payload);
+      return NextResponse.json(res, { status: res.success ? 201 : 400 });
     }
 
     if (payload.operation === 'submit_price_proposal') {
@@ -1546,11 +1925,19 @@ async function handlePOST(req: NextRequest) {
           { status: 403 }
         );
       }
+      const overrideReason = payload.selfApprovalOverrideReasonBn?.trim();
+      const selfApprovalOverride =
+        Boolean(overrideReason && overrideReason.length >= 5) &&
+        ctx.roleSlug === 'super_admin';
       const res = reviewManualBkashSubmission(ctx, {
         orderNo: payload.orderNo,
         trxId: payload.trxId,
         decision: payload.decision,
         reviewNoteBn: payload.reviewNoteBn,
+        selfApprovalOverride,
+        selfApprovalOverrideReasonBn: selfApprovalOverride
+          ? overrideReason
+          : undefined,
       });
       if (res.success && res.submission) {
         const adminStore = readAdminStore();
@@ -1566,11 +1953,19 @@ async function handlePOST(req: NextRequest) {
             submissionId: res.submission.submissionId,
             trxId: res.submission.trxId,
             decision: payload.decision,
+            selfApprovalOverride,
           },
         });
         writeAdminStore(adminStore);
       }
-      return NextResponse.json(res, { status: res.success ? 200 : 400 });
+      return NextResponse.json(
+        {
+          ...res,
+          makerCheckerBlocked:
+            !res.success && /মেকার-চেকার/.test(res.errorBn ?? ''),
+        },
+        { status: res.success ? 200 : 400 }
+      );
     }
 
     if (payload.operation === 'input_manual_mfs') {
@@ -1691,6 +2086,38 @@ async function handlePOST(req: NextRequest) {
     if (payload.operation === 'resolve_customer_refund') {
       const res = resolveCustomerRefundRequest(ctx, payload);
       return NextResponse.json(res, { status: res.success ? 200 : 400 });
+    }
+
+    if (payload.operation === 'upsert_manual_courier_parcel') {
+      const res = upsertManualCourierParcel(ctx, payload);
+      return NextResponse.json(
+        {
+          ...res,
+          courierAccountsSummary: res.success ? computeManualCourierAccountsSummary() : undefined,
+        },
+        { status: res.success ? 200 : 400 }
+      );
+    }
+
+    if (payload.operation === 'record_manual_courier_remittance') {
+      const res = recordManualCourierRemittance(ctx, payload);
+      return NextResponse.json(
+        {
+          ...res,
+          courierAccountsSummary: res.success ? computeManualCourierAccountsSummary() : undefined,
+        },
+        { status: res.success ? 201 : 400 }
+      );
+    }
+
+    if (payload.operation === 'record_manual_vendor_ledger') {
+      const res = recordManualVendorLedgerEntry(ctx, payload);
+      return NextResponse.json(res, { status: res.success ? 201 : 400 });
+    }
+
+    if (payload.operation === 'direct_vendor_payout') {
+      const res = adminDirectVendorSettlement(ctx, payload);
+      return NextResponse.json(res, { status: res.success ? 201 : 400 });
     }
 
     return NextResponse.json(

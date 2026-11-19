@@ -60,6 +60,9 @@ export interface ConsignmentDispatchLotRecord {
   challanRef: string;
   status: ConsignmentLotStatus;
   noteBn: string;
+  qcProofUrl?: string | null;
+  dispatchedAt?: string;
+  receivedAt?: string | null;
   reviewedByUsername: string | null;
   createdAt: string;
   reviewedAt: string | null;

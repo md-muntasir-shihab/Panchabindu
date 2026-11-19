@@ -24,16 +24,17 @@
   --color-danger: #DC2626;
   --color-info: #2563EB; /* Overridable by Admin Branding Settings */
 
-  /* 2b. Botanical Heritage Calm — Storefront Design Tokens */
-  --store-bg: #FAF9F5;
-  --store-surface: #F2EFE9;
+  /* 2b. Botanical Editorial — Storefront Design Tokens (Variation 2) */
+  --store-bg: #FDFCF8;
+  --store-surface: #F9F8F3;
   --store-card: #FFFFFF;
-  --store-text: #162119;
-  --store-muted: #5A655D;
+  --store-text: #1B4332;
+  --store-muted: #52685D;
   --store-accent: #1B4332;
   --store-accent-hover: #143325;
-  --store-accent-soft: #E8F0EC;
-  --store-border: #E4E2DC;
+  --store-accent-soft: #EEF2ED;
+  --store-terracotta: #A84A28;
+  --store-border: #E5E2D9;
   --store-success: #15803D;
   --store-warning: #B45309;
   --store-danger: #B91C1C;
@@ -49,28 +50,32 @@
   --space-16: 64px;
 
   /* 4. Border Radius Lock */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
 
   /* 5. Typography Scale & Bengali Line-Height Lock (>= 1.6) */
+  --font-display: var(--font-display-serif), var(--font-noto-bengali), Georgia, serif;
   --font-sans: var(--font-inter), var(--font-noto-bengali), system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --lh-bengali: 1.65;
 }
 
-/* Storefront Scope — Botanical Heritage Calm Theme */
+/* Storefront Scope — Botanical Editorial Theme (Variation 2, Soft-Rounded 8px-12px) */
 .storefront-theme {
-  --color-bg: #FAF9F5;
-  --color-surface: #F2EFE9;
-  --color-border: #E4E2DC;
-  --color-ink: #162119;
+  --color-bg: #FDFCF8;
+  --color-surface: #F9F8F3;
+  --color-border: #E5E2D9;
+  --color-ink: #1B4332;
   --color-primary: #1B4332;
-  --color-muted: #5A655D;
+  --color-muted: #52685D;
   --color-info: #1B4332;
   --color-success: #15803D;
   --color-warning: #B45309;
   --color-danger: #B91C1C;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
   background-color: var(--store-bg);
   color: var(--store-text);
 }
@@ -98,7 +103,7 @@ body {
   line-height: var(--lh-bengali);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Numeric Price & Ledger Alignment Lock */
@@ -114,6 +119,10 @@ body {
 
 .safe-bottom {
   padding-bottom: max(16px, var(--safe-bottom));
+}
+
+.safe-bottom-bar {
+  padding-bottom: var(--safe-bottom);
 }
 
 /* ==========================================================================

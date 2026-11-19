@@ -75,12 +75,22 @@ export interface CustomerSafeSlipPartDTO {
   senderBrandNameBn: string;
   senderBrandNameEn: string;
   senderSupportPhone: string;
+  senderAddressBn?: string;
+  senderPostCode?: string;
   customerName: string;
   customerPhone: string;
   districtNameBn: string;
   upazilaNameBn: string;
   streetAddress: string;
   landmark: string;
+  postCode?: string;
+  recipientCity?: string;
+  recipientZone?: string;
+  recipientArea?: string;
+  totalWeightGrams?: number;
+  specialInstruction?: string;
+  bdPostServiceType?: string;
+  bdPostDeclaredValuePoisha?: Poisha;
   courierProvider: CourierProvider;
   consignmentId: string;
   trackingCode: string;
@@ -155,6 +165,12 @@ export interface InternalSlipPart3DTO {
   customerName?: string;
   customerPhone?: string;
   customerFullAddressBn?: string;
+  postCode?: string;
+  recipientCity?: string;
+  recipientZone?: string;
+  totalWeightGrams?: number;
+  courierReadinessReady?: boolean;
+  courierMissingSummaryBn?: string;
   printCount: number;
   isReprintWarning: boolean;
   escrowHoldDays: number;
@@ -224,6 +240,75 @@ export interface PickupBatchRecord {
   handedOverAt: string | null;
 }
 
+export type ManualParcelStatus =
+  | 'dispatched'
+  | 'in_transit'
+  | 'delivered'
+  | 'returned'
+  | 'settled';
+
+export interface ManualCourierParcelRecord {
+  parcelId: string;
+  isStandalone: boolean;
+  orderNo: string | null;
+  courierProvider: CourierProvider;
+  deliveryMethodBn: string;
+  consignmentId: string;
+  trackingCode: string;
+  districtId: number | null;
+  districtNameBn: string;
+  upazilaId: number | null;
+  upazilaNameBn: string;
+  destinationAddressBn: string;
+  dispatchedAt: string;
+  deliveredAt: string | null;
+  returnedAt: string | null;
+  collectableCodPoisha: Poisha;
+  courierChargePoisha: Poisha;
+  riderName: string | null;
+  riderPhone: string | null;
+  status: ManualParcelStatus;
+  proofRef: string | null;
+  proofUrl: string | null;
+  noteBn: string;
+  vendorIds: string[];
+  recordedByUsername: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ManualCourierProviderAccountSummary {
+  provider: CourierProvider;
+  providerLabelBn: string;
+  providerLabelEn: string;
+  totalParcelsSent: number;
+  inTransitParcels: number;
+  deliveredParcels: number;
+  returnedParcels: number;
+  settledParcels: number;
+  inTransitCodPoisha: Poisha;
+  deliveredCollectableCodPoisha: Poisha;
+  totalCourierFeesPoisha: Poisha;
+  totalAdjustmentsPoisha: Poisha;
+  totalReceivedPoisha: Poisha;
+  netReceivablePoisha: Poisha;
+  shortPaymentTotalPoisha: Poisha;
+  openClaimsPoisha: Poisha;
+}
+
+export interface ManualCourierAccountsSummary {
+  providers: ManualCourierProviderAccountSummary[];
+  totals: {
+    totalParcelsSent: number;
+    inTransitCodPoisha: Poisha;
+    deliveredCollectableCodPoisha: Poisha;
+    totalCourierFeesPoisha: Poisha;
+    totalAdjustmentsPoisha: Poisha;
+    totalReceivedPoisha: Poisha;
+    netReceivablePoisha: Poisha;
+  };
+}
+
 export interface CourierRemittanceLedgerRecord {
   id: string;
   settlementRef: string;
@@ -237,6 +322,13 @@ export interface CourierRemittanceLedgerRecord {
   isShortPaymentFlagged: boolean;
   recordedByUsername: string;
   createdAt: string;
+  parcelId?: string | null;
+  isStandalone?: boolean;
+  adjustmentPoisha?: Poisha;
+  paymentChannelBn?: string;
+  settledAt?: string;
+  proofUrl?: string | null;
+  noteBn?: string;
 }
 
 export interface CourierClaimRecord {
@@ -274,6 +366,11 @@ export interface ImmutableVendorLedgerRecord extends LedgerCalculationEntry {
   descriptionBn: string;
   recordedByUsername: string;
   createdAt: string;
+  referenceNo?: string | null;
+  paymentMethodBn?: string | null;
+  proofUrl?: string | null;
+  noteBn?: string | null;
+  eventTimestamp?: string;
 }
 
 export interface VendorPayoutRequestRecord {
@@ -292,6 +389,11 @@ export interface VendorPayoutRequestRecord {
   requestedByUsername: string;
   requestedAt: string;
   resolvedAt: string | null;
+  feePoisha?: Poisha;
+  netPaidPoisha?: Poisha;
+  senderAccountNo?: string | null;
+  noteBn?: string | null;
+  entryType?: 'vendor_request' | 'admin_created' | 'direct_settlement';
 }
 
 export interface ReturnResolutionRecord {
@@ -343,6 +445,7 @@ interface Phase4BPersistentStore {
   vendorLedger: ImmutableVendorLedgerRecord[];
   payoutRequests: VendorPayoutRequestRecord[];
   returnResolutions: ReturnResolutionRecord[];
+  manualCourierParcels?: ManualCourierParcelRecord[];
   printCountsByOrderNo?: Record<string, number>;
 }
 

@@ -24,6 +24,7 @@ import {
 } from '../admin/phase4b-service';
 import {
   computeVendorPerformanceScorecards,
+  readPhase6Store,
   type VendorScorecardRowDTO,
 } from '../admin/phase6-service';
 import {
@@ -71,6 +72,7 @@ export interface VendorProfileDTO {
   joinedAt: string;
   onboardingAnsweredCount: number;
   onboardingTotalQuestions: number;
+  onboardingAnswers: Array<{ key: string; questionBn: string; answer: string }>;
   /** Admin note explaining a disabled capability, shown verbatim to the vendor. */
   restrictionNoteBn: string | null;
 }
@@ -132,6 +134,11 @@ export interface VendorOrderDTO {
   status: string;
   paymentStatus: string;
   deliveryMethod: string;
+  courierProvider: string | null;
+  consignmentId: string | null;
+  trackingCode: string | null;
+  dispatchedAt: string | null;
+  deliveredAt: string | null;
   districtNameBn: string;
   upazilaNameBn: string;
   createdAt: string;
@@ -148,6 +155,10 @@ export interface VendorLedgerEntryDTO {
   amountPoisha: Poisha;
   orderNo: string | null;
   descriptionBn: string;
+  referenceNo: string | null;
+  paymentMethodBn: string | null;
+  proofUrl: string | null;
+  noteBn: string | null;
   createdAt: string;
   maturesAt: string | null;
 }
@@ -155,11 +166,16 @@ export interface VendorLedgerEntryDTO {
 export interface VendorPayoutDTO {
   payoutId: string;
   requestedAmountPoisha: Poisha;
+  feePoisha: Poisha;
+  netPaidPoisha: Poisha;
   payoutMethodBn: string;
   payoutAccountMasked: string;
   status: string;
   rejectionReasonBn: string | null;
   paymentTrxId: string | null;
+  proofUrl: string | null;
+  noteBn: string | null;
+  entryType: string | null;
   requestedAt: string;
   resolvedAt: string | null;
 }
@@ -175,11 +191,27 @@ export interface VendorLotDTO {
   qcRejectedQty: number | null;
   /** The vendor's own declared unit cost on that challan. */
   unitSupplierCostPoisha: Poisha;
+  totalValuePoisha: Poisha;
   challanRef: string;
   status: string;
   noteBn: string;
+  qcProofUrl: string | null;
+  dispatchedAt: string;
+  receivedAt: string | null;
   createdAt: string;
   reviewedAt: string | null;
+}
+
+export interface VendorApprovedReviewDTO {
+  reviewId: string;
+  productId: string;
+  productNameBn: string;
+  productNameEn: string;
+  reviewerLabel: string;
+  rating: number;
+  comment: string;
+  isVerifiedPurchase: boolean;
+  createdAt: string;
 }
 
 export interface VendorProposalDTO {
@@ -226,6 +258,8 @@ export interface VendorCountersDTO {
   pendingProposals: number;
   pendingPayouts: number;
   openOrders: number;
+  openSupportTickets: number;
+  approvedReviews: number;
 }
 
 export interface VendorEscrowSummaryDTO {
@@ -235,6 +269,9 @@ export interface VendorEscrowSummaryDTO {
   payoutHoldPoisha: Poisha;
   clawbackDebtPoisha: Poisha;
   withdrawablePoisha: Poisha;
+  totalEarnedPoisha: Poisha;
+  totalPaidPoisha: Poisha;
+  totalOwedPoisha: Poisha;
 }
 
 export interface VendorWorkspaceDTO {
@@ -249,6 +286,7 @@ export interface VendorWorkspaceDTO {
   payouts: VendorPayoutDTO[];
   lots: VendorLotDTO[];
   proposals: VendorProposalDTO[];
+  approvedReviews: VendorApprovedReviewDTO[];
   scorecard: VendorScorecardDTO | null;
   selfServiceRequests: VendorRequestDTO[];
   categories: Array<{ id: string; nameBn: string; nameEn: string }>;
@@ -281,6 +319,14 @@ function maskAccount(account: string): string {
   const clean = account.trim();
   if (clean.length <= 4) return '••••';
   return `${'•'.repeat(Math.max(2, clean.length - 4))}${clean.slice(-4)}`;
+}
+
+function maskReviewerName(name: string): string {
+  const clean = name.trim();
+  if (!clean) return 'ক্রেতা';
+  const chars = Array.from(clean);
+  if (chars.length <= 2) return `${chars[0]}•••`;
+  return `${chars.slice(0, 2).join('')}•••`;
 }
 
 const OPEN_ORDER_STATUSES = ['pending_confirmation', 'confirmed', 'packed', 'shipped', 'out_for_delivery'];
@@ -428,24 +474,64 @@ export function getVendorWorkspace(actor: ActorSecurityContext): VendorWorkspace
   const profile = requireOwnProfile(actor);
   const erp = readErpState();
   const p4b = readPhase4BStore();
+  const p6 = readPhase6Store();
   const p7 = readPhase7Store();
 
   const ownProducts = erp.products.filter((product) => product.vendorId === profile.vendorId);
+  const ownProductMap = new Map(ownProducts.map((product) => [product.productId, product]));
   const ownLines = erp.orderLines.filter((line) => line.vendorId === profile.vendorId);
   const ownOrderIds = new Set(ownLines.map((line) => line.orderId));
+
+  const approvedReviews: VendorApprovedReviewDTO[] = erp.reviews
+    .filter((rev) => {
+      if (!ownProductMap.has(rev.productId)) return false;
+      return p6.reviewModerationStatus?.[rev.id]?.status === 'approved';
+    })
+    .map((rev) => {
+      const prod = ownProductMap.get(rev.productId)!;
+      return {
+        reviewId: rev.id,
+        productId: rev.productId,
+        productNameBn: prod.nameBn,
+        productNameEn: prod.nameEn,
+        reviewerLabel: maskReviewerName(rev.customerName),
+        rating: rev.rating,
+        comment: rev.comment,
+        isVerifiedPurchase: rev.isVerifiedPurchase,
+        createdAt: rev.createdAt,
+      };
+    })
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const parcelsByOrder = new Map(
+    (p4b.manualCourierParcels ?? [])
+      .filter((p) => !p.isStandalone && p.orderNo)
+      .map((p) => [p.orderNo!.trim().toUpperCase(), p])
+  );
+
+  const escrowEntries = p4b.vendorLedger.filter((entry) => entry.vendorId === profile.vendorId);
 
   const orders: VendorOrderDTO[] = erp.orders
     .filter((order) => ownOrderIds.has(order.id))
     .map((order) => {
       const lines = ownLines.filter((line) => line.orderId === order.id);
+      const parcel = parcelsByOrder.get(order.orderNo.trim().toUpperCase());
+      const orderEscrow = escrowEntries.find(
+        (entry) => entry.orderNo === order.orderNo && entry.deliveredAt
+      );
       return {
         orderNo: order.orderNo,
         status: order.status,
         paymentStatus: order.paymentStatus,
-        deliveryMethod: order.deliveryMethod,
+        deliveryMethod: parcel?.deliveryMethodBn || order.deliveryMethod,
+        courierProvider: parcel?.courierProvider ?? order.courierProvider ?? null,
+        consignmentId: parcel?.consignmentId ?? order.consignmentId ?? null,
+        trackingCode: parcel?.trackingCode ?? order.trackingCode ?? null,
+        dispatchedAt: parcel?.dispatchedAt ?? null,
+        deliveredAt: parcel?.deliveredAt ?? orderEscrow?.deliveredAt ?? null,
         // District/upazila only: customer name, phone and street stay with the platform.
-        districtNameBn: order.districtNameBn,
-        upazilaNameBn: order.upazilaNameBn,
+        districtNameBn: parcel?.districtNameBn || order.districtNameBn,
+        upazilaNameBn: parcel?.upazilaNameBn || order.upazilaNameBn,
         createdAt: order.createdAt,
         lines: lines.map((line) => ({
           productNameBn: line.productNameBn,
@@ -466,27 +552,35 @@ export function getVendorWorkspace(actor: ActorSecurityContext): VendorWorkspace
     })
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-  const escrowEntries = p4b.vendorLedger.filter((entry) => entry.vendorId === profile.vendorId);
   const escrow = computeVendorEscrowBalance(profile.vendorId, escrowEntries);
 
   const lots: VendorLotDTO[] = p7.consignmentLots
     .filter((lot) => lot.vendorId === profile.vendorId)
-    .map((lot) => ({
-      lotId: lot.lotId,
-      lotCode: lot.lotCode,
-      productNameBn: lot.productNameBn,
-      variantTitleBn: lot.variantTitleBn,
-      publicSku: lot.publicSku,
-      dispatchedQty: lot.dispatchedQty,
-      qcAcceptedQty: lot.qcAcceptedQty,
-      qcRejectedQty: lot.qcRejectedQty,
-      unitSupplierCostPoisha: lot.unitSupplierCostPoisha,
-      challanRef: lot.challanRef,
-      status: lot.status,
-      noteBn: lot.noteBn,
-      createdAt: lot.createdAt,
-      reviewedAt: lot.reviewedAt,
-    }));
+    .map((lot) => {
+      const acceptedOrSent = lot.qcAcceptedQty ?? lot.dispatchedQty;
+      const dispatchedAt = lot.dispatchedAt ?? lot.createdAt;
+      return {
+        lotId: lot.lotId,
+        lotCode: lot.lotCode,
+        productNameBn: lot.productNameBn,
+        variantTitleBn: lot.variantTitleBn,
+        publicSku: lot.publicSku,
+        dispatchedQty: lot.dispatchedQty,
+        qcAcceptedQty: lot.qcAcceptedQty,
+        qcRejectedQty: lot.qcRejectedQty,
+        unitSupplierCostPoisha: lot.unitSupplierCostPoisha,
+        totalValuePoisha: acceptedOrSent * lot.unitSupplierCostPoisha,
+        challanRef: lot.challanRef,
+        status: lot.status,
+        noteBn: lot.noteBn,
+        qcProofUrl: lot.qcProofUrl ?? null,
+        dispatchedAt,
+        receivedAt: lot.receivedAt ?? lot.reviewedAt ?? null,
+        createdAt: lot.createdAt,
+        reviewedAt: lot.reviewedAt,
+      };
+    })
+    .sort((a, b) => b.dispatchedAt.localeCompare(a.dispatchedAt));
 
   const proposals: VendorProposalDTO[] = p7.priceProposals
     .filter((proposal) => proposal.vendorId === profile.vendorId)
@@ -506,17 +600,32 @@ export function getVendorWorkspace(actor: ActorSecurityContext): VendorWorkspace
 
   const payouts: VendorPayoutDTO[] = p4b.payoutRequests
     .filter((payout) => payout.vendorId === profile.vendorId)
-    .map((payout) => ({
-      payoutId: payout.payoutId,
-      requestedAmountPoisha: payout.requestedAmountPoisha,
-      payoutMethodBn: payout.payoutMethodBn,
-      payoutAccountMasked: maskAccount(payout.payoutAccountNo),
-      status: payout.status,
-      rejectionReasonBn: payout.rejectionReasonBn,
-      paymentTrxId: payout.paymentTrxId,
-      requestedAt: payout.requestedAt,
-      resolvedAt: payout.resolvedAt,
-    }));
+    .map((payout) => {
+      const feePoisha =
+        payout.feePoisha !== undefined
+          ? payout.feePoisha
+          : Math.round((payout.requestedAmountPoisha * 185) / 10000);
+      const netPaidPoisha =
+        payout.netPaidPoisha !== undefined
+          ? payout.netPaidPoisha
+          : Math.max(0, payout.requestedAmountPoisha - feePoisha);
+      return {
+        payoutId: payout.payoutId,
+        requestedAmountPoisha: payout.requestedAmountPoisha,
+        feePoisha,
+        netPaidPoisha,
+        payoutMethodBn: payout.payoutMethodBn,
+        payoutAccountMasked: maskAccount(payout.payoutAccountNo),
+        status: payout.status,
+        rejectionReasonBn: payout.rejectionReasonBn,
+        paymentTrxId: payout.paymentTrxId,
+        proofUrl: payout.proofUrl ?? null,
+        noteBn: payout.noteBn ?? null,
+        entryType: payout.entryType ?? null,
+        requestedAt: payout.requestedAt,
+        resolvedAt: payout.resolvedAt,
+      };
+    });
 
   const ledger: VendorLedgerEntryDTO[] = escrowEntries.slice(0, 200).map((entry) => ({
     id: entry.id,
@@ -525,9 +634,37 @@ export function getVendorWorkspace(actor: ActorSecurityContext): VendorWorkspace
     amountPoisha: entry.amountPoisha,
     orderNo: entry.orderNo,
     descriptionBn: entry.descriptionBn,
+    referenceNo: entry.referenceNo ?? null,
+    paymentMethodBn: entry.paymentMethodBn ?? null,
+    proofUrl: entry.proofUrl ?? null,
+    noteBn: entry.noteBn ?? null,
     createdAt: entry.createdAt,
     maturesAt: entry.maturesAt,
   }));
+
+  const totalEarnedPoisha = Math.max(
+    0,
+    escrowEntries
+      .filter(
+        (e) =>
+          !['PAYOUT_HOLD', 'PAYOUT_HOLD_RELEASE', 'PAYOUT_DISBURSED'].includes(e.entryType)
+      )
+      .reduce((sum, e) => sum + e.amountPoisha, 0)
+  );
+  const totalPaidPoisha = payouts
+    .filter((p) => p.status === 'paid')
+    .reduce((sum, p) => sum + p.requestedAmountPoisha, 0);
+  const unpaidHeldPayoutsPoisha = payouts
+    .filter((p) => p.status === 'requested' || p.status === 'approved')
+    .reduce((sum, p) => sum + p.requestedAmountPoisha, 0);
+  const totalOwedPoisha = Math.max(
+    0,
+    escrow.pendingPoisha +
+      escrow.lockedPoisha +
+      escrow.availablePoisha +
+      unpaidHeldPayoutsPoisha -
+      escrow.clawbackDebtPoisha
+  );
 
   const scorecardRow = computeVendorPerformanceScorecards().find(
     (row) => row.vendorId === profile.vendorId
@@ -541,8 +678,15 @@ export function getVendorWorkspace(actor: ActorSecurityContext): VendorWorkspace
     0
   );
 
-  const answered = VENDOR_ONBOARDING_15_QUESTIONS.filter(
-    (question) => (profile.onboardingAnswers15?.[question.key] ?? '').trim().length >= 2
+  const onboardingAnswers = VENDOR_ONBOARDING_15_QUESTIONS.map((question) => ({
+    key: question.key,
+    questionBn: question.questionBn,
+    answer: (profile.onboardingAnswers15?.[question.key] ?? '').trim(),
+  }));
+
+  const answered = onboardingAnswers.filter((item) => item.answer.length >= 2).length;
+  const openSupportTickets = (p4b.supportTickets ?? []).filter(
+    (ticket) => ticket.vendorId === profile.vendorId && ticket.status === 'open'
   ).length;
 
   return {
@@ -560,6 +704,7 @@ export function getVendorWorkspace(actor: ActorSecurityContext): VendorWorkspace
       joinedAt: profile.createdAt,
       onboardingAnsweredCount: answered,
       onboardingTotalQuestions: VENDOR_ONBOARDING_15_QUESTIONS.length,
+      onboardingAnswers,
       restrictionNoteBn: getVendorRestrictionNote(profile.vendorId),
     },
     capabilities: getVendorCapabilities(profile.vendorId),
@@ -571,6 +716,9 @@ export function getVendorWorkspace(actor: ActorSecurityContext): VendorWorkspace
       payoutHoldPoisha: escrow.payoutHoldPoisha,
       clawbackDebtPoisha: escrow.clawbackDebtPoisha,
       withdrawablePoisha: escrow.withdrawablePoisha,
+      totalEarnedPoisha,
+      totalPaidPoisha,
+      totalOwedPoisha,
     },
     counters: {
       activeProducts: ownProducts.filter((product) => product.status === 'active').length,
@@ -582,8 +730,22 @@ export function getVendorWorkspace(actor: ActorSecurityContext): VendorWorkspace
         (payout) => payout.status === 'requested' || payout.status === 'approved'
       ).length,
       openOrders: orders.filter((order) => OPEN_ORDER_STATUSES.includes(order.status)).length,
+      openSupportTickets,
+      approvedReviews: approvedReviews.length,
     },
-    products: ownProducts.map((product) => toProductDTO(product, erp.categories)),
+    products: ownProducts.map((product) => {
+      const dto = toProductDTO(product, erp.categories);
+      const prodApproved = approvedReviews.filter((r) => r.productId === product.productId);
+      const avgBp =
+        prodApproved.length > 0
+          ? Math.round((prodApproved.reduce((s, r) => s + r.rating, 0) * 100) / prodApproved.length)
+          : 0;
+      return {
+        ...dto,
+        reviewCount: prodApproved.length,
+        ratingAvgBp: avgBp,
+      };
+    }),
     orders,
     returns: p4b.returnResolutions.filter(item => item.vendorId === profile.vendorId).map(item => ({
       returnId: item.returnId, orderNo: item.orderNo, faultType: item.faultType,
@@ -594,7 +756,19 @@ export function getVendorWorkspace(actor: ActorSecurityContext): VendorWorkspace
     payouts,
     lots,
     proposals,
-    scorecard: scorecardRow ? sanitizeScorecard(scorecardRow) : null,
+    approvedReviews,
+    scorecard: scorecardRow
+      ? {
+          ...sanitizeScorecard(scorecardRow),
+          averageRatingBp:
+            approvedReviews.length > 0
+              ? Math.round(
+                  (approvedReviews.reduce((s, r) => s + r.rating, 0) * 100) /
+                    approvedReviews.length
+                )
+              : 0,
+        }
+      : null,
     selfServiceRequests: listVendorRequests(profile.vendorId).map(toRequestDTO),
     categories: erp.categories
       .filter((category) => category.isActive !== false)

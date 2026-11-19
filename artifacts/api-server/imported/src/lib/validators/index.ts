@@ -223,6 +223,28 @@ export const createOrderInputSchema = z
       .min(6, 'বাড়ি/রোড/এলাকার বিস্তারিত ঠিকানা লিখুন')
       .max(500),
     landmark: z.string().trim().max(200).optional().default(''),
+    postCode: z.string().trim().max(10).optional(),
+    recipientCity: z.string().trim().max(120).optional(),
+    recipientZone: z.string().trim().max(120).optional(),
+    recipientArea: z.string().trim().max(120).optional(),
+    pathaoItemType: z.enum(['parcel', 'document', 'fragile']).optional(),
+    pathaoStoreName: z.string().trim().max(120).optional(),
+    totalWeightGrams: z.number().int().min(100).max(50000).optional(),
+    specialInstruction: z.string().trim().max(500).optional(),
+    bdPostServiceType: z
+      .enum([
+        'registered_parcel',
+        'vpp_cod',
+        'ecommerce_cod',
+        'speed_post',
+        'VPP_PARCEL',
+        'REGISTERED_PARCEL',
+        'GEP',
+        'EMS_DAK',
+        'EMS_GEP',
+        'DOMESTIC_PARCEL',
+      ])
+      .optional(),
     addressOverrideReason: z.string().trim().optional(),
     source: z
       .enum(['storefront', 'facebook', 'whatsapp', 'instagram', 'phone_call', 'other'])

@@ -33,6 +33,7 @@ import * as adminVendors from '../../imported/app/api/admin/vendors/route';
 import * as vendorKyc from '../../imported/app/api/vendor/kyc/route';
 import * as vendorSupport from '../../imported/app/api/vendor/support/route';
 import * as adminVendorSupport from '../../imported/app/api/admin/vendor-support/route';
+import * as adminSystemHealth from '../../imported/app/api/admin/system-health/route';
 import * as adminKyc from '../../imported/app/api/admin/vendor-kyc/route';
 import * as adminVendorPayouts from '../../imported/app/api/admin/vendor-payouts/route';
 import * as webhook from '../../imported/app/api/webhooks/courier/route';
@@ -75,6 +76,7 @@ export const importedRouter = Router();
 const routes: Array<[string, Record<string, unknown>]> = [
   ['/api/account/orders', account], ['/api/admin/auth', adminAuth],
   ['/api/admin/emergency', emergency], ['/api/admin/brand-media', brandMedia], ['/api/admin/workspace', workspace],
+  ['/api/admin/system-health', adminSystemHealth],
   ['/api/cart/abandoned', abandoned], ['/api/catalog/import', catalogImport],
   ['/api/media/:assetId', mediaAsset], ['/api/media', media],
   ['/api/orders/cancellation-request', cancellation], ['/api/orders/return-request', returns],

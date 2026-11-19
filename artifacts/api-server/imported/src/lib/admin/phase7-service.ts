@@ -61,6 +61,9 @@ export interface ConsignmentDispatchLotRecord {
   challanRef: string;
   status: ConsignmentLotStatus;
   noteBn: string;
+  qcProofUrl?: string | null;
+  dispatchedAt?: string;
+  receivedAt?: string | null;
   reviewedByUsername: string | null;
   createdAt: string;
   reviewedAt: string | null;
@@ -600,9 +603,10 @@ export function submitConsignmentDispatchLot(
     (v) => v.vendorId === matchedProduct.vendorId
   );
 
+  const nowIso = new Date().toISOString();
   const lot: ConsignmentDispatchLotRecord = {
     lotId: `lot-${Date.now()}-${Math.floor(100 + Math.random() * 899)}`,
-    lotCode: `LOT-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 899)}`,
+    lotCode: `LOT-${nowIso.slice(2, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 899)}`,
     vendorId: matchedProduct.vendorId,
     vendorCode: vendorRec?.vendorCode ?? matchedProduct.vendorCode,
     vendorNameBn: vendorRec?.businessNameBn ?? 'কনসাইনমেন্ট ভেন্ডর',
@@ -618,8 +622,11 @@ export function submitConsignmentDispatchLot(
     challanRef: input.challanRef.trim(),
     status: 'pending_qc',
     noteBn: input.noteBn.trim(),
+    qcProofUrl: null,
+    dispatchedAt: nowIso,
+    receivedAt: null,
     reviewedByUsername: null,
-    createdAt: new Date().toISOString(),
+    createdAt: nowIso,
     reviewedAt: null,
   };
 
@@ -703,6 +710,7 @@ export function reviewConsignmentDispatchLot(
     input.decision === 'approve' ? rejectedQty : lot.dispatchedQty;
   lot.reviewedByUsername = ctx.username;
   lot.reviewedAt = new Date().toISOString();
+  lot.receivedAt = lot.receivedAt ?? lot.reviewedAt;
   if (input.noteBn?.trim()) {
     lot.noteBn = input.noteBn.trim();
   }
@@ -736,6 +744,158 @@ export function reviewConsignmentDispatchLot(
       lotCode: lot.lotCode,
       acceptedQty,
       rejectedQty: lot.qcRejectedQty,
+      updatedStockAvailable,
+    },
+  });
+  writeAdminStore(adminStore);
+
+  return {
+    success: true,
+    lot,
+    updatedStockAvailable,
+  };
+}
+
+export function recordAdminConsignmentIntake(
+  ctx: ActorSecurityContext,
+  input: {
+    variantId: string;
+    dispatchedQty: number;
+    qcRejectedQty?: number;
+    unitSupplierCostPoisha?: number;
+    challanRef: string;
+    dispatchedAt?: string;
+    receivedAt?: string;
+    qcProofUrl?: string;
+    noteBn: string;
+  }
+): {
+  success: boolean;
+  errorBn?: string;
+  lot?: ConsignmentDispatchLotRecord;
+  updatedStockAvailable?: number;
+} {
+  if (ctx.roleSlug === 'vendor') {
+    return {
+      success: false,
+      errorBn: 'ভেন্ডর রোল থেকে অ্যাডমিন স্টক গ্রহণ (Intake) রেকর্ড করা যাবে না।',
+    };
+  }
+
+  const store = readPhase7Store();
+  const erp = readErpState();
+  const p4b = readPhase4BStore();
+  const adminStore = readAdminStore();
+
+  let matchedProduct = null;
+  let matchedVariant = null;
+
+  for (const prod of erp.products) {
+    const vr = prod.variants.find((v) => v.variantId === input.variantId);
+    if (vr) {
+      matchedProduct = prod;
+      matchedVariant = vr;
+      break;
+    }
+  }
+
+  if (!matchedProduct || !matchedVariant) {
+    return {
+      success: false,
+      errorBn: 'নির্বাচিত প্রোডাক্ট ভ্যারিয়েন্টটি ক্যাটালগে পাওয়া যায়নি।',
+    };
+  }
+
+  const dispatchedQty = Math.trunc(input.dispatchedQty);
+  if (!Number.isFinite(dispatchedQty) || dispatchedQty < 1) {
+    return {
+      success: false,
+      errorBn: 'পাঠানো পণ্যের পরিমাণ কমপক্ষে ১ হতে হবে।',
+    };
+  }
+
+  const rejectedQty = Math.max(
+    0,
+    Math.min(dispatchedQty, Math.trunc(input.qcRejectedQty ?? 0))
+  );
+  const acceptedQty = Math.max(0, dispatchedQty - rejectedQty);
+
+  const unitCostPoisha =
+    input.unitSupplierCostPoisha !== undefined &&
+    Number.isSafeInteger(input.unitSupplierCostPoisha) &&
+    input.unitSupplierCostPoisha > 0
+      ? input.unitSupplierCostPoisha
+      : matchedVariant.supplierCostPoisha;
+
+  const parseIsoOrFallback = (raw: string | undefined, fallback: string) => {
+    if (!raw || !raw.trim()) return fallback;
+    const ms = Date.parse(raw);
+    return Number.isNaN(ms) ? fallback : new Date(ms).toISOString();
+  };
+
+  const nowIso = new Date().toISOString();
+  const dispatchedAt = parseIsoOrFallback(input.dispatchedAt, nowIso);
+  const receivedAt = parseIsoOrFallback(input.receivedAt, nowIso);
+
+  const vendorRec = p4b.vendors.find(
+    (v) => v.vendorId === matchedProduct.vendorId
+  );
+
+  const lot: ConsignmentDispatchLotRecord = {
+    lotId: `lot-${Date.now()}-${Math.floor(100 + Math.random() * 899)}`,
+    lotCode: `LOT-${receivedAt.slice(2, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 899)}`,
+    vendorId: matchedProduct.vendorId,
+    vendorCode: vendorRec?.vendorCode ?? matchedProduct.vendorCode,
+    vendorNameBn: vendorRec?.businessNameBn ?? 'কনসাইনমেন্ট ভেন্ডর',
+    productId: matchedProduct.productId,
+    variantId: matchedVariant.variantId,
+    productNameBn: matchedProduct.nameBn,
+    variantTitleBn: matchedVariant.titleBn,
+    publicSku: matchedVariant.publicSku,
+    dispatchedQty,
+    qcAcceptedQty: acceptedQty,
+    qcRejectedQty: rejectedQty,
+    unitSupplierCostPoisha: unitCostPoisha,
+    challanRef: input.challanRef.trim(),
+    status: acceptedQty > 0 ? 'approved_stocked' : 'rejected',
+    noteBn: input.noteBn.trim(),
+    qcProofUrl: input.qcProofUrl?.trim() ? input.qcProofUrl.trim() : null,
+    dispatchedAt,
+    receivedAt,
+    reviewedByUsername: ctx.username,
+    createdAt: dispatchedAt,
+    reviewedAt: receivedAt,
+  };
+
+  let updatedStockAvailable = matchedVariant.stockAvailable;
+  if (acceptedQty > 0) {
+    matchedVariant.stockOnHand += acceptedQty;
+    matchedVariant.stockAvailable += acceptedQty;
+    updatedStockAvailable = matchedVariant.stockAvailable;
+    writeErpState(erp);
+  }
+
+  store.consignmentLots.unshift(lot);
+  writePhase7Store(store);
+
+  appendImmutableAuditLog(adminStore, {
+    actorUserId: ctx.userId,
+    actorUsername: ctx.username,
+    actorRole: ctx.roleSlug,
+    actionCode: 'CONSIGNMENT_INTAKE_RECORDED',
+    targetType: 'product',
+    targetId: lot.lotCode,
+    summaryBn: `${lot.vendorNameBn}-এর ${lot.publicSku} (${acceptedQty} পিস গৃহীত, ${rejectedQty} পিস রিজেক্টেড) চালান ${lot.challanRef} অ্যাডমিন দ্বারা গ্রহণ করা হয়েছে।`,
+    metadata: {
+      lotCode: lot.lotCode,
+      vendorId: lot.vendorId,
+      variantId: lot.variantId,
+      dispatchedQty,
+      acceptedQty,
+      rejectedQty,
+      unitSupplierCostPoisha: unitCostPoisha,
+      dispatchedAt,
+      receivedAt,
       updatedStockAvailable,
     },
   });

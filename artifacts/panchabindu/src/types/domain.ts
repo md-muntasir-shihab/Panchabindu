@@ -181,6 +181,104 @@ export type NextBestActionCode =
   | 'PROCESS_PENDING_RETURN'
   | 'COMPLETED';
 
+export type { CourierProvider, OrderStatus };
+
+export type BdPostServiceType =
+  | 'registered_parcel'
+  | 'vpp_cod'
+  | 'ecommerce_cod'
+  | 'speed_post'
+  | 'gep'
+  | 'ems'
+  | 'VPP_PARCEL'
+  | 'REGISTERED_PARCEL'
+  | 'GEP'
+  | 'EMS_DAK'
+  | 'EMS_GEP'
+  | 'DOMESTIC_PARCEL';
+
+export type PathaoItemType = 'parcel' | 'document' | 'fragile';
+
+export type CourierFormatKey = 'pathao' | 'steadfast' | 'bd_post';
+export type CourierBulkExportFormat = CourierFormatKey;
+
+export interface CourierMissingFieldDTO {
+  fieldKey: string;
+  columnName: string;
+  labelBn: string;
+  labelEn: string;
+}
+
+export interface CourierReadinessDTO {
+  isReady: boolean;
+  pathaoReady: boolean;
+  steadfastReady: boolean;
+  bdPostReady: boolean;
+  missingFields: CourierMissingFieldDTO[];
+  missingCellKeys: string[];
+  weightKg: string;
+  summaryBn?: string;
+}
+
+export interface CourierPreviewRowDTO {
+  orderId: string;
+  orderNo: string;
+  status: OrderStatus;
+  courierProvider: CourierProvider;
+  createdAt: string;
+  isReady: boolean;
+  missingFields: CourierMissingFieldDTO[];
+  missingCellKeys: string[];
+  values: Record<string, string>;
+  editSeed: {
+    orderId: string;
+    orderNo: string;
+    customerName: string;
+    customerPhone: string;
+    districtId: number;
+    upazilaId: number;
+    streetAddress: string;
+    landmark: string;
+    postCode: string;
+    recipientCity: string;
+    recipientZone: string;
+    recipientArea: string;
+    pathaoItemType: PathaoItemType;
+    pathaoStoreName: string;
+    totalWeightGrams: number;
+    specialInstruction: string;
+    bdPostServiceType: BdPostServiceType;
+  };
+}
+
+export interface CourierBulkExportBundleDTO {
+  format: CourierFormatKey;
+  headers: string[];
+  totalMatchedCount: number;
+  readyCount: number;
+  flaggedCount: number;
+  exportedCount: number;
+  previewRows: CourierPreviewRowDTO[];
+  csvContent: string;
+  filename: string;
+}
+
+export interface CustomerDefaultProfileRecord {
+  customerId: string;
+  fullName: string;
+  phone: string;
+  email?: string | null;
+  districtId: number;
+  upazilaId: number;
+  postCode: string;
+  recipientCity: string;
+  recipientZone: string;
+  recipientArea: string;
+  streetAddress: string;
+  landmark: string;
+  updatedAt: string;
+}
+
 /** Order Summary DTO for Admin Grid */
 export interface OrderGridRowDTO {
   id: string;
@@ -191,18 +289,36 @@ export interface OrderGridRowDTO {
   customerEmail?: string | null;
   districtId: number;
   districtNameBn: string;
+  districtNameEn?: string;
   upazilaId: number;
   upazilaNameBn: string;
+  upazilaNameEn?: string;
   streetAddress: string;
   landmark: string;
+  postCode?: string;
+  recipientCity?: string;
+  recipientZone?: string;
+  recipientArea?: string;
+  pathaoItemType?: PathaoItemType;
+  pathaoStoreName?: string;
+  totalWeightGrams?: number;
+  itemDescSummary?: string;
+  specialInstruction?: string;
+  customerNote?: string;
+  internalStaffNote?: string;
+  bdPostServiceType?: BdPostServiceType;
+  bdPostDeclaredValuePoisha?: Poisha;
+  courierReadiness?: CourierReadinessDTO;
   addressQualityScore: number;
   addressFlags: string[];
   source: OrderSource;
   status: OrderStatus;
   deliveryMethod: DeliveryMethod;
   courierProvider: CourierProvider;
+  customCourierName?: string | null;
   consignmentId: string | null;
   trackingCode: string | null;
+  customTrackingUrl?: string | null;
   subtotalPoisha: Poisha;
   discountPoisha: Poisha;
   deliveryChargePoisha: Poisha;
@@ -223,4 +339,5 @@ export interface OrderGridRowDTO {
   trackingTokenExpiresAt?: string | null;
   createdAt: string;
 }
+
 

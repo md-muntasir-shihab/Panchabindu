@@ -12,7 +12,11 @@ import type {
   CourierProvider,
   OrderStatus,
 } from '../../types/database.types';
-import type { Poisha } from '../../types/domain';
+import type {
+  CourierBulkExportBundleDTO,
+  CourierFormatKey,
+  Poisha,
+} from '../../types/domain';
 import type { ActorSecurityContext } from '../../types/permissions';
 import {
   createStorefrontOrder,
@@ -177,6 +181,7 @@ export interface Phase6WorkspaceOverviewDTO {
   vendorScorecards: VendorScorecardRowDTO[];
   backupSnapshots: SystemBackupSnapshotMeta[];
   bookingCsvPreview: string;
+  courierBulkPreview?: CourierBulkExportBundleDTO;
 }
 
 const PHASE6_DATA_DIR = path.join(process.cwd(), '.data');

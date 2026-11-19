@@ -416,7 +416,7 @@ export function ShopCatalogClient({
       activeCategorySlug={selectedCategorySlug}
       onSelectCategory={setSelectedCategorySlug}
     >
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10 space-y-8">
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-4 py-5 sm:py-10 space-y-5 sm:space-y-8">
         {/* 1. Category Breadcrumb */}
         <nav
           aria-label={uiText("Breadcrumb", locale)}
@@ -456,10 +456,10 @@ export function ShopCatalogClient({
         </nav>
 
         {/* 2. Shop / Search Hero Banner */}
-        <div className="p-6 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--store-accent)] uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+        <div className="p-4 sm:p-8 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+          <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
+            <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-[var(--store-accent)] uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               {mode === 'search'
                 ? locale === 'bn'
                   ? 'ক্যাটালগ অনুসন্ধান ইঞ্জিন'
@@ -468,7 +468,7 @@ export function ShopCatalogClient({
                 ? siteSettings.taglineBn
                 : siteSettings.taglineEn}
             </span>
-            <h1 className="text-2xl sm:text-4xl font-bold text-[#162119] tracking-tight">
+            <h1 className="text-xl sm:text-4xl font-bold text-[#162119] tracking-tight [text-wrap:balance]">
               {mode === 'search'
                 ? searchQuery.trim()
                   ? locale === 'bn'
@@ -533,22 +533,60 @@ export function ShopCatalogClient({
           </div>}
         </div>
 
+        {/* Mobile Horizontal Category Quick Bar (< lg) */}
+        <div className="lg:hidden flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedCategorySlug(null);
+              setPage(1);
+            }}
+            className={`min-h-[38px] px-3.5 py-1.5 rounded-lg font-mono text-[11px] border whitespace-nowrap transition-colors cursor-pointer ${
+              selectedCategorySlug === null
+                ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)]'
+                : 'bg-[#FAF9F5] text-[#162119] border-[#E4E2DC]'
+            }`}
+          >
+            {locale === 'bn' ? 'সকল ক্যাটাগরি' : 'All'}
+          </button>
+          {categories.map((cat) => {
+            const isSelected = selectedCategorySlug === cat.slug;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setSelectedCategorySlug(isSelected ? null : cat.slug);
+                  setPage(1);
+                }}
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-lg font-mono text-[11px] border whitespace-nowrap transition-colors cursor-pointer ${
+                  isSelected
+                    ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)]'
+                    : 'bg-[#FAF9F5] text-[#162119] border-[#E4E2DC]'
+                }`}
+              >
+                {locale === 'bn' ? cat.nameBn : cat.nameEn}
+              </button>
+            );
+          })}
+        </div>
+
         {/* 3. Main 2-Column Layout: Left Sidebar Filters + Right Product Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           {/* Desktop Left Filter Sidebar */}
           <aside className="hidden lg:block lg:col-span-3 p-5 rounded-2xl border border-[#E4E2DC] bg-[#FAF9F5]">
             {filterControlsContent}
           </aside>
 
           {/* Right Product Grid & Toolbar */}
-          <div className="lg:col-span-9 space-y-6">
+          <div className="lg:col-span-9 space-y-5 sm:space-y-6 min-w-0">
             {/* Top Toolbar: Mobile Filter Trigger, Count, and Sorting */}
-            <div className="p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9] flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
+            <div className="p-3 sm:p-3.5 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9] flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <button
                   type="button"
                   onClick={() => setIsMobileFilterOpen(true)}
-                  className="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[#E4E2DC] bg-[#FAF9F5] text-xs font-semibold text-[#162119] cursor-pointer"
+                  className="lg:hidden inline-flex items-center gap-1.5 min-h-[44px] px-3.5 rounded-lg border border-[#E4E2DC] bg-[#FAF9F5] text-xs font-semibold text-[#162119] cursor-pointer shrink-0"
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--store-accent)]" />
                   <span>
@@ -562,20 +600,20 @@ export function ShopCatalogClient({
                   </span>
                 </button>
 
-                <span className="text-xs font-semibold text-[#162119]">
+                <span className="text-xs font-semibold text-[#162119] truncate">
                   {locale === 'bn'
                     ? `মোট ${formatLocaleNumber(
                         queryResult.totalMatched,
                         locale
-                      )}টি পণ্য পাওয়া গেছে`
-                    : `Showing ${queryResult.totalMatched} products`}
+                      )}টি পণ্য`
+                    : `${queryResult.totalMatched} products`}
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                 <label
                   htmlFor="shop-sort-select"
-                  className="text-xs text-[#5A655D] font-medium"
+                  className="text-xs text-[#5A655D] font-medium shrink-0"
                 >
                   {locale === 'bn' ? 'সাজান:' : 'Sort by:'}
                 </label>
@@ -585,7 +623,7 @@ export function ShopCatalogClient({
                   onChange={(e) =>
                     setSortBy(e.target.value as CatalogSortOption)
                   }
-                  className="h-9 px-3 rounded-lg border border-[#E4E2DC] bg-[#FAF9F5] text-xs font-semibold text-[#162119] focus:outline-none focus:border-[var(--store-accent)]"
+                  className="min-h-[44px] sm:min-h-[38px] flex-1 sm:flex-none px-3 rounded-lg border border-[#E4E2DC] bg-[#FAF9F5] text-xs font-semibold text-[#162119] focus:outline-none focus:border-[var(--store-accent)]"
                 >
                   <option value="popular">
                     {locale === 'bn' ? 'সর্বাধিক জনপ্রিয়' : 'Most Popular'}
@@ -718,7 +756,7 @@ export function ShopCatalogClient({
                         ? 'আপনার জন্য প্রস্তাবিত জনপ্রিয় পণ্য'
                         : 'Recommended In-Stock Products'}
                     </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                       {suggestions.fallbackRecommendations.map((prod) => (
                         <ProductCard key={prod.productId} product={prod} />
                       ))}
@@ -728,7 +766,7 @@ export function ShopCatalogClient({
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-x-3 sm:gap-x-5 gap-y-6 sm:gap-y-8">
                   {queryResult.items.map((product) => (
                     <ProductCard key={product.productId} product={product} />
                   ))}
@@ -738,7 +776,7 @@ export function ShopCatalogClient({
                 {queryResult.totalPages > 1 && (
                   <nav
                     aria-label={uiText("Pagination", locale)}
-                    className="pt-6 border-t border-[#E4E2DC] flex items-center justify-between gap-4"
+                    className="pt-6 border-t border-[#E4E2DC] flex flex-wrap items-center justify-between gap-3"
                   >
                     <Button
                       type="button"
@@ -747,11 +785,12 @@ export function ShopCatalogClient({
                       disabled={!queryResult.hasPrevPage}
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       leftIcon={<ChevronLeft className="w-4 h-4" />}
+                      className="min-h-[44px]"
                     >
                       {locale === 'bn' ? 'পূর্ববর্তী' : 'Previous'}
                     </Button>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center justify-center gap-1.5">
                       {Array.from(
                         { length: queryResult.totalPages },
                         (_, idx) => idx + 1
@@ -760,7 +799,7 @@ export function ShopCatalogClient({
                           key={pageNum}
                           type="button"
                           onClick={() => setPage(pageNum)}
-                          className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                          className={`min-w-[38px] min-h-[38px] px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                             pageNum === queryResult.page
                               ? 'bg-[var(--store-accent)] text-[#FAF9F5]'
                               : 'border border-[#E4E2DC] bg-[#FAF9F5] text-[#162119] hover:border-[var(--store-accent)]'
@@ -782,6 +821,7 @@ export function ShopCatalogClient({
                         )
                       }
                       rightIcon={<ChevronRight className="w-4 h-4" />}
+                      className="min-h-[44px]"
                     >
                       {locale === 'bn' ? 'পরবর্তী' : 'Next'}
                     </Button>
