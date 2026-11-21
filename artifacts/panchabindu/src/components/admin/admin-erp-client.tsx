@@ -54,6 +54,7 @@ import {
   FileText,
   KeyRound,
   Eye,
+  LayoutDashboard,
   Package,
   Store,
   Printer,
@@ -179,6 +180,11 @@ import type { Phase7WorkspaceOverviewDTO } from '@/lib/admin/phase7-service';
 import { ProductManagementStudioPanel } from './product-studio-panel';
 import { OperationalHelpModal } from './operational-help-modal';
 import { DASHBOARD_STATUSES, summarizeDashboardOrders } from './dashboard-summary';
+// The dashboard pulls in the chart/animation layer, which the storefront never needs, so it is
+// split into its own chunk and requested only when an admin actually lands on it.
+const AdminCommandDashboard = React.lazy(() =>
+  import('./admin-command-dashboard').then((module) => ({ default: module.AdminCommandDashboard })),
+);
 import { CourierBulkCsvPanel } from './courier-bulk-csv-panel';
 import {
   OrderDispatchSheet,
@@ -202,6 +208,7 @@ export interface AdminErpClientProps {
 }
 
 export type AdminTabKey =
+  | 'dashboard'
   | 'today_screen'
   | 'orders_grid'
   | 'smart_order_entry'
@@ -409,7 +416,7 @@ function getOrderStatusUrl(order: Partial<OrderGridRowDTO>): string {
 // Each existing page has exactly one home in the navigation; role filtering still
 // happens on the original items, not on these presentation groups.
 const ADMIN_NAV_GROUPS: Array<{ id: string; bn: string; en: string; keys: AdminTabKey[] }> = [
-  { id: 'overview', bn: 'ওভারভিউ', en: 'Overview', keys: ['today_screen'] },
+  { id: 'overview', bn: 'ওভারভিউ', en: 'Overview', keys: ['dashboard', 'today_screen'] },
   { id: 'orders', bn: 'অর্ডার ও ডেলিভারি', en: 'Orders & Delivery', keys: ['orders_grid', 'smart_order_entry', 'courier_360', 'print_engine'] },
   { id: 'catalog', bn: 'পণ্য ও ক্যাটালগ', en: 'Products & Catalog', keys: ['product_studio'] },
   { id: 'vendors', bn: 'ভেন্ডর ও পেআউট', en: 'Vendors & Payouts', keys: ['vendors_hub', 'vendor_payouts'] },
@@ -466,7 +473,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
   }, []);
 
   // Workspace Navigation & Toast Banner State
-  const [activeTab, setActiveTab] = React.useState<AdminTabKey>('today_screen');
+  const [activeTab, setActiveTab] = React.useState<AdminTabKey>('dashboard');
   const [vendorsHubSubTab, setVendorsHubSubTab] = React.useState<VendorsHubSubTab>('directory');
   const [focusedVendorId, setFocusedVendorId] = React.useState<string | null>(null);
   const [vendorsStatusFilter, setVendorsStatusFilter] = React.useState<
@@ -1943,6 +1950,19 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       groupLabelEn: '01. Overview',
       items: [
         {
+          key: 'dashboard',
+          labelBn: 'ড্যাশবোর্ড',
+          labelEn: 'Dashboard',
+          fullLabelBn: 'কমান্ড ড্যাশবোর্ড',
+          fullLabelEn: 'Command Dashboard',
+          icon: <LayoutDashboard className="w-4 h-4 shrink-0" aria-hidden="true" />,
+          badge:
+            (today.callToConfirmCount ?? 0) + (today.fixAddressCount ?? 0) + (today.verifyBkashCount ?? 0) > 0
+              ? (today.callToConfirmCount ?? 0) + (today.fixAddressCount ?? 0) + (today.verifyBkashCount ?? 0)
+              : undefined,
+          badgeStatus: 'danger',
+        },
+        {
           key: 'today_screen',
           labelBn: 'আজকের কাজ',
           labelEn: 'Today',
@@ -2591,6 +2611,34 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
         {/* ==================================================================
             TAB 1: TODAY OPERATIONAL COMMAND SCREEN (MODULE M)
            ================================================================== */}
+        {activeTab === 'dashboard' && (
+          <React.Suspense
+            fallback={
+              <div className="space-y-3" aria-busy="true" aria-live="polite">
+                <div className="h-36 animate-pulse rounded-[var(--radius-md)] bg-surface" />
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <div key={index} className="h-24 animate-pulse rounded-[var(--radius-md)] bg-surface" />
+                  ))}
+                </div>
+                <div className="h-64 animate-pulse rounded-[var(--radius-md)] bg-surface" />
+              </div>
+            }
+          >
+          <AdminCommandDashboard
+            locale={locale}
+            snapshot={snapshot}
+            loadedAt={snapshotLoadedAt}
+            isSuperAdmin={isSuperAdmin}
+            isVendor={isVendor}
+            onRefresh={fetchWorkspace}
+            onNavigate={(tab) => setActiveTab(tab)}
+            onOpenOrderStatus={openOrderStatus}
+            onOpenOrderQueue={openOrderQueue}
+          />
+          </React.Suspense>
+        )}
+
         {activeTab === 'today_screen' && (
           <section className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">

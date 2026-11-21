@@ -16,6 +16,34 @@ interface OperationalHelpGuideItem {
 }
 
 export const OPERATIONAL_HELP_GUIDE: Record<AdminTabKey, OperationalHelpGuideItem> = {
+  dashboard: {
+    titleBn: 'কমান্ড ড্যাশবোর্ড (Command Dashboard)',
+    titleEn: 'Command Dashboard',
+    purposeBn: 'আজকের বিক্রি, অর্ডারের অবস্থা, করণীয় কাজ, স্টক ও সাম্প্রতিক অর্ডার এক পর্দায় দেখে সিদ্ধান্ত নিন। প্রতিটি সংখ্যা আপনার রোল-অনুযায়ী ফিল্টার করা ডেটা থেকে আসে।',
+    purposeEn: 'See today’s revenue, order status mix, open work, stock pressure and recent orders on one screen. Every number comes from the role-filtered workspace data you are allowed to see.',
+    workflowBn: [
+      '১. উপরের কার্ডে ক্লিক করে সংশ্লিষ্ট অর্ডার তালিকা বা পেজে যান (আজকের বিক্রি, লো-স্টক, সিওডি ইত্যাদি)।',
+      '২. “আজকের করণীয়” টালি থেকে কল কনফার্মেশন, ঠিকানা সংশোধন, বিকাশ যাচাই বা কুরিয়ার বুকিংয়ের কিউ খুলুন।',
+      '৩. সাম্প্রতিক অর্ডার টেবিলে কলাম হেডারে ক্লিক করে সাজান; সার্চ বক্সে অর্ডার নম্বর, নাম বা জেলা লিখে খুঁজুন।',
+      '৪. “লাইভ” চালু থাকলে প্রতি মিনিটে ডেটা নিজে নিজে রিফ্রেশ হয়; ম্যানুয়াল রিফ্রেশেও সর্বশেষ স্ন্যাপশট আসে।',
+    ],
+    workflowEn: [
+      '1. Use the summary cards to jump to the matching order list or page (today’s revenue, low stock, COD, and so on).',
+      '2. Open the call confirmation, address fix, bKash verification or courier booking queue from the work-queue tiles.',
+      '3. Sort the recent-orders table from its column headers and search by order number, customer name or district.',
+      '4. With “Live” on, the snapshot refreshes every minute; the refresh button pulls the latest one immediately.',
+    ],
+    rulesBn: [
+      '• ড্যাশবোর্ড কোনো নতুন ডেটা তৈরি করে না; শুধু বিদ্যমান ওয়ার্কস্পেস স্ন্যাপশট ও অডিট লগ দেখায়।',
+      '• বাতিল ও ফেরত আসা অর্ডার বিক্রির হিসাবে ধরা হয় না; সিওডি ও পেআউট সংখ্যা হিসাব মিলিয়ে দেখার আগে প্রাপ্ত টাকা নয়।',
+      '• কুরিয়ার বুকিং ও লাইভ ট্র্যাকিং এখনো সংযুক্ত নয়, তাই এখানে কোনো ডেলিভারি প্রতিশ্রুতি দেখানো হয় না।',
+    ],
+    rulesEn: [
+      '• The dashboard creates no data; it only presents the existing workspace snapshot and audit log.',
+      '• Cancelled and returned orders are excluded from revenue; COD and payout figures are not received funds until reconciled.',
+      '• Courier booking and live tracking are not connected, so no delivery promise is shown here.',
+    ],
+  },
   crm_contacts: {
     titleBn: 'সিআরএম ও কন্টাক্টস (CRM & Contacts)',
     titleEn: 'CRM & Contacts Directory',
