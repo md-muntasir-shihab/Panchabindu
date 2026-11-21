@@ -3,7 +3,8 @@
 // it, preserving the method, body, cookies and the original query parameters.
 import app from '../artifacts/api-server/dist/app.mjs';
 
-export const config = { api: { bodyParser: false } };
+// Bound the invocation: a stuck write must surface as a 504 instead of an endless spinner.
+export const config = { api: { bodyParser: false }, maxDuration: 60 };
 
 export default function handler(req, res) {
   const url = new URL(req.url || '/', 'http://localhost');

@@ -1,4 +1,5 @@
 'use client';
+import { fetchWithTimeout, isTimeoutError } from '@/lib/http/fetch-with-timeout';
 import { localizedFetch as fetch } from '@/lib/i18n/localized-fetch';
 import { uiText } from '@/lib/i18n/ui-text';
 
@@ -182,6 +183,11 @@ export function AccountClient({
 
   React.useEffect(() => {
     const controller = new AbortController();
+    let disposed = false;
+    const sessionTimer = window.setTimeout(
+      () => controller.abort(new DOMException('Request timed out', 'TimeoutError')),
+      15_000,
+    );
     setSessionLoading(true);
     fetch('/api/account/orders', { cache: 'no-store', signal: controller.signal })
       .then(async (response) => {
@@ -244,8 +250,8 @@ export function AccountClient({
         }
       })
       .catch(() => {
-        if (!controller.signal.aborted) setAuthError(locale === 'bn' ? 'অ্যাকাউন্টের তথ্য লোড করা যায়নি। আবার চেষ্টা করুন।' : 'Could not load your account. Please try again.');
-      }).finally(() => { if (!controller.signal.aborted) setSessionLoading(false); });
+        if (!disposed) setAuthError(locale === 'bn' ? 'অ্যাকাউন্টের তথ্য লোড করা যায়নি। আবার চেষ্টা করুন।' : 'Could not load your account. Please try again.');
+      }).finally(() => { window.clearTimeout(sessionTimer); if (!disposed) setSessionLoading(false); });
     const frame = window.requestAnimationFrame(() => {
       try {
         const recent: unknown = JSON.parse(window.localStorage.getItem('bg_recent_orders') ?? '[]');
@@ -258,7 +264,7 @@ export function AccountClient({
       const tab = new URLSearchParams(window.location.search).get('tab');
       if (tab === 'orders' || tab === 'addresses' || tab === 'wishlist' || tab === 'tracking') setActiveTab(tab);
     });
-    return () => { controller.abort(); window.cancelAnimationFrame(frame); };
+    return () => { disposed = true; window.clearTimeout(sessionTimer); controller.abort(); window.cancelAnimationFrame(frame); };
   }, [sessionRetry, locale]);
 
   const handleCopyUserId = async () => {
@@ -311,7 +317,7 @@ export function AccountClient({
     try {
       const identifier = loginPhone.trim();
       const payload = registering ? { action: 'register', ...(identifier.includes('@') ? { email: identifier } : { phone: identifier }), password } : { action: 'login', identifier, password };
-      const res = await fetch('/api/account/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await fetchWithTimeout('/api/account/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json() as { success: boolean; errorBn?: string; errorEn?: string; customerPhone?: string; identifier?: string; deliveryProfile?: { customerName: string; customerPhone: string; customerEmail: string | null; districtId?: number; upazilaId?: number; postCode?: string; recipientCity?: string; recipientZone?: string; recipientArea?: string; streetAddress: string; landmark: string } | null; orders?: PublicOrderTrackingDTO[] };
       if (!res.ok || !data.success) setAuthError((locale === 'bn' ? data.errorBn : data.errorEn) ?? (locale === 'bn' ? 'লগইন করা যায়নি।' : 'Unable to sign in.'));
       else {
@@ -344,7 +350,9 @@ export function AccountClient({
           navigate(reference ? `/order-tracking/${encodeURIComponent(reference)}` : '/order-tracking');
         }
       }
-    } catch { setAuthError(locale === 'bn' ? 'নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।' : 'Network error. Please try again.'); }
+    } catch (error) { setAuthError(isTimeoutError(error)
+      ? 'সার্ভার সময়মতো সাড়া দেয়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।'
+      : locale === 'bn' ? 'নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।' : 'Network error. Please try again.'); }
     finally { setAuthLoading(false); }
   };
   const handleChangePassword = async (e: React.FormEvent) => {
