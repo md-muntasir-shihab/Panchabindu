@@ -1,0 +1,58 @@
+name: Uptime
+
+on:
+  schedule:
+    # Every 15 minutes. GitHub may delay scheduled runs under load; that is fine for uptime.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Probe production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe endpoints
+        id: probe
+        env:
+          # Repository variable → Settings → Secrets and variables → Actions → Variables.
+          UPTIME_BASE_URL: ${{ vars.UPTIME_BASE_URL }}
+        run: node scripts/uptime-check.mjs
+
+      - name: Open a tracking issue when production is down
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPORT: ${{ steps.probe.outputs.report }}
+          FAILING: ${{ steps.probe.outputs.failing }}
+          BASE_URL: ${{ steps.probe.outputs.base_url }}
+        run: |
+          set -euo pipefail
+          existing=$(gh issue list --state open --search 'in:title "[uptime]"' --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Still unhealthy: \`$REPORT\`"
+            echo "Commented on existing issue #$existing"
+            exit 0
+          fi
+          body=$(printf 'Production probe failed for `%s`.\n\n```\n%s\n```\n\nRun: %s\n\nThis issue closes automatically when the next probe succeeds.' "$BASE_URL" "$FAILING" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID")
+          gh issue create --title "[uptime] production is down" --body "$body"
+
+      - name: Close the tracking issue when production recovers
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          for number in $(gh issue list --state open --search 'in:title "[uptime]"' --json number --jq '.[].number'); do
+            gh issue close "$number" --comment "Production is healthy again — closing automatically."
+          done

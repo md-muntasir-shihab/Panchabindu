@@ -66,7 +66,9 @@ async function buildAll() {
       "@swc/*",
       "@aws-sdk/*",
       "@azure/*",
-      "@opentelemetry/*",
+      // NOTE: @opentelemetry/api is intentionally NOT externalised. @sentry/node imports it at
+      // runtime and it is a dependency-free pure-JS package, so bundling it keeps each serverless
+      // function self-contained instead of failing at cold start with ERR_MODULE_NOT_FOUND.
       "@google-cloud/*",
       "@google/*",
       "googleapis",

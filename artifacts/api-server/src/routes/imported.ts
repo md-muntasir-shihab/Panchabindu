@@ -1,5 +1,6 @@
 import { Router, type RequestHandler } from 'express';
 import { ApiRequest } from '../../imported/src/lib/http';
+import { captureServerException } from '../lib/observability';
 import * as account from '../../imported/app/api/account/orders/route';
 import * as adminAuth from '../../imported/app/api/admin/auth/route';
 import * as emergency from '../../imported/app/api/admin/emergency/route';
@@ -163,6 +164,15 @@ function adapt(handler: Handler): RequestHandler {
       }
       const request = new ApiRequest(`${req.protocol}://${req.get('host')}${req.originalUrl}`, init);
       const response = await handler(request, { params: Promise.resolve(req.params as Record<string, string>) });
+      if (response.status >= 500) {
+        // The imported handlers translate failures into responses, so the status is the only
+        // signal that reaches the host; report it instead of losing it in a log line.
+        captureServerException(new Error(`Imported route responded ${response.status}`), {
+          method: req.method,
+          path: req.originalUrl?.split('?')[0] ?? null,
+          status: response.status,
+        });
+      }
       res.status(response.status);
       response.headers.forEach((value, key) => {
         if (key !== 'set-cookie' && key !== 'content-length') res.setHeader(key, value);
@@ -172,6 +182,7 @@ function adapt(handler: Handler): RequestHandler {
       res.send(Buffer.from(await response.arrayBuffer()));
     } catch (error) {
       req.log.error({ err: error }, 'Imported application request failed');
+      captureServerException(error, { method: req.method, path: req.originalUrl?.split('?')[0] ?? null });
       res.status(500).json({ success: false, code: 'INTERNAL_ERROR', errorEn: 'The request could not be completed.' });
     }
   };

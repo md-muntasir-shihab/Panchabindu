@@ -1,0 +1,43 @@
+# gitleaks configuration — scan for committed credentials (Supabase service keys, bKash/courier
+# tokens, session secrets) before they reach a branch.
+#
+# Local run:  docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect -c /repo/.gitleaks.toml -s /repo
+# CI run:     .github/workflows/ci.yml → "Secret scan" job
+
+title = "Panchabindu"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "supabase-service-role-key"
+description = "Supabase service-role JWT (full database access)"
+regex = '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}'''
+tags = ["supabase", "credential"]
+
+[[rules]]
+id = "panchabindu-session-secret"
+description = "Session signing secret used by the customer/admin cookie layer"
+regex = '''(?:CREDENTIALS_ENCRYPTION_KEY|SESSION_SECRET|ADMIN_SESSION_SECRET)\s*=\s*['"]?[A-Za-z0-9+/=_-]{24,}'''
+tags = ["secret"]
+
+[[rules]]
+id = "courier-and-payment-tokens"
+description = "Courier or payment provider credentials"
+regex = '''(?:PATHAO_CLIENT_SECRET|STEADFAST_SECRET_KEY|STEADFAST_API_KEY|REDX_ACCESS_TOKEN|BKASH_APP_SECRET|RESEND_API_KEY)\s*=\s*['"]?[A-Za-z0-9._-]{16,}'''
+tags = ["credential"]
+
+[allowlist]
+description = "Placeholders, fixtures and documented examples only"
+paths = [
+  '''\.env\.example''',
+  '''docs/.*''',
+  '''.*\.md''',
+]
+regexes = [
+  '''your-''',
+  '''REPLACE_ME''',
+  '''example\.com''',
+  '''<[A-Z_]+>''',
+  '''\$\{\{\s*secrets\.''',
+]
