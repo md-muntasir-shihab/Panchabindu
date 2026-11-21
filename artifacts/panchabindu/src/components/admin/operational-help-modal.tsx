@@ -179,19 +179,25 @@ export const OPERATIONAL_HELP_GUIDE: Record<AdminTabKey, OperationalHelpGuideIte
       '১. যেকোনো ভেন্ডরের নাম ক্লিক করলে তার ৩৬০° প্রোফাইল ড্রয়ার খুলবে — প্রোফাইল ও শর্ত, পোর্টাল অনুমতি, প্রোডাক্ট ও স্টক ইতিহাস, অর্ডার ও পেআউট এবং KYC/চুক্তি।',
       '২. অনুমোদন ও স্টক ট্যাব থেকে পেন্ডিং কনসাইনমেন্ট চালান QC, মূল্য পরিবর্তন প্রস্তাব, প্রোফাইল পরিবর্তন ও KYC ডকুমেন্ট অনুমোদন করুন।',
       '৩. প্রোফাইল থেকে এক ক্লিকে সরাসরি পেআউট, ফুল লেজার, ভেন্ডর ইনবক্স বা অর্ডার ডিটেইলসে চলে যান।',
+      '৪. “হিসাব ও সরবরাহ” ট্যাবে ভেন্ডরভিত্তিক মাসিক আয় বনাম পরিশোধিত পেআউট, শেষ পেমেন্টের তারিখ, আর কোন পণ্যের চালান পেয়েছি/পাইনি (গৃহীত, রিজেক্ট, বাকি পিস ও বাকি টাকা) দেখুন।',
     ],
     workflowEn: [
       '1. Click any vendor to open their 360° profile drawer covering terms, portal permissions, products & stock intake history, orders & payouts, and KYC/contract.',
       '2. Review pending consignment stock lots, price change proposals, profile requests, and KYC documents in the Approvals & Stock tab.',
       '3. Jump directly from any vendor profile to Payouts, Escrow Ledger, Vendor Inbox, Product Studio, or linked Order Details.',
+      '4. The “Money & Supply” tab shows monthly vendor credits versus paid payouts, the last payment date, and which challans actually arrived (accepted, rejected, missing pieces and their value).',
     ],
     rulesBn: [
       '• পোর্টাল অনুমতি শুধু UI নয়, সার্ভার-সাইডেও যাচাই হয়।',
       '• ভেন্ডর স্ট্যাটাস স্থগিত করলে ভেন্ডর পোর্টাল থেকে সব পরিবর্তন তাৎক্ষণিক বন্ধ হয়ে যায়।',
+      '• পেআউট “অনুরোধ করা” বা “অনুমোদিত” মানে টাকা যায়নি — শুধু paid স্ট্যাটাসই পরিশোধ হিসেবে গণ্য হয়।',
+      '• এসক্রো বাকেট বদলালে (ম্যাচুরিটি/হোল্ড) একই সময়ে ক্রেডিট ও ডেবিট লেখা হয়; ব্যালান্স বদলায় শুধু নিট অঙ্কে।',
     ],
     rulesEn: [
       '• Portal permissions are enforced server-side on every vendor API route.',
       '• Suspending a vendor immediately blocks all mutations from the vendor portal.',
+      '• A “requested” or “approved” payout is not money sent; only the paid state settles a payout.',
+      '• Moving money between escrow buckets writes a credit and a debit at once; only the net changes the balance.',
     ],
   },
   courier_360: {

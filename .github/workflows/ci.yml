@@ -50,6 +50,9 @@ jobs:
       - name: Admin dashboard render checks
         run: pnpm run test:dashboard
 
+      - name: Vendor money & supply checks
+        run: pnpm run test:vendors
+
       - name: Build the storefront bundle
         run: pnpm run build --workspace=@workspace/panchabindu
 
