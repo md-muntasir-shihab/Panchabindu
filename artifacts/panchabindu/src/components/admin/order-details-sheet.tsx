@@ -524,12 +524,27 @@ export function OrderDetailsSheet({
   const canEditCoreOrder = !isVendor && isSuperAdmin && !isClosedOrder;
   const canEditOperations = !isVendor && !isClosedOrder;
 
+  const copyTimerRef = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    return () => {
+      if (copyTimerRef.current !== null) {
+        window.clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleCopyText = async (key: string, text: string) => {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
       setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 2000);
+      if (copyTimerRef.current !== null) {
+        window.clearTimeout(copyTimerRef.current);
+      }
+      copyTimerRef.current = window.setTimeout(() => {
+        setCopiedKey(null);
+        copyTimerRef.current = null;
+      }, 2000);
     } catch {
       // Ignore clipboard restriction
     }
@@ -616,9 +631,20 @@ export function OrderDetailsSheet({
       return;
     }
 
-    const amt = Number(advAmountTaka);
+    const trimmedAmt = advAmountTaka.trim();
+    const parts = trimmedAmt.split('.');
+    const isValidDecimalFormat =
+      parts.length <= 2 &&
+      parts[0].length > 0 &&
+      [...parts[0]].every((ch) => ch >= '0' && ch <= '9') &&
+      (parts.length === 1 ||
+        (parts[1].length >= 1 &&
+          parts[1].length <= 2 &&
+          [...parts[1]].every((ch) => ch >= '0' && ch <= '9')));
+    const amt = Number(trimmedAmt);
     if (
-      !/^\d+(?:\.\d{1,2})?$/.test(advAmountTaka.trim()) ||
+      !isValidDecimalFormat ||
+      !Number.isFinite(amt) ||
       !Number.isSafeInteger(Math.round(amt * 100)) ||
       amt <= 0
     ) {
@@ -1566,7 +1592,9 @@ export function OrderDetailsSheet({
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <input
+                      id="adv-note"
                       type="text"
+                      aria-label={bn ? 'অগ্রিম পেমেন্ট মন্তব্য (ঐচ্ছিক)' : 'Advance payment optional note'}
                       value={advNote}
                       onChange={(e) => setAdvNote(e.target.value)}
                       placeholder={
@@ -1574,13 +1602,13 @@ export function OrderDetailsSheet({
                           ? 'মন্তব্য (ঐচ্ছিক, যেমন: বিকাশ পার্সোনাল নম্বরে সেন্ড মানি)'
                           : 'Optional note (e.g. bKash Send Money)'
                       }
-                      className="flex-1 min-h-[36px] px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-bg text-ink text-xs focus:outline-none focus:border-ink"
+                      className="flex-1 min-h-[44px] sm:min-h-[36px] px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-bg text-ink text-xs focus:outline-none focus:border-ink"
                     />
                     <button
                       type="button"
                       disabled={isSubmittingAdvance}
                       onClick={() => void handleSubmitStep1Advance()}
-                      className="min-h-[36px] px-3.5 py-1.5 rounded-[var(--radius-sm)] bg-ink text-bg hover:opacity-90 font-semibold text-xs inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                      className="min-h-[44px] sm:min-h-[36px] px-3.5 py-1.5 rounded-[var(--radius-sm)] bg-ink text-bg hover:opacity-90 font-semibold text-xs inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap"
                     >
                       {isSubmittingAdvance && (
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
@@ -2159,10 +2187,14 @@ export function OrderDetailsSheet({
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-ink">
+                      <label
+                        htmlFor="details-post-code"
+                        className="block text-[11px] font-medium text-ink"
+                      >
                         {bn ? 'পোস্টকোড' : 'Post Code'}
                       </label>
                       <input
+                        id="details-post-code"
                         type="text"
                         maxLength={6}
                         disabled={!canEditOperations}
@@ -2173,10 +2205,14 @@ export function OrderDetailsSheet({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-ink">
+                      <label
+                        htmlFor="details-pathao-city"
+                        className="block text-[11px] font-medium text-ink"
+                      >
                         Pathao City
                       </label>
                       <input
+                        id="details-pathao-city"
                         type="text"
                         disabled={!canEditOperations}
                         value={recipientCity}
@@ -2186,10 +2222,14 @@ export function OrderDetailsSheet({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-ink">
+                      <label
+                        htmlFor="details-pathao-zone"
+                        className="block text-[11px] font-medium text-ink"
+                      >
                         Pathao Zone
                       </label>
                       <input
+                        id="details-pathao-zone"
                         type="text"
                         disabled={!canEditOperations}
                         value={recipientZone}
@@ -2205,10 +2245,14 @@ export function OrderDetailsSheet({
                       </datalist>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-ink">
+                      <label
+                        htmlFor="details-pathao-area"
+                        className="block text-[11px] font-medium text-ink"
+                      >
                         Pathao Area
                       </label>
                       <input
+                        id="details-pathao-area"
                         type="text"
                         disabled={!canEditOperations}
                         value={recipientArea}
@@ -2221,10 +2265,14 @@ export function OrderDetailsSheet({
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-ink">
+                      <label
+                        htmlFor="details-pathao-store"
+                        className="block text-[11px] font-medium text-ink"
+                      >
                         Pathao Store
                       </label>
                       <input
+                        id="details-pathao-store"
                         type="text"
                         disabled={!canEditOperations}
                         value={pathaoStoreName}
@@ -2233,10 +2281,14 @@ export function OrderDetailsSheet({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-ink">
+                      <label
+                        htmlFor="details-weight-grams"
+                        className="block text-[11px] font-medium text-ink"
+                      >
                         {bn ? 'ওজন (গ্রাম)' : 'Weight (g)'}
                       </label>
                       <input
+                        id="details-weight-grams"
                         type="number"
                         min={50}
                         step={50}
@@ -2251,10 +2303,14 @@ export function OrderDetailsSheet({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-ink">
+                      <label
+                        htmlFor="details-bdpost-service"
+                        className="block text-[11px] font-medium text-ink"
+                      >
                         {bn ? 'BD Post সার্ভিস' : 'BD Post Service'}
                       </label>
                       <select
+                        id="details-bdpost-service"
                         disabled={!canEditOperations}
                         value={bdPostServiceType}
                         onChange={(e) =>
@@ -2271,10 +2327,14 @@ export function OrderDetailsSheet({
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-ink">
+                      <label
+                        htmlFor="details-special-instruction"
+                        className="block text-[11px] font-medium text-ink"
+                      >
                         {bn ? 'ডেলিভারি নির্দেশনা' : 'Special Instruction'}
                       </label>
                       <input
+                        id="details-special-instruction"
                         type="text"
                         disabled={!canEditOperations}
                         value={specialInstruction}
@@ -2521,6 +2581,11 @@ export function OrderDetailsSheet({
                           <input
                             type="number"
                             min={1}
+                            aria-label={
+                              bn
+                                ? `${item.productNameBn} পরিমাণ`
+                                : `${item.productNameBn} quantity`
+                            }
                             disabled={!canEditCoreOrder}
                             value={item.quantity}
                             onChange={(e) =>
@@ -2546,10 +2611,14 @@ export function OrderDetailsSheet({
                       </div>
 
                       <div>
-                        <span className="block text-[10px] text-muted mb-1">
+                        <label
+                          htmlFor={`details-item-price-${idx}`}
+                          className="block text-[10px] text-muted mb-1"
+                        >
                           {bn ? 'একক মূল্য (৳)' : 'Unit Price (৳)'}
-                        </span>
+                        </label>
                         <input
+                          id={`details-item-price-${idx}`}
                           type="number"
                           min={0}
                           disabled={!canEditCoreOrder}

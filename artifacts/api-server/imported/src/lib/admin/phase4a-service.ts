@@ -1731,11 +1731,24 @@ export function executeOrderGridAction(
 
       if (rawCustomUrl) {
         let validUrl = false;
-        try {
-          const parsedUrl = new URL(rawCustomUrl);
-          validUrl = parsedUrl.protocol === 'https:' || parsedUrl.protocol === 'http:';
-        } catch {
-          validUrl = false;
+        let hasCtrl = false;
+        for (let i = 0; i < rawCustomUrl.length; i += 1) {
+          const code = rawCustomUrl.charCodeAt(i);
+          if (code <= 0x1f || code === 0x7f) {
+            hasCtrl = true;
+            break;
+          }
+        }
+        if (!hasCtrl) {
+          try {
+            const parsedUrl = new URL(rawCustomUrl);
+            validUrl =
+              (parsedUrl.protocol === 'https:' || parsedUrl.protocol === 'http:') &&
+              !parsedUrl.username &&
+              !parsedUrl.password;
+          } catch {
+            validUrl = false;
+          }
         }
         if (!validUrl) {
           results.push({
@@ -2732,7 +2745,36 @@ export function updateOrderCourierMeta(
   }
   if (input.customTrackingUrl !== undefined) {
     const cleanUrl = (input.customTrackingUrl ?? '').trim();
-    ord.customTrackingUrl = cleanUrl || null;
+    if (cleanUrl) {
+      let validUrl = false;
+      let hasCtrl = false;
+      for (let i = 0; i < cleanUrl.length; i += 1) {
+        const code = cleanUrl.charCodeAt(i);
+        if (code <= 0x1f || code === 0x7f) {
+          hasCtrl = true;
+          break;
+        }
+      }
+      if (!hasCtrl) {
+        try {
+          const parsedUrl = new URL(cleanUrl);
+          validUrl =
+            (parsedUrl.protocol === 'https:' || parsedUrl.protocol === 'http:') &&
+            !parsedUrl.username &&
+            !parsedUrl.password;
+        } catch {
+          validUrl = false;
+        }
+      }
+      if (!validUrl) {
+        throw new Error(
+          'ট্র্যাকিং লিংক অবশ্যই সঠিক http:// বা https:// URL হতে হবে।'
+        );
+      }
+      ord.customTrackingUrl = cleanUrl;
+    } else {
+      ord.customTrackingUrl = null;
+    }
   }
 
   const quality = evaluateAddressQuality({

@@ -15,15 +15,34 @@
     "typecheck:libs": "tsc --build",
     "typecheck": "npm run typecheck:libs && npm run typecheck --workspace=@workspace/api-server && npm run typecheck --workspace=@workspace/panchabindu && npm run typecheck --workspace=@workspace/scripts",
     "build:vercel": "npm run build --workspace=@workspace/api-server && npm run build --workspace=@workspace/panchabindu",
-    "db:initialize-runtime": "node scripts/database/initialize-production-runtime.mjs"
+    "db:initialize-runtime": "node scripts/database/initialize-production-runtime.mjs",
+    "audit:eslint": "eslint artifacts/api-server/src/app.ts artifacts/api-server/src/routes/page-data.ts artifacts/api-server/imported/app/api/storefront/route.ts artifacts/panchabindu/src/App.tsx artifacts/panchabindu/src/lib/storefront/product-image.ts artifacts/panchabindu/src/lib/storefront/storefront-config.ts artifacts/panchabindu/src/components/storefront/product-card.tsx artifacts/panchabindu/src/components/storefront/homepage-client.tsx artifacts/panchabindu/src/components/storefront/storefront-shell.tsx",
+    "audit:eslint:orders": "eslint artifacts/panchabindu/src/components/ui/responsive-sheet.tsx artifacts/panchabindu/src/lib/admin/order-management.ts artifacts/panchabindu/src/lib/courier/bulk-csv-exporter.ts artifacts/panchabindu/src/components/admin/orders-grid-minimal.tsx artifacts/panchabindu/src/components/admin/order-dispatch-sheet.tsx artifacts/panchabindu/src/components/admin/order-print-preview-sheet.tsx artifacts/panchabindu/src/components/admin/courier-bulk-csv-panel.tsx artifacts/panchabindu/src/components/admin/order-details-sheet.tsx",
+    "audit:eslint:print": "eslint artifacts/panchabindu/src/components/admin/print-engine-panel.tsx artifacts/panchabindu/src/components/admin/order-print-preview-sheet.tsx artifacts/api-server/imported/app/api/print/[orderNo]/route.ts artifacts/api-server/imported/src/lib/security/workspace-policy.ts artifacts/panchabindu/src/lib/security/workspace-policy.ts",
+    "audit:eslint:catalog": "eslint artifacts/panchabindu/src/components/admin/product-studio-panel.tsx artifacts/panchabindu/src/components/admin/catalog-import-panel.tsx artifacts/api-server/imported/src/lib/media/catalog-import.ts",
+    "test:home:api": "node --test scripts/src/home-audit-api.test.mjs",
+    "test:home:browser": "node scripts/src/home-audit-browser.mjs",
+    "test:orders:api": "node --test scripts/src/admin-orders-audit-api.test.mjs",
+    "test:orders:browser": "node scripts/src/admin-orders-audit-browser.mjs",
+    "test:print:api": "node --test scripts/src/admin-print-engine-audit-api.test.mjs",
+    "test:print:browser": "node scripts/src/admin-print-engine-audit-browser.mjs",
+    "test:catalog:api": "node --test scripts/src/admin-product-studio-audit-api.test.mjs",
+    "test:catalog:browser": "node scripts/src/admin-product-studio-audit-browser.mjs"
   },
   "dependencies": {
     "@replit/connectors-sdk": "^0.7.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-security": "^4.2.1",
+    "globals": "^17.14.0",
     "prettier": "^3.9.10",
     "tsx": "^4.21.0",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.73.0"
   },
   "engines": {
     "node": "22.x"

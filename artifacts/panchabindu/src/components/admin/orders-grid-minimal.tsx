@@ -716,7 +716,7 @@ export function OrdersGridMinimal({
                       <button
                         type="button"
                         onClick={() => onOpenDispatch(ord, 'edit')}
-                        className="text-muted hover:text-ink underline cursor-pointer whitespace-nowrap"
+                        className="min-h-[44px] inline-flex items-center text-muted hover:text-ink underline cursor-pointer whitespace-nowrap"
                       >
                         {bn ? 'কুরিয়ার এডিট' : 'Edit courier'}
                       </button>
@@ -729,13 +729,13 @@ export function OrdersGridMinimal({
                     <div className="flex items-center gap-1.5">
                       {!isVendor && ord.customerPhone && (
                         <a
-                          href={`tel:${ord.customerPhone}`}
+                          href={`tel:${ord.customerPhone.replace(/[^\d+]/g, '')}`}
                           onClick={() => {
                             if (ord.orderNo) onLogCall(ord.orderNo);
                           }}
                           title={bn ? 'কল করুন' : 'Call'}
                           aria-label={bn ? 'কল করুন' : 'Call'}
-                          className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center border border-border rounded-[var(--radius-sm)] bg-surface text-ink hover:border-ink"
+                          className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center border border-border rounded-[var(--radius-sm)] bg-surface text-ink hover:border-ink"
                         >
                           <PhoneCall className="w-3.5 h-3.5" aria-hidden="true" />
                         </a>
@@ -746,7 +746,7 @@ export function OrdersGridMinimal({
                           onClick={() => onOpenMessage(ord)}
                           title={bn ? 'মেসেজ পাঠান' : 'Message'}
                           aria-label={bn ? 'মেসেজ পাঠান' : 'Message'}
-                          className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center border border-border rounded-[var(--radius-sm)] bg-surface text-ink hover:border-ink cursor-pointer"
+                          className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center border border-border rounded-[var(--radius-sm)] bg-surface text-ink hover:border-ink cursor-pointer"
                         >
                           <MessageSquare className="w-3.5 h-3.5" aria-hidden="true" />
                         </button>
@@ -757,7 +757,7 @@ export function OrdersGridMinimal({
                           onClick={() => onOpenPrint(ord.orderNo!)}
                           title={bn ? 'প্রিন্ট প্রিভিউ' : 'Print preview'}
                           aria-label={bn ? 'প্রিন্ট প্রিভিউ' : 'Print preview'}
-                          className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center border border-border rounded-[var(--radius-sm)] bg-surface text-ink hover:border-ink cursor-pointer"
+                          className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center border border-border rounded-[var(--radius-sm)] bg-surface text-ink hover:border-ink cursor-pointer"
                         >
                           <Printer className="w-3.5 h-3.5" aria-hidden="true" />
                         </button>
@@ -765,7 +765,7 @@ export function OrdersGridMinimal({
                       <button
                         type="button"
                         onClick={() => onOpenDetails(ord)}
-                        className="min-h-[36px] px-2.5 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink hover:border-ink font-medium cursor-pointer whitespace-nowrap"
+                        className="min-h-[44px] px-3 py-1.5 border border-border rounded-[var(--radius-sm)] bg-surface text-ink hover:border-ink font-medium cursor-pointer whitespace-nowrap"
                       >
                         {bn ? 'বিস্তারিত' : 'Details'}
                       </button>
@@ -1053,7 +1053,7 @@ export function OrdersGridMinimal({
                           <div className="inline-flex items-center justify-end gap-1">
                             {!isVendor && ord.customerPhone && (
                               <a
-                                href={`tel:${ord.customerPhone}`}
+                                href={`tel:${ord.customerPhone.replace(/[^\d+]/g, '')}`}
                                 onClick={() => {
                                   if (ord.orderNo) onLogCall(ord.orderNo);
                                 }}

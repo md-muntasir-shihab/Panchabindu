@@ -41,6 +41,7 @@ export function canExecuteWorkspaceAction(ctx: ActorSecurityContext | null, oper
   if (['create_flash_campaign', 'promote_matured_escrow', 'run_scheduled_job_now', 'sync_courier_tracking', 'simulate_courier_webhook'].includes(operation)) return false;
   const [module, action] = WORKSPACE_ACTIONS[operation as keyof typeof WORKSPACE_ACTIONS];
   // Catalog editing is cost-bearing; a separate field-safe staff editor remains gated.
-  if (['upsert_product', 'upsert_category', 'delete_product', 'generate_print_slips', 'upsert_blacklist', 'trigger_sheets_sync', 'create_system_backup_snapshot'].includes(operation) && ctx.roleSlug !== 'super_admin') return false;
+  // generate_print_slips enforces server-side Part 3 redaction for non-super_admin roles with print_engine:create.
+  if (['upsert_product', 'upsert_category', 'delete_product', 'upsert_blacklist', 'trigger_sheets_sync', 'create_system_backup_snapshot'].includes(operation) && ctx.roleSlug !== 'super_admin') return false;
   return hasModulePermission(ctx, module, action);
 }

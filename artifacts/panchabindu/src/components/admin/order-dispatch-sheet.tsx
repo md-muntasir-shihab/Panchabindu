@@ -71,6 +71,15 @@ export function OrderDispatchSheet({
   const [urlManuallyEdited, setUrlManuallyEdited] = React.useState(false);
   const [validationError, setValidationError] = React.useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = React.useState(false);
+  const copyTimerRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (copyTimerRef.current !== null) {
+        window.clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     if (!order) return;
@@ -157,7 +166,13 @@ export function OrderDispatchSheet({
     try {
       await navigator.clipboard.writeText(resolvedPreviewUrl);
       setCopiedUrl(true);
-      setTimeout(() => setCopiedUrl(false), 2000);
+      if (copyTimerRef.current !== null) {
+        window.clearTimeout(copyTimerRef.current);
+      }
+      copyTimerRef.current = window.setTimeout(() => {
+        setCopiedUrl(false);
+        copyTimerRef.current = null;
+      }, 2000);
     } catch {
       // Clipboard may be restricted in non-HTTPS contexts; ignore silently.
     }
@@ -282,22 +297,30 @@ export function OrderDispatchSheet({
 
           {/* Courier Provider Selector */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold text-ink">
+            <p
+              id="dispatch-courier-selector-label"
+              className="block text-xs font-semibold text-ink"
+            >
               {bn ? 'কুরিয়ার নির্বাচন করুন' : 'Select Courier'}
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            </p>
+            <div
+              role="group"
+              aria-labelledby="dispatch-courier-selector-label"
+              className="grid grid-cols-2 sm:grid-cols-4 gap-2"
+            >
               {COURIER_OPTIONS.map((opt) => {
                 const active = provider === opt.key;
                 return (
                   <button
                     key={opt.key}
                     type="button"
+                    aria-pressed={active}
                     onClick={() => {
                       setProvider(opt.key);
                       setUrlManuallyEdited(false);
                       setValidationError(null);
                     }}
-                    className={`min-h-[38px] px-2.5 py-2 rounded-[var(--radius-sm)] border text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                    className={`min-h-[44px] sm:min-h-[38px] px-2.5 py-2 rounded-[var(--radius-sm)] border text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                       active
                         ? 'bg-ink text-bg border-ink'
                         : 'bg-bg text-ink border-border hover:border-ink'
@@ -504,7 +527,7 @@ export function OrderDispatchSheet({
               type="button"
               disabled={isSubmitting}
               onClick={onClose}
-              className="min-h-[36px] px-3 py-1.5 rounded-[var(--radius-sm)] border border-border bg-bg text-ink hover:bg-surface font-medium text-xs cursor-pointer disabled:opacity-50"
+              className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-[var(--radius-sm)] border border-border bg-bg text-ink hover:bg-surface font-medium text-xs cursor-pointer disabled:opacity-50"
             >
               {bn ? 'বাতিল' : 'Cancel'}
             </button>
@@ -515,7 +538,7 @@ export function OrderDispatchSheet({
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => void handleConfirm(false)}
-                  className="min-h-[36px] px-3 py-1.5 rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:border-ink font-semibold text-xs cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                  className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:border-ink font-semibold text-xs cursor-pointer disabled:opacity-50 whitespace-nowrap"
                 >
                   {bn ? 'শুধু তথ্য সেভ' : 'Save Only'}
                 </button>
@@ -525,7 +548,7 @@ export function OrderDispatchSheet({
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => void handleConfirm(mode !== 'edit')}
-                className="min-h-[36px] px-4 py-1.5 rounded-[var(--radius-sm)] bg-ink text-bg hover:opacity-90 font-semibold text-xs cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5 whitespace-nowrap"
+                className="min-h-[44px] sm:min-h-[36px] px-4 py-1.5 rounded-[var(--radius-sm)] bg-ink text-bg hover:opacity-90 font-semibold text-xs cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5 whitespace-nowrap"
               >
                 {isSubmitting ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />

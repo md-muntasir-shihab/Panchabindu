@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const safeStoreUrl = (value: string) => {
   if (!value) return true;
-  if (/[\s\\\u0000-\u001f]/.test(value)) return false;
+  if (/[\s\\]/.test(value) || Array.from(value).some((ch) => ch.charCodeAt(0) <= 0x1f)) return false;
   if (value.startsWith('#')) return true;
   if (value.startsWith('/') && !value.startsWith('//')) return true;
   try { const url = new URL(value); return url.protocol === 'https:' && !url.username && !url.password; } catch { return false; }

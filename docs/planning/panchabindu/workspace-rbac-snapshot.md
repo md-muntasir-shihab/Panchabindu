@@ -20,7 +20,7 @@ Disabled operations remain DENY even for super_admin. This is an executable regr
 | delete_product | DENY | DENY | DENY | DENY | DENY | DENY | ALLOW |
 | direct_vendor_payout | DENY | DENY | DENY | DENY | DENY | DENY | ALLOW |
 | execute_customer_refund | DENY | DENY | DENY | DENY | DENY | DENY | ALLOW |
-| generate_print_slips | DENY | DENY | DENY | DENY | DENY | DENY | ALLOW |
+| generate_print_slips | DENY | DENY | DENY | DENY | DENY | ALLOW | ALLOW |
 | input_manual_mfs | DENY | DENY | DENY | DENY | DENY | DENY | ALLOW |
 | inspect_role_sanitization | DENY | DENY | DENY | DENY | DENY | DENY | ALLOW |
 | lookup_phone | DENY | DENY | DENY | DENY | ALLOW | ALLOW | ALLOW |

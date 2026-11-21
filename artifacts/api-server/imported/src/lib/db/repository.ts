@@ -2599,6 +2599,15 @@ export function saveAbandonedCartSnapshot(input: {
 /**
  * Admin Product & Multi-Variant CRUD with 3-Tier Poisha Validation
  */
+function hasAsciiControlChars(value: string, allowNewlines = false): boolean {
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i);
+    if (allowNewlines && (code === 10 || code === 13 || code === 9)) continue;
+    if (code < 32 || code === 127) return true;
+  }
+  return false;
+}
+
 export function upsertAdminProduct(input: {
   productId?: string;
   vendorId: string;
@@ -2638,8 +2647,22 @@ export function upsertAdminProduct(input: {
   const state = readErpState();
 
   const nameBn = input.nameBn.trim();
-  if (!nameBn) {
-    return { success: false, errorBn: 'পণ্যের বাংলা নাম আবশ্যক।' };
+  const nameEn = (input.nameEn ?? '').trim();
+  const descriptionBn = (input.descriptionBn ?? '').trim();
+  const descriptionEn = (input.descriptionEn ?? '').trim();
+  if (!nameBn || nameBn.length > 160 || hasAsciiControlChars(nameBn)) {
+    return { success: false, errorBn: 'পণ্যের বাংলা নাম আবশ্যক (সর্বোচ্চ ১৬০ অক্ষর)।' };
+  }
+  if (nameEn.length > 160 || hasAsciiControlChars(nameEn)) {
+    return { success: false, errorBn: 'পণ্যের ইংরেজি নাম সর্বোচ্চ ১৬০ অক্ষর হতে হবে।' };
+  }
+  if (
+    descriptionBn.length > 4000 ||
+    descriptionEn.length > 4000 ||
+    hasAsciiControlChars(descriptionBn, true) ||
+    hasAsciiControlChars(descriptionEn, true)
+  ) {
+    return { success: false, errorBn: 'পণ্যের বিবরণ সর্বোচ্চ ৪০০০ অক্ষরের মধ্যে রাখুন।' };
   }
 
   const category = state.categories.find((c) => c.id === input.categoryId);
@@ -2647,18 +2670,21 @@ export function upsertAdminProduct(input: {
     return { success: false, errorBn: 'নির্বাচিত ক্যাটাগরি খুঁজে পাওয়া যায়নি।' };
   }
 
-  if (!input.variants || input.variants.length === 0) {
-    return { success: false, errorBn: 'কমপক্ষে ১টি ভ্যারিয়েন্ট যোগ করতে হবে।' };
+  if (!input.variants || input.variants.length === 0 || input.variants.length > 50) {
+    return { success: false, errorBn: '১ থেকে ৫০টি ভ্যারিয়েন্ট যোগ করতে হবে।' };
+  }
+  if (input.specs && input.specs.length > 30) {
+    return { success: false, errorBn: 'সর্বোচ্চ ৩০টি স্পেসিফিকেশন যোগ করা যাবে।' };
   }
 
   // Derive or validate slug
-  const baseSlug = (input.slug?.trim() || input.nameEn?.trim() || nameBn)
+  const baseSlug = (input.slug?.trim() || nameEn || nameBn)
     .toLowerCase()
     .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-');
+    .replace(/\s+/g, '-')
+    .slice(0, 120);
   const targetSlug = baseSlug || `prod-${Date.now().toString().slice(-6)}`;
 
-  const isEditing = Boolean(input.productId);
   const productId = input.productId || crypto.randomUUID();
 
   // Never invent a vendor when the registry is missing, invalid or the ID is unknown.
@@ -2705,6 +2731,16 @@ export function upsertAdminProduct(input: {
     const variantId = v.variantId || crypto.randomUUID();
     const publicSku = v.publicSku.trim().toUpperCase() || `BG-${targetSlug.slice(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 899)}`;
     const internalVendorSku = v.internalVendorSku?.trim().toUpperCase() || `${vendorCode}-${publicSku}`;
+    if (
+      publicSku.length > 64 ||
+      internalVendorSku.length > 64 ||
+      hasAsciiControlChars(publicSku) ||
+      hasAsciiControlChars(internalVendorSku) ||
+      v.titleBn.trim().length > 120 ||
+      hasAsciiControlChars(v.titleBn)
+    ) {
+      return { success: false, errorBn: 'ভ্যারিয়েন্ট নাম বা SKU ফরম্যাট বৈধ নয়।' };
+    }
 
     const previousVariant = existingProduct?.variants.find((variant) => variant.variantId === variantId);
     if (variantIds.has(variantId) || publicSkus.has(publicSku) ||
@@ -2735,7 +2771,7 @@ export function upsertAdminProduct(input: {
       platformMarginPoisha: marginPoisha,
       salePricePoisha: salePoisha,
       compareAtPricePoisha: v.compareAtPricePoisha ? Math.round(v.compareAtPricePoisha) : null,
-      weightGrams: Math.max(100, Math.round(v.weightGrams ?? 500)),
+      weightGrams: Math.max(100, Math.min(100_000, Math.round(v.weightGrams ?? 500))),
       stockOnHand,
       stockReserved: previousVariant?.stockReserved ?? 0,
       stockInTransit: previousVariant?.stockInTransit ?? 0,
@@ -2751,6 +2787,15 @@ export function upsertAdminProduct(input: {
     return { success: false, errorBn: 'স্টক বা অর্ডারযুক্ত ভ্যারিয়েন্ট মুছে ফেলা যাবে না।' };
   }
 
+  const normalizedSpecs = (input.specs ?? [])
+    .map((spec) => ({
+      labelBn: spec.labelBn.trim().slice(0, 100),
+      labelEn: spec.labelEn.trim().slice(0, 100),
+      valueBn: spec.valueBn.trim().slice(0, 240),
+      valueEn: spec.valueEn.trim().slice(0, 240),
+    }))
+    .filter((spec) => spec.labelBn && spec.valueBn);
+
   const productRecord: InternalProductRecord = {
     productId,
     vendorId: input.vendorId,
@@ -2759,10 +2804,10 @@ export function upsertAdminProduct(input: {
     categoryId: input.categoryId,
     slug: targetSlug,
     nameBn,
-    nameEn: input.nameEn?.trim() || nameBn,
-    descriptionBn: input.descriptionBn.trim() || 'প্রিমিয়াম কনসাইনমেন্ট পণ্য।',
-    descriptionEn: input.descriptionEn?.trim() || input.descriptionBn.trim(),
-    specs: input.specs && input.specs.length > 0 ? input.specs : [
+    nameEn: nameEn || nameBn,
+    descriptionBn: descriptionBn || 'প্রিমিয়াম কনসাইনমেন্ট পণ্য।',
+    descriptionEn: descriptionEn || descriptionBn || 'Premium consignment product.',
+    specs: normalizedSpecs.length > 0 ? normalizedSpecs : [
       { labelBn: 'মান নিয়ন্ত্রণ', labelEn: 'Quality QC', valueBn: '১০০% অরিজিনাল ও ভেরিফাইড', valueEn: '100% Original & Verified' }
     ],
     variantAxes: Object.keys(normalizedVariants[0]?.attributes ?? { Version: 'Standard' }),
@@ -2793,22 +2838,33 @@ export function upsertAdminProduct(input: {
 }
 
 /**
- * Deletes or archives a product from the ERP
+ * Always soft-archives a product from active storefront listings without destroying
+ * historical order lines, stock balances, SKUs, or consignment audit records.
  */
-export function deleteAdminProduct(productId: string): { success: boolean; errorBn?: string } {
+export function deleteAdminProduct(productId: string): {
+  success: boolean;
+  archived?: boolean;
+  product?: InternalProductRecord;
+  errorBn?: string;
+} {
   const state = readErpState();
   const idx = state.products.findIndex((p) => p.productId === productId);
   if (idx < 0) {
     return { success: false, errorBn: 'পণ্যটি খুঁজে পাওয়া যায়নি।' };
   }
 
-  state.products.splice(idx, 1);
+  const archivedProduct: InternalProductRecord = {
+    ...state.products[idx],
+    status: 'archived',
+    isFeatured: false,
+  };
+  state.products[idx] = archivedProduct;
   writeErpState(state);
-  return { success: true };
+  return { success: true, archived: true, product: archivedProduct };
 }
 
 /**
- * Admin Category CRUD: Create or update storefront category
+ * Admin Category CRUD: Create or update storefront category with unique slug guard
  */
 export function upsertAdminCategory(input: {
   id?: string;
@@ -2824,26 +2880,58 @@ export function upsertAdminCategory(input: {
   const state = readErpState();
 
   const nameBn = input.nameBn.trim();
-  if (!nameBn) {
-    return { success: false, errorBn: 'ক্যাটাগরির বাংলা নাম আবশ্যক।' };
+  const nameEn = (input.nameEn ?? '').trim();
+  const descriptionBn = (input.descriptionBn ?? '').trim();
+  const descriptionEn = (input.descriptionEn ?? '').trim();
+  if (!nameBn || nameBn.length > 160 || hasAsciiControlChars(nameBn)) {
+    return { success: false, errorBn: 'ক্যাটাগরির বাংলা নাম আবশ্যক (সর্বোচ্চ ১৬০ অক্ষর)।' };
+  }
+  if (!nameEn || nameEn.length > 160 || hasAsciiControlChars(nameEn)) {
+    return { success: false, errorBn: 'ক্যাটাগরির ইংরেজি নাম আবশ্যক (সর্বোচ্চ ১৬০ অক্ষর)।' };
+  }
+  if (
+    !descriptionBn ||
+    descriptionBn.length > 2000 ||
+    descriptionEn.length > 2000 ||
+    hasAsciiControlChars(descriptionBn, true) ||
+    hasAsciiControlChars(descriptionEn, true)
+  ) {
+    return { success: false, errorBn: 'ক্যাটাগরির বিবরণ বৈধ ও সর্বোচ্চ ২০০০ অক্ষর হতে হবে।' };
   }
 
-  const categoryId = input.id || `cat-${Date.now().toString().slice(-6)}`;
-  const slug = (input.slug?.trim() || input.nameEn?.trim() || nameBn)
+  const sortOrder = input.sortOrder ?? state.categories.length + 1;
+  if (!Number.isSafeInteger(sortOrder) || sortOrder < 0 || sortOrder > 9999) {
+    return { success: false, errorBn: 'ক্রমবিন্যাস ০ থেকে ৯৯৯৯-এর মধ্যে পূর্ণসংখ্যা হতে হবে।' };
+  }
+
+  const rawIcon = (input.iconName ?? 'Package').trim() || 'Package';
+  if (rawIcon.length > 40 || !/^[A-Za-z0-9_-]+$/.test(rawIcon)) {
+    return { success: false, errorBn: 'আইকনের নাম শুধুমাত্র ইংরেজি অক্ষর বা সংখ্যা হতে হবে।' };
+  }
+
+  const categoryId = input.id?.trim() || `cat-${Date.now().toString().slice(-6)}`;
+  const rawSlug = (input.slug?.trim() || nameEn || nameBn)
     .toLowerCase()
     .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-');
+    .replace(/\s+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 100);
+  const targetSlug = rawSlug || categoryId;
+
+  if (state.categories.some((c) => c.slug === targetSlug && c.id !== categoryId)) {
+    return { success: false, errorBn: 'এই ক্যাটাগরির slug ইতিমধ্যে ব্যবহৃত হয়েছে। অন্য নাম বা slug দিন।' };
+  }
 
   const catRecord: CategoryRecord = {
     id: categoryId,
     parentId: null,
-    slug: slug || categoryId,
+    slug: targetSlug,
     nameBn,
-    nameEn: input.nameEn?.trim() || nameBn,
-    descriptionBn: input.descriptionBn.trim() || 'প্রিমিয়াম কালেকশন।',
-    descriptionEn: input.descriptionEn?.trim() || input.descriptionBn.trim(),
-    iconName: input.iconName || 'Package',
-    sortOrder: input.sortOrder ?? state.categories.length + 1,
+    nameEn: nameEn || nameBn,
+    descriptionBn: descriptionBn || 'প্রিমিয়াম কালেকশন।',
+    descriptionEn: descriptionEn || descriptionBn,
+    iconName: rawIcon,
+    sortOrder,
     isActive: input.isActive ?? true,
   };
 

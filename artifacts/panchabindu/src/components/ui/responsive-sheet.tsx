@@ -33,8 +33,35 @@ export function ResponsiveSheet({
   const isMobile = useIsMobile();
   const descriptionId = React.useId();
   const locale = useLocaleStore((s) => s.locale);
+  const [bannerOffsetPx, setBannerOffsetPx] = React.useState(0);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !open) return undefined;
+    const measureBanner = () => {
+      const banner = document.querySelector('body > [role="status"]') as HTMLElement | null;
+      if (!banner) {
+        setBannerOffsetPx(0);
+        return;
+      }
+      const rect = banner.getBoundingClientRect();
+      const visibleBottom = Math.max(0, Math.min(Math.ceil(rect.height), Math.ceil(rect.bottom)));
+      setBannerOffsetPx(visibleBottom);
+      document.documentElement.style.setProperty('--preview-banner-h', `${visibleBottom}px`);
+    };
+    measureBanner();
+    window.addEventListener('resize', measureBanner);
+    window.addEventListener('scroll', measureBanner, { passive: true });
+    return () => {
+      window.removeEventListener('resize', measureBanner);
+      window.removeEventListener('scroll', measureBanner);
+    };
+  }, [open]);
+
   const desktopWidthClass =
     size === 'wide' ? 'max-w-[min(54rem,100vw)]' : 'max-w-[min(42rem,100vw)]';
+  const sheetBannerStyle = {
+    '--preview-banner-h': `${bannerOffsetPx}px`,
+  } as React.CSSProperties;
 
   return (
     <Drawer.Root
@@ -43,13 +70,17 @@ export function ResponsiveSheet({
       direction={isMobile ? 'bottom' : 'right'}
     >
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[70] bg-ink/40" />
+        <Drawer.Overlay
+          style={sheetBannerStyle}
+          className="fixed top-[var(--preview-banner-h,0px)] inset-x-0 bottom-0 z-[70] bg-ink/40"
+        />
         <Drawer.Content
+          style={sheetBannerStyle}
           aria-describedby={description ? descriptionId : undefined}
           className={
             isMobile
-              ? 'fixed inset-x-0 bottom-0 z-[70] mt-20 flex max-h-[calc(100dvh-max(1.25rem,var(--safe-top)))] flex-col rounded-t-[var(--radius-lg)] border-t border-border bg-bg text-ink focus:outline-none safe-bottom pl-[var(--safe-left)] pr-[var(--safe-right)]'
-              : `fixed inset-y-0 right-0 z-[70] flex w-full ${desktopWidthClass} min-w-0 flex-col border-l border-border bg-bg text-ink focus:outline-none pt-[var(--safe-top)] pb-[var(--safe-bottom)] pr-[var(--safe-right)]`
+              ? 'fixed inset-x-0 bottom-0 z-[70] mt-4 flex max-h-[calc(100dvh-var(--preview-banner-h,0px)-max(1.25rem,var(--safe-top)))] flex-col rounded-t-[var(--radius-lg)] border-t border-border bg-bg text-ink focus:outline-none safe-bottom pl-[var(--safe-left)] pr-[var(--safe-right)]'
+              : `fixed top-[var(--preview-banner-h,0px)] bottom-0 right-0 z-[70] flex w-full ${desktopWidthClass} min-w-0 flex-col border-l border-border bg-bg text-ink focus:outline-none pt-[var(--safe-top)] pb-[var(--safe-bottom)] pr-[var(--safe-right)]`
           }
         >
           {isMobile && (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -17,6 +17,10 @@ import type {
   OrderGridRowDTO,
   OrderStatus,
 } from '@/types/domain';
+import {
+  normalizeBdPostServiceType,
+  type CanonicalBdPostServiceType,
+} from '@/lib/admin/order-management';
 import {
   buildCourierBulkExportBundle,
   PATHAO_BULK_CSV_HEADERS,
@@ -99,8 +103,19 @@ export function CourierBulkCsvPanel({
   const [editItemType, setEditItemType] = useState<'parcel' | 'document' | 'fragile'>('parcel');
   const [editWeightGrams, setEditWeightGrams] = useState<number>(500);
   const [editSpecialInstruction, setEditSpecialInstruction] = useState<string>('');
-  const [editBdPostServiceType, setEditBdPostServiceType] = useState<string>('vpp_cod');
+  const [editBdPostServiceType, setEditBdPostServiceType] =
+    useState<CanonicalBdPostServiceType>('VPP_PARCEL');
   const [editCourierProvider, setEditCourierProvider] = useState<CourierProvider>('pathao');
+  const idPrefix = useId();
+  const copiedTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current !== null) {
+        window.clearTimeout(copiedTimerRef.current);
+      }
+    };
+  }, []);
 
   const normalizedOrders = useMemo(() => {
     return orders.filter((o): o is OrderGridRowDTO => Boolean(o && o.orderNo));
@@ -186,8 +201,20 @@ export function CourierBulkCsvPanel({
     setEditSpecialInstruction(
       found.specialInstruction || found.internalStaffNote || ''
     );
-    setEditBdPostServiceType(found.bdPostServiceType || 'vpp_cod');
-    setEditCourierProvider(found.courierProvider || 'pathao');
+    setEditBdPostServiceType(
+      normalizeBdPostServiceType(
+        found.bdPostServiceType,
+        (found.codCollectablePoisha ?? 1) > 0
+      )
+    );
+    const safeProvider: CourierProvider =
+      found.courierProvider === 'steadfast' ||
+      found.courierProvider === 'pathao' ||
+      found.courierProvider === 'bd_post' ||
+      found.courierProvider === 'manual'
+        ? found.courierProvider
+        : 'pathao';
+    setEditCourierProvider(safeProvider);
   };
 
   const handleDistrictChangeInFix = (newDistId: number) => {
@@ -276,9 +303,19 @@ export function CourierBulkCsvPanel({
 
   const handleCopyCsv = async () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(preview.csvContent);
-      setCopiedNotice(true);
-      setTimeout(() => setCopiedNotice(false), 2500);
+      try {
+        await navigator.clipboard.writeText(preview.csvContent);
+        setCopiedNotice(true);
+        if (copiedTimerRef.current !== null) {
+          window.clearTimeout(copiedTimerRef.current);
+        }
+        copiedTimerRef.current = window.setTimeout(() => {
+          setCopiedNotice(false);
+          copiedTimerRef.current = null;
+        }, 2500);
+      } catch {
+        // Ignore clipboard denial
+      }
     }
   };
 
@@ -294,7 +331,7 @@ export function CourierBulkCsvPanel({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const activeHeaders =
@@ -427,43 +464,63 @@ export function CourierBulkCsvPanel({
         </div>
 
         {/* Date-Range, StoreName & Filter Bar */}
-        <div className="grid grid-cols-1 gap-3 border-t border-border pt-4 md:grid-cols-12">
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-[11px] font-semibold text-muted">
+        <div
+          className={`grid grid-cols-1 gap-3 border-t border-border pt-4 sm:grid-cols-2 ${
+            compact ? 'lg:grid-cols-6' : 'lg:grid-cols-12'
+          }`}
+        >
+          <div className={compact ? 'lg:col-span-3' : 'lg:col-span-2'}>
+            <label
+              htmlFor={`${idPrefix}-from-date`}
+              className="mb-1 block text-[11px] font-semibold text-muted"
+            >
               শুরুর তারিখ (From Date)
             </label>
             <Input
+              id={`${idPrefix}-from-date`}
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
             />
           </div>
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-[11px] font-semibold text-muted">
+          <div className={compact ? 'lg:col-span-3' : 'lg:col-span-2'}>
+            <label
+              htmlFor={`${idPrefix}-to-date`}
+              className="mb-1 block text-[11px] font-semibold text-muted"
+            >
               শেষ তারিখ (To Date)
             </label>
             <Input
+              id={`${idPrefix}-to-date`}
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
             />
           </div>
-          <div className="md:col-span-3">
-            <label className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-muted">
+          <div className={compact ? 'lg:col-span-2' : 'lg:col-span-3'}>
+            <label
+              htmlFor={`${idPrefix}-store-name`}
+              className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-muted"
+            >
               <span>Pathao StoreName (মার্চেন্ট প্যানেল নাম)</span>
               <InfoTooltip termKey="pathao_store_name" />
             </label>
             <Input
+              id={`${idPrefix}-store-name`}
               value={storeNameOverride}
               onChange={(e) => setStoreNameOverride(e.target.value)}
               placeholder="e.g. Panchabindu Store"
             />
           </div>
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-[11px] font-semibold text-muted">
+          <div className={compact ? 'lg:col-span-2' : 'lg:col-span-2'}>
+            <label
+              htmlFor={`${idPrefix}-courier-filter`}
+              className="mb-1 block text-[11px] font-semibold text-muted"
+            >
               কুরিয়ার ফিল্টার
             </label>
             <select
+              id={`${idPrefix}-courier-filter`}
               value={providerFilter}
               onChange={(e) =>
                 setProviderFilter(e.target.value as CourierProvider | 'all')
@@ -474,16 +531,19 @@ export function CourierBulkCsvPanel({
               <option value="pathao">Pathao Courier</option>
               <option value="steadfast">Steadfast Courier</option>
               <option value="bd_post">Bangladesh Post</option>
-              <option value="redx">RedX</option>
-              <option value="sundarban">Sundarban</option>
+              <option value="manual">কাস্টম কুরিয়ার (Custom)</option>
             </select>
           </div>
-          <div className="md:col-span-3">
-            <label className="mb-1 block text-[11px] font-semibold text-muted">
+          <div className={compact ? 'sm:col-span-2 lg:col-span-2' : 'lg:col-span-3'}>
+            <label
+              htmlFor={`${idPrefix}-search-orders`}
+              className="mb-1 block text-[11px] font-semibold text-muted"
+            >
               অর্ডার/ফোন/জেলা খুঁজুন
             </label>
             <div className="relative">
               <Input
+                id={`${idPrefix}-search-orders`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Order #, নাম, ফোন, পোস্টকোড..."
@@ -491,10 +551,11 @@ export function CourierBulkCsvPanel({
               {searchQuery && (
                 <button
                   type="button"
+                  aria-label="অনুসন্ধান মুছুন"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-3 text-xs text-muted hover:text-ink"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-[32px] min-w-[32px] inline-flex items-center justify-center text-xs text-muted hover:text-ink cursor-pointer"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -762,10 +823,14 @@ export function CourierBulkCsvPanel({
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-district`}
+                  className="mb-1 block text-xs font-semibold"
+                >
                   জেলা (District - 64)
                 </label>
                 <select
+                  id={`${idPrefix}-fix-district`}
                   value={editDistrictId}
                   onChange={(e) => handleDistrictChangeInFix(Number(e.target.value))}
                   className="w-full min-h-[44px] px-3 py-2 text-xs border border-border rounded-[var(--radius-md)] bg-bg text-ink"
@@ -779,10 +844,14 @@ export function CourierBulkCsvPanel({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-upazila`}
+                  className="mb-1 block text-xs font-semibold"
+                >
                   উপজেলা / থানা (Upazila / Thana)
                 </label>
                 <select
+                  id={`${idPrefix}-fix-upazila`}
                   value={editUpazilaId}
                   onChange={(e) => handleUpazilaChangeInFix(Number(e.target.value))}
                   className="w-full min-h-[44px] px-3 py-2 text-xs border border-border rounded-[var(--radius-md)] bg-bg text-ink"
@@ -796,11 +865,15 @@ export function CourierBulkCsvPanel({
               </div>
 
               <div>
-                <label className="mb-1 flex items-center gap-1 text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-postcode`}
+                  className="mb-1 flex items-center gap-1 text-xs font-semibold"
+                >
                   <span>৪-সংখ্যার পোস্টকোড (Post Code)</span>
                   <InfoTooltip termKey="post_code" />
                 </label>
                 <Input
+                  id={`${idPrefix}-fix-postcode`}
                   value={editPostCode}
                   onChange={(e) => setEditPostCode(e.target.value)}
                   placeholder="যেমন: 1209"
@@ -809,11 +882,15 @@ export function CourierBulkCsvPanel({
               </div>
 
               <div>
-                <label className="mb-1 flex items-center gap-1 text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-city`}
+                  className="mb-1 flex items-center gap-1 text-xs font-semibold"
+                >
                   <span>Pathao RecipientCity(*)</span>
                   <InfoTooltip termKey="pathao_city_zone" />
                 </label>
                 <Input
+                  id={`${idPrefix}-fix-city`}
                   value={editRecipientCity}
                   onChange={(e) => setEditRecipientCity(e.target.value)}
                   placeholder="e.g. Dhaka"
@@ -821,10 +898,14 @@ export function CourierBulkCsvPanel({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-zone`}
+                  className="mb-1 block text-xs font-semibold"
+                >
                   Pathao RecipientZone(*)
                 </label>
                 <Input
+                  id={`${idPrefix}-fix-zone`}
                   value={editRecipientZone}
                   onChange={(e) => setEditRecipientZone(e.target.value)}
                   placeholder="e.g. Dhanmondi / Savar"
@@ -838,10 +919,14 @@ export function CourierBulkCsvPanel({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-area`}
+                  className="mb-1 block text-xs font-semibold"
+                >
                   Pathao RecipientArea (ঐচ্ছিক)
                 </label>
                 <Input
+                  id={`${idPrefix}-fix-area`}
                   value={editRecipientArea}
                   onChange={(e) => setEditRecipientArea(e.target.value)}
                   placeholder="e.g. Road 27 / Sector 7"
@@ -849,10 +934,14 @@ export function CourierBulkCsvPanel({
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-address`}
+                  className="mb-1 block text-xs font-semibold"
+                >
                   বিস্তারিত ঠিকানা — RecipientAddress(*) (কমপক্ষে ১০ অক্ষর)
                 </label>
                 <Input
+                  id={`${idPrefix}-fix-address`}
                   value={editStreetAddress}
                   onChange={(e) => setEditStreetAddress(e.target.value)}
                   placeholder="বাসা/হোল্ডিং, রোড, গ্রাম/মহল্লা, ল্যান্ডমার্ক..."
@@ -860,10 +949,14 @@ export function CourierBulkCsvPanel({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-phone`}
+                  className="mb-1 block text-xs font-semibold"
+                >
                   গ্রাহকের ফোন — RecipientPhone(*) (১১ ডিজিট)
                 </label>
                 <Input
+                  id={`${idPrefix}-fix-phone`}
                   value={editCustomerPhone}
                   onChange={(e) => setEditCustomerPhone(e.target.value)}
                   placeholder="017XXXXXXXX"
@@ -871,11 +964,15 @@ export function CourierBulkCsvPanel({
               </div>
 
               <div>
-                <label className="mb-1 flex items-center gap-1 text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-store-name`}
+                  className="mb-1 flex items-center gap-1 text-xs font-semibold"
+                >
                   <span>Pathao StoreName</span>
                   <InfoTooltip termKey="pathao_store_name" />
                 </label>
                 <Input
+                  id={`${idPrefix}-fix-store-name`}
                   value={editStoreName}
                   onChange={(e) => setEditStoreName(e.target.value)}
                   placeholder="Panchabindu Store"
@@ -883,11 +980,15 @@ export function CourierBulkCsvPanel({
               </div>
 
               <div>
-                <label className="mb-1 flex items-center gap-1 text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-weight`}
+                  className="mb-1 flex items-center gap-1 text-xs font-semibold"
+                >
                   <span>পার্সেল ওজন (গ্রাম — Weight in Grams)</span>
                   <InfoTooltip termKey="item_weight" />
                 </label>
                 <Input
+                  id={`${idPrefix}-fix-weight`}
                   type="number"
                   min={100}
                   step={50}
@@ -902,11 +1003,16 @@ export function CourierBulkCsvPanel({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-courier`}
+                  className="mb-1 block text-xs font-semibold"
+                >
                   কুরিয়ার সার্ভিস ও BD Post টাইপ
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <select
+                    id={`${idPrefix}-fix-courier`}
+                    aria-label="কুরিয়ার সার্ভিস"
                     value={editCourierProvider}
                     onChange={(e) =>
                       setEditCourierProvider(e.target.value as CourierProvider)
@@ -916,35 +1022,36 @@ export function CourierBulkCsvPanel({
                     <option value="pathao">Pathao</option>
                     <option value="steadfast">Steadfast</option>
                     <option value="bd_post">BD Post</option>
-                    <option value="redx">RedX</option>
-                    <option value="sundarban">Sundarban</option>
+                    <option value="manual">Custom Courier</option>
                   </select>
                   <select
+                    id={`${idPrefix}-fix-bdpost`}
+                    aria-label="BD Post সার্ভিস টাইপ"
                     value={editBdPostServiceType}
                     onChange={(e) =>
                       setEditBdPostServiceType(
-                        e.target.value as
-                          | 'gep'
-                          | 'ems'
-                          | 'vpp_cod'
-                          | 'registered_parcel'
+                        normalizeBdPostServiceType(e.target.value)
                       )
                     }
                     className="w-full min-h-[44px] px-2.5 py-1.5 text-xs border border-border rounded-[var(--radius-md)] bg-bg text-ink"
                   >
-                    <option value="vpp_cod">VPP / COD</option>
-                    <option value="gep">GEP</option>
-                    <option value="ems">EMS</option>
-                    <option value="registered_parcel">Registered</option>
+                    <option value="VPP_PARCEL">VPP / COD</option>
+                    <option value="GEP">GEP</option>
+                    <option value="EMS_DAK">EMS</option>
+                    <option value="REGISTERED_PARCEL">Registered</option>
                   </select>
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-semibold">
+                <label
+                  htmlFor={`${idPrefix}-fix-instruction`}
+                  className="mb-1 block text-xs font-semibold"
+                >
                   ডেলিভারি নোট / SpecialInstruction
                 </label>
                 <Input
+                  id={`${idPrefix}-fix-instruction`}
                   value={editSpecialInstruction}
                   onChange={(e) => setEditSpecialInstruction(e.target.value)}
                   placeholder="ডেলিভারির আগে কল দিন / ভঙ্গুর পণ্য..."

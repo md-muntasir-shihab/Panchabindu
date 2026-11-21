@@ -209,10 +209,26 @@ export interface InternalSlipPart3DTO {
   }>;
 }
 
+export interface PrintAuditEventDTO {
+  actionCode: string;
+  actorUsername: string;
+  actorRole: string;
+  createdAt: string;
+  printCount?: number;
+  copy?: string | null;
+  reprintReason?: string | null;
+}
+
 export interface OrderPrintSlipBundle {
   orderNo: string;
+  printCount: number;
+  isReprintWarning: boolean;
+  lastPrintedAt: string | null;
+  lastPrintedBy: string | null;
+  lastPrintedRole: string | null;
+  printEvents: PrintAuditEventDTO[];
   customerAndCourierPart: CustomerSafeSlipPartDTO;
-  internalPart3: InternalSlipPart3DTO;
+  internalPart3: InternalSlipPart3DTO | null;
 }
 
 export interface DistrictRateOverrideRecord {
@@ -1094,8 +1110,14 @@ export function generateOrderPrintSlips(
     bundles.push({
       bundle: {
         orderNo: ord.orderNo,
+        printCount: ord.printCount ?? 0,
+        isReprintWarning: prevPrintCount > 0,
+        lastPrintedAt: null,
+        lastPrintedBy: null,
+        lastPrintedRole: null,
+        printEvents: [],
         customerAndCourierPart,
-        internalPart3,
+        internalPart3: ctx.roleSlug === 'super_admin' ? internalPart3 : null,
       },
       firstVendorCode: internalLines[0]?.vendorCode ?? '',
       firstSku: customerSafeItems[0]?.publicSku ?? '',

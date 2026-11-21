@@ -64,8 +64,11 @@ test('all workspace schema operations are covered, unknown actions and every ven
   for (const op of operations) assert.equal(canExecuteWorkspaceAction(vendor, op), false, op);
   for (const id of ['usr-marketing-01', 'usr-packaging-01']) {
     const staff = getActorSecurityContext(id)!;
-    for (const op of ['upsert_product', 'delete_product', 'generate_print_slips', 'review_manual_bkash', 'reset_user_security']) assert.equal(canExecuteWorkspaceAction(staff, op), false, op);
+    for (const op of ['upsert_product', 'delete_product', 'review_manual_bkash', 'reset_user_security']) assert.equal(canExecuteWorkspaceAction(staff, op), false, op);
   }
+  assert.equal(canExecuteWorkspaceAction(getActorSecurityContext('usr-marketing-01'), 'generate_print_slips'), false);
+  assert.equal(canExecuteWorkspaceAction(getActorSecurityContext('usr-packaging-01'), 'generate_print_slips'), true);
+  assert.equal(canExecuteWorkspaceAction(getActorSecurityContext('usr-packaging-01'), 'update_print_config'), false);
   assert.equal(canExecuteWorkspaceAction(getActorSecurityContext('usr-super-admin'), 'typo_new_action'), false);
   assert.equal(canExecuteWorkspaceAction(getActorSecurityContext('usr-super-admin'), 'create_flash_campaign'), false);
 });
@@ -128,8 +131,31 @@ test('HTTP workspace denies vendor, staff catalog/Part3/finance actions and hide
   for (const id of ['usr-vendor-001', 'usr-marketing-01', 'usr-packaging-01']) {
     const ctx = getActorSecurityContext(id)!;
     const session = createAdminSession(ctx);
-    for (const body of [{ operation: 'delete_product', productId: 'synthetic' }, { operation: 'generate_print_slips', orderNos: ['ORD-261106-0001'] }]) {
-      assert.equal((await workspacePost(request('/api/admin/workspace', body, session.token, true, session.csrfToken))).status, 403);
+    assert.equal((await workspacePost(request('/api/admin/workspace', { operation: 'delete_product', productId: 'synthetic' }, session.token, true, session.csrfToken))).status, 403);
+    const printRes = await workspacePost(request('/api/admin/workspace', { operation: 'generate_print_slips', orderNos: ['ORD-261106-0001'] }, session.token, true, session.csrfToken));
+    if (id === 'usr-packaging-01') {
+      assert.equal(printRes.status, 200);
+      const printData = await printRes.json();
+      assert.equal(printData.success, true);
+      assert.equal(printData.slips[0].internalPart3, null);
+      assert.deepEqual(
+        keyPaths(printData, [
+          'supplierCostPoisha',
+          'supplierProfitPoisha',
+          'supplierPayablePoisha',
+          'snapSupplierCostPoisha',
+          'internalVendorSku',
+          'accountingSummary',
+          'vendorSplitBreakdown',
+          'payoutAccountNo',
+          'internalStaffNote',
+          'vendorBusinessName',
+        ]),
+        []
+      );
+      assert.equal((await workspacePost(request('/api/admin/workspace', { operation: 'update_print_config', patch: { footerNoteBn: 'unauthorized' } }, session.token, true, session.csrfToken))).status, 403);
+    } else {
+      assert.equal(printRes.status, 403);
     }
     const response = await workspaceGet(new NextRequest('http://localhost/api/admin/workspace', { headers: { cookie: `bg_admin_session=${session.token}` } }));
     if (id === 'usr-vendor-001') assert.equal(response.status, 403);

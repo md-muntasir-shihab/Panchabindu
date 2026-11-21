@@ -36,7 +36,7 @@ test('Phase 4B Case 1: A4 3-Part Print Slip DTO Customer-Safety & Role Cost Hidi
   // Loading and refreshing previews must not change the print counter.
   const preview1 = generateOrderPrintSlips(adminCtx, { orderNos: ['ORD-261106-0001'] });
   const preview2 = generateOrderPrintSlips(adminCtx, { orderNos: ['ORD-261106-0001'] });
-  assert.equal(preview2.slips[0]!.internalPart3.printCount, preview1.slips[0]!.internalPart3.printCount);
+  assert.equal(preview2.slips[0]!.printCount, preview1.slips[0]!.printCount);
 
   // 1. First print request by Super Admin
   const firstPrint = generateOrderPrintSlips(adminCtx, {
@@ -46,7 +46,9 @@ test('Phase 4B Case 1: A4 3-Part Print Slip DTO Customer-Safety & Role Cost Hidi
   });
   assert.equal(firstPrint.success, true);
   assert.equal(firstPrint.slips.length, 1);
-  assert.equal(firstPrint.slips[0]!.internalPart3.printCount, preview1.slips[0]!.internalPart3.printCount + 1);
+  assert.equal(firstPrint.slips[0]!.printCount, preview1.slips[0]!.printCount + 1);
+  assert.ok(firstPrint.slips[0]!.lastPrintedAt);
+  assert.equal(firstPrint.slips[0]!.lastPrintedBy, adminCtx.username);
 
   const slip = firstPrint.slips[0]!;
   // Verify Part 1 & Part 2 (customerAndCourierPart) have ZERO vendor identity, vendor SKU, buying cost, or staff notes
@@ -59,6 +61,7 @@ test('Phase 4B Case 1: A4 3-Part Print Slip DTO Customer-Safety & Role Cost Hidi
   assert.ok(slip.customerAndCourierPart.senderBrandNameBn.length > 0);
 
   // Super Admin sees buying cost, supplier profit, supplier payable, platform margin, and full accountingSummary on Internal Part 3
+  assert.ok(slip.internalPart3);
   assert.equal(
     typeof slip.internalPart3.lines[0]?.snapSupplierCostPoisha,
     'number'
@@ -81,19 +84,29 @@ test('Phase 4B Case 1: A4 3-Part Print Slip DTO Customer-Safety & Role Cost Hidi
     slip.internalPart3.accountingSummary.totalSupplierPayableEscrowPoisha
   );
 
-  // 2. Second print by Packaging Manager -> triggers Reprint Warning AND hides buying cost & accountingSummary on Part 3
-  const deniedStaffPrint = generateOrderPrintSlips(pkgCtx, { orderNos: ['ORD-261106-0001'] });
-  assert.equal(deniedStaffPrint.success, false);
-  assert.deepEqual(deniedStaffPrint.slips, []);
-  const secondPrint = generateOrderPrintSlips(adminCtx, {
+  // 2. Second print by Packaging Manager -> allowed for Parts 1 & 2, triggers Reprint Warning, and strictly omits Part 3 (null)
+  const staffPrint = generateOrderPrintSlips(pkgCtx, {
     orderNos: ['ORD-261106-0001'],
     sortBy: 'vendor',
     recordPrint: true,
   });
-  assert.equal(secondPrint.success, true);
-  const pkgSlip = secondPrint.slips[0]!;
-  assert.equal(pkgSlip.internalPart3.isReprintWarning, true);
-  assert.ok(pkgSlip.internalPart3.accountingSummary);
+  assert.equal(staffPrint.success, true);
+  assert.equal(staffPrint.slips.length, 1);
+  const pkgSlip = staffPrint.slips[0]!;
+  assert.equal(pkgSlip.isReprintWarning, true);
+  assert.equal(pkgSlip.internalPart3, null);
+  assert.equal(pkgSlip.lastPrintedBy, pkgCtx.username);
+  const staffJson = JSON.stringify(pkgSlip);
+  assert.equal(staffJson.includes('VND-001'), false);
+  assert.equal(staffJson.includes('snapSupplierCostPoisha'), false);
+  assert.equal(staffJson.includes('accountingSummary'), false);
+  assert.equal(staffJson.includes('internalStaffNote'), false);
+
+  // 3. Marketing Manager (no print_engine:create) & Vendor remain denied
+  const mktCtx = getActorSecurityContext('usr-marketing-01')!;
+  const mktPrint = generateOrderPrintSlips(mktCtx, { orderNos: ['ORD-261106-0001'] });
+  assert.equal(mktPrint.success, false);
+  assert.deepEqual(mktPrint.slips, []);
 
   const vendorCtx = getActorSecurityContext('usr-vendor-001')!;
   const vendorPrint = generateOrderPrintSlips(vendorCtx, {

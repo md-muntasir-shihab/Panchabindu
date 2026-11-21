@@ -24,8 +24,23 @@ const checkoutQuerySchema = z.object({
 /** Replaces server-rendered page loaders without sending private repository state to the browser. */
 export const pageData = backendRoute(async (request: ApiRequest) => {
   const url = new URL(request.url);
-  const pathname = (url.searchParams.get('pagePath') || url.searchParams.get('path') || '/').replace(/\/$/, '') || '/';
-  const parts = pathname.split('/').filter(Boolean).map(decodeURIComponent);
+  const rawPath = url.searchParams.get('pagePath') || url.searchParams.get('path') || '/';
+  if (rawPath.length > 512) {
+    return ApiResponse.json(
+      { success: false, code: 'INVALID_PATH', errorBn: 'অনুরোধের ঠিকানা সঠিক নয়।', errorEn: 'Invalid page path.' },
+      { status: 400, headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
+  const pathname = rawPath.replace(/\/$/, '') || '/';
+  let parts: string[];
+  try {
+    parts = pathname.split('/').filter(Boolean).map((segment) => decodeURIComponent(segment));
+  } catch {
+    return ApiResponse.json(
+      { success: false, code: 'INVALID_PATH', errorBn: 'অনুরোধের ঠিকানা সঠিক নয়।', errorEn: 'Invalid page path.' },
+      { status: 400, headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
   const { siteSettings, categories, products } = getPublicStorefrontData();
   const common = { siteSettings, categories };
   let page = parts[0] || 'home';

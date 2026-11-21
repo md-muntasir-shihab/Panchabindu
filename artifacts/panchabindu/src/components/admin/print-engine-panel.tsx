@@ -1,7 +1,5 @@
 'use client';
 import { localizedField } from '@/lib/i18n/ui-text';
-import { uiText } from '@/lib/i18n/ui-text';
-
 import { LocalizedText } from '@/components/ui/localized-text';
 
 
@@ -29,11 +27,8 @@ import {
   ArrowUpDown,
   History,
   ListFilter,
-  CheckCircle2,
   Package,
-  Truck,
   MapPin,
-  Check,
   FileText,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -86,14 +81,65 @@ export function Code128BarcodeSvg({ value, height = 42 }: { value: string; heigh
   </div>;
 }
 
+function resolveSafeQrUrl(raw: string | null | undefined): string | null {
+  const trimmed = (raw ?? '').trim();
+  if (!trimmed) return null;
+  for (let i = 0; i < trimmed.length; i += 1) {
+    const code = trimmed.charCodeAt(i);
+    if (code <= 0x1f || code === 0x7f) return null;
+  }
+  try {
+    const base =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : 'https://panchabindu.local';
+    const parsed = new URL(trimmed, base);
+    if (
+      (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') ||
+      parsed.username ||
+      parsed.password
+    ) {
+      return null;
+    }
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
 function PrintBrandMark({ name, logoUrl, compact = false }: { name: string; logoUrl?: string; compact?: boolean }) {
   const [failed, setFailed] = React.useState(false);
   React.useEffect(() => setFailed(false), [logoUrl]);
   const usableUrl = logoUrl && safeStoreUrl(logoUrl) && !logoUrl.startsWith('#') ? logoUrl : '';
-  return <span className={`print-brand-mark${compact ? ' print-brand-mark-compact' : ''}`} aria-label={name}>
+  return <span role="img" className={`print-brand-mark${compact ? ' print-brand-mark-compact' : ''}`} aria-label={name}>
     <span className="print-brand-fallback" aria-hidden="true">{Array.from(name.trim())[0] || 'P'}</span>
     {usableUrl && !failed && <img className="print-brand-logo" src={usableUrl} alt="" onError={() => setFailed(true)} referrerPolicy="no-referrer" />}
   </span>;
+}
+
+function sanitizePrintableClone(root: HTMLElement): void {
+  root
+    .querySelectorAll('script, iframe, object, embed, form, meta, base')
+    .forEach((node) => node.remove());
+  const allNodes = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))];
+  for (const el of allNodes) {
+    for (const attr of Array.from(el.attributes)) {
+      const name = attr.name.toLowerCase();
+      const val = attr.value.trim().toLowerCase();
+      if (name.startsWith('on')) {
+        el.removeAttribute(attr.name);
+        continue;
+      }
+      if (
+        (name === 'href' || name === 'src' || name === 'xlink:href') &&
+        (val.startsWith('javascript:') ||
+          val.startsWith('vbscript:') ||
+          val.startsWith('data:text/html'))
+      ) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  }
 }
 
 export async function executeNativeSlipPrint({
@@ -106,6 +152,15 @@ export async function executeNativeSlipPrint({
   locale: 'bn' | 'en';
 }): Promise<void> {
   let frame: HTMLIFrameElement | null = null;
+  let cleanupTimer: ReturnType<typeof setTimeout> | null = null;
+  const cleanup = () => {
+    if (cleanupTimer !== null) {
+      clearTimeout(cleanupTimer);
+      cleanupTimer = null;
+    }
+    frame?.remove();
+    frame = null;
+  };
   try {
     frame = document.createElement('iframe');
     frame.setAttribute('title', 'Print preview');
@@ -122,14 +177,21 @@ export async function executeNativeSlipPrint({
     const doc = frame.contentDocument;
     const win = frame.contentWindow;
     if (!doc || !win) {
-      frame.remove();
-      throw new Error('প্রিন্ট উইন্ডো তৈরি করা যায়নি। / Could not open print window.');
+      cleanup();
+      throw new Error(
+        locale === 'bn'
+          ? 'প্রিন্ট উইন্ডো তৈরি করা যায়নি।'
+          : 'Could not open print window.'
+      );
     }
+    const safeBaseHref = resolveSafeQrUrl(document.baseURI);
     doc.open();
     doc.write(
-      '<!doctype html><html><head><meta charset="utf-8"><base href="' +
-        document.baseURI.replace(/"/g, '&quot;') +
-        '"></head><body></body></html>'
+      `<!doctype html><html><head><meta charset="utf-8">${
+        safeBaseHref
+          ? `<base href="${safeBaseHref.replace(/"/g, '&quot;')}">`
+          : ''
+      }</head><body></body></html>`
     );
     doc.close();
     const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
@@ -161,6 +223,7 @@ export async function executeNativeSlipPrint({
       @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`;
     doc.head.appendChild(pageStyle);
     const printContent = printableEl.cloneNode(true) as HTMLElement;
+    sanitizePrintableClone(printContent);
     // Remove deselected parts from the printable document, not just visually hide them.
     printContent.querySelectorAll<HTMLElement>('.print-slip-part').forEach((part) => {
       if (part.style.display === 'none') part.remove();
@@ -226,12 +289,12 @@ export async function executeNativeSlipPrint({
         );
       }
     }
-    win.onafterprint = () => frame?.remove();
+    win.onafterprint = cleanup;
     win.focus();
     win.print();
-    setTimeout(() => frame?.remove(), 120000);
+    cleanupTimer = setTimeout(cleanup, 120000);
   } catch (error) {
-    frame?.remove();
+    cleanup();
     throw error;
   }
 }
@@ -264,16 +327,17 @@ export function PrintableSlipsDocument({
     siteSettings.brandNameBn ||
     siteSettings.brandNameEn;
   const logoUrl = siteSettings.storefront?.logoUrl;
-  const heightScale = Math.min(
-    1,
-    275 / (printConfig.part1HeightMm + printConfig.part2HeightMm + printConfig.part3HeightMm)
-  );
+  const safePart1H = Number.isFinite(printConfig.part1HeightMm) && printConfig.part1HeightMm >= 60 ? printConfig.part1HeightMm : 95;
+  const safePart2H = Number.isFinite(printConfig.part2HeightMm) && printConfig.part2HeightMm >= 60 ? printConfig.part2HeightMm : 95;
+  const safePart3H = Number.isFinite(printConfig.part3HeightMm) && printConfig.part3HeightMm >= 60 ? printConfig.part3HeightMm : 95;
+  const heightScale = Math.min(1, 275 / Math.max(180, safePart1H + safePart2H + safePart3H));
 
   return (
     <div ref={containerRef} className="print-slips space-y-6 print:space-y-0">
       {slips.map((slip) => {
         const p12 = slip.customerAndCourierPart;
-        const p3 = slip.internalPart3;
+        const p3 = isSuperAdmin ? slip.internalPart3 : null;
+        const canShowPart3 = Boolean(isSuperAdmin && p3 && visibleParts[2]);
 
         if (layoutMode === 'thermal_4x6') {
           return (
@@ -301,9 +365,16 @@ export function PrintableSlipsDocument({
                   <Code128BarcodeSvg value={p12.trackingCode || p12.orderNo} height={40} />
                   {!p12.trackingCode && <p className="text-[9px]">অর্ডার বারকোড / Order barcode</p>}
                 </div>
-                {p12.trackingUrl && (
-                  <QRCodeSVG value={new URL(p12.trackingUrl, window.location.origin).href} size={56} />
-                )}
+                {(() => {
+                  const safeQrUrl = resolveSafeQrUrl(p12.trackingUrl);
+                  return safeQrUrl ? (
+                    <QRCodeSVG
+                      value={safeQrUrl}
+                      size={56}
+                      title={`Tracking QR ${p12.orderNo}`}
+                    />
+                  ) : null;
+                })()}
               </div>
 
               <div className="p-2 border border-border rounded-[var(--radius-sm)] space-y-1 text-xs">
@@ -381,7 +452,7 @@ export function PrintableSlipsDocument({
                     <p className="text-[9.5px] text-muted leading-tight">
                       <LocalizedText source={"হেল্পলাইন:"} area="admin" />{" "}{siteSettings.supportPhone}{" "}
                       <LocalizedText source={"· ইস্যু তারিখ:"} area="admin" />{' '}
-                      {new Date(p12.createdAt).toLocaleDateString('bn-BD')}
+                      {new Date(p12.createdAt).toLocaleDateString(locale === 'bn' ? 'bn-BD' : 'en-GB')}
                     </p>
                   </div>
                 </div>
@@ -444,7 +515,7 @@ export function PrintableSlipsDocument({
                           <td className="py-1 px-1.5 font-mono text-muted">{idx + 1}</td>
                           <td className="py-1 px-1.5">
                             <div className="flex items-center gap-1.5">
-                              {item.imageUrl && (
+                              {item.imageUrl && safeStoreUrl(item.imageUrl) && !item.imageUrl.startsWith('#') && (
                                 <div className="relative w-5 h-5 border border-border rounded overflow-hidden shrink-0">
                                   <img
                                     src={item.imageUrl}
@@ -525,7 +596,7 @@ export function PrintableSlipsDocument({
             {/* CUT LINE 1 */}
             <div
               style={{
-                display: visibleParts[0] && (visibleParts[1] || visibleParts[2]) ? undefined : 'none',
+                display: visibleParts[0] && (visibleParts[1] || canShowPart3) ? undefined : 'none',
               }}
               className="flex items-center gap-2 text-[8.5px] font-mono text-muted py-0"
             >
@@ -539,7 +610,7 @@ export function PrintableSlipsDocument({
             <div
               className="print-slip-part print-courier-part border border-ink/80 rounded-[var(--radius-sm)] p-2.5 space-y-1.5 bg-bg"
               style={{
-                minHeight: `${printConfig.part2HeightMm * heightScale}mm`,
+                minHeight: `${safePart2H * heightScale}mm`,
                 display: visibleParts[1] ? undefined : 'none',
               }}
             >
@@ -600,9 +671,16 @@ export function PrintableSlipsDocument({
                     <Code128BarcodeSvg value={p12.trackingCode || p12.orderNo} height={34} />
                     {!p12.trackingCode && <p>অর্ডার বারকোড / Order barcode</p>}
                   </div>
-                  {p12.trackingUrl && (
-                    <QRCodeSVG value={new URL(p12.trackingUrl, window.location.origin).href} size={46} />
-                  )}
+                  {(() => {
+                    const safeQrUrl = resolveSafeQrUrl(p12.trackingUrl);
+                    return safeQrUrl ? (
+                      <QRCodeSVG
+                        value={safeQrUrl}
+                        size={46}
+                        title={`Tracking QR ${p12.orderNo}`}
+                      />
+                    ) : null;
+                  })()}
                 </div>
 
                 <div className="sm:col-span-3 border-2 border-ink bg-surface p-1.5 text-center rounded-[var(--radius-sm)]">
@@ -622,7 +700,9 @@ export function PrintableSlipsDocument({
               </div>
             </div>
 
-            {/* CUT LINE 2 */}
+            {/* CUT LINE 2 & PART 3: STRICTLY SUPER ADMIN ONLY */}
+            {isSuperAdmin && p3 && (
+              <>
             <div
               style={{ display: visibleParts[1] && visibleParts[2] ? undefined : 'none' }}
               className="flex items-center gap-2 text-[8.5px] font-mono text-muted py-0"
@@ -639,7 +719,7 @@ export function PrintableSlipsDocument({
             <div
               className="print-slip-part print-internal-part border-2 border-ink rounded-[var(--radius-sm)] p-2.5 bg-surface/60 space-y-2"
               style={{
-                minHeight: `${printConfig.part3HeightMm * heightScale}mm`,
+                minHeight: `${safePart3H * heightScale}mm`,
                 display: visibleParts[2] ? undefined : 'none',
               }}
             >
@@ -973,6 +1053,8 @@ export function PrintableSlipsDocument({
                 </div>
               </div>
             </div>
+              </>
+            )}
           </div>
         );
       })}
@@ -993,6 +1075,45 @@ export interface PrintEnginePanelProps {
 type PrintSubTab = 'queue' | 'templates' | 'history';
 type PrintSortOption = 'newest' | 'oldest' | 'cod_desc' | 'district' | 'order_no';
 
+function getSlipPrintCount(slip: OrderPrintSlipBundle): number {
+  return slip.printCount ?? slip.internalPart3?.printCount ?? 0;
+}
+
+function getSlipReprintWarning(slip: OrderPrintSlipBundle): boolean {
+  return slip.isReprintWarning ?? slip.internalPart3?.isReprintWarning ?? false;
+}
+
+function formatAuditTimestamp(iso: string | null | undefined, locale: 'bn' | 'en'): string {
+  if (!iso) return locale === 'bn' ? 'সময় অজানা' : 'Time not recorded';
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return iso;
+  return parsed.toLocaleString(locale === 'bn' ? 'bn-BD' : 'en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatPrintEventLabel(actionCode: string, locale: 'bn' | 'en'): string {
+  const bn = locale === 'bn';
+  switch (actionCode) {
+    case 'ORDER_SLIP_REPRINTED':
+      return bn ? 'পুনরায় প্রিন্ট অনুরোধ' : 'Reprint requested';
+    case 'ORDER_SLIP_PRINTED':
+      return bn ? 'প্রিন্ট অনুরোধ' : 'Print requested';
+    case 'PRINT_CUSTOMER':
+      return bn ? 'গ্রাহক কপি' : 'Customer copy';
+    case 'PRINT_PACKAGING':
+      return bn ? 'প্যাকিং কপি' : 'Packaging copy';
+    case 'PRINT_FINANCE':
+      return bn ? 'আর্থিক কপি' : 'Finance copy';
+    default:
+      return actionCode;
+  }
+}
+
 export function PrintEnginePanel({
   locale,
   isSuperAdmin,
@@ -1002,6 +1123,9 @@ export function PrintEnginePanel({
   siteSettings,
   onRefreshWorkspace,
 }: PrintEnginePanelProps) {
+  const bn = locale === 'bn';
+  const idPrefix = React.useId();
+
   // Navigation & Sub-Tabs
   const [activeSubTab, setActiveSubTab] = React.useState<PrintSubTab>('queue');
 
@@ -1009,7 +1133,11 @@ export function PrintEnginePanel({
   const [selectedOrderNos, setSelectedOrderNos] =
     React.useState<string[]>(availableOrderNos);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [visibleParts, setVisibleParts] = React.useState([true, true, true]);
+  const [visibleParts, setVisibleParts] = React.useState<boolean[]>([
+    true,
+    true,
+    isSuperAdmin,
+  ]);
   const [courierFilter, setCourierFilter] = React.useState<string>('ALL');
   const [sortOption, setSortOption] = React.useState<PrintSortOption>('newest');
   const [layoutMode, setLayoutMode] = React.useState<'a4_3part' | 'thermal_4x6'>(
@@ -1019,69 +1147,169 @@ export function PrintEnginePanel({
   // Print Slips & Config State
   const [printConfig, setPrintConfig] =
     React.useState<PrintTemplateConfig>(initialPrintConfig);
+  const [savingConfig, setSavingConfig] = React.useState(false);
   const [slips, setSlips] = React.useState<OrderPrintSlipBundle[]>([]);
   const [loadingSlips, setLoadingSlips] = React.useState(false);
-  const [feedback, setFeedback] = React.useState<string | null>(null);
+  const [feedback, setFeedback] = React.useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   const printableRef = React.useRef<HTMLDivElement>(null);
   const requestId = React.useRef(0);
   const orderKey = JSON.stringify(availableOrderNos);
 
   React.useEffect(() => {
+    setPrintConfig(initialPrintConfig);
+  }, [initialPrintConfig]);
+
+  React.useEffect(() => {
+    if (!isSuperAdmin) {
+      setVisibleParts((parts) => (parts[2] ? [parts[0], parts[1], false] : parts));
+      setActiveSubTab((tab) => (tab === 'templates' ? 'queue' : tab));
+    }
+  }, [isSuperAdmin]);
+
+  React.useEffect(() => {
     const orders = JSON.parse(orderKey) as string[];
-    setSelectedOrderNos(previous => {
+    setSelectedOrderNos((previous) => {
       const available = new Set(orders);
-      return previous.filter(order => available.has(order));
+      const kept = previous.filter((order) => available.has(order));
+      return kept.length > 0 ? kept : orders;
     });
-    if (!orders.length) { setSlips([]); return; }
+    if (!orders.length) {
+      setSlips([]);
+      return;
+    }
     const id = ++requestId.current;
     setLoadingSlips(true);
     fetch('/api/admin/workspace', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ operation: 'generate_print_slips', orderNos: orders }),
-    }).then(async res => {
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.errorBn || 'প্রিভিউ লোড করা যায়নি। / Could not load preview.');
-      if (id === requestId.current) setSlips(data.slips || []);
-    }).catch(error => { if (id === requestId.current) setFeedback(error.message); })
-      .finally(() => { if (id === requestId.current) setLoadingSlips(false); });
-    return () => { requestId.current++; };
-  }, [orderKey]);
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(
+            data.errorBn ||
+              (bn ? 'প্রিভিউ লোড করা যায়নি।' : 'Could not load preview.')
+          );
+        }
+        if (id === requestId.current) setSlips(data.slips || []);
+      })
+      .catch((error) => {
+        if (id === requestId.current) {
+          setFeedback({
+            type: 'error',
+            message:
+              error instanceof Error
+                ? error.message
+                : bn
+                ? 'প্রিভিউ লোড করা যায়নি।'
+                : 'Could not load preview.',
+          });
+        }
+      })
+      .finally(() => {
+        if (id === requestId.current) setLoadingSlips(false);
+      });
+    return () => {
+      requestId.current++;
+    };
+  }, [orderKey, bn]);
 
   const loadSlips = async () => {
     const orders = JSON.parse(orderKey) as string[];
     if (!orders.length) return;
     const id = ++requestId.current;
     setLoadingSlips(true);
-    try {
-      const res = await fetch('/api/admin/workspace', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operation: 'generate_print_slips', orderNos: orders }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.errorBn || 'প্রিভিউ লোড করা যায়নি। / Could not load preview.');
-      if (id === requestId.current) setSlips(data.slips || []);
-    } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'সংযোগ ব্যর্থ। / Connection failed.');
-    } finally { if (id === requestId.current) setLoadingSlips(false); }
-  };
-
-  // Save Print Template Settings
-  const handleSaveTemplateConfig = async (e: React.FormEvent) => {
-    e.preventDefault();
     setFeedback(null);
     try {
       const res = await fetch('/api/admin/workspace', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operation: 'update_print_config', patch: printConfig }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'generate_print_slips', orderNos: orders }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.errorBn || 'সেভ করা সম্ভব হয়নি। / Could not save settings.');
+      if (!res.ok || !data.success) {
+        throw new Error(
+          data.errorBn ||
+            (bn ? 'প্রিভিউ লোড করা যায়নি।' : 'Could not load preview.')
+        );
+      }
+      if (id === requestId.current) setSlips(data.slips || []);
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : bn
+            ? 'সংযোগ ব্যর্থ হয়েছে।'
+            : 'Connection failed.',
+      });
+    } finally {
+      if (id === requestId.current) setLoadingSlips(false);
+    }
+  };
+
+  // Save Print Template Settings (Super Admin only)
+  const handleSaveTemplateConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSuperAdmin || savingConfig) return;
+    setFeedback(null);
+    const cleanedChecklist = printConfig.checklistItemsBn
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    const sanitizedPatch: PrintTemplateConfig = {
+      ...printConfig,
+      part1TitleBn: printConfig.part1TitleBn.trim(),
+      part1TitleEn: printConfig.part1TitleEn.trim(),
+      part2TitleBn: printConfig.part2TitleBn.trim(),
+      part2TitleEn: printConfig.part2TitleEn.trim(),
+      part3TitleBn: printConfig.part3TitleBn.trim(),
+      part3TitleEn: printConfig.part3TitleEn.trim(),
+      part1HeightMm: Math.min(120, Math.max(60, Math.round(Number(printConfig.part1HeightMm) || 95))),
+      part2HeightMm: Math.min(120, Math.max(60, Math.round(Number(printConfig.part2HeightMm) || 95))),
+      part3HeightMm: Math.min(120, Math.max(60, Math.round(Number(printConfig.part3HeightMm) || 95))),
+      footerNoteBn: printConfig.footerNoteBn.trim(),
+      checklistItemsBn: cleanedChecklist,
+    };
+
+    setSavingConfig(true);
+    try {
+      const res = await fetch('/api/admin/workspace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'update_print_config', patch: sanitizedPatch }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(
+          data.errorBn || (bn ? 'সেভ করা সম্ভব হয়নি।' : 'Could not save settings.')
+        );
+      }
       setPrintConfig(data.printConfig);
       setLayoutMode(data.printConfig.defaultMode);
-      setFeedback(locale === 'bn' ? 'প্রিন্ট সেটিংস সেভ হয়েছে।' : 'Print settings saved.');
+      setFeedback({
+        type: 'success',
+        message: bn ? 'প্রিন্ট সেটিংস সেভ হয়েছে।' : 'Print settings saved.',
+      });
       await onRefreshWorkspace();
-    } catch (error) { setFeedback(error instanceof Error ? error.message : 'সংযোগ ব্যর্থ। / Connection failed.'); }
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : bn
+            ? 'সংযোগ ব্যর্থ হয়েছে।'
+            : 'Connection failed.',
+      });
+    } finally {
+      setSavingConfig(false);
+    }
   };
 
   // Filtered & Sorted Slips for Display
@@ -1141,38 +1369,109 @@ export function PrintEnginePanel({
     setSelectedOrderNos([]);
   };
 
+  const toggleOrderSelection = (orderNo: string) => {
+    setSelectedOrderNos((prev) =>
+      prev.includes(orderNo) ? prev.filter((x) => x !== orderNo) : [...prev, orderNo]
+    );
+  };
+
   const activeSlipsToPrint = React.useMemo(() => {
     return filteredAndSortedSlips.filter((s) =>
       selectedOrderNos.includes(s.orderNo)
     );
   }, [filteredAndSortedSlips, selectedOrderNos]);
 
+  const printedHistorySlips = React.useMemo(() => {
+    return slips
+      .filter((s) => getSlipPrintCount(s) > 0 || (s.printEvents?.length ?? 0) > 0)
+      .sort((a, b) => {
+        const tA = a.lastPrintedAt ? new Date(a.lastPrintedAt).getTime() : 0;
+        const tB = b.lastPrintedAt ? new Date(b.lastPrintedAt).getTime() : 0;
+        if (tB !== tA) return tB - tA;
+        return getSlipPrintCount(b) - getSlipPrintCount(a);
+      });
+  }, [slips]);
+
+  const effectiveVisibleParts = React.useMemo(
+    () => [visibleParts[0], visibleParts[1], isSuperAdmin ? visibleParts[2] : false],
+    [visibleParts, isSuperAdmin]
+  );
+
   const handlePrint = async () => {
     if (!activeSlipsToPrint.length || !printableRef.current) return;
+    if (layoutMode === 'a4_3part' && !effectiveVisibleParts.some(Boolean)) {
+      setFeedback({
+        type: 'error',
+        message: bn
+          ? 'প্রিন্ট করার জন্য অন্তত একটি A4 অংশ নির্বাচন করুন।'
+          : 'Select at least one A4 section to print.',
+      });
+      return;
+    }
     setLoadingSlips(true);
     setFeedback(null);
     try {
       // Record a print request, not a claim that the printer actually succeeded.
       const res = await fetch('/api/admin/workspace', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operation: 'generate_print_slips', orderNos: activeSlipsToPrint.map(s => s.orderNo), recordPrint: true }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operation: 'generate_print_slips',
+          orderNos: activeSlipsToPrint.map((s) => s.orderNo),
+          recordPrint: true,
+        }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.errorBn || 'প্রিন্ট অনুরোধ ব্যর্থ। / Print request failed.');
-      const updates = new Map<string, OrderPrintSlipBundle>(data.slips.map((slip: OrderPrintSlipBundle) => [slip.orderNo, slip]));
-      flushSync(() => setSlips(previous => previous.map(slip => updates.get(slip.orderNo) || slip)));
-      if (!printableRef.current) throw new Error('প্রিন্ট উইন্ডো তৈরি করা যায়নি। / Could not open print window.');
+      if (!res.ok || !data.success) {
+        throw new Error(
+          data.errorBn || (bn ? 'প্রিন্ট অনুরোধ ব্যর্থ।' : 'Print request failed.')
+        );
+      }
+      const updates = new Map<string, OrderPrintSlipBundle>(
+        data.slips.map((slip: OrderPrintSlipBundle) => [slip.orderNo, slip])
+      );
+      flushSync(() =>
+        setSlips((previous) => previous.map((slip) => updates.get(slip.orderNo) || slip))
+      );
+      if (!printableRef.current) {
+        throw new Error(
+          bn ? 'প্রিন্ট উইন্ডো তৈরি করা যায়নি।' : 'Could not open print window.'
+        );
+      }
       await executeNativeSlipPrint({
         printableEl: printableRef.current,
         layoutMode,
         locale,
       });
       // Browsers do not report whether the dialog was cancelled or paper was printed.
-      setFeedback(locale === 'bn' ? 'প্রিন্ট অনুরোধ নথিভুক্ত হয়েছে। প্রিন্ট ডায়ালগে কাগজের আকার ও স্কেল যাচাই করুন; বাতিল করলেও অনুরোধের সংখ্যা থাকবে।' : 'Print request recorded. Check paper size and scale in the print dialog; cancelled requests are also counted.');
+      setFeedback({
+        type: 'success',
+        message: bn
+          ? 'প্রিন্ট অনুরোধ নথিভুক্ত হয়েছে। প্রিন্ট ডায়ালগে কাগজের আকার ও স্কেল যাচাই করুন; বাতিল করলেও অনুরোধের সংখ্যা থাকবে।'
+          : 'Print request recorded. Check paper size and scale in the print dialog; cancelled requests are also counted.',
+      });
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'প্রিন্ট ব্যর্থ। / Print failed.');
-    } finally { setLoadingSlips(false); }
+      setFeedback({
+        type: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : bn
+            ? 'প্রিন্ট ব্যর্থ হয়েছে।'
+            : 'Print failed.',
+      });
+    } finally {
+      setLoadingSlips(false);
+    }
   };
+
+  const partOptions: Array<{ index: number; label: string }> = [
+    { index: 0, label: bn ? 'গ্রাহক ইনভয়েস' : 'Customer' },
+    { index: 1, label: bn ? 'কুরিয়ার লেবেল' : 'Courier' },
+    ...(isSuperAdmin
+      ? [{ index: 2, label: bn ? 'অভ্যন্তরীণ কপি' : 'Internal' }]
+      : []),
+  ];
 
   return (
     <section className="space-y-5">
@@ -1183,67 +1482,102 @@ export function PrintEnginePanel({
             <h1 className="text-lg sm:text-xl font-bold text-ink flex items-center gap-2">
               <Printer className="w-5 h-5 text-ink shrink-0" aria-hidden="true" />
               <span>
-                {locale === 'bn'
+                {bn
                   ? 'প্রিন্ট ইঞ্জিন ও ইনভয়েস স্টুডিও'
                   : 'Print Engine & Invoice Studio'}
               </span>
             </h1>
             <p className="text-xs text-muted">
-              <LocalizedText source={"A4 ৩-ভাগ ইনভয়েস ও ৪x৬ থার্মাল কুরিয়ার স্টিকার এক ক্লিকে প্রিন্ট করুন।"} area="admin" />{" "}</p>
+              {bn
+                ? 'অনুমতি অনুযায়ী প্রতিটি কপির জন্য A4 ইনভয়েস বা ৪×৬ কুরিয়ার লেবেল প্রিন্ট করুন।'
+                : 'Print A4 documents or 4×6 courier labels with permission checks for each copy.'}
+            </p>
           </div>
 
           {/* Sub-Tab Navigation Switcher */}
-          <div className="flex flex-wrap max-w-full items-center gap-1 p-1 bg-surface border border-border rounded-[var(--radius-md)] self-start sm:self-auto">
+          <div
+            role="tablist"
+            aria-label={bn ? 'প্রিন্ট স্টুডিও সেকশন' : 'Print Studio sections'}
+            className="flex flex-wrap max-w-full items-center gap-1 p-1 bg-surface border border-border rounded-[var(--radius-md)] self-start sm:self-auto"
+          >
             <button
               type="button"
+              role="tab"
+              id={`${idPrefix}-tab-queue`}
+              aria-selected={activeSubTab === 'queue'}
+              aria-controls={`${idPrefix}-panel-queue`}
               onClick={() => setActiveSubTab('queue')}
-              className={`min-h-11 max-w-full px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`min-h-[44px] sm:min-h-[38px] max-w-full px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                 activeSubTab === 'queue'
                   ? 'bg-ink text-surface shadow-sm'
                   : 'text-muted hover:text-ink'
               }`}
             >
-              <Package className="w-3.5 h-3.5" />
-              <span><LocalizedText source={"প্রিন্ট কিউ ("} area="admin" />{availableOrderNos.length})</span>
+              <Package className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span>
+                {bn ? 'প্রিন্ট কিউ' : 'Print queue'} ({formatLocaleNumber(availableOrderNos.length, locale)})
+              </span>
             </button>
 
-            {!isVendor && (
+            {isSuperAdmin && !isVendor && (
               <button
                 type="button"
+                role="tab"
+                id={`${idPrefix}-tab-templates`}
+                aria-selected={activeSubTab === 'templates'}
+                aria-controls={`${idPrefix}-panel-templates`}
                 onClick={() => setActiveSubTab('templates')}
-                className={`min-h-11 max-w-full px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                className={`min-h-[44px] sm:min-h-[38px] max-w-full px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                   activeSubTab === 'templates'
                     ? 'bg-ink text-surface shadow-sm'
                     : 'text-muted hover:text-ink'
                 }`}
               >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span><LocalizedText source={"টেম্পলেট সেটিংস"} area="admin" /></span>
+                <SlidersHorizontal className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span>{bn ? 'টেম্পলেট সেটিংস' : 'Template settings'}</span>
               </button>
             )}
 
             <button
               type="button"
+              role="tab"
+              id={`${idPrefix}-tab-history`}
+              aria-selected={activeSubTab === 'history'}
+              aria-controls={`${idPrefix}-panel-history`}
               onClick={() => setActiveSubTab('history')}
-              className={`min-h-11 max-w-full px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`min-h-[44px] sm:min-h-[38px] max-w-full px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                 activeSubTab === 'history'
                   ? 'bg-ink text-surface shadow-sm'
                   : 'text-muted hover:text-ink'
               }`}
             >
-              <History className="w-3.5 h-3.5" />
-              <span><LocalizedText source={"প্রিন্ট ইতিহাস"} area="admin" /></span>
+              <History className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span>
+                {bn ? 'প্রিন্ট ইতিহাস' : 'Print history'}
+                {printedHistorySlips.length > 0
+                  ? ` (${formatLocaleNumber(printedHistorySlips.length, locale)})`
+                  : ''}
+              </span>
             </button>
           </div>
         </div>
 
         {feedback && (
-          <div className="p-3 border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 text-xs font-semibold rounded-[var(--radius-md)] flex items-center justify-between">
-            <span>{feedback}</span>
+          <div
+            role={feedback.type === 'error' ? 'alert' : 'status'}
+            aria-live={feedback.type === 'error' ? 'assertive' : 'polite'}
+            className={`p-3 border text-xs font-semibold rounded-[var(--radius-md)] flex items-center justify-between gap-2 ${
+              feedback.type === 'error'
+                ? 'border-red-500/40 bg-red-500/10 text-red-800 dark:text-red-300'
+                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-300'
+            }`}
+          >
+            <span>{feedback.message}</span>
             <button
               type="button"
               onClick={() => setFeedback(null)}
-              className="text-muted hover:text-ink text-xs font-bold"
+              aria-label={bn ? 'বার্তা বন্ধ করুন' : 'Dismiss message'}
+              className="min-h-[44px] min-w-[44px] sm:min-h-[28px] sm:min-w-[28px] inline-flex items-center justify-center rounded text-ink/70 hover:text-ink text-xs font-bold cursor-pointer"
             >
               ✕
             </button>
@@ -1255,198 +1589,374 @@ export function PrintEnginePanel({
           SUB-TAB 1: PRINT QUEUE (প্রিন্ট কিউ)
          ==================================================================== */}
       {activeSubTab === 'queue' && (
-        <div className="space-y-4">
+        <div
+          role="tabpanel"
+          id={`${idPrefix}-panel-queue`}
+          aria-labelledby={`${idPrefix}-tab-queue`}
+          className="space-y-4"
+        >
           <div className="print:hidden rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-slate-900">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div><h2 className="text-sm font-bold">{locale === 'bn' ? 'কোন কপিতে কী থাকবে' : 'What goes on each copy'}</h2>
-                <p className="mt-1 text-xs text-slate-700">{locale === 'bn' ? 'প্রতি অর্ডারে একটি A4 পাতায় নির্বাচিত অংশগুলো থাকে; কেটে আলাদা করুন।' : 'Each order uses one A4 page with the selected sections; cut them apart.'}</p></div>
-              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-900">{locale === 'bn' ? 'স্টোরের ব্র্যান্ডিং সিঙ্ক' : 'Store branding synced'}</span>
+              <div>
+                <h2 className="text-sm font-bold">
+                  {bn ? 'কোন কপিতে কী থাকবে' : 'What goes on each copy'}
+                </h2>
+                <p className="mt-1 text-xs text-slate-700">
+                  {bn
+                    ? 'প্রতি অর্ডারে একটি A4 পাতায় নির্বাচিত অংশগুলো থাকে; কেটে আলাদা করুন।'
+                    : 'Each order uses one A4 page with the selected sections; cut them apart.'}
+                </p>
+              </div>
+              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-900">
+                {bn ? 'স্টোরের ব্র্যান্ডিং সিঙ্ক' : 'Store branding synced'}
+              </span>
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-3 text-xs leading-relaxed">
-              <div className="rounded-lg border border-emerald-200 bg-white p-3"><strong>{locale === 'bn' ? '১ · গ্রাহক ইনভয়েস' : '1 · Customer invoice'}</strong><p className="mt-1 text-slate-700">{locale === 'bn' ? 'ব্র্যান্ড, গ্রাহক ও ঠিকানা, পণ্য, বিক্রয়মূল্য, ছাড়, ডেলিভারি, পরিশোধ ও বকেয়া। অভ্যন্তরীণ খরচ বা ভেন্ডরের তথ্য নয়।' : 'Brand, customer and address, items, sale prices, discounts, delivery, payment and balance. No internal costs or vendor details.'}</p></div>
-              <div className="rounded-lg border border-sky-200 bg-white p-3"><strong>{locale === 'bn' ? '২ · কুরিয়ার লেবেল' : '2 · Courier label'}</strong><p className="mt-1 text-slate-700">{locale === 'bn' ? 'প্রেরক, প্রাপক, ফোন ও ঠিকানা, কুরিয়ার, অর্ডার/বারকোড এবং সংগ্রহযোগ্য টাকা।' : 'Sender, recipient, phone and address, courier, order/barcode and amount to collect.'}</p></div>
-              <div className="rounded-lg border border-amber-200 bg-white p-3"><strong>{locale === 'bn' ? '৩ · অভ্যন্তরীণ কপি' : '3 · Internal copy'}</strong><p className="mt-1 text-slate-700">{locale === 'bn' ? 'প্যাকিং ও যাচাই, স্টাফ নোট এবং অনুমতি অনুযায়ী ভেন্ডর ও হিসাবের তথ্য। গ্রাহক বা কুরিয়ারকে দেবেন না।' : 'Packing and checks, staff notes, and role-permitted vendor and accounting details. Do not give this to customers or couriers.'}</p></div>
+              <div className="rounded-lg border border-emerald-200 bg-white p-3">
+                <strong>{bn ? '১ · গ্রাহক ইনভয়েস' : '1 · Customer invoice'}</strong>
+                <p className="mt-1 text-slate-700">
+                  {bn
+                    ? 'ব্র্যান্ড, গ্রাহক ও ঠিকানা, পণ্য, বিক্রয়মূল্য, ছাড়, ডেলিভারি, পরিশোধ ও বকেয়া। অভ্যন্তরীণ খরচ বা ভেন্ডরের তথ্য নয়।'
+                    : 'Brand, customer and address, items, sale prices, discounts, delivery, payment and balance. No internal costs or vendor details.'}
+                </p>
+              </div>
+              <div className="rounded-lg border border-sky-200 bg-white p-3">
+                <strong>{bn ? '২ · কুরিয়ার লেবেল' : '2 · Courier label'}</strong>
+                <p className="mt-1 text-slate-700">
+                  {bn
+                    ? 'প্রেরক, প্রাপক, ফোন ও ঠিকানা, কুরিয়ার, অর্ডার/বারকোড এবং সংগ্রহযোগ্য টাকা।'
+                    : 'Sender, recipient, phone and address, courier, order/barcode and amount to collect.'}
+                </p>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-white p-3">
+                <strong>{bn ? '৩ · অভ্যন্তরীণ কপি' : '3 · Internal copy'}</strong>
+                <p className="mt-1 text-slate-700">
+                  {isSuperAdmin
+                    ? bn
+                      ? 'প্যাকিং ও যাচাই, স্টাফ নোট এবং সুপার অ্যাডমিনের জন্য ভেন্ডর ও হিসাবের তথ্য। গ্রাহক বা কুরিয়ারকে দেবেন না।'
+                      : 'Packing and checks, staff notes, and Super Admin vendor and accounting details. Do not give this to customers or couriers.'
+                    : bn
+                    ? 'অভ্যন্তরীণ ভেন্ডর ও হিসাব কপি শুধু সুপার অ্যাডমিনের জন্য সীমাবদ্ধ; আপনার রোল গ্রাহক ও কুরিয়ার কপি প্রিন্ট করতে পারবে।'
+                    : 'Internal vendor and accounting copy is restricted to Super Admin; your role prints Customer and Courier copies only.'}
+                </p>
+              </div>
             </div>
-            <p className="mt-3 text-xs text-slate-700">{locale === 'bn' ? '৪×৬ থার্মাল: শুধু কুরিয়ার লেবেল। লোগো ও নাম স্টোর ডিজাইন সেটিংস থেকে আসে; পরিবর্তন সেভ করে রিলোড করুন। লোগো লোড না হলে নামের প্রথম অক্ষর দেখাবে। রঙ প্রিন্টার ও প্রিন্ট ডায়ালগের ওপর নির্ভর করে—থার্মাল সাধারণত সাদা-কালো।' : '4×6 thermal: courier label only. Logo and name come from store design settings; save changes and reload. If the logo cannot load, the first letter is used. Colors depend on your printer and print dialog; thermal is usually monochrome.'}</p>
+            <p className="mt-3 text-xs text-slate-700">
+              {bn
+                ? '৪×৬ থার্মাল: শুধু কুরিয়ার লেবেল। লোগো ও নাম স্টোর ডিজাইন সেটিংস থেকে আসে; পরিবর্তন সেভ করে রিলোড করুন। লোগো লোড না হলে নামের প্রথম অক্ষর দেখাবে। রঙ প্রিন্টার ও প্রিন্ট ডায়ালগের ওপর নির্ভর করে—থার্মাল সাধারণত সাদা-কালো।'
+                : '4×6 thermal: courier label only. Logo and name come from store design settings; save changes and reload. If the logo cannot load, the first letter is used. Colors depend on your printer and print dialog; thermal is usually monochrome.'}
+            </p>
           </div>
+
           {/* Controls Bar: Search, Sort, Filter, Mode & Action Buttons */}
           <div className="print:hidden space-y-3">
             <Card surface="bg" padding="md" className="space-y-3">
               {/* Row 1: Search, Sort, Courier Filter & Mode Switcher */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5">
                 {/* Search */}
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-3 text-muted" />
+                <div className="relative lg:col-span-4">
+                  <label htmlFor={`${idPrefix}-queue-search`} className="sr-only">
+                    {bn
+                      ? 'অর্ডার, নাম, ফোন বা ট্র্যাকিং কোড খুঁজুন'
+                      : 'Search orders by number, customer, phone, or tracking code'}
+                  </label>
+                  <Search
+                    className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+                    aria-hidden="true"
+                  />
                   <input
-                    type="text"
+                    id={`${idPrefix}-queue-search`}
+                    type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={uiText("অর্ডার, নাম, ফোন বা ট্র্যাকিং কোড...", locale)}
-                    className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-surface border border-border rounded-[var(--radius-sm)] text-ink placeholder:text-muted"
+                    placeholder={
+                      bn
+                        ? 'অর্ডার, নাম, ফোন বা ট্র্যাকিং কোড...'
+                        : 'Order, name, phone or tracking...'
+                    }
+                    className="w-full min-h-[44px] sm:min-h-[36px] pl-8 pr-2.5 py-1.5 text-base lg:text-xs bg-surface border border-border rounded-[var(--radius-sm)] text-ink placeholder:text-muted"
                   />
                 </div>
 
                 {/* Sort Option */}
-                <div className="flex items-center gap-1.5 bg-surface border border-border rounded-[var(--radius-sm)] px-2">
-                  <ArrowUpDown className="w-3.5 h-3.5 text-muted shrink-0" />
+                <div className="flex items-center gap-1.5 bg-surface border border-border rounded-[var(--radius-sm)] px-2 min-h-[44px] sm:min-h-[36px] lg:col-span-3">
+                  <label htmlFor={`${idPrefix}-queue-sort`} className="sr-only">
+                    {bn ? 'সর্ট অর্ডার' : 'Sort print queue'}
+                  </label>
+                  <ArrowUpDown className="w-3.5 h-3.5 text-muted shrink-0" aria-hidden="true" />
                   <select
+                    id={`${idPrefix}-queue-sort`}
                     value={sortOption}
                     onChange={(e) => setSortOption(e.target.value as PrintSortOption)}
-                    className="w-full py-1.5 text-xs bg-transparent text-ink border-0 focus:ring-0 cursor-pointer font-medium"
+                    className="w-full py-1.5 text-base lg:text-xs bg-transparent text-ink border-0 focus:ring-0 cursor-pointer font-medium"
                   >
-                    <option value="newest"><LocalizedText source={"নতুন অর্ডার আগে (Newest)"} area="admin" /></option>
-                    <option value="oldest"><LocalizedText source={"পুরাতন অর্ডার আগে (Oldest)"} area="admin" /></option>
-                    <option value="cod_desc"><LocalizedText source={"সর্বোচ্চ সিওডি বিল আগে (Highest COD)"} area="admin" /></option>
-                    <option value="district"><LocalizedText source={"জেলা অনুযায়ী (District A-Z)"} area="admin" /></option>
-                    <option value="order_no"><LocalizedText source={"অর্ডার নম্বর অনুযায়ী (Order No)"} area="admin" /></option>
+                    <option value="newest">
+                      {bn ? 'নতুন অর্ডার আগে' : 'Newest orders first'}
+                    </option>
+                    <option value="oldest">
+                      {bn ? 'পুরাতন অর্ডার আগে' : 'Oldest orders first'}
+                    </option>
+                    <option value="cod_desc">
+                      {bn ? 'সর্বোচ্চ সিওডি বিল আগে' : 'Highest COD first'}
+                    </option>
+                    <option value="district">
+                      {bn ? 'জেলা অনুযায়ী (A–Z)' : 'By district (A–Z)'}
+                    </option>
+                    <option value="order_no">
+                      {bn ? 'অর্ডার নম্বর অনুযায়ী' : 'By order number'}
+                    </option>
                   </select>
                 </div>
 
                 {/* Courier Filter */}
-                <div className="flex items-center gap-1.5 bg-surface border border-border rounded-[var(--radius-sm)] px-2">
-                  <ListFilter className="w-3.5 h-3.5 text-muted shrink-0" />
+                <div className="flex items-center gap-1.5 bg-surface border border-border rounded-[var(--radius-sm)] px-2 min-h-[44px] sm:min-h-[36px] lg:col-span-2">
+                  <label htmlFor={`${idPrefix}-queue-courier`} className="sr-only">
+                    {bn ? 'কুরিয়ার ফিল্টার' : 'Filter by courier'}
+                  </label>
+                  <ListFilter className="w-3.5 h-3.5 text-muted shrink-0" aria-hidden="true" />
                   <select
+                    id={`${idPrefix}-queue-courier`}
                     value={courierFilter}
                     onChange={(e) => setCourierFilter(e.target.value)}
-                    className="w-full py-1.5 text-xs bg-transparent text-ink border-0 focus:ring-0 cursor-pointer font-medium"
+                    className="w-full py-1.5 text-base lg:text-xs bg-transparent text-ink border-0 focus:ring-0 cursor-pointer font-medium"
                   >
-                    <option value="ALL"><LocalizedText source={"সব কুরিয়ার (All Couriers)"} area="admin" /></option>
-                    <option value="steadfast"><LocalizedText source={"Steadfast Courier"} area="admin" /></option>
-                    <option value="pathao"><LocalizedText source={"Pathao Courier"} area="admin" /></option>
-
-                    <option value="bd_post"><LocalizedText source={"BD Post (ডাক বিভাগ)"} area="admin" /></option>
-                    <option value="manual"><LocalizedText source={"ম্যানুয়াল কুরিয়ার"} area="admin" /></option>
+                    <option value="ALL">{bn ? 'সব কুরিয়ার' : 'All couriers'}</option>
+                    <option value="steadfast">Steadfast</option>
+                    <option value="pathao">Pathao</option>
+                    <option value="bd_post">{bn ? 'ডাক বিভাগ (BD Post)' : 'BD Post'}</option>
+                    <option value="manual">{bn ? 'কাস্টম কুরিয়ার' : 'Custom Courier'}</option>
                   </select>
                 </div>
 
                 {/* Layout Mode Toggle */}
-                <div className="flex items-center gap-1.5 bg-surface border border-border rounded-[var(--radius-sm)] px-2">
-                  <FileText className="w-3.5 h-3.5 text-muted shrink-0" />
+                <div className="flex items-center gap-1.5 bg-surface border border-border rounded-[var(--radius-sm)] px-2 min-h-[44px] sm:min-h-[36px] lg:col-span-3">
+                  <label htmlFor={`${idPrefix}-queue-layout`} className="sr-only">
+                    {bn ? 'কাগজের ধরন' : 'Paper layout mode'}
+                  </label>
+                  <FileText className="w-3.5 h-3.5 text-muted shrink-0" aria-hidden="true" />
                   <select
+                    id={`${idPrefix}-queue-layout`}
                     value={layoutMode}
                     onChange={(e) =>
                       setLayoutMode(e.target.value as 'a4_3part' | 'thermal_4x6')
                     }
-                    className="w-full py-1.5 text-xs bg-transparent text-ink font-bold border-0 focus:ring-0 cursor-pointer"
+                    className="w-full py-1.5 text-base lg:text-xs bg-transparent text-ink font-bold border-0 focus:ring-0 cursor-pointer"
                   >
-                    <option value="a4_3part"><LocalizedText source={"A4 ৩-ভাগ ইনভয়েস (Invoice + Sticker)"} area="admin" /></option>
-                    <option value="thermal_4x6"><LocalizedText source={"৪x৬ থার্মাল কুরিয়ার স্টিকার (Thermal)"} area="admin" /></option>
+                    <option value="a4_3part">
+                      {bn ? 'A4 ইনভয়েস ও লেবেল' : 'A4 invoice and labels'}
+                    </option>
+                    <option value="thermal_4x6">
+                      {bn ? '৪×৬ থার্মাল কুরিয়ার স্টিকার' : '4×6 thermal courier label'}
+                    </option>
                   </select>
                 </div>
               </div>
 
-              {layoutMode === 'a4_3part' && <fieldset className="flex flex-wrap gap-4 text-xs border-t border-border pt-2">
-                <legend>{locale === 'bn' ? 'প্রিন্টের অংশ / Parts to print' : 'Parts to print / প্রিন্টের অংশ'}</legend>
-                {['গ্রাহক / Customer', 'কুরিয়ার / Courier', 'অভ্যন্তরীণ / Internal'].map((label, index) => <label key={label} className="inline-flex items-center gap-1.5">
-                  <input type="checkbox" checked={visibleParts[index]} onChange={e => setVisibleParts(parts => parts.map((value, i) => i === index ? e.target.checked : value))} /> {label}
-                </label>)}
-              </fieldset>}
-              <p className="text-xs text-muted">{locale === 'bn' ? 'প্রতি অর্ডার এক পৃষ্ঠায় ফিট করা হবে। অতি বেশি তথ্য থাকলে লেখা না কেটে পৃথক অংশ প্রিন্ট করতে বলা হবে। ডায়ালগে সঠিক কাগজের আকার ও ১০০% স্কেল বেছে নিন।' : 'Each order is fitted to one page. If it cannot fit legibly, select fewer parts instead of clipping data. Choose the correct paper size and 100% scale in the print dialog.'}</p>
+              {layoutMode === 'a4_3part' && (
+                <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs border-t border-border pt-2">
+                  <legend className="text-xs font-semibold text-ink mb-1">
+                    {bn ? 'প্রিন্টের অংশ' : 'Parts to print'}
+                  </legend>
+                  {partOptions.map(({ index, label }) => (
+                    <label
+                      key={index}
+                      className="inline-flex items-center gap-1.5 min-h-[44px] sm:min-h-0 cursor-pointer select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={effectiveVisibleParts[index]}
+                        onChange={(e) =>
+                          setVisibleParts((parts) =>
+                            parts.map((value, i) =>
+                              i === index ? e.target.checked : value
+                            )
+                          )
+                        }
+                        className="accent-ink"
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                  {!isSuperAdmin && (
+                    <span className="text-[11px] text-muted">
+                      {bn
+                        ? '(অভ্যন্তরীণ কপি শুধু সুপার অ্যাডমিনের জন্য)'
+                        : '(Internal copy restricted to Super Admin)'}
+                    </span>
+                  )}
+                </fieldset>
+              )}
+
+              <p className="text-xs text-muted">
+                {bn
+                  ? 'প্রতি অর্ডার এক পৃষ্ঠায় ফিট করা হবে। অতি বেশি তথ্য থাকলে লেখা না কেটে পৃথক অংশ প্রিন্ট করতে বলা হবে। ডায়ালগে সঠিক কাগজের আকার ও ১০০% স্কেল বেছে নিন।'
+                  : 'Each order is fitted to one page. If it cannot fit legibly, select fewer parts instead of clipping data. Choose the correct paper size and 100% scale in the print dialog.'}
+              </p>
+
               {/* Row 2: Selection Counters & Direct Print Trigger Buttons */}
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border">
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
                   <button
                     type="button"
                     onClick={handleSelectAll}
-                    className="px-2.5 py-1 rounded bg-surface border border-border text-ink hover:bg-bg font-semibold cursor-pointer"
+                    className="min-h-[44px] sm:min-h-[34px] px-3 py-1 rounded bg-surface border border-border text-ink hover:bg-bg font-semibold cursor-pointer"
                   >
-                    <LocalizedText source={"সব সিলেক্ট ("} area="admin" />{filteredAndSortedSlips.length})
+                    {bn
+                      ? `সব সিলেক্ট (${formatLocaleNumber(filteredAndSortedSlips.length, locale)})`
+                      : `Select all (${filteredAndSortedSlips.length})`}
                   </button>
                   <button
                     type="button"
                     onClick={handleDeselectAll}
-                    className="px-2.5 py-1 rounded bg-surface border border-border text-muted hover:text-ink font-semibold cursor-pointer"
+                    className="min-h-[44px] sm:min-h-[34px] px-3 py-1 rounded bg-surface border border-border text-muted hover:text-ink font-semibold cursor-pointer"
                   >
-                    <LocalizedText source={"আনসেলেক্ট"} area="admin" />{" "}</button>
-                  <span className="font-mono text-ink font-bold bg-surface px-2 py-0.5 rounded border border-border">
-                    {selectedOrderNos.length}<LocalizedText source={"টি সিলেক্টেড"} area="admin" />{" "}</span>
+                    {bn ? 'আনসেলেক্ট' : 'Deselect'}
+                  </button>
+                  <span className="font-mono text-ink font-bold bg-surface px-2.5 py-1 rounded border border-border">
+                    {bn
+                      ? `${formatLocaleNumber(selectedOrderNos.length, locale)}টি সিলেক্টেড`
+                      : `${selectedOrderNos.length} selected`}
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="min-h-[44px] sm:min-h-[36px]"
                     onClick={() => void Promise.all([loadSlips(), onRefreshWorkspace()])}
                     disabled={loadingSlips}
-                    leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+                    leftIcon={<RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />}
                   >
-                    {loadingSlips ? (locale === 'bn' ? 'লোড হচ্ছে…' : 'Loading…') : (locale === 'bn' ? 'রিলোড' : 'Reload')}
+                    {loadingSlips
+                      ? bn
+                        ? 'লোড হচ্ছে…'
+                        : 'Loading…'
+                      : bn
+                      ? 'রিলোড'
+                      : 'Reload'}
                   </Button>
 
                   <Button
                     variant="primary"
                     size="md"
+                    className="min-h-[44px] sm:min-h-[38px]"
                     onClick={() => void handlePrint()}
-                    disabled={activeSlipsToPrint.length === 0 || loadingSlips || (layoutMode === 'a4_3part' && !visibleParts.some(Boolean))}
-                    leftIcon={<Printer className="w-4 h-4" />}
+                    disabled={
+                      activeSlipsToPrint.length === 0 ||
+                      loadingSlips ||
+                      (layoutMode === 'a4_3part' && !effectiveVisibleParts.some(Boolean))
+                    }
+                    leftIcon={<Printer className="w-4 h-4" aria-hidden="true" />}
                   >
                     {layoutMode === 'a4_3part'
-                      ? `A4 ৩-ভাগ ইনভয়েস প্রিন্ট (${activeSlipsToPrint.length})`
-                      : `৪x৬ থার্মাল স্টিকার প্রিন্ট (${activeSlipsToPrint.length})`}
+                      ? bn
+                        ? `A4 ইনভয়েস প্রিন্ট (${formatLocaleNumber(activeSlipsToPrint.length, locale)})`
+                        : `Print A4 Slips (${activeSlipsToPrint.length})`
+                      : bn
+                      ? `৪×৬ থার্মাল প্রিন্ট (${formatLocaleNumber(activeSlipsToPrint.length, locale)})`
+                      : `Print 4×6 Thermal (${activeSlipsToPrint.length})`}
                   </Button>
                 </div>
               </div>
             </Card>
 
             {/* Quick Overview Grid of Queued Orders */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {filteredAndSortedSlips.map((slip) => {
-                const p12 = slip.customerAndCourierPart;
-                const isSelected = selectedOrderNos.includes(slip.orderNo);
-
-                return (
-                  <div
-                    key={slip.orderNo}
-                    onClick={() => {
-                      if (isSelected) {
-                        setSelectedOrderNos(
-                          selectedOrderNos.filter((x) => x !== slip.orderNo)
-                        );
-                      } else {
-                        setSelectedOrderNos([...selectedOrderNos, slip.orderNo]);
-                      }
-                    }}
-                    className={`p-3 rounded-[var(--radius-md)] border cursor-pointer transition-colors space-y-2 ${
-                      isSelected
-                        ? 'bg-surface border-ink shadow-sm'
-                        : 'bg-bg border-border hover:border-border/80 opacity-75'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-xs border-b border-border pb-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => {}}
-                          className="accent-ink"
-                        />
-                        <span className="font-mono font-bold text-ink">
-                          {p12.orderNo}
-                        </span>
-                      </div>
-                      <Badge status="info">{p12.courierProvider.toUpperCase()}</Badge>
-                    </div>
-
-                    <div className="space-y-1 text-xs">
-                      <p className="font-bold text-ink truncate">
-                        {p12.customerName} ({p12.customerPhone})
-                      </p>
-                      <p className="text-muted text-[11px] truncate">
-                        <MapPin className="w-3 h-3 inline mr-1" />
-                        {localizedField(p12, "districtNameBn", locale)} — {localizedField(p12, "upazilaNameBn", locale)}
-                      </p>
-                      <div className="flex items-center justify-between pt-1 font-mono text-[11px]">
-                        <span className="text-muted">
-                          <LocalizedText source={"পণ্য:"} area="admin" />{" "}{p12.items.length}<LocalizedText source={"টি"} area="admin" />{" "}</span>
-                        <span className="font-bold text-ink">
-                          <LocalizedText source={"COD:"} area="admin" />{" "}{formatPoishaToBdt(p12.codCollectablePoisha, locale)}
-                        </span>
-                      </div>
-                    </div>
+            {filteredAndSortedSlips.length === 0 ? (
+              <Card surface="bg" padding="md" className="text-center py-8 space-y-2">
+                <p className="text-sm font-semibold text-ink">
+                  {bn
+                    ? 'কোনো অর্ডার পাওয়া যায়নি'
+                    : 'No matching orders in the print queue'}
+                </p>
+                <p className="text-xs text-muted">
+                  {bn
+                    ? 'সার্চ বা কুরিয়ার ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন।'
+                    : 'Adjust your search query or courier filter to view queued orders.'}
+                </p>
+                {(searchQuery || courierFilter !== 'ALL') && (
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setCourierFilter('ALL');
+                      }}
+                      className="min-h-[44px] sm:min-h-[34px] px-3 py-1 rounded border border-border bg-surface text-xs font-semibold text-ink hover:border-ink cursor-pointer"
+                    >
+                      {bn ? 'ফিল্টার রিসেট করুন' : 'Clear filters'}
+                    </button>
                   </div>
-                );
-              })}
-            </div>
+                )}
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {filteredAndSortedSlips.map((slip) => {
+                  const p12 = slip.customerAndCourierPart;
+                  const isSelected = selectedOrderNos.includes(slip.orderNo);
+                  const checkboxId = `${idPrefix}-order-${slip.orderNo}`;
+
+                  return (
+                    <label
+                      key={slip.orderNo}
+                      htmlFor={checkboxId}
+                      className={`block p-3 rounded-[var(--radius-md)] border cursor-pointer transition-colors space-y-2 ${
+                        isSelected
+                          ? 'bg-surface border-ink shadow-sm'
+                          : 'bg-bg border-border hover:border-border/80 opacity-80'
+                      }`}
+                    >
+                      <span className="sr-only">
+                        {bn
+                          ? `প্রিন্টের জন্য অর্ডার ${p12.orderNo}`
+                          : `Select order ${p12.orderNo} for printing`}
+                      </span>
+                      <div className="flex items-center justify-between text-xs border-b border-border pb-1.5">
+                        <div className="flex items-center gap-2 min-h-[28px]">
+                          <input
+                            id={checkboxId}
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleOrderSelection(slip.orderNo)}
+                            aria-label={
+                              bn
+                                ? `প্রিন্টের জন্য অর্ডার ${p12.orderNo} নির্বাচন করুন`
+                                : `Select order ${p12.orderNo} for printing`
+                            }
+                            className="accent-ink w-4 h-4 cursor-pointer"
+                          />
+                          <span className="font-mono font-bold text-ink">
+                            {p12.orderNo}
+                          </span>
+                        </div>
+                        <Badge status="info">{p12.courierProvider.toUpperCase()}</Badge>
+                      </div>
+
+                      <div className="space-y-1 text-xs">
+                        <p className="font-bold text-ink truncate">
+                          {p12.customerName} ({p12.customerPhone})
+                        </p>
+                        <p className="text-muted text-[11px] truncate">
+                          <MapPin className="w-3 h-3 inline mr-1" aria-hidden="true" />
+                          {localizedField(p12, 'districtNameBn', locale)} —{' '}
+                          {localizedField(p12, 'upazilaNameBn', locale)}
+                        </p>
+                        <div className="flex items-center justify-between pt-1 font-mono text-[11px]">
+                          <span className="text-muted">
+                            {bn ? 'পণ্য:' : 'Items:'}{' '}
+                            {formatLocaleNumber(p12.items.length, locale)}
+                            {bn ? 'টি' : ''}
+                          </span>
+                          <span className="font-bold text-ink">
+                            COD: {formatPoishaToBdt(p12.codCollectablePoisha, locale)}
+                          </span>
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* ====================================================================
@@ -1455,7 +1965,7 @@ export function PrintEnginePanel({
           <PrintableSlipsDocument
             slips={activeSlipsToPrint}
             layoutMode={layoutMode}
-            visibleParts={visibleParts}
+            visibleParts={effectiveVisibleParts}
             printConfig={printConfig}
             siteSettings={siteSettings}
             locale={locale}
@@ -1467,176 +1977,374 @@ export function PrintEnginePanel({
       )}
 
       {/* ====================================================================
-          SUB-TAB 2: TEMPLATE SETTINGS (টেম্পলেট সেটিংস)
+          SUB-TAB 2: TEMPLATE SETTINGS (টেম্পলেট সেটিংস — SUPER ADMIN ONLY)
          ==================================================================== */}
-      {activeSubTab === 'templates' && !isVendor && (
-        <Card surface="bg" padding="md" className="space-y-4 print:hidden">
-          <div className="border-b border-border pb-2">
-            <h2 className="text-base font-bold text-ink flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-ink" />
-              <span><LocalizedText source={"প্রিন্ট টেমপ্লেট ও লেবেল কনফিগারেশন"} area="admin" /></span>
-            </h2>
-            <p className="text-xs text-muted">
-              <LocalizedText source={"ইনভয়েসের প্রতিটি অংশের শিরোনাম, পেপার সাইজ এবং গ্রাহক ফুট নোট নিয়ন্ত্রণ করুন।"} area="admin" />{" "}</p>
-          </div>
-
-          <form onSubmit={handleSaveTemplateConfig} className="space-y-4">
-            <label className="block text-sm font-medium">
-              {locale === 'bn' ? 'ডিফল্ট কাগজ / Default paper' : 'Default paper / ডিফল্ট কাগজ'}
-              <select className="block w-full mt-1 border border-border rounded p-2 bg-bg" value={printConfig.defaultMode}
-                onChange={e => setPrintConfig(p => ({ ...p, defaultMode: e.target.value as PrintTemplateConfig['defaultMode'] }))}>
-                <option value="a4_3part">A4 — ৩ অংশ / 3 parts</option>
-                <option value="thermal_4x6">4 × 6 inch — থার্মাল / Thermal</option>
-              </select>
-            </label>
-            <p className="text-xs text-muted">{locale === 'bn' ? 'অংশের উচ্চতা লক্ষ্য হিসেবে ব্যবহৃত হয়। তথ্য স্পষ্টভাবে এক পাতায় না ধরলে প্রিন্ট বন্ধ হবে—কম অংশ বেছে আলাদা কপি প্রিন্ট করুন।' : 'Part heights are targets. If the content cannot fit legibly on one page, printing stops; select fewer parts and print separate copies.'}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Input
-                label="Part 1 শিরোনাম (গ্রাহক কপি)"
-                value={printConfig.part1TitleBn}
-                onChange={(e) =>
-                  setPrintConfig((p) => ({
-                    ...p,
-                    part1TitleBn: e.target.value,
-                  }))
-                }
-              />
-              <Input
-                label="Part 2 শিরোনাম (কুরিয়ার স্টিকার)"
-                value={printConfig.part2TitleBn}
-                onChange={(e) =>
-                  setPrintConfig((p) => ({
-                    ...p,
-                    part2TitleBn: e.target.value,
-                  }))
-                }
-              />
-              <Input
-                label="Part 3 শিরোনাম (ইন্টারনাল কপি)"
-                value={printConfig.part3TitleBn}
-                onChange={(e) =>
-                  setPrintConfig((p) => ({
-                    ...p,
-                    part3TitleBn: e.target.value,
-                  }))
-                }
-              />
-              {[1, 2, 3].map((part) => {
-                const key = `part${part}TitleEn` as 'part1TitleEn' | 'part2TitleEn' | 'part3TitleEn';
-                return <Input key={key} label={`Part ${part} English title / ইংরেজি শিরোনাম`} required minLength={2} value={printConfig[key]} onChange={e => setPrintConfig(p => ({ ...p, [key]: e.target.value }))} />;
-              })}
-              <Input
-                label="Part 1 উচ্চতা (mm)"
-                type="number" min={60} max={120} required
-                value={String(printConfig.part1HeightMm)}
-                onChange={(e) =>
-                  setPrintConfig((p) => ({
-                    ...p,
-                    part1HeightMm: Number(e.target.value) || 95,
-                  }))
-                }
-              />
-              <Input
-                label="Part 2 উচ্চতা (mm)"
-                type="number" min={60} max={120} required
-                value={String(printConfig.part2HeightMm)}
-                onChange={(e) =>
-                  setPrintConfig((p) => ({
-                    ...p,
-                    part2HeightMm: Number(e.target.value) || 95,
-                  }))
-                }
-              />
-              <Input label="Part 3 উচ্চতা / Height (mm)" type="number" min={60} max={120} required
-                value={String(printConfig.part3HeightMm)}
-                onChange={e => setPrintConfig(p => ({ ...p, part3HeightMm: Number(e.target.value) }))} />
-              <Input
-                label="গ্রাহক ফুটার টার্মস/নোট"
-                value={printConfig.footerNoteBn}
-                onChange={(e) =>
-                  setPrintConfig((p) => ({
-                    ...p,
-                    footerNoteBn: e.target.value,
-                  }))
-                }
-              />
+      {activeSubTab === 'templates' && isSuperAdmin && !isVendor && (
+        <div
+          role="tabpanel"
+          id={`${idPrefix}-panel-templates`}
+          aria-labelledby={`${idPrefix}-tab-templates`}
+        >
+          <Card surface="bg" padding="md" className="space-y-4 print:hidden">
+            <div className="border-b border-border pb-2">
+              <h2 className="text-base font-bold text-ink flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-ink shrink-0" aria-hidden="true" />
+                <span>
+                  {bn
+                    ? 'প্রিন্ট টেমপ্লেট ও লেবেল কনফিগারেশন'
+                    : 'Print template & label configuration'}
+                </span>
+              </h2>
+              <p className="text-xs text-muted">
+                {bn
+                  ? 'ইনভয়েসের প্রতিটি অংশের শিরোনাম, পেপার সাইজ এবং গ্রাহক ফুটনোট নিয়ন্ত্রণ করুন।'
+                  : 'Configure copy headings, default paper size, height targets, and customer footnotes.'}
+              </p>
             </div>
 
-            <label className="block text-sm font-medium">
-              {locale === 'bn' ? 'প্যাকিং চেকলিস্ট (প্রতি লাইনে একটি) / Packing checklist' : 'Packing checklist (one item per line) / প্যাকিং চেকলিস্ট'}
-              <textarea className="block w-full mt-1 border border-border rounded p-2 bg-bg" rows={5}
-                value={printConfig.checklistItemsBn.join('\n')}
-                onChange={e => setPrintConfig(p => ({ ...p, checklistItemsBn: e.target.value.split('\n') }))} />
-            </label>
-            <div className="flex justify-end pt-2 border-t border-border">
-              <Button type="submit" variant="primary" size="md">
-                <LocalizedText source={"সেটিংস সেভ করুন"} area="admin" />{" "}</Button>
-            </div>
-          </form>
-        </Card>
+            <form onSubmit={handleSaveTemplateConfig} className="space-y-4">
+              <label
+                htmlFor={`${idPrefix}-tpl-default-mode`}
+                className="block text-sm font-medium text-ink"
+              >
+                {bn ? 'ডিফল্ট কাগজ' : 'Default paper'}
+                <select
+                  id={`${idPrefix}-tpl-default-mode`}
+                  className="block w-full mt-1 min-h-[44px] sm:min-h-[38px] text-base lg:text-sm border border-border rounded-[var(--radius-sm)] p-2 bg-bg text-ink"
+                  value={printConfig.defaultMode}
+                  onChange={(e) =>
+                    setPrintConfig((p) => ({
+                      ...p,
+                      defaultMode: e.target.value as PrintTemplateConfig['defaultMode'],
+                    }))
+                  }
+                >
+                  <option value="a4_3part">
+                    {bn ? 'A4 — ৩ অংশ' : 'A4 — 3 parts'}
+                  </option>
+                  <option value="thermal_4x6">
+                    {bn ? '৪ × ৬ ইঞ্চি — থার্মাল' : '4 × 6 inch — Thermal'}
+                  </option>
+                </select>
+              </label>
+
+              <p className="text-xs text-muted">
+                {bn
+                  ? 'অংশের উচ্চতা লক্ষ্য হিসেবে ব্যবহৃত হয় (৬০–১২০ মিমি)। তথ্য স্পষ্টভাবে এক পাতায় না ধরলে প্রিন্ট বন্ধ হবে—কম অংশ বেছে আলাদা কপি প্রিন্ট করুন।'
+                  : 'Part heights are targets (60–120 mm). If the content cannot fit legibly on one page, printing stops; select fewer parts and print separate copies.'}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input
+                  label={
+                    bn ? 'Part 1 শিরোনাম (গ্রাহক কপি — বাংলা)' : 'Part 1 Bangla title (Customer)'
+                  }
+                  required
+                  minLength={2}
+                  maxLength={100}
+                  value={printConfig.part1TitleBn}
+                  onChange={(e) =>
+                    setPrintConfig((p) => ({
+                      ...p,
+                      part1TitleBn: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  label={
+                    bn ? 'Part 2 শিরোনাম (কুরিয়ার স্টিকার — বাংলা)' : 'Part 2 Bangla title (Courier)'
+                  }
+                  required
+                  minLength={2}
+                  maxLength={100}
+                  value={printConfig.part2TitleBn}
+                  onChange={(e) =>
+                    setPrintConfig((p) => ({
+                      ...p,
+                      part2TitleBn: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  label={
+                    bn ? 'Part 3 শিরোনাম (ইন্টারনাল কপি — বাংলা)' : 'Part 3 Bangla title (Internal)'
+                  }
+                  required
+                  minLength={2}
+                  maxLength={100}
+                  value={printConfig.part3TitleBn}
+                  onChange={(e) =>
+                    setPrintConfig((p) => ({
+                      ...p,
+                      part3TitleBn: e.target.value,
+                    }))
+                  }
+                />
+
+                {([1, 2, 3] as const).map((part) => {
+                  const key = `part${part}TitleEn` as
+                    | 'part1TitleEn'
+                    | 'part2TitleEn'
+                    | 'part3TitleEn';
+                  return (
+                    <Input
+                      key={key}
+                      label={
+                        bn
+                          ? `Part ${part} ইংরেজি শিরোনাম`
+                          : `Part ${part} English title`
+                      }
+                      required
+                      minLength={2}
+                      maxLength={100}
+                      value={printConfig[key]}
+                      onChange={(e) =>
+                        setPrintConfig((p) => ({ ...p, [key]: e.target.value }))
+                      }
+                    />
+                  );
+                })}
+
+                <Input
+                  label={bn ? 'Part 1 উচ্চতা (mm)' : 'Part 1 height (mm)'}
+                  type="number"
+                  min={60}
+                  max={120}
+                  required
+                  value={String(printConfig.part1HeightMm)}
+                  onChange={(e) => {
+                    const parsed = Number.parseInt(e.target.value, 10);
+                    setPrintConfig((p) => ({
+                      ...p,
+                      part1HeightMm: Number.isFinite(parsed) ? parsed : 95,
+                    }));
+                  }}
+                />
+                <Input
+                  label={bn ? 'Part 2 উচ্চতা (mm)' : 'Part 2 height (mm)'}
+                  type="number"
+                  min={60}
+                  max={120}
+                  required
+                  value={String(printConfig.part2HeightMm)}
+                  onChange={(e) => {
+                    const parsed = Number.parseInt(e.target.value, 10);
+                    setPrintConfig((p) => ({
+                      ...p,
+                      part2HeightMm: Number.isFinite(parsed) ? parsed : 95,
+                    }));
+                  }}
+                />
+                <Input
+                  label={bn ? 'Part 3 উচ্চতা (mm)' : 'Part 3 height (mm)'}
+                  type="number"
+                  min={60}
+                  max={120}
+                  required
+                  value={String(printConfig.part3HeightMm)}
+                  onChange={(e) => {
+                    const parsed = Number.parseInt(e.target.value, 10);
+                    setPrintConfig((p) => ({
+                      ...p,
+                      part3HeightMm: Number.isFinite(parsed) ? parsed : 95,
+                    }));
+                  }}
+                />
+
+                <div className="sm:col-span-3">
+                  <Input
+                    label={
+                      bn ? 'গ্রাহক ফুটার টার্মস / নোট' : 'Customer invoice footer terms / note'
+                    }
+                    maxLength={300}
+                    value={printConfig.footerNoteBn}
+                    onChange={(e) =>
+                      setPrintConfig((p) => ({
+                        ...p,
+                        footerNoteBn: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <label
+                htmlFor={`${idPrefix}-tpl-checklist`}
+                className="block text-sm font-medium text-ink"
+              >
+                {bn
+                  ? 'প্যাকিং চেকলিস্ট (প্রতি লাইনে একটি, সর্বোচ্চ ২০টি)'
+                  : 'Packing checklist (one item per line, max 20)'}
+                <textarea
+                  id={`${idPrefix}-tpl-checklist`}
+                  className="block w-full mt-1 text-base lg:text-sm border border-border rounded-[var(--radius-sm)] p-2 bg-bg text-ink"
+                  rows={5}
+                  value={printConfig.checklistItemsBn.join('\n')}
+                  onChange={(e) =>
+                    setPrintConfig((p) => ({
+                      ...p,
+                      checklistItemsBn: e.target.value.split('\n'),
+                    }))
+                  }
+                />
+              </label>
+
+              <div className="flex justify-end pt-2 border-t border-border">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  disabled={savingConfig}
+                  className="min-h-[44px] sm:min-h-[38px]"
+                >
+                  {savingConfig
+                    ? bn
+                      ? 'সেভ হচ্ছে…'
+                      : 'Saving…'
+                    : bn
+                    ? 'সেটিংস সেভ করুন'
+                    : 'Save settings'}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
       )}
 
       {/* ====================================================================
           SUB-TAB 3: PRINT HISTORY & AUDIT LOGS (প্রিন্ট ইতিহাস)
          ==================================================================== */}
       {activeSubTab === 'history' && (
-        <Card surface="bg" padding="md" className="space-y-4 print:hidden">
-          <div className="border-b border-border pb-2 flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-ink flex items-center gap-2">
-                <History className="w-4 h-4 text-ink" />
-                <span><LocalizedText source={"প্রিন্ট ইতিহাস ও সামারি (Print Audit Log)"} area="admin" /></span>
-              </h2>
-              <p className="text-xs text-muted">
-                <LocalizedText source={"বর্তমান কিউর অর্ডারগুলোর প্রিন্ট অনুরোধ; বাতিল করলেও গণনা হয়। / Requests for orders in the current queue, including cancelled dialogs."} area="admin" />{" "}</p>
+        <div
+          role="tabpanel"
+          id={`${idPrefix}-panel-history`}
+          aria-labelledby={`${idPrefix}-tab-history`}
+        >
+          <Card surface="bg" padding="md" className="space-y-4 print:hidden">
+            <div className="border-b border-border pb-2 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-base font-bold text-ink flex items-center gap-2">
+                  <History className="w-4 h-4 text-ink shrink-0" aria-hidden="true" />
+                  <span>
+                    {bn
+                      ? 'প্রিন্ট ইতিহাস ও অডিট লগ'
+                      : 'Print history and audit log'}
+                  </span>
+                </h2>
+                <p className="text-xs text-muted">
+                  {bn
+                    ? 'বর্তমান কিউর অর্ডারগুলোর প্রিন্ট অনুরোধ, সময় ও অপারেটর তথ্য; ডায়ালগ বাতিল করলেও অনুরোধ গণনা হয়।'
+                    : 'Print requests, timestamps, and operators for orders in the current queue, including cancelled dialogs.'}
+                </p>
+              </div>
+              <Badge status="neutral">
+                {bn ? 'মোট রেকর্ড:' : 'Total records:'}{' '}
+                {formatLocaleNumber(printedHistorySlips.length, locale)}
+              </Badge>
             </div>
-            <Badge status="neutral"><LocalizedText source={"মোট রেকর্ড:"} area="admin" />{" "}{formatLocaleNumber(slips.filter(s => s.internalPart3.printCount > 0).length, locale)}</Badge>
-          </div>
 
-          <div className="divide-y divide-border">
-            {slips.filter(s => s.internalPart3.printCount > 0).map((slip) => {
-              const p12 = slip.customerAndCourierPart;
-              const p3 = slip.internalPart3;
-
-              return (
-                <div
-                  key={slip.orderNo}
-                  className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
-                >
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2 font-mono font-bold text-ink">
-                      <span>{p12.orderNo}</span>
-                      <Badge status={p3.isReprintWarning ? 'warning' : 'neutral'}>
-                        {formatLocaleNumber(p3.printCount, locale)} {" "}<LocalizedText source={"টি প্রিন্ট অনুরোধ / print requests"} area="admin" />{" "}</Badge>
-                    </div>
-                    <p className="text-muted">
-                      <LocalizedText source={"গ্রাহক:"} area="admin" />{" "}{p12.customerName} ({p12.customerPhone}) —{' '}
-                      {localizedField(p12, "districtNameBn", locale)}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3 font-mono text-[11px] self-start sm:self-auto">
-                    <span>
-                      <LocalizedText source={"কুরিয়ার:"} area="admin" />{" "}{p12.courierProvider.toUpperCase()} ({p12.trackingCode})
-                    </span>
-                    <span className="font-bold text-ink">
-                      <LocalizedText source={"COD:"} area="admin" />{" "}{formatPoishaToBdt(p12.codCollectablePoisha, locale)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedOrderNos([slip.orderNo]);
-                        setActiveSubTab('queue');
-                      }}
-                      className="px-2 py-1 rounded bg-surface border border-border text-ink hover:bg-bg font-semibold cursor-pointer"
-                    >
-                      <LocalizedText source={"পুনরায় প্রিন্ট করুন"} area="admin" />{" "}</button>
-                  </div>
+            {printedHistorySlips.length === 0 ? (
+              <div className="py-10 px-4 text-center rounded-[var(--radius-md)] border border-dashed border-border bg-surface/40 space-y-2">
+                <History className="w-6 h-6 text-muted mx-auto" aria-hidden="true" />
+                <p className="text-sm font-semibold text-ink">
+                  {bn
+                    ? 'এখনো কোনো প্রিন্ট রেকর্ড নেই'
+                    : 'No print requests recorded yet'}
+                </p>
+                <p className="text-xs text-muted max-w-md mx-auto">
+                  {bn
+                    ? 'প্রিন্ট কিউ থেকে যেকোনো অর্ডার প্রিন্ট করলে এখানে প্রিন্ট কাউন্ট, সময় এবং অপারেটরের নাম স্বয়ংক্রিয়ভাবে যুক্ত হবে।'
+                    : 'Once an operator prints an order from the Print queue, the print count, timestamp, and operator audit trail will appear here.'}
+                </p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveSubTab('queue')}
+                    className="min-h-[44px] sm:min-h-[36px] px-3.5 py-1.5 rounded-[var(--radius-sm)] bg-ink text-bg text-xs font-semibold hover:opacity-90 cursor-pointer"
+                  >
+                    {bn ? 'প্রিন্ট কিউতে যান' : 'Go to Print queue'}
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-        </Card>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {printedHistorySlips.map((slip) => {
+                  const p12 = slip.customerAndCourierPart;
+                  const count = getSlipPrintCount(slip);
+                  const isReprint = getSlipReprintWarning(slip);
+
+                  return (
+                    <div
+                      key={slip.orderNo}
+                      className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 font-mono font-bold text-ink">
+                          <span>{p12.orderNo}</span>
+                          <Badge status={isReprint ? 'warning' : 'neutral'}>
+                            {formatLocaleNumber(count, locale)}{' '}
+                            {bn ? 'টি প্রিন্ট অনুরোধ' : count === 1 ? 'print request' : 'print requests'}
+                          </Badge>
+                        </div>
+                        <p className="text-muted">
+                          {bn ? 'গ্রাহক:' : 'Customer:'} {p12.customerName} ({p12.customerPhone}) —{' '}
+                          {localizedField(p12, 'districtNameBn', locale)}
+                        </p>
+                        {(slip.lastPrintedAt || slip.lastPrintedBy) && (
+                          <p className="font-mono text-[11px] text-muted">
+                            {bn ? 'সর্বশেষ প্রিন্ট:' : 'Last printed:'}{' '}
+                            {formatAuditTimestamp(slip.lastPrintedAt, locale)}
+                            {slip.lastPrintedBy
+                              ? ` · @${slip.lastPrintedBy}${
+                                  slip.lastPrintedRole ? ` (${slip.lastPrintedRole})` : ''
+                                }`
+                              : ''}
+                          </p>
+                        )}
+                        {slip.printEvents && slip.printEvents.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-0.5">
+                            {slip.printEvents.slice(0, 3).map((evt, idx) => (
+                              <span
+                                key={`${slip.orderNo}-evt-${idx}`}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-border bg-surface font-mono text-[10px] text-muted"
+                              >
+                                <span className="text-ink font-semibold">
+                                  {formatPrintEventLabel(evt.actionCode, locale)}
+                                </span>
+                                <span>· @{evt.actorUsername}</span>
+                                <span>· {formatAuditTimestamp(evt.createdAt, locale)}</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] self-start sm:self-auto shrink-0">
+                        <span>
+                          {bn ? 'কুরিয়ার:' : 'Courier:'} {p12.courierProvider.toUpperCase()}
+                          {p12.trackingCode ? ` (${p12.trackingCode})` : ''}
+                        </span>
+                        <span className="font-bold text-ink">
+                          COD: {formatPoishaToBdt(p12.codCollectablePoisha, locale)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedOrderNos([slip.orderNo]);
+                            setActiveSubTab('queue');
+                          }}
+                          className="min-h-[44px] sm:min-h-[34px] px-3 py-1 rounded bg-surface border border-border text-ink hover:border-ink font-semibold cursor-pointer"
+                        >
+                          {bn ? 'পুনরায় প্রিন্ট করুন' : 'Reprint'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        </div>
       )}
     </section>
   );

@@ -186,9 +186,25 @@ export interface CourierBulkExportBundle {
  */
 export function escapeCsvCell(raw: string | number | null | undefined): string {
   const normalized = String(raw ?? '')
-    .replace(/\r?\n/g, ' ')
+    .replace(/\r\n|\r|\n/g, ' ')
     .trim();
-  const safe = /^[=+\-@\t\r]/.test(normalized) ? `'${normalized}` : normalized;
+  let firstVisibleIndex = 0;
+  while (
+    firstVisibleIndex < normalized.length &&
+    (normalized.charCodeAt(firstVisibleIndex) <= 0x20 ||
+      normalized.charCodeAt(firstVisibleIndex) === 0x7f)
+  ) {
+    firstVisibleIndex += 1;
+  }
+  const firstVisibleChar = normalized.charAt(firstVisibleIndex);
+  const safe =
+    firstVisibleChar === '=' ||
+    firstVisibleChar === '+' ||
+    firstVisibleChar === '-' ||
+    firstVisibleChar === '@' ||
+    firstVisibleChar === '|'
+      ? `'${normalized}`
+      : normalized;
   if (/[",\n\r]/.test(safe) || safe.startsWith("'")) {
     return `"${safe.replace(/"/g, '""')}"`;
   }

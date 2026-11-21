@@ -26,6 +26,7 @@ import type {
 import {
   assertVendorOwnershipOr404,
   checkMakerCheckerSeparation,
+  hasModulePermission,
   isFirstLoginGateCleared,
   type ActorSecurityContext,
 } from '../../types/permissions';
@@ -216,10 +217,26 @@ export interface InternalSlipPart3DTO {
   }>;
 }
 
+export interface PrintAuditEventDTO {
+  actionCode: string;
+  actorUsername: string;
+  actorRole: string;
+  createdAt: string;
+  printCount?: number;
+  copy?: string | null;
+  reprintReason?: string | null;
+}
+
 export interface OrderPrintSlipBundle {
   orderNo: string;
+  printCount: number;
+  isReprintWarning: boolean;
+  lastPrintedAt: string | null;
+  lastPrintedBy: string | null;
+  lastPrintedRole: string | null;
+  printEvents: PrintAuditEventDTO[];
   customerAndCourierPart: CustomerSafeSlipPartDTO;
-  internalPart3: InternalSlipPart3DTO;
+  internalPart3: InternalSlipPart3DTO | null;
 }
 
 export interface DistrictRateOverrideRecord {
@@ -833,10 +850,13 @@ export function generateOrderPrintSlips(
   slips: OrderPrintSlipBundle[];
 } {
   const p4bStore = readPhase4BStore();
-  if (!(['super_admin'] as string[]).includes(ctx.roleSlug)) {
+  const canGenerateSlips =
+    ctx.roleSlug === 'super_admin' ||
+    (ctx.roleSlug !== 'vendor' && hasModulePermission(ctx, 'print_engine', 'create'));
+  if (!canGenerateSlips) {
     return {
       success: false,
-      errorBn: 'Part 3-সহ প্রিন্ট বান্ডল শুধু অনুমোদিত অ্যাডমিন ব্যবহার করতে পারবেন।',
+      errorBn: 'প্রিন্ট স্লিপ তৈরি করার অনুমতি এই রোলের নেই।',
       printConfig: p4bStore.printConfig,
       slips: [],
     };
@@ -850,11 +870,34 @@ export function generateOrderPrintSlips(
     };
   }
 
+  const normalizedOrderNos = Array.from(
+    new Set(
+      input.orderNos
+        .map((n) => n.trim().toUpperCase())
+        .filter((n) => n.length > 0 && n.length <= 64)
+    )
+  );
+  if (normalizedOrderNos.length === 0) {
+    return {
+      success: false,
+      errorBn: 'অন্তত একটি বৈধ অর্ডার নম্বর দিন।',
+      printConfig: p4bStore.printConfig,
+      slips: [],
+    };
+  }
+  if (normalizedOrderNos.length > 100) {
+    return {
+      success: false,
+      errorBn: 'একসাথে সর্বোচ্চ ১০০টি অর্ডার প্রিন্ট করা যাবে।',
+      printConfig: p4bStore.printConfig,
+      slips: [],
+    };
+  }
+
+  const isSuperAdmin = ctx.roleSlug === 'super_admin';
   const erpState = readErpState();
   const adminStore = readAdminStore();
-  const requestedSet = new Set(
-    input.orderNos.map((n) => n.trim().toUpperCase())
-  );
+  const requestedSet = new Set(normalizedOrderNos);
 
   const matchedOrders = erpState.orders.filter((o) =>
     requestedSet.has(o.orderNo.toUpperCase())
@@ -1177,68 +1220,51 @@ export function generateOrderPrintSlips(
       };
     }
 
-    const holdDays = erpState.siteSettings.globalEscrowHoldDays;
-    const internalPart3: InternalSlipPart3DTO = {
-      orderNo: ord.orderNo,
-      createdAt: ord.createdAt,
-      orderStatus: ord.status,
-      orderSource: ord.source,
-      callStatus: meta?.callStatus ?? 'confirmed_yes',
-      callAttempts: meta?.callAttempts ?? 1,
-      addressQualityScore: ord.addressQualityScore,
-      fraudRiskTierBn:
-        ord.addressQualityScore >= 80
-          ? 'নিরাপদ (Low Risk)'
-          : ord.addressQualityScore >= 55
-          ? 'মাঝারি ঝুঁকি (Medium)'
-          : 'উচ্চ ঝুঁকি — যাচাই আবশ্যক',
-      courierProvider: ord.courierProvider,
-      consignmentId,
-      trackingCode,
-      paymentMethod: ord.paymentMethod,
-      paymentStatus: ord.paymentStatus,
-      manualPaymentTrxId: ord.manualPaymentTrxId,
-      customerName: ord.customerName,
-      customerPhone:
-        ctx.roleSlug === 'vendor' && ctx.maskCustomerPiiForVendor
-          ? `${ord.customerPhone.slice(0, 3)}****${ord.customerPhone.slice(-3)}`
-          : ord.customerPhone,
-      customerFullAddressBn:
-        ctx.roleSlug === 'vendor' && ctx.maskCustomerPiiForVendor
-          ? `${ord.upazilaNameBn}, ${ord.districtNameBn} (মাস্কড)`
-          : `${ord.upazilaNameBn}, ${ord.districtNameBn} — ${ord.streetAddress}${ord.landmark ? ` (${ord.landmark})` : ''}`,
-      postCode,
-      recipientCity,
-      recipientZone,
-      totalWeightGrams,
-      courierReadinessReady:
-        ctx.roleSlug === 'vendor' ? undefined : readiness.isReady,
-      courierMissingSummaryBn:
-        ctx.roleSlug === 'vendor'
-          ? undefined
-          : readiness.missingFields.map((m) => m.labelBn).join(', '),
-      printCount,
-      isReprintWarning: input.recordPrint ? prevPrintCount > 0 : printCount > 0,
-      escrowHoldDays: holdDays,
-      estimatedMaturityDaysLabelBn: `ডেলিভারির ${holdDays} দিন পর উত্তোলনযোগ্য (Available)`,
-      internalStaffNote:
-        ctx.roleSlug === 'vendor' ? '' : meta?.internalStaffNote ?? '',
-      checklistItemsBn: p4bStore.printConfig.checklistItemsBn,
-      accountingSummary,
-      lines: internalLines,
-    };
-
-    bundles.push({
-      bundle: {
+    const isReprintWarning = input.recordPrint ? prevPrintCount > 0 : printCount > 0;
+    let internalPart3: InternalSlipPart3DTO | null = null;
+    if (isSuperAdmin) {
+      const holdDays = erpState.siteSettings.globalEscrowHoldDays;
+      internalPart3 = {
         orderNo: ord.orderNo,
-        customerAndCourierPart,
-        internalPart3,
-      },
-      firstVendorCode: internalLines[0]?.vendorCode ?? '',
-      firstSku: customerSafeItems[0]?.publicSku ?? '',
-      courier: ord.courierProvider,
-      district: ord.districtNameBn,
-    });
+        createdAt: ord.createdAt,
+        orderStatus: ord.status,
+        orderSource: ord.source,
+        callStatus: meta?.callStatus ?? 'confirmed_yes',
+        callAttempts: meta?.callAttempts ?? 1,
+        addressQualityScore: ord.addressQualityScore,
+        fraudRiskTierBn:
+          ord.addressQualityScore >= 80
+            ? 'নিরাপদ (Low Risk)'
+            : ord.addressQualityScore >= 55
+            ? 'মাঝারি ঝুঁকি (Medium)'
+            : 'উচ্চ ঝুঁকি — যাচাই আবশ্যক',
+        courierProvider: ord.courierProvider,
+        consignmentId,
+        trackingCode,
+        paymentMethod: ord.paymentMethod,
+        paymentStatus: ord.paymentStatus,
+        manualPaymentTrxId: ord.manualPaymentTrxId,
+        customerName: ord.customerName,
+        customerPhone: ord.customerPhone,
+        customerFullAddressBn: `${ord.upazilaNameBn}, ${ord.districtNameBn} — ${ord.streetAddress}${ord.landmark ? ` (${ord.landmark})` : ''}`,
+        postCode,
+        recipientCity,
+        recipientZone,
+        totalWeightGrams,
+        courierReadinessReady: readiness.isReady,
+        courierMissingSummaryBn: readiness.missingFields
+          .map((m) => m.labelBn)
+          .join(', '),
+        printCount,
+        isReprintWarning,
+        escrowHoldDays: holdDays,
+        estimatedMaturityDaysLabelBn: `ডেলিভারির ${holdDays} দিন পর উত্তোলনযোগ্য (Available)`,
+        internalStaffNote: meta?.internalStaffNote ?? '',
+        checklistItemsBn: p4bStore.printConfig.checklistItemsBn,
+        accountingSummary,
+        lines: internalLines,
+      };
+    }
 
     if (input.recordPrint) {
       appendImmutableAuditLog(adminStore, {
@@ -1249,13 +1275,78 @@ export function generateOrderPrintSlips(
         targetType: 'order',
         targetId: ord.orderNo,
         summaryBn: `${ord.orderNo} অর্ডারের প্রিন্ট অনুরোধ করা হয়েছে (কাউন্টার: ${printCount})।`,
-        metadata: { printCount, event: 'print_requested' },
+        metadata: {
+          printCount,
+          event: 'print_requested',
+          scope: isSuperAdmin ? 'full_bundle' : 'customer_courier_only',
+        },
       });
     }
+
+    const allowedAuditCodes = new Set(
+      isSuperAdmin
+        ? [
+            'ORDER_SLIP_PRINTED',
+            'ORDER_SLIP_REPRINTED',
+            'PRINT_CUSTOMER',
+            'PRINT_PACKAGING',
+            'PRINT_FINANCE',
+          ]
+        : [
+            'ORDER_SLIP_PRINTED',
+            'ORDER_SLIP_REPRINTED',
+            'PRINT_CUSTOMER',
+            'PRINT_PACKAGING',
+          ]
+    );
+    const printEvents: PrintAuditEventDTO[] = adminStore.auditLogs
+      .filter(
+        (log) =>
+          log.targetId === ord.orderNo && allowedAuditCodes.has(log.actionCode)
+      )
+      .slice(0, 10)
+      .map((log) => ({
+        actionCode: log.actionCode,
+        actorUsername: log.actorUsername,
+        actorRole: log.actorRole,
+        createdAt: log.createdAt,
+        printCount:
+          typeof log.metadata?.printCount === 'number'
+            ? log.metadata.printCount
+            : undefined,
+        copy:
+          typeof log.metadata?.copy === 'string' ? log.metadata.copy : null,
+        reprintReason:
+          typeof log.metadata?.reprintReason === 'string'
+            ? log.metadata.reprintReason
+            : null,
+      }));
+    const latestEvent = printEvents[0] ?? null;
+
+    bundles.push({
+      bundle: {
+        orderNo: ord.orderNo,
+        printCount,
+        isReprintWarning,
+        lastPrintedAt: latestEvent?.createdAt ?? null,
+        lastPrintedBy: latestEvent?.actorUsername ?? null,
+        lastPrintedRole: latestEvent?.actorRole ?? null,
+        printEvents,
+        customerAndCourierPart,
+        internalPart3,
+      },
+      firstVendorCode: isSuperAdmin ? internalLines[0]?.vendorCode ?? '' : '',
+      firstSku: customerSafeItems[0]?.publicSku ?? '',
+      courier: ord.courierProvider,
+      district: ord.districtNameBn,
+    });
   }
 
-  // Sort batch according to user selection
-  const sortBy = input.sortBy ?? 'order_no';
+  // Sort batch according to user selection (prevent vendor-order side channel for non-super-admin)
+  const sortBy =
+    !isSuperAdmin && input.sortBy === 'vendor'
+      ? 'order_no'
+      : input.sortBy ?? 'order_no';
   bundles.sort((a, b) => {
     if (sortBy === 'vendor') {
       return a.firstVendorCode.localeCompare(b.firstVendorCode);
@@ -1285,6 +1376,14 @@ export function generateOrderPrintSlips(
   };
 }
 
+function hasControlChars(value: string): boolean {
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i);
+    if ((code <= 0x1f && code !== 0x09) || code === 0x7f) return true;
+  }
+  return false;
+}
+
 export function updatePrintTemplateConfig(
   ctx: ActorSecurityContext,
   patch: Partial<PrintTemplateConfig>
@@ -1293,19 +1392,111 @@ export function updatePrintTemplateConfig(
   errorBn?: string;
   printConfig?: PrintTemplateConfig;
 } {
-  if (ctx.roleSlug !== 'super_admin' && ctx.roleSlug !== 'packaging_manager') {
+  if (ctx.roleSlug !== 'super_admin' || !isFirstLoginGateCleared(ctx)) {
     return {
       success: false,
-      errorBn: 'শুধুমাত্র সুপার অ্যাডমিন বা প্যাকেজিং ম্যানেজার প্রিন্ট টেমপ্লেট আপডেট করতে পারবেন।',
+      errorBn: 'শুধুমাত্র অনুমোদিত সুপার অ্যাডমিন প্রিন্ট টেমপ্লেট আপডেট করতে পারবেন।',
     };
   }
 
   const p4bStore = readPhase4BStore();
-  p4bStore.printConfig = {
-    ...p4bStore.printConfig,
-    ...patch,
-  };
+  const next: PrintTemplateConfig = { ...p4bStore.printConfig };
+
+  if (patch.defaultMode !== undefined) {
+    if (patch.defaultMode !== 'a4_3part' && patch.defaultMode !== 'thermal_4x6') {
+      return { success: false, errorBn: 'অবৈধ পেপার মোড।' };
+    }
+    next.defaultMode = patch.defaultMode;
+  }
+
+  const titleFields = [
+    'part1TitleBn',
+    'part1TitleEn',
+    'part2TitleBn',
+    'part2TitleEn',
+    'part3TitleBn',
+    'part3TitleEn',
+  ] as const;
+  for (const field of titleFields) {
+    const raw = patch[field];
+    if (raw !== undefined) {
+      const cleaned = raw.trim();
+      if (cleaned.length < 2 || cleaned.length > 100 || hasControlChars(cleaned)) {
+        return {
+          success: false,
+          errorBn: 'প্রতিটি অংশের শিরোনাম ২ থেকে ১০০ অক্ষরের মধ্যে হতে হবে।',
+        };
+      }
+      next[field] = cleaned;
+    }
+  }
+
+  const heightFields = ['part1HeightMm', 'part2HeightMm', 'part3HeightMm'] as const;
+  for (const field of heightFields) {
+    const raw = patch[field];
+    if (raw !== undefined) {
+      if (!Number.isInteger(raw) || raw < 60 || raw > 120) {
+        return {
+          success: false,
+          errorBn: 'প্রতিটি অংশের উচ্চতা ৬০ থেকে ১২০ মিমি (পূর্ণসংখ্যা) হতে হবে।',
+        };
+      }
+      next[field] = raw;
+    }
+  }
+
+  if (patch.footerNoteBn !== undefined) {
+    const cleaned = patch.footerNoteBn.trim();
+    if (cleaned.length > 300 || hasControlChars(cleaned)) {
+      return {
+        success: false,
+        errorBn: 'ফুটার নোট সর্বোচ্চ ৩০০ অক্ষরের মধ্যে হতে হবে।',
+      };
+    }
+    next.footerNoteBn = cleaned;
+  }
+
+  if (patch.checklistItemsBn !== undefined) {
+    if (!Array.isArray(patch.checklistItemsBn)) {
+      return { success: false, errorBn: 'প্যাকিং চেকলিস্ট ফরম্যাট সঠিক নয়।' };
+    }
+    const cleanedList = patch.checklistItemsBn
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+    if (cleanedList.length > 20) {
+      return {
+        success: false,
+        errorBn: 'প্যাকিং চেকলিস্টে সর্বোচ্চ ২০টি আইটেম রাখা যাবে।',
+      };
+    }
+    if (cleanedList.some((item) => item.length > 160 || hasControlChars(item))) {
+      return {
+        success: false,
+        errorBn: 'চেকলিস্টের প্রতিটি আইটেম সর্বোচ্চ ১৬০ অক্ষরের হতে হবে।',
+      };
+    }
+    next.checklistItemsBn = cleanedList;
+  }
+
+  p4bStore.printConfig = next;
   writePhase4BStore(p4bStore);
+
+  const adminStore = readAdminStore();
+  appendImmutableAuditLog(adminStore, {
+    actorUserId: ctx.userId,
+    actorUsername: ctx.username,
+    actorRole: ctx.roleSlug,
+    actionCode: 'PRINT_TEMPLATE_UPDATED',
+    targetType: 'system',
+    targetId: 'print_template_config',
+    summaryBn: `প্রিন্ট টেমপ্লেট কনফিগারেশন আপডেট করা হয়েছে (ডিফল্ট: ${next.defaultMode})।`,
+    metadata: {
+      defaultMode: next.defaultMode,
+      partHeightsMm: [next.part1HeightMm, next.part2HeightMm, next.part3HeightMm],
+      checklistCount: next.checklistItemsBn.length,
+    },
+  });
+  writeAdminStore(adminStore);
 
   return {
     success: true,

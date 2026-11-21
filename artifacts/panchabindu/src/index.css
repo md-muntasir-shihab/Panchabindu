@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 @import "./styles/tokens.css";
@@ -102,9 +101,15 @@
 .checkout-reassurance { color: #315b43; background: #eff7f0; }
 .checkout-confirm { border-radius: 12px; }
 .checkout-sticky { background: rgba(255, 255, 255, .97); border-color: #e3eae3; }
-@media (max-width: 639px) {
+@media (max-width: 900px), (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea,
   .storefront-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  .storefront-theme select,
   .storefront-theme textarea { font-size: 16px; }
   .checkout-card input:not([type="checkbox"]), .checkout-card select { font-size: 16px; }
+}
+@media (max-width: 639px) {
   .checkout-header-note { padding: .4rem .7rem; }
 }

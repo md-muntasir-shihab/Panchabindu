@@ -24,18 +24,56 @@ function createRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function parseBoundedIntParam(
+  raw: string | null,
+  fallback: number,
+  min: number,
+  max: number
+): number | null {
+  if (raw === null || raw.trim() === '') return fallback;
+  if (!/^-?\d+$/.test(raw.trim())) return null;
+  const parsed = Number(raw.trim());
+  if (!Number.isSafeInteger(parsed) || parsed < min || parsed > max) return null;
+  return parsed;
+}
+
 async function handleGET(req: NextRequest) {
   const requestId = createRequestId();
   const { searchParams } = new URL(req.url);
   const slug = searchParams.get('slug');
   const categorySlug = searchParams.get('category');
   const quoteDistrictId = searchParams.get('districtId');
-  const quoteWeightGrams = Number(searchParams.get('weightGrams') || '500');
-  const quoteSubtotalPoisha = Number(searchParams.get('subtotalPoisha') || '0');
+  const quoteWeightGrams = parseBoundedIntParam(
+    searchParams.get('weightGrams'),
+    500,
+    1,
+    1_000_000
+  );
+  const quoteSubtotalPoisha = parseBoundedIntParam(
+    searchParams.get('subtotalPoisha'),
+    0,
+    0,
+    1_000_000_000
+  );
   const quoteMethod =
     searchParams.get('deliveryMethod') === 'post_office'
       ? 'post_office'
       : 'courier';
+
+  if ((slug && slug.length > 200) || (categorySlug && categorySlug.length > 120)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: 'INVALID_QUERY_PARAM',
+          message: 'অনুরোধের প্যারামিটার সঠিক নয়।',
+          field_errors: {},
+        },
+        request_id: requestId,
+      },
+      { status: 400 }
+    );
+  }
 
   // 1. Single Product Lookup by Slug
   if (slug) {
@@ -81,9 +119,9 @@ async function handleGET(req: NextRequest) {
   // 2. Delivery Quote Calculation (if districtId is queried)
   const { siteSettings, categories, products } = getPublicStorefrontData();
 
-  if (quoteDistrictId) {
-    const distIdNum = Number(quoteDistrictId);
-    const district = getDistrictById(distIdNum);
+  if (quoteDistrictId !== null) {
+    const distIdNum = parseBoundedIntParam(quoteDistrictId, -1, 1, 999);
+    const district = distIdNum !== null ? getDistrictById(distIdNum) : undefined;
     if (!district) {
       return NextResponse.json(
         {
@@ -99,6 +137,24 @@ async function handleGET(req: NextRequest) {
       );
     }
 
+    if (quoteWeightGrams === null || quoteSubtotalPoisha === null) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_QUOTE_PARAMS',
+            message: 'ওজন বা অর্ডার মূল্যের মান সঠিক নয়।',
+            field_errors: {
+              ...(quoteWeightGrams === null ? { weightGrams: 'Must be an integer between 1 and 1000000' } : {}),
+              ...(quoteSubtotalPoisha === null ? { subtotalPoisha: 'Must be an integer between 0 and 1000000000' } : {}),
+            },
+          },
+          request_id: requestId,
+        },
+        { status: 400 }
+      );
+    }
+
     const rates = getDistrictDeliveryRates(
       district.id,
       siteSettings.bdPostDefaultPerKgPoisha
@@ -106,7 +162,7 @@ async function handleGET(req: NextRequest) {
     const quote = calculateDeliveryCharge({
       method: quoteMethod,
       totalWeightGrams: Math.max(100, quoteWeightGrams),
-      orderSubtotalPoisha: Math.max(0, quoteSubtotalPoisha),
+      orderSubtotalPoisha: quoteSubtotalPoisha,
       freeDeliveryThresholdPoisha: siteSettings.freeDeliveryThresholdPoisha,
       isGlobalFreeDelivery: siteSettings.globalFreeDelivery,
       isAllItemsFreeDelivery: false,

@@ -42,7 +42,7 @@ async function fetchPageData(path: string, search: string): Promise<PageDataPayl
     cache: 'no-store',
     headers: { Accept: 'application/json' },
   });
-  let body: { success?: boolean; data?: PageDataPayload } | null = null;
+  let body: { success?: boolean; data?: PageDataPayload } | null;
   try {
     body = await response.json();
   } catch {

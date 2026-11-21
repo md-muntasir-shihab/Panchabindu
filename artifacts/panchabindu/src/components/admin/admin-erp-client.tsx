@@ -507,10 +507,14 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       const banner = document.querySelector('body > [role="status"]') as HTMLElement | null;
       const height = banner ? Math.ceil(banner.getBoundingClientRect().height) : 0;
       setPreviewBannerHeight(height);
+      document.documentElement.style.setProperty('--preview-banner-h', `${height}px`);
     };
     measureBanner();
     window.addEventListener('resize', measureBanner);
-    return () => window.removeEventListener('resize', measureBanner);
+    return () => {
+      window.removeEventListener('resize', measureBanner);
+      document.documentElement.style.removeProperty('--preview-banner-h');
+    };
   }, []);
 
   // Track in-flight order actions to prevent duplicate double-click submissions
@@ -1280,8 +1284,19 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
 
     const keys = Array.from(new Set(exportRows.flatMap((order) => Object.keys(order))));
     const csvValue = (value: unknown) => {
-      const raw = typeof value === 'string' ? value : JSON.stringify(value ?? '');
-      const text = /^[\s]*[=+@\-\t\r]/.test(raw) ? `'${raw}` : raw;
+      const raw = (typeof value === 'string' ? value : JSON.stringify(value ?? '')).replace(
+        /\r\n|\r|\n/g,
+        ' '
+      );
+      let idx = 0;
+      while (idx < raw.length && (raw.charCodeAt(idx) <= 0x20 || raw.charCodeAt(idx) === 0x7f)) {
+        idx += 1;
+      }
+      const lead = raw.charAt(idx);
+      const text =
+        lead === '=' || lead === '+' || lead === '-' || lead === '@' || lead === '|'
+          ? `'${raw}`
+          : raw;
       return `"${text.replace(/"/g, '""')}"`;
     };
     const csv = [
@@ -1294,7 +1309,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
     anchor.href = url;
     anchor.download = `panchabindu-orders-${new Date().toISOString().slice(0, 10)}.csv`;
     anchor.click();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const handleSyncCourierTracking = async () => {
@@ -2368,10 +2383,12 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                 type="button"
                 onClick={toggleLocale}
                 title={locale === 'bn' ? 'Switch to English' : 'বাংলায় পরিবর্তন করুন'}
-                aria-label={uiText("Toggle admin language", locale)}
                 className="w-11 h-11 flex items-center justify-center rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:border-ink text-xs font-mono font-bold cursor-pointer"
               >
-                {locale === 'bn' ? 'EN' : 'বাং'}
+                <span aria-hidden="true">{locale === 'bn' ? 'EN' : 'বাং'}</span>
+                <span className="sr-only">
+                  {locale === 'bn' ? 'Switch to English (EN)' : 'বাংলায় পরিবর্তন করুন (বাং)'}
+                </span>
               </button>
             </div>
           )}
@@ -2423,10 +2440,12 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
             <button
               type="button"
               onClick={toggleLocale}
-              aria-label={uiText("Toggle admin language", locale)}
               className="flex items-center text-xs font-semibold border border-border rounded-full px-1.5 py-1 bg-surface min-h-11 transition-colors cursor-pointer"
               title={locale === 'bn' ? 'Switch to English' : 'বাংলায় পরিবর্তন করুন'}
             >
+              <span className="sr-only">
+                {locale === 'bn' ? 'Switch admin language to English:' : 'অ্যাডমিন ভাষা বাংলায় পরিবর্তন করুন:'}{' '}
+              </span>
               <span
                 className={`px-2 py-0.5 rounded-full text-[11px] transition-colors ${
                   locale === 'en'
@@ -2449,10 +2468,12 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
               type="button"
               onClick={() => setIsNotificationOpen(true)}
               className="relative min-w-11 min-h-11 flex items-center justify-center rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:bg-bg transition-colors cursor-pointer"
-              aria-label={locale === 'bn' ? 'নোটিফিকেশন সেন্টার' : 'Notification Center'}
               title={locale === 'bn' ? 'নোটিফিকেশন সেন্টার' : 'Notification Center'}
             >
-              <Bell className="w-4 h-4" />
+              <span className="sr-only">
+                {locale === 'bn' ? 'নোটিফিকেশন সেন্টার' : 'Notification Center'}{' '}
+              </span>
+              <Bell className="w-4 h-4" aria-hidden="true" />
               {unreadNotificationCount > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[18px] h-4 px-1 rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center leading-none shadow-2xs">
                   {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}

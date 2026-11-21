@@ -1,6 +1,6 @@
 'use client';
 import { productImageUrl, productImageFallback } from '@/lib/storefront/product-image';
-import { getStorefrontConfig } from '@/lib/storefront/storefront-config';
+import { getStorefrontConfig, safeStoreUrl } from '@/lib/storefront/storefront-config';
 import { uiText } from '@/lib/i18n/ui-text';
 
 import { LocalizedText } from '@/components/ui/localized-text';
@@ -72,6 +72,15 @@ export function HomepageClient({
   const [inStockOnly, setInStockOnly] = React.useState(false);
   const [maxPriceBdt, setMaxPriceBdt] = React.useState<number>(budgetLimit);
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
+  const maxBudgetInputId = React.useId();
+  const prevBudgetLimitRef = React.useRef(budgetLimit);
+
+  React.useEffect(() => {
+    setMaxPriceBdt((current) =>
+      current >= prevBudgetLimitRef.current || current > budgetLimit ? budgetLimit : current
+    );
+    prevBudgetLimitRef.current = budgetLimit;
+  }, [budgetLimit]);
 
   // Active Category Object
   const activeCategory = React.useMemo(
@@ -93,8 +102,7 @@ export function HomepageClient({
         return false;
       }
 
-      const primaryVariant = p.variants[0];
-      if (primaryVariant && primaryVariant.salePricePoisha > maxPoisha) {
+      if (p.variants.length > 0 && !p.variants.some((v) => v.salePricePoisha <= maxPoisha)) {
         return false;
       }
 
@@ -119,8 +127,14 @@ export function HomepageClient({
     }
 
     return [...list].sort((a, b) => {
-      const priceA = a.variants[0]?.salePricePoisha ?? 0;
-      const priceB = b.variants[0]?.salePricePoisha ?? 0;
+      const priceA =
+        a.variants.length > 0
+          ? Math.min(...a.variants.map((v) => v.salePricePoisha))
+          : 0;
+      const priceB =
+        b.variants.length > 0
+          ? Math.min(...b.variants.map((v) => v.salePricePoisha))
+          : 0;
       if (sortBy === 'price_asc') return priceA - priceB;
       if (sortBy === 'price_desc') return priceB - priceA;
       if (sortBy === 'rating') return b.ratingAvgBp - a.ratingAvgBp;
@@ -179,7 +193,7 @@ export function HomepageClient({
                 <p className="text-sm sm:text-base text-[#1B4332]/75 max-w-xl leading-relaxed text-left">
                   {locale === 'bn' ? hero.subtitleBn : hero.subtitleEn}
                 </p>
-                {hero.ctaHref && (
+                {hero.ctaHref && safeStoreUrl(hero.ctaHref) && (
                   <Link
                     href={hero.ctaHref}
                     className="inline-flex items-center justify-center gap-3 w-full sm:w-fit min-h-[46px] rounded-lg bg-[var(--store-accent)] px-6 py-3.5 sm:px-8 sm:py-4 font-mono text-xs uppercase tracking-[0.14em] text-white hover:opacity-90 transition-opacity"
@@ -197,7 +211,7 @@ export function HomepageClient({
                         onClick={() => setHeroIndex(index)}
                         aria-label={text(slide.titleBn, slide.titleEn) || String(index + 1)}
                         aria-pressed={index === heroIndex}
-                        className={`h-10 min-w-10 rounded-lg font-mono border text-xs cursor-pointer transition-colors ${
+                        className={`h-11 min-w-11 rounded-lg font-mono border text-xs cursor-pointer transition-colors ${
                           index === heroIndex
                             ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)]'
                             : 'border-[#E5E2D9] text-[#1B4332] hover:border-[#1B4332]'
@@ -213,7 +227,8 @@ export function HomepageClient({
               <div className="lg:col-span-6 relative aspect-[4/3] sm:aspect-[5/4] lg:aspect-auto lg:min-h-[480px] w-full border-t lg:border-t-0 lg:border-l border-[#E5E2D9] bg-[#FDFCF8]">
                 {hero.imageUrl && (
                   <img
-                    src={hero.imageUrl}
+                    src={productImageUrl(hero.imageUrl)}
+                    onError={productImageFallback}
                     alt={locale === 'bn' ? hero.titleBn : hero.titleEn}
                     referrerPolicy="no-referrer"
                     className="object-cover"
@@ -247,7 +262,7 @@ export function HomepageClient({
                     <h2 className="text-xs sm:text-sm font-semibold text-[#1B4332] leading-snug">
                       {locale === 'bn' ? badge.labelBn : badge.labelEn}
                     </h2>
-                    <p className="text-[11px] sm:text-xs text-[#1B4332]/65 mt-0.5 leading-snug">
+                    <p className="text-[11px] sm:text-xs text-[#1B4332]/80 mt-0.5 leading-snug">
                       {locale === 'bn' ? badge.descBn : badge.descEn}
                     </p>
                   </div>
@@ -278,7 +293,7 @@ export function HomepageClient({
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#1B4332]/60">
+              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#1B4332]/80">
                 {locale === 'bn' ? 'কুপন কোড:' : 'Code:'}
               </span>
               <span className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold border border-[#1B4332] bg-[#FDFCF8] text-[#1B4332]">
@@ -308,13 +323,13 @@ export function HomepageClient({
                     ? config.collectionTitleBn
                     : config.collectionTitleEn}
                 </h2>
-                <span aria-hidden="true" className="text-[#1B4332]/40">·</span>
-                <span className="font-mono text-xs text-[#1B4332]/60 tabular-nums">
+                <span aria-hidden="true" className="text-[#1B4332]/60">·</span>
+                <span className="font-mono text-xs text-[#1B4332]/80 tabular-nums">
                   {formatLocaleNumber(displayedProducts.length, locale)}
                   {locale === 'bn' ? 'টি পণ্য' : ' items'}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-[#1B4332]/70 mt-1">
+              <p className="text-xs sm:text-sm text-[#1B4332]/80 mt-1">
                 {activeCategory
                   ? locale === 'bn'
                     ? activeCategory.descriptionBn
@@ -339,7 +354,7 @@ export function HomepageClient({
                 <button
                   type="button"
                   onClick={resetAllFilters}
-                  className="inline-flex items-center min-h-[44px] px-3.5 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] border border-[#E5E2D9] bg-[#F9F8F3] text-[#1B4332]/75 hover:border-[#1B4332] hover:text-[#1B4332] transition-colors cursor-pointer"
+                  className="inline-flex items-center min-h-[44px] px-3.5 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] border border-[#E5E2D9] bg-[#F9F8F3] text-[#1B4332] hover:border-[#1B4332] transition-colors cursor-pointer"
                 >
                   {locale === 'bn' ? 'রিসেট' : 'Reset'}
                 </button>
@@ -350,14 +365,15 @@ export function HomepageClient({
           {/* Interactive Collection Switcher Bar & Sort Selector */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E2D9] pb-1">
             {/* Editorial Underline Collection Tabs */}
-            <div className="inline-flex items-center gap-5 sm:gap-6 overflow-x-auto scrollbar-none max-w-full">
+            <div className="inline-flex items-center gap-4 sm:gap-6 overflow-x-auto scrollbar-none max-w-full">
               <button
                 type="button"
                 onClick={() => setActiveCollection('all')}
-                className={`py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                aria-pressed={activeCollection === 'all'}
+                className={`min-h-[44px] px-1 py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'all'
-                    ? 'border-[#1B4332] text-[#1B4332]'
-                    : 'border-transparent text-[#1B4332]/50 hover:text-[#1B4332]'
+                    ? 'border-[#1B4332] text-[#1B4332] font-bold'
+                    : 'border-transparent text-[#1B4332]/80 hover:text-[#1B4332]'
                 }`}
               >
                 {locale === 'bn' ? 'সব পণ্য' : 'All Products'}
@@ -366,10 +382,11 @@ export function HomepageClient({
               {visible('featured_products') && <button
                 type="button"
                 onClick={() => setActiveCollection('featured')}
-                className={`py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                aria-pressed={activeCollection === 'featured'}
+                className={`min-h-[44px] px-1 py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'featured'
-                    ? 'border-[#1B4332] text-[#1B4332]'
-                    : 'border-transparent text-[#1B4332]/50 hover:text-[#1B4332]'
+                    ? 'border-[#1B4332] text-[#1B4332] font-bold'
+                    : 'border-transparent text-[#1B4332]/80 hover:text-[#1B4332]'
                 }`}
               >
                 {locale === 'bn' ? 'নির্বাচিত' : 'Featured'}
@@ -378,10 +395,11 @@ export function HomepageClient({
               {visible('best_sellers') && <button
                 type="button"
                 onClick={() => setActiveCollection('best_sellers')}
-                className={`py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                aria-pressed={activeCollection === 'best_sellers'}
+                className={`min-h-[44px] px-1 py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'best_sellers'
-                    ? 'border-[#1B4332] text-[#1B4332]'
-                    : 'border-transparent text-[#1B4332]/50 hover:text-[#1B4332]'
+                    ? 'border-[#1B4332] text-[#1B4332] font-bold'
+                    : 'border-transparent text-[#1B4332]/80 hover:text-[#1B4332]'
                 }`}
               >
                 {locale === 'bn' ? 'বেস্ট সেলার' : 'Best Sellers'}
@@ -390,10 +408,11 @@ export function HomepageClient({
               {visible('new_arrivals') && <button
                 type="button"
                 onClick={() => setActiveCollection('new_arrivals')}
-                className={`py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                aria-pressed={activeCollection === 'new_arrivals'}
+                className={`min-h-[44px] px-1 py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'new_arrivals'
-                    ? 'border-[#1B4332] text-[#1B4332]'
-                    : 'border-transparent text-[#1B4332]/50 hover:text-[#1B4332]'
+                    ? 'border-[#1B4332] text-[#1B4332] font-bold'
+                    : 'border-transparent text-[#1B4332]/80 hover:text-[#1B4332]'
                 }`}
               >
                 {locale === 'bn' ? 'নতুন আগমন' : 'New Arrivals'}
@@ -402,7 +421,7 @@ export function HomepageClient({
 
             {/* Sort Selector */}
             <div className="flex items-center gap-2 text-xs pb-1.5">
-              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#1B4332]/60 hidden sm:inline">
+              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#1B4332]/80 hidden sm:inline">
                 {locale === 'bn' ? 'সাজান:' : 'Sort:'}
               </span>
               <select
@@ -413,7 +432,7 @@ export function HomepageClient({
                     e.target.value as 'popular' | 'price_asc' | 'price_desc' | 'rating'
                   )
                 }
-                className="min-h-[38px] px-2 py-1 text-xs font-medium bg-transparent border-0 border-b border-[#E5E2D9] text-[#1B4332] focus:outline-none focus:border-[#1B4332]"
+                className="min-h-[44px] px-2.5 py-2 text-base lg:text-xs font-medium bg-transparent border-0 border-b border-[#E5E2D9] text-[#1B4332] focus:outline-none focus:border-[#1B4332]"
               >
                 <option value="popular">
                   {locale === 'bn' ? 'জনপ্রিয়তা অনুযায়ী' : 'Most Popular'}
@@ -436,10 +455,11 @@ export function HomepageClient({
             <button
               type="button"
               onClick={() => setActiveCategorySlug(null)}
-              className={`px-3.5 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-[0.08em] border transition-all whitespace-nowrap cursor-pointer ${
+              aria-pressed={!activeCategorySlug}
+              className={`min-h-[44px] px-3.5 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.08em] border transition-all whitespace-nowrap cursor-pointer ${
                 !activeCategorySlug
                   ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)]'
-                  : 'bg-[#FDFCF8] text-[#1B4332]/70 border-[#E5E2D9] hover:text-[#1B4332] hover:border-[#1B4332]'
+                  : 'bg-[#FDFCF8] text-[#1B4332] border-[#E5E2D9] hover:border-[#1B4332]'
               }`}
             >
               <span>{locale === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories'}</span>
@@ -452,14 +472,15 @@ export function HomepageClient({
                   key={c.id}
                   type="button"
                   onClick={() => setActiveCategorySlug(isSelected ? null : c.slug)}
-                  className={`px-3.5 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-[0.08em] border transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  aria-pressed={isSelected}
+                  className={`min-h-[44px] px-3.5 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.08em] border transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                     isSelected
                       ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)]'
-                      : 'bg-[#FDFCF8] text-[#1B4332]/70 border-[#E5E2D9] hover:text-[#1B4332] hover:border-[#1B4332]'
+                      : 'bg-[#FDFCF8] text-[#1B4332] border-[#E5E2D9] hover:border-[#1B4332]'
                   }`}
                 >
                   <span>{locale === 'bn' ? c.nameBn : c.nameEn}</span>
-                  <span className={`text-[10px] tabular-nums ${isSelected ? 'text-white/80' : 'text-[#1B4332]/50'}`}>
+                  <span className={`text-[10px] tabular-nums ${isSelected ? 'text-white/90' : 'text-[#1B4332]/80'}`}>
                     ({formatLocaleNumber(count, locale)})
                   </span>
                 </button>
@@ -487,8 +508,8 @@ export function HomepageClient({
             </div>
           )}
         </section>}
-        {browsing && visible('categories') && categories.length > 0 && <section style={position('categories')} className="space-y-5 sm:space-y-6"><div className="flex items-end justify-between gap-4 border-b border-[#E5E2D9] pb-3"><h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#1B4332]">{text(section('categories')?.titleBn ?? '', section('categories')?.titleEn ?? '')}</h2><Link href="/shop" className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#1B4332]/70 hover:text-[#1B4332] underline underline-offset-4 shrink-0">{text('সব দেখুন', 'View all')}</Link></div><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">{categories.filter(c => !c.parentId).map(category => { const image = products.find(p => p.categoryId === category.id)?.images[0]; return <Link key={category.id} href={`/category/${category.slug}`} className="group space-y-2.5 sm:space-y-3 min-w-0"><div className="relative aspect-square bg-[#F9F8F3] rounded-xl overflow-hidden border border-[#E5E2D9]">{image ? <img  src={productImageUrl(image)} onError={productImageFallback} alt="" className="object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} /> : <span className="flex h-full items-center justify-center font-display text-4xl text-[var(--store-accent)]">{Array.from(text(category.nameBn, category.nameEn))[0]}</span>}</div><span className="flex items-center justify-between gap-1 text-xs sm:text-sm font-medium text-[#1B4332]"><span className="truncate">{text(category.nameBn, category.nameEn)}</span><ArrowRight className="w-3.5 h-3.5 shrink-0 text-[#1B4332]/60 group-hover:text-[#1B4332]" /></span></Link>; })}</div></section>}
-        {browsing && (['new_arrivals', 'best_sellers'] as const).filter(visible).map(type => { const list = type === 'best_sellers' ? [...products].filter(p => p.totalSoldCount > 0).sort((a,b) => b.totalSoldCount - a.totalSoldCount) : [...products].reverse(); return list.length > 0 && <section key={type} style={position(type)} className="space-y-5 sm:space-y-6"><div className="flex items-end justify-between gap-4 border-b border-[#E5E2D9] pb-3"><h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#1B4332]">{text(section(type)?.titleBn ?? '', section(type)?.titleEn ?? '')}</h2><Link href="/shop" className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#1B4332]/70 hover:text-[#1B4332] underline underline-offset-4 shrink-0">{text('সব পণ্য', 'Shop all')}</Link></div><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 sm:gap-x-6 gap-y-6 sm:gap-y-8">{list.slice(0,4).map(product => <ProductCard key={product.productId} product={product} />)}</div></section>; })}
+        {browsing && visible('categories') && categories.length > 0 && <section style={position('categories')} className="space-y-5 sm:space-y-6"><div className="flex items-end justify-between gap-4 border-b border-[#E5E2D9] pb-3"><h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#1B4332]">{text(section('categories')?.titleBn ?? '', section('categories')?.titleEn ?? '')}</h2><Link href="/shop" className="min-h-[44px] inline-flex items-center font-mono text-[11px] uppercase tracking-[0.1em] text-[#1B4332]/85 hover:text-[#1B4332] underline underline-offset-4 shrink-0">{text('সব দেখুন', 'View all')}</Link></div><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">{categories.filter(c => !c.parentId).map(category => { const image = products.find(p => p.categoryId === category.id)?.images[0]; return <Link key={category.id} href={`/category/${category.slug}`} className="group space-y-2.5 sm:space-y-3 min-w-0"><div className="relative aspect-square bg-[#F9F8F3] rounded-xl overflow-hidden border border-[#E5E2D9]">{image ? <img  src={productImageUrl(image)} onError={productImageFallback} alt="" className="object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} /> : <span className="flex h-full items-center justify-center font-display text-4xl text-[var(--store-accent)]">{Array.from(text(category.nameBn, category.nameEn))[0]}</span>}</div><span className="flex items-center justify-between gap-1 text-xs sm:text-sm font-medium text-[#1B4332]"><span className="truncate">{text(category.nameBn, category.nameEn)}</span><ArrowRight className="w-3.5 h-3.5 shrink-0 text-[#1B4332]/75 group-hover:text-[#1B4332]" /></span></Link>; })}</div></section>}
+        {browsing && !visible('featured_products') && (['new_arrivals', 'best_sellers'] as const).filter(visible).map(type => { const list = type === 'best_sellers' ? [...products].filter(p => p.totalSoldCount > 0).sort((a,b) => b.totalSoldCount - a.totalSoldCount) : [...products].reverse(); return list.length > 0 && <section key={type} style={position(type)} className="space-y-5 sm:space-y-6"><div className="flex items-end justify-between gap-4 border-b border-[#E5E2D9] pb-3"><h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#1B4332]">{text(section(type)?.titleBn ?? '', section(type)?.titleEn ?? '')}</h2><Link href="/shop" className="min-h-[44px] inline-flex items-center font-mono text-[11px] uppercase tracking-[0.1em] text-[#1B4332]/85 hover:text-[#1B4332] underline underline-offset-4 shrink-0">{text('সব পণ্য', 'Shop all')}</Link></div><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 sm:gap-x-6 gap-y-6 sm:gap-y-8">{list.slice(0,4).map(product => <ProductCard key={product.productId} product={product} />)}</div></section>; })}
       </div>
       {/* FILTER DRAWER / SHEET */}
       <ResponsiveSheet
@@ -498,12 +519,12 @@ export function HomepageClient({
       >
         <div className="p-4 space-y-6 text-xs">
           {/* Category Selector */}
-          <div className="space-y-2">
-            <label className="font-mono font-semibold uppercase text-[11px] tracking-[0.1em] text-[#1B4332]/60">
+          <fieldset className="space-y-2">
+            <legend className="font-mono font-semibold uppercase text-[11px] tracking-[0.1em] text-[#1B4332]/80">
               {locale === 'bn' ? 'ক্যাটাগরি' : 'Category'}
-            </label>
+            </legend>
             <div className="space-y-1">
-              <label className="flex items-center gap-2.5 cursor-pointer p-2 rounded-lg hover:bg-[#F9F8F3]">
+              <label className="flex items-center gap-2.5 min-h-[44px] cursor-pointer px-2 py-2 rounded-lg hover:bg-[#F9F8F3]">
                 <input
                   type="radio"
                   name="catFilter"
@@ -518,7 +539,7 @@ export function HomepageClient({
               {categories.map((c) => (
                 <label
                   key={c.id}
-                  className="flex items-center gap-2.5 cursor-pointer p-2 rounded-lg hover:bg-[#F9F8F3]"
+                  className="flex items-center gap-2.5 min-h-[44px] cursor-pointer px-2 py-2 rounded-lg hover:bg-[#F9F8F3]"
                 >
                   <input
                     type="radio"
@@ -533,26 +554,30 @@ export function HomepageClient({
                 </label>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* Budget Range Slider */}
           <div className="space-y-2 pt-3 border-t border-[#E5E2D9]">
             <div className="flex items-center justify-between">
-              <label className="font-mono font-semibold uppercase text-[11px] tracking-[0.1em] text-[#1B4332]/60">
+              <label
+                htmlFor={maxBudgetInputId}
+                className="font-mono font-semibold uppercase text-[11px] tracking-[0.1em] text-[#1B4332]/80"
+              >
                 {locale === 'bn' ? 'সর্বোচ্চ বাজেট' : 'Max Budget'}
               </label>
-              <span className="font-mono font-bold text-[var(--store-accent)]"><LocalizedText source={"৳"} area="storefront" />{maxPriceBdt}</span>
+              <span className="font-mono font-bold text-[var(--store-accent)]"><LocalizedText source={"৳"} area="storefront" />{formatLocaleNumber(maxPriceBdt, locale)}</span>
             </div>
             <input
+              id={maxBudgetInputId}
               type="range"
               min={0}
               max={budgetLimit}
               step={1}
               value={maxPriceBdt}
               onChange={(e) => setMaxPriceBdt(Number(e.target.value))}
-              className="w-full accent-[var(--store-accent)]"
+              className="w-full h-11 accent-[var(--store-accent)] cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-[#1B4332]/55 font-mono">
+            <div className="flex justify-between text-[10px] text-[#1B4332]/80 font-mono">
               <span>৳{formatLocaleNumber(0, locale)}</span>
               <span>৳{formatLocaleNumber(budgetLimit, locale)}</span>
             </div>
@@ -560,7 +585,7 @@ export function HomepageClient({
 
           {/* In Stock Only Checkbox */}
           <div className="pt-3 border-t border-[#E5E2D9]">
-            <label className="flex items-center gap-2.5 cursor-pointer">
+            <label className="flex items-center gap-2.5 min-h-[44px] cursor-pointer">
               <input
                 type="checkbox"
                 checked={inStockOnly}

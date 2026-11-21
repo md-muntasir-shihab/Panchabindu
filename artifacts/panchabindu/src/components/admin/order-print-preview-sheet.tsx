@@ -47,7 +47,7 @@ export function OrderPrintPreviewSheet({
   const [visibleParts, setVisibleParts] = React.useState<boolean[]>([
     true,
     true,
-    true,
+    isSuperAdmin,
   ]);
   const [slip, setSlip] = React.useState<OrderPrintSlipBundle | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -61,6 +61,17 @@ export function OrderPrintPreviewSheet({
   React.useEffect(() => {
     setLayoutMode(printConfig.defaultMode);
   }, [printConfig.defaultMode]);
+
+  React.useEffect(() => {
+    if (!isSuperAdmin) {
+      setVisibleParts((prev) => (prev[2] ? [prev[0], prev[1], false] : prev));
+    }
+  }, [isSuperAdmin]);
+
+  const effectiveVisibleParts = React.useMemo(
+    () => [visibleParts[0], visibleParts[1], isSuperAdmin ? visibleParts[2] : false],
+    [visibleParts, isSuperAdmin]
+  );
 
   const fetchSlip = React.useCallback(
     async (targetOrderNo: string) => {
@@ -119,7 +130,7 @@ export function OrderPrintPreviewSheet({
 
   const handlePrint = async () => {
     if (!orderNo || !slip || !printableRef.current) return;
-    if (layoutMode === 'a4_3part' && !visibleParts.some(Boolean)) {
+    if (layoutMode === 'a4_3part' && !effectiveVisibleParts.some(Boolean)) {
       setError(
         bn
           ? 'অন্তত একটি অংশ নির্বাচন করুন।'
@@ -185,7 +196,7 @@ export function OrderPrintPreviewSheet({
   };
 
   const p12 = slip?.customerAndCourierPart;
-  const p3 = slip?.internalPart3;
+  const printCount = slip?.printCount ?? slip?.internalPart3?.printCount ?? 0;
 
   return (
     <ResponsiveSheet
@@ -207,7 +218,7 @@ export function OrderPrintPreviewSheet({
         p12
           ? `${p12.customerName} · ${p12.customerPhone} · ${
               bn ? 'মোট প্রিন্ট' : 'Printed'
-            }: ${formatLocaleNumber(p3?.printCount ?? 0, locale)}`
+            }: ${formatLocaleNumber(printCount, locale)}`
           : undefined
       }
       footer={
@@ -221,7 +232,7 @@ export function OrderPrintPreviewSheet({
                   onClose();
                   onOpenPrintEngineTab(target);
                 }}
-                className="min-h-[36px] px-3 py-1.5 rounded-[var(--radius-sm)] border border-border bg-bg text-ink hover:border-ink font-medium inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-[var(--radius-sm)] border border-border bg-bg text-ink hover:border-ink font-medium inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
                 <ExternalLink className="w-3.5 h-3.5 text-muted" aria-hidden="true" />
                 <span>{bn ? 'প্রিন্ট ইঞ্জিনে খুলুন' : 'Open Print Engine'}</span>
@@ -232,7 +243,7 @@ export function OrderPrintPreviewSheet({
             <button
               type="button"
               onClick={onClose}
-              className="min-h-[36px] px-3 py-1.5 rounded-[var(--radius-sm)] border border-border bg-bg text-ink hover:border-ink font-medium cursor-pointer"
+              className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-[var(--radius-sm)] border border-border bg-bg text-ink hover:border-ink font-medium cursor-pointer"
             >
               {bn ? 'বন্ধ করুন' : 'Close'}
             </button>
@@ -242,10 +253,10 @@ export function OrderPrintPreviewSheet({
                 loading ||
                 printing ||
                 !slip ||
-                (layoutMode === 'a4_3part' && !visibleParts.some(Boolean))
+                (layoutMode === 'a4_3part' && !effectiveVisibleParts.some(Boolean))
               }
               onClick={() => void handlePrint()}
-              className="min-h-[36px] px-4 py-1.5 rounded-[var(--radius-sm)] bg-ink text-bg hover:opacity-90 font-semibold disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] sm:min-h-[36px] px-4 py-1.5 rounded-[var(--radius-sm)] bg-ink text-bg hover:opacity-90 font-semibold disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
               {printing ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
@@ -273,11 +284,16 @@ export function OrderPrintPreviewSheet({
       <div className="space-y-4 text-xs">
         {/* Controls Toolbar — matches PrintEnginePanel options */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-[var(--radius-md)] border border-border bg-bg">
-          <div className="inline-flex rounded-[var(--radius-sm)] border border-border bg-surface p-0.5">
+          <div
+            role="group"
+            aria-label={bn ? 'কাগজের ধরন' : 'Paper layout mode'}
+            className="inline-flex rounded-[var(--radius-sm)] border border-border bg-surface p-0.5"
+          >
             <button
               type="button"
+              aria-pressed={layoutMode === 'a4_3part'}
               onClick={() => setLayoutMode('a4_3part')}
-              className={`min-h-[32px] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-medium cursor-pointer transition-colors ${
+              className={`min-h-[44px] sm:min-h-[32px] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-medium cursor-pointer transition-colors ${
                 layoutMode === 'a4_3part'
                   ? 'bg-ink text-bg'
                   : 'text-muted hover:text-ink'
@@ -287,8 +303,9 @@ export function OrderPrintPreviewSheet({
             </button>
             <button
               type="button"
+              aria-pressed={layoutMode === 'thermal_4x6'}
               onClick={() => setLayoutMode('thermal_4x6')}
-              className={`min-h-[32px] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-medium cursor-pointer transition-colors ${
+              className={`min-h-[44px] sm:min-h-[32px] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-medium cursor-pointer transition-colors ${
                 layoutMode === 'thermal_4x6'
                   ? 'bg-ink text-bg'
                   : 'text-muted hover:text-ink'
@@ -301,17 +318,19 @@ export function OrderPrintPreviewSheet({
           {layoutMode === 'a4_3part' && (
             <div className="flex flex-wrap items-center gap-3 text-xs text-ink">
               {[
-                bn ? 'গ্রাহক' : 'Customer',
-                bn ? 'কুরিয়ার' : 'Courier',
-                bn ? 'অভ্যন্তরীণ' : 'Internal',
-              ].map((label, idx) => (
+                { idx: 0, label: bn ? 'গ্রাহক' : 'Customer' },
+                { idx: 1, label: bn ? 'কুরিয়ার' : 'Courier' },
+                ...(isSuperAdmin
+                  ? [{ idx: 2, label: bn ? 'অভ্যন্তরীণ' : 'Internal' }]
+                  : []),
+              ].map(({ idx, label }) => (
                 <label
-                  key={label}
-                  className="inline-flex items-center gap-1.5 cursor-pointer select-none"
+                  key={idx}
+                  className="inline-flex items-center gap-1.5 min-h-[44px] sm:min-h-0 cursor-pointer select-none"
                 >
                   <input
                     type="checkbox"
-                    checked={visibleParts[idx]}
+                    checked={effectiveVisibleParts[idx]}
                     onChange={(e) =>
                       setVisibleParts((prev) =>
                         prev.map((val, i) => (i === idx ? e.target.checked : val))
@@ -330,7 +349,7 @@ export function OrderPrintPreviewSheet({
               type="button"
               disabled={loading}
               onClick={() => void fetchSlip(orderNo)}
-              className="min-h-[32px] px-2.5 py-1 rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:border-ink inline-flex items-center gap-1 text-xs cursor-pointer disabled:opacity-50"
+              className="min-h-[44px] sm:min-h-[32px] px-2.5 py-1 rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:border-ink inline-flex items-center gap-1 text-xs cursor-pointer disabled:opacity-50"
             >
               <RefreshCw
                 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`}
@@ -343,13 +362,16 @@ export function OrderPrintPreviewSheet({
 
         {/* Status / Error Feedback */}
         {error && (
-          <div className="p-3 rounded-[var(--radius-sm)] border border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300 flex items-center justify-between gap-2">
+          <div
+            role="alert"
+            className="p-3 rounded-[var(--radius-sm)] border border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300 flex items-center justify-between gap-2"
+          >
             <span>{error}</span>
             {orderNo && (
               <button
                 type="button"
                 onClick={() => void fetchSlip(orderNo)}
-                className="px-2.5 py-1 rounded-[var(--radius-sm)] border border-red-500/40 font-semibold cursor-pointer"
+                className="min-h-[44px] sm:min-h-[30px] px-2.5 py-1 rounded-[var(--radius-sm)] border border-red-500/40 font-semibold cursor-pointer"
               >
                 {bn ? 'আবার চেষ্টা করুন' : 'Retry'}
               </button>
@@ -358,7 +380,10 @@ export function OrderPrintPreviewSheet({
         )}
 
         {feedback && (
-          <div className="p-3 rounded-[var(--radius-sm)] border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300">
+          <div
+            role="status"
+            className="p-3 rounded-[var(--radius-sm)] border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+          >
             {feedback}
           </div>
         )}
@@ -366,7 +391,7 @@ export function OrderPrintPreviewSheet({
         {/* Loading State */}
         {loading && !slip && (
           <div className="py-16 text-center text-muted space-y-2 border border-border rounded-[var(--radius-md)] bg-bg">
-            <RefreshCw className="w-5 h-5 animate-spin mx-auto text-ink" />
+            <RefreshCw className="w-5 h-5 animate-spin mx-auto text-ink" aria-hidden="true" />
             <p>{bn ? 'প্রিন্ট স্লিপ তৈরি হচ্ছে...' : 'Loading print slip...'}</p>
           </div>
         )}
@@ -377,7 +402,7 @@ export function OrderPrintPreviewSheet({
             <PrintableSlipsDocument
               slips={[slip]}
               layoutMode={layoutMode}
-              visibleParts={visibleParts}
+              visibleParts={effectiveVisibleParts}
               printConfig={printConfig}
               siteSettings={siteSettings}
               locale={locale}

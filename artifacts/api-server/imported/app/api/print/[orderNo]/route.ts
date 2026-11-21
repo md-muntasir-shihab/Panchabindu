@@ -17,7 +17,9 @@ export const POST = backendRoute(async (request: NextRequest, context: { params:
   let input;
   try { input = z.object({ copy: z.enum(['customer', 'packaging', 'finance']), reprintReason: z.string().trim().max(500).optional() }).parse(JSON.parse(raw)); }
   catch { return Response.json({ success: false, code: 'INVALID_PRINT_REQUEST' }, { status: 400 }); }
-  const { orderNo } = await context.params;
+  const { orderNo: rawOrderNo } = await context.params;
+  const orderNo = (rawOrderNo ?? '').trim();
+  if (!orderNo || orderNo.length > 64) return Response.json({ success: false, code: 'INVALID_ORDER_NO' }, { status: 400 });
   const state = readErpState();
   const order = state.orders.find(order => order.orderNo === orderNo);
   if (!order) return Response.json({ success: false }, { status: 404 });

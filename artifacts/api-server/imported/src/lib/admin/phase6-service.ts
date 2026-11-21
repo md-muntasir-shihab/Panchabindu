@@ -17,7 +17,11 @@ import type {
   CourierFormatKey,
   Poisha,
 } from '../../types/domain';
-import type { ActorSecurityContext } from '../../types/permissions';
+import {
+  hasModulePermission,
+  isFirstLoginGateCleared,
+  type ActorSecurityContext,
+} from '../../types/permissions';
 import {
   createStorefrontOrder,
   readErpState,
@@ -985,10 +989,14 @@ export function moderateProductReview(
   errorBn?: string;
   reviews?: ModeratedReviewItemDTO[];
 } {
-  if (ctx.roleSlug === 'vendor') {
+  if (
+    ctx.roleSlug === 'vendor' ||
+    !isFirstLoginGateCleared(ctx) ||
+    !hasModulePermission(ctx, 'catalog', 'update')
+  ) {
     return {
       success: false,
-      errorBn: 'ভেন্ডর রোল থেকে কাস্টমার রিভিউ মডারেট করা যাবে না।',
+      errorBn: 'আপনার রোলে কাস্টমার রিভিউ মডারেট করার অনুমতি নেই।',
     };
   }
 

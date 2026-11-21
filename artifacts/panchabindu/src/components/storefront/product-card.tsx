@@ -32,6 +32,15 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const [isHovered, setIsHovered] = React.useState(false);
   const [justAdded, setJustAdded] = React.useState(false);
+  const addedTimerRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (addedTimerRef.current !== null) {
+        window.clearTimeout(addedTimerRef.current);
+      }
+    };
+  }, []);
 
   const primaryVariant = product.variants[0];
   if (!primaryVariant) return null;
@@ -65,7 +74,7 @@ export function ProductCard({ product }: ProductCardProps) {
         variantTitleBn: targetVariant.titleBn,
         variantTitleEn: targetVariant.titleEn,
         publicSku: targetVariant.publicSku,
-        imageUrl: targetVariant.imageUrl ?? primaryImage,
+        imageUrl: productImageUrl(targetVariant.imageUrl ?? primaryImage),
         unitSalePricePoisha: targetVariant.salePricePoisha,
         compareAtPricePoisha: targetVariant.compareAtPricePoisha,
         weightGrams: targetVariant.weightGrams,
@@ -78,7 +87,13 @@ export function ProductCard({ product }: ProductCardProps) {
     );
 
     setJustAdded(true);
-    window.setTimeout(() => setJustAdded(false), 950);
+    if (addedTimerRef.current !== null) {
+      window.clearTimeout(addedTimerRef.current);
+    }
+    addedTimerRef.current = window.setTimeout(() => {
+      setJustAdded(false);
+      addedTimerRef.current = null;
+    }, 950);
   };
 
   return (
@@ -137,10 +152,11 @@ export function ProductCard({ product }: ProductCardProps) {
                 ? `Remove ${displayName} from wishlist`
                 : `Add ${displayName} to wishlist`
             }
-            className="absolute top-2 right-2 sm:top-3 sm:right-3 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-[#FDFCF8]/90 text-[#1B4332] border border-[#E5E2D9] hover:bg-white hover:border-[#1B4332] cursor-pointer z-10 transition-all active:scale-95"
+            aria-pressed={isWishlisted}
+            className="absolute top-2 right-2 sm:top-3 sm:right-3 w-11 h-11 flex items-center justify-center rounded-full bg-[#FDFCF8]/95 text-[#1B4332] border border-[#E5E2D9] hover:bg-white hover:border-[#1B4332] cursor-pointer z-10 transition-all active:scale-95"
           >
             <Heart
-              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
+              className={`w-4 h-4 transition-colors ${
                 isWishlisted ? 'fill-[#A84A28] text-[#A84A28]' : 'text-[#1B4332]'
               }`}
               aria-hidden="true"
@@ -153,9 +169,9 @@ export function ProductCard({ product }: ProductCardProps) {
               type="button"
               disabled={isOutOfStock}
               onClick={handleQuickAdd}
-              className={`w-full min-h-[42px] px-4 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.12em] flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              className={`w-full min-h-[44px] px-4 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.12em] flex items-center justify-center gap-2 transition-all cursor-pointer ${
                 isOutOfStock
-                  ? 'bg-[#FDFCF8]/95 text-[#1B4332]/50 border border-[#E5E2D9] cursor-not-allowed'
+                  ? 'bg-[#FDFCF8]/95 text-[#1B4332]/75 border border-[#E5E2D9] cursor-not-allowed'
                   : 'bg-[var(--store-accent)] text-white hover:opacity-90 active:scale-[0.98]'
               }`}
             >
@@ -180,13 +196,13 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Frameless Editorial Typography Below Image */}
         <div className="pt-2.5 sm:pt-3.5 space-y-1 min-w-0">
           {/* Unboxed Metadata Line */}
-          <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] text-[#1B4332]/65 min-w-0 overflow-hidden">
+          <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] text-[#1B4332]/80 min-w-0 overflow-hidden">
             <span className="inline-flex items-center gap-0.5 sm:gap-1 font-medium text-[#1B4332] shrink-0">
               <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-[#A84A28] text-[#A84A28]" aria-hidden="true" />
               <span className="font-mono tabular-nums">
                 {locale === 'bn' ? toBanglaDigits(ratingValue) : ratingValue}
               </span>
-              <span className="text-[#1B4332]/55 font-normal">
+              <span className="text-[#1B4332]/80 font-normal">
                 ({formatLocaleNumber(product.reviewCount, locale)})
               </span>
             </span>
@@ -216,7 +232,7 @@ export function ProductCard({ product }: ProductCardProps) {
             {primaryVariant.compareAtPricePoisha &&
               primaryVariant.compareAtPricePoisha >
                 primaryVariant.salePricePoisha && (
-                <span className="text-[11px] sm:text-xs text-[#1B4332]/50 line-through">
+                <span className="text-[11px] sm:text-xs text-[#1B4332]/75 line-through">
                   {formatPoishaToBdt(primaryVariant.compareAtPricePoisha, locale)}
                 </span>
               )}
@@ -232,7 +248,7 @@ export function ProductCard({ product }: ProductCardProps) {
           onClick={handleQuickAdd}
           className={`w-full min-h-[44px] px-2.5 py-2 rounded-lg font-mono text-[10px] uppercase tracking-[0.06em] flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
             isOutOfStock
-              ? 'bg-[#F9F8F3] text-[#1B4332]/50 border border-[#E5E2D9] cursor-not-allowed'
+              ? 'bg-[#F9F8F3] text-[#1B4332]/75 border border-[#E5E2D9] cursor-not-allowed'
               : 'bg-[var(--store-accent)] text-white active:scale-[0.98]'
           }`}
         >

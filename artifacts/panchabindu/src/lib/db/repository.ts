@@ -2477,22 +2477,33 @@ export function upsertAdminProduct(input: {
 }
 
 /**
- * Deletes or archives a product from the ERP
+ * Always soft-archives a product from active storefront listings without destroying
+ * historical order lines, stock balances, SKUs, or consignment audit records.
  */
-export function deleteAdminProduct(productId: string): { success: boolean; errorBn?: string } {
+export function deleteAdminProduct(productId: string): {
+  success: boolean;
+  archived?: boolean;
+  product?: InternalProductRecord;
+  errorBn?: string;
+} {
   const state = readErpState();
   const idx = state.products.findIndex((p) => p.productId === productId);
   if (idx < 0) {
     return { success: false, errorBn: 'পণ্যটি খুঁজে পাওয়া যায়নি।' };
   }
 
-  state.products.splice(idx, 1);
+  const archivedProduct: InternalProductRecord = {
+    ...state.products[idx],
+    status: 'archived',
+    isFeatured: false,
+  };
+  state.products[idx] = archivedProduct;
   writeErpState(state);
-  return { success: true };
+  return { success: true, archived: true, product: archivedProduct };
 }
 
 /**
- * Admin Category CRUD: Create or update storefront category
+ * Admin Category CRUD: Create or update storefront category with unique slug guard
  */
 export function upsertAdminCategory(input: {
   id?: string;
@@ -2508,24 +2519,37 @@ export function upsertAdminCategory(input: {
   const state = readErpState();
 
   const nameBn = input.nameBn.trim();
-  if (!nameBn) {
-    return { success: false, errorBn: 'ক্যাটাগরির বাংলা নাম আবশ্যক।' };
+  const nameEn = (input.nameEn ?? '').trim();
+  const descriptionBn = (input.descriptionBn ?? '').trim();
+  const descriptionEn = (input.descriptionEn ?? '').trim();
+  if (!nameBn || nameBn.length > 160) {
+    return { success: false, errorBn: 'ক্যাটাগরির বাংলা নাম আবশ্যক (সর্বোচ্চ ১৬০ অক্ষর)।' };
+  }
+  if (!nameEn || nameEn.length > 160) {
+    return { success: false, errorBn: 'ক্যাটাগরির ইংরেজি নাম আবশ্যক (সর্বোচ্চ ১৬০ অক্ষর)।' };
   }
 
-  const categoryId = input.id || `cat-${Date.now().toString().slice(-6)}`;
-  const slug = (input.slug?.trim() || input.nameEn?.trim() || nameBn)
+  const categoryId = input.id?.trim() || `cat-${Date.now().toString().slice(-6)}`;
+  const rawSlug = (input.slug?.trim() || nameEn || nameBn)
     .toLowerCase()
     .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-');
+    .replace(/\s+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 100);
+  const targetSlug = rawSlug || categoryId;
+
+  if (state.categories.some((c) => c.slug === targetSlug && c.id !== categoryId)) {
+    return { success: false, errorBn: 'এই ক্যাটাগরির slug ইতিমধ্যে ব্যবহৃত হয়েছে। অন্য নাম বা slug দিন।' };
+  }
 
   const catRecord: CategoryRecord = {
     id: categoryId,
     parentId: null,
-    slug: slug || categoryId,
+    slug: targetSlug,
     nameBn,
-    nameEn: input.nameEn?.trim() || nameBn,
-    descriptionBn: input.descriptionBn.trim() || 'প্রিমিয়াম কালেকশন।',
-    descriptionEn: input.descriptionEn?.trim() || input.descriptionBn.trim(),
+    nameEn: nameEn || nameBn,
+    descriptionBn: descriptionBn || 'প্রিমিয়াম কালেকশন।',
+    descriptionEn: descriptionEn || descriptionBn,
     iconName: input.iconName || 'Package',
     sortOrder: input.sortOrder ?? state.categories.length + 1,
     isActive: input.isActive ?? true,
