@@ -2,29 +2,21 @@
 import * as React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
-  Activity,
   ArrowDownRight,
-  ArrowUpDown,
   ArrowUpRight,
-  Banknote,
-  Boxes,
   CalendarClock,
   ChevronRight,
-  ClipboardList,
   Clock3,
-  FileCheck2,
   Gauge,
   LayoutDashboard,
-  MessageSquare,
-  Package,
-  Printer,
+  Receipt,
   RefreshCw,
-  Search,
+  Scale,
   ShoppingBag,
   Sparkles,
   Store,
+  TrendingDown,
   TrendingUp,
-  TriangleAlert,
   Truck,
   Users,
   Wallet,
@@ -34,14 +26,24 @@ import { Card } from '@/components/ui/primitives';
 import { formatPoishaToBdt } from '@/lib/money';
 import { formatLocaleNumber } from '@/lib/i18n/dictionaries';
 import type { AdminTabKey } from './admin-erp-client';
-import { DASHBOARD_STATUSES } from './dashboard-summary';
+import {
+  EXPENSE_CATEGORY_LABELS,
+  PAYOUT_STATUS_LABELS,
+  PNL_LINE_LABELS,
+  buildPnlBreakdown,
+  poisha,
+  summarizeExpenses,
+  summarizeVendorEscrow,
+} from './dashboard-summary';
 
 /**
- * Module: Admin Command Dashboard (default landing screen).
+ * Module: Admin money dashboard (default landing screen).
  *
- * Everything here is derived from the same role-filtered workspace snapshot the rest of the admin
- * panel uses, so a vendor sees only its own orders and a marketing manager never sees payouts.
- * No new endpoint, no fabricated metric: empty data shows an honest empty state.
+ * This screen answers one question: **where is the company's money?** Revenue, cost, profit, cash
+ * at the courier, vendor payable and the expense ledger — every figure is animated from the
+ * role-filtered workspace snapshot, so a vendor sees only its own orders and nobody sees invented
+ * numbers. The action queues (call to confirm, pack, book courier…) deliberately live on the Today
+ * screen instead of being repeated here.
  */
 
 type Locale = 'bn' | 'en';
@@ -51,60 +53,94 @@ export interface DashboardOrder {
   customerName?: string;
   districtNameBn?: string;
   totalPayablePoisha?: number;
-  status?: string;
+  subtotalPoisha?: number;
+  discountPoisha?: number;
+  deliveryChargePoisha?: number;
+  advancePaidPoisha?: number;
+  codCollectablePoisha?: number;
+  estimatedNetProfitPoisha?: number;
+  snapTotalSupplierPayablePoisha?: number;
+  paymentMethod?: string;
   paymentStatus?: string;
-  deliveryMethod?: string;
-  nextBestAction?: string;
+  source?: string;
+  courierProvider?: string;
+  status?: string;
   createdAt?: string;
   items?: Array<{ productNameBn?: string; quantity?: number; lineSubtotalPoisha?: number }>;
 }
 
 export interface DashboardSnapshot {
   orders?: DashboardOrder[];
-  todayQueues?: {
-    callToConfirmCount?: number;
-    fixAddressCount?: number;
-    verifyBkashCount?: number;
-    readyToPackCount?: number;
-    readyToBookCourierCount?: number;
-    awaitingCodRemittanceCount?: number;
-    lowStockVariantsCount?: number;
-    missingCourierInfoCount?: number;
-  };
   moneyMapPnl?: {
+    courierInTransitCodPoisha?: number;
+    courierDeliveredUnsettledCodPoisha?: number;
     totalCourierStuckCodPoisha?: number;
-    vendorAvailablePoisha?: number;
+    vendorPendingPoisha?: number;
     vendorLockedPoisha?: number;
+    vendorAvailablePoisha?: number;
+    vendorPayoutHoldPoisha?: number;
+    totalExpensesPoisha?: number;
     estimatedOwnLiquidCashPoisha?: number;
+    deliveredGrossSalesPoisha?: number;
+    totalSupplierPayablePoisha?: number;
+    totalPromoDiscountPoisha?: number;
+    totalAdSpendPoisha?: number;
+    totalPackagingCostPoisha?: number;
+    totalUnrecoveredCourierCostPoisha?: number;
+    totalDamageLossPoisha?: number;
+    totalOtherExpensesPoisha?: number;
     autoNetProfitPoisha?: number;
     isNetLoss?: boolean;
-    deliveredGrossSalesPoisha?: number;
-    totalExpensesPoisha?: number;
+    channelRoas?: Array<{
+      source?: string;
+      ordersCount?: number;
+      revenuePoisha?: number;
+      adSpendPoisha?: number;
+      cpoPoisha?: number;
+      roasMultiple?: string;
+    }>;
   } | null;
+  expenses?: Array<{
+    id?: string;
+    category?: string;
+    sourceChannel?: string;
+    campaignName?: string;
+    amountPoisha?: number;
+    expenseDate?: string;
+    isRecurring?: boolean;
+    noteBn?: string;
+  }>;
+  vendorEscrow?: {
+    vendors?: Array<{
+      profile?: { vendorId?: string; businessNameBn?: string; businessNameEn?: string; status?: string };
+      balance?: {
+        pendingPoisha?: number;
+        lockedPoisha?: number;
+        availablePoisha?: number;
+        payoutHoldPoisha?: number;
+        clawbackDebtPoisha?: number;
+        withdrawablePoisha?: number;
+      };
+    }>;
+    payoutRequests?: Array<{ status?: string; requestedAmountPoisha?: number; vendorNameBn?: string }>;
+  } | null;
+  remittanceLedger?: Array<{
+    id?: string;
+    courierProvider?: string;
+    expectedCodPoisha?: number;
+    courierFeeDeductedPoisha?: number;
+    remittedAmountPoisha?: number;
+    shortPaymentPoisha?: number;
+    isShortPaymentFlagged?: boolean;
+  }>;
   product360?: Array<{
     productId?: string;
     productNameBn?: string;
     variantTitleBn?: string;
     stockAvailable?: number;
-    lowStockThreshold?: number;
-    isLowStock?: boolean;
     daysOfCover?: number;
-    soldLast30Days?: number;
   }>;
-  manualPaymentSubmissions?: Array<{ status?: string }>;
-  inquiries?: Array<{ status?: string }>;
   vendorSupportTickets?: Array<{ status?: string }>;
-  pendingVendorRequests?: unknown[];
-  pendingVendorKycDocs?: unknown[];
-  vendorEscrow?: { payoutRequests?: Array<{ status?: string; amountPoisha?: number }> } | null;
-  auditLogs?: Array<{
-    id?: string;
-    actorUsername?: string;
-    summaryBn?: string;
-    actionCode?: string;
-    targetType?: string;
-    createdAt?: string;
-  }>;
   currentUser?: { displayNameBn?: string; displayNameEn?: string; username?: string } | null;
   activeRole?: { nameBn?: string; nameEn?: string } | null;
   emergencyStopActive?: boolean;
@@ -141,30 +177,15 @@ function dayLabel(date: Date, locale: Locale): string {
   return new Intl.DateTimeFormat(locale === 'bn' ? 'bn-BD' : 'en-GB', { day: 'numeric', month: 'short' }).format(date);
 }
 
-function safePoisha(value: unknown): number {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? Math.round(numeric) : 0;
+function monthLabel(key: string, locale: Locale): string {
+  const [year, month] = key.split('-').map(Number);
+  if (!year || !month) return key;
+  return new Intl.DateTimeFormat(locale === 'bn' ? 'bn-BD' : 'en-GB', { month: 'short' }).format(new Date(year, month - 1, 1));
 }
-
-const STATUS_COLORS: Record<string, string> = {
-  pending_confirmation: '#D97706',
-  confirmed: '#2563EB',
-  packed: '#7C3AED',
-  shipped: '#0EA5E9',
-  out_for_delivery: '#0891B2',
-  delivered: '#15803D',
-  return_initiated: '#DC2626',
-  returned: '#B91C1C',
-  cancelled: '#6B7280',
-};
-
-const STATUS_LABELS: Record<string, { bn: string; en: string }> = Object.fromEntries(
-  DASHBOARD_STATUSES.map((entry) => [entry.key, { bn: entry.bn, en: entry.en }]),
-) as Record<string, { bn: string; en: string }>;
 
 /* ------------------------------------------------------------------ animation */
 
-function useAnimatedNumber(value: number, durationMs = 650): number {
+function useAnimatedNumber(value: number, durationMs = 720): number {
   const reduced = useReducedMotion();
   const [display, setDisplay] = React.useState(value);
   const fromRef = React.useRef(value);
@@ -197,34 +218,6 @@ const fadeIn = {
 };
 
 /* ------------------------------------------------------------------ small parts */
-
-function SortableHeader({
-  label,
-  active,
-  direction,
-  onClick,
-  align = 'left',
-}: {
-  label: string;
-  active: boolean;
-  direction: 'asc' | 'desc';
-  onClick: () => void;
-  align?: 'left' | 'right';
-}) {
-  return (
-    <th scope="col" className="px-2 py-2 font-semibold" aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}>
-      <button
-        type="button"
-        onClick={onClick}
-        className={`inline-flex min-h-[32px] w-full items-center gap-1 rounded-md px-1 text-[11px] uppercase tracking-[0.06em] transition-colors hover:text-ink cursor-pointer ${align === 'right' ? 'justify-end' : 'justify-start'} ${active ? 'text-ink' : 'text-muted'}`}
-      >
-        <span>{label}</span>
-        <ArrowUpDown className={`w-3 h-3 shrink-0 ${active ? 'opacity-100' : 'opacity-40'}`} aria-hidden="true" />
-        <span className="sr-only">{direction === 'asc' ? 'sorted ascending' : 'sorted descending'}</span>
-      </button>
-    </th>
-  );
-}
 
 function DeltaChip({ current, previous, locale }: { current: number; previous: number; locale: Locale }) {
   if (!previous && !current) return null;
@@ -260,6 +253,7 @@ function KpiCard({
   delta,
   onClick,
   index,
+  suffix,
 }: {
   label: string;
   value: number;
@@ -272,11 +266,12 @@ function KpiCard({
   delta?: React.ReactNode;
   onClick?: () => void;
   index: number;
+  suffix?: string;
 }) {
   const animated = useAnimatedNumber(value);
   const displayValue = money
     ? formatPoishaToBdt(Math.round(animated) || 0, locale)
-    : formatLocaleNumber(Math.round(animated), locale);
+    : `${formatLocaleNumber(Math.round(animated), locale)}${suffix ?? ''}`;
   const toneRing: Record<string, string> = {
     neutral: 'border-border',
     success: 'border-success/35',
@@ -327,6 +322,141 @@ function KpiCard({
         <div className={`h-full w-full rounded-[var(--radius-md)] border bg-bg p-3.5 ${toneRing[tone]}`}>{body}</div>
       )}
     </motion.div>
+  );
+}
+
+function Ring({
+  fraction,
+  valueText,
+  caption,
+  tone,
+  locale,
+}: {
+  fraction: number;
+  valueText: string;
+  caption: string;
+  tone: 'success' | 'warning' | 'danger';
+  locale: Locale;
+}) {
+  const reduced = useReducedMotion();
+  const size = 132;
+  const stroke = 13;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const colors: Record<string, string> = { success: '#7FD1A8', warning: '#FBBF24', danger: '#F87171' };
+  const clamped = Math.min(1, Math.max(0, fraction));
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      role="img"
+      aria-label={`${caption}: ${valueText}`}
+      className="shrink-0"
+    >
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth={stroke} />
+      <motion.circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke={colors[tone]}
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        initial={reduced ? false : { strokeDashoffset: circumference }}
+        animate={{ strokeDashoffset: circumference * (1 - clamped) }}
+        transition={{ duration: 1.1, ease: 'easeOut' }}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+      <text x="50%" y="47%" textAnchor="middle" className="fill-current text-[19px] font-bold tabular-nums text-white">
+        {valueText}
+      </text>
+      <text x="50%" y="61%" textAnchor="middle" className="fill-current text-[9px] uppercase tracking-[0.09em] text-white/60">
+        {caption}
+      </text>
+      <title>{locale === 'bn' ? 'লাইভ হিসাব' : 'Live figures'}</title>
+    </svg>
+  );
+}
+
+function StackedBar({
+  segments,
+  locale,
+  emptyLabel,
+}: {
+  segments: Array<{ key: string; label: string; value: number; color: string }>;
+  locale: Locale;
+  emptyLabel: string;
+}) {
+  const visible = segments.filter((segment) => segment.value > 0);
+  const total = visible.reduce((sum, segment) => sum + segment.value, 0);
+  if (!visible.length) return <p className="py-4 text-center text-xs text-muted">{emptyLabel}</p>;
+  return (
+    <div className="space-y-2">
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface" role="img" aria-label={visible.map((segment) => `${segment.label}: ${formatPoishaToBdt(segment.value, locale)}`).join(', ')}>
+        {visible.map((segment, index) => (
+          <motion.span
+            key={segment.key}
+            className="h-full first:rounded-l-full last:rounded-r-full"
+            style={{ backgroundColor: segment.color }}
+            initial={{ width: 0 }}
+            animate={{ width: `${(segment.value / total) * 100}%` }}
+            transition={{ duration: 0.7, ease: 'easeOut', delay: index * 0.06 }}
+          />
+        ))}
+      </div>
+      <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted">
+        {visible.map((segment) => (
+          <li key={segment.key} className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: segment.color }} aria-hidden="true" />
+            <span>{segment.label}</span>
+            <span className="font-mono tabular-nums text-ink">{formatPoishaToBdt(segment.value, locale)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function BarList({
+  rows,
+  locale,
+  emptyLabel,
+  tone = 'brand',
+}: {
+  rows: Array<{ key: string; label: string; value: number; caption?: string }>;
+  locale: Locale;
+  emptyLabel: string;
+  tone?: 'brand' | 'cost';
+}) {
+  const max = Math.max(1, ...rows.map((row) => Math.abs(row.value)));
+  if (!rows.length) return <p className="py-6 text-center text-xs text-muted">{emptyLabel}</p>;
+  return (
+    <ul className="space-y-2">
+      {rows.map((row, index) => (
+        <motion.li
+          key={row.key}
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: index * 0.04 }}
+          className="space-y-1"
+        >
+          <div className="flex items-baseline justify-between gap-2 text-xs">
+            <span className="truncate text-ink">{row.label}</span>
+            <span className="shrink-0 font-mono tabular-nums text-muted">{row.caption ?? formatLocaleNumber(row.value, locale)}</span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-surface">
+            <motion.div
+              className={`h-full rounded-full ${tone === 'cost' ? 'bg-gradient-to-r from-[#D97706] to-[#DC2626]' : 'bg-gradient-to-r from-[#15803D] to-[#0EA5E9]'}`}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.max(4, (Math.abs(row.value) / max) * 100)}%` }}
+              transition={{ duration: 0.6, ease: 'easeOut', delay: index * 0.04 }}
+            />
+          </div>
+        </motion.li>
+      ))}
+    </ul>
   );
 }
 
@@ -382,7 +512,7 @@ function TrendChart({
     <div className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h2 className="text-sm font-bold text-ink">{locale === 'bn' ? 'বিক্রয়ের প্রবণতা' : 'Sales trend'}</h2>
+          <h2 className="text-sm font-bold text-ink">{locale === 'bn' ? 'বিক্রয়ের গতি' : 'Sales momentum'}</h2>
           <p className="text-[11px] text-muted">
             {locale === 'bn' ? 'বাতিল বাদে দৈনিক মোট (কাস্টমার যা দেবে)' : 'Daily payable total excluding cancellations'}
           </p>
@@ -480,7 +610,7 @@ function TrendChart({
             <p className="font-semibold text-ink">{hovered.label}</p>
             <p className="tabular-nums text-muted">
               {locale === 'bn' ? 'বিক্রি ' : 'Revenue '}
-              {formatPoishaToBdt(safePoisha(hovered.revenue), locale)}
+              {formatPoishaToBdt(poisha(hovered.revenue), locale)}
             </p>
             <p className="tabular-nums text-muted">
               {locale === 'bn' ? 'অর্ডার ' : 'Orders '}
@@ -490,175 +620,6 @@ function TrendChart({
         )}
       </div>
     </div>
-  );
-}
-
-function StatusDonut({
-  segments,
-  total,
-  locale,
-  onSelect,
-}: {
-  segments: Array<{ key: string; count: number; color: string; label: string }>;
-  total: number;
-  locale: Locale;
-  onSelect: (key: string) => void;
-}) {
-  const reduced = useReducedMotion();
-  const size = 176;
-  const stroke = 20;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  let offset = 0;
-  const visible = segments.filter((segment) => segment.count > 0);
-
-  return (
-    <div className="space-y-3">
-      <div>
-        <h2 className="text-sm font-bold text-ink">{locale === 'bn' ? 'অর্ডার অবস্থা' : 'Order status'}</h2>
-        <p className="text-[11px] text-muted">{locale === 'bn' ? 'স্লাইসে ক্লিক করে গ্রিড ফিল্টার করুন' : 'Select a slice to filter the grid'}</p>
-      </div>
-      <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center">
-        <div className="relative shrink-0">
-          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={locale === 'bn' ? 'অর্ডার অবস্থার অনুপাত' : 'Order status distribution'}>
-            <circle cx={size / 2} cy={size / 2} r={radius} fill="none" strokeWidth={stroke} className="stroke-current text-border/60" />
-            {visible.map((segment) => {
-              const fraction = total > 0 ? segment.count / total : 0;
-              const dash = fraction * circumference;
-              const element = (
-                <motion.circle
-                  key={segment.key}
-                  cx={size / 2}
-                  cy={size / 2}
-                  r={radius}
-                  fill="none"
-                  stroke={segment.color}
-                  strokeWidth={stroke}
-                  strokeLinecap="butt"
-                  strokeDasharray={`${Math.max(0, dash - 1.5)} ${circumference - Math.max(0, dash - 1.5)}`}
-                  strokeDashoffset={-offset}
-                  transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                  initial={reduced ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.45 }}
-                  className="cursor-pointer"
-                  onClick={() => onSelect(segment.key)}
-                >
-                  <title>{`${segment.label}: ${segment.count}`}</title>
-                </motion.circle>
-              );
-              offset += dash;
-              return element;
-            })}
-            <text x="50%" y="46%" textAnchor="middle" className="fill-current text-[22px] font-bold text-ink">
-              {formatLocaleNumber(total, locale)}
-            </text>
-            <text x="50%" y="60%" textAnchor="middle" className="fill-current text-[10px] uppercase tracking-[0.08em] text-muted">
-              {locale === 'bn' ? 'মোট অর্ডার' : 'Total orders'}
-            </text>
-          </svg>
-        </div>
-        <ul className="grid w-full grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] sm:grid-cols-1">
-          {segments.map((segment) => (
-            <li key={segment.key}>
-              <button
-                type="button"
-                onClick={() => onSelect(segment.key)}
-                className="flex min-h-[30px] w-full items-center justify-between gap-2 rounded-md px-1 text-left transition-colors hover:bg-surface cursor-pointer"
-              >
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: segment.color }} aria-hidden="true" />
-                  <span className="truncate text-muted">{segment.label}</span>
-                </span>
-                <span className="font-mono tabular-nums text-ink">{formatLocaleNumber(segment.count, locale)}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-function QueueTile({
-  label,
-  count,
-  hint,
-  icon,
-  tone,
-  onClick,
-  index,
-}: {
-  label: string;
-  count: number;
-  hint?: string;
-  icon: React.ReactNode;
-  tone: 'warning' | 'danger' | 'info' | 'success' | 'neutral';
-  onClick: () => void;
-  index: number;
-}) {
-  const toneClasses: Record<string, string> = {
-    warning: 'text-warning border-warning/30',
-    danger: 'text-danger border-danger/30',
-    info: 'text-info border-info/30',
-    success: 'text-success border-success/30',
-    neutral: 'text-ink border-border',
-  };
-  return (
-    <motion.li variants={fadeIn} initial="hidden" animate="show" transition={{ duration: 0.35, delay: index * 0.04 }}>
-      <button
-        type="button"
-        onClick={onClick}
-        className={`group flex min-h-[68px] w-full items-center gap-3 rounded-[var(--radius-md)] border bg-bg p-3 text-left transition-colors hover:border-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink cursor-pointer ${toneClasses[tone]}`}
-      >
-        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface">{icon}</span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-xs font-semibold text-ink">{label}</span>
-          {hint && <span className="block truncate text-[10px] text-muted">{hint}</span>}
-        </span>
-        <span className="font-mono text-lg font-bold tabular-nums text-ink">{formatLocaleNumber(count, 'bn')}</span>
-        <ChevronRight className="w-4 h-4 shrink-0 text-muted transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-      </button>
-    </motion.li>
-  );
-}
-
-function BarList({
-  rows,
-  locale,
-  emptyLabel,
-}: {
-  rows: Array<{ key: string; label: string; value: number; caption?: string }>;
-  locale: Locale;
-  emptyLabel: string;
-}) {
-  const max = Math.max(1, ...rows.map((row) => row.value));
-  if (!rows.length) return <p className="py-6 text-center text-xs text-muted">{emptyLabel}</p>;
-  return (
-    <ul className="space-y-2">
-      {rows.map((row, index) => (
-        <motion.li
-          key={row.key}
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.04 }}
-          className="space-y-1"
-        >
-          <div className="flex items-baseline justify-between gap-2 text-xs">
-            <span className="truncate text-ink">{row.label}</span>
-            <span className="shrink-0 font-mono tabular-nums text-muted">{row.caption ?? formatLocaleNumber(row.value, locale)}</span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-surface">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-[#15803D] to-[#0EA5E9]"
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.max(4, (row.value / max) * 100)}%` }}
-              transition={{ duration: 0.6, ease: 'easeOut', delay: index * 0.04 }}
-            />
-          </div>
-        </motion.li>
-      ))}
-    </ul>
   );
 }
 
@@ -675,22 +636,16 @@ export function AdminCommandDashboard({
   onOpenOrderStatus,
   onOpenOrderQueue,
 }: AdminCommandDashboardProps) {
-  const reduced = useReducedMotion();
   const bn = locale === 'bn';
+  const reduced = useReducedMotion();
   const [range, setRange] = React.useState<7 | 14 | 30>(14);
   const [metric, setMetric] = React.useState<'revenue' | 'orders'>('revenue');
+  const [expenseRange, setExpenseRange] = React.useState<3 | 6 | 12>(6);
   const [refreshing, setRefreshing] = React.useState(false);
   // The workspace snapshot carries the whole runtime document set, so live polling stays opt-in
   // and deliberately slow: an admin who needs fresher data presses refresh.
   const [autoRefresh, setAutoRefresh] = React.useState(false);
   const [clock, setClock] = React.useState(() => new Date());
-  const [orderQuery, setOrderQuery] = React.useState('');
-  const [topMetric, setTopMetric] = React.useState<'revenue' | 'quantity'>('revenue');
-  const orderSort = React.useState<{ key: 'createdAt' | 'totalPayablePoisha' | 'status' | 'customerName' | 'orderNo'; direction: 'asc' | 'desc' }>({
-    key: 'createdAt',
-    direction: 'desc',
-  });
-  const [orderSortState, setOrderSortState] = orderSort;
 
   React.useEffect(() => {
     const timer = window.setInterval(() => setClock(new Date()), 30_000);
@@ -727,24 +682,80 @@ export function AdminCommandDashboard({
     const bucket = (key: string) => countingOrders.filter((order) => (order.createdAt ? dayKey(new Date(order.createdAt)) === key : false));
     const todayOrders = bucket(todayKey);
     const yesterdayOrders = bucket(yesterdayKey);
-    const sum = (list: DashboardOrder[]) => list.reduce((total, order) => total + safePoisha(order.totalPayablePoisha), 0);
-    const revenueToday = sum(todayOrders);
-    const revenueYesterday = sum(yesterdayOrders);
-    const delivered = orders.filter((order) => order.status === 'delivered').length;
-    const returned = orders.filter((order) => order.status === 'returned' || order.status === 'return_initiated').length;
+    const sum = (list: DashboardOrder[]) => list.reduce((total, order) => total + poisha(order.totalPayablePoisha), 0);
+    const deliveredOrders = orders.filter((order) => order.status === 'delivered');
+    const returnedOrders = orders.filter((order) => order.status === 'returned' || order.status === 'return_initiated');
+    const cancelledOrders = orders.filter((order) => order.status === 'cancelled');
+    const delivered = deliveredOrders.length;
+    const returned = returnedOrders.length;
     const deliveryRate = delivered + returned > 0 ? (delivered / (delivered + returned)) * 100 : 0;
+    const deliveredValue = deliveredOrders.reduce((total, order) => total + poisha(order.totalPayablePoisha), 0);
+    const supplierPayable = deliveredOrders.reduce(
+      (total, order) => total + poisha(order.snapTotalSupplierPayablePoisha),
+      0,
+    );
+    const estimatedNet = deliveredOrders.reduce((total, order) => total + poisha(order.estimatedNetProfitPoisha), 0);
     return {
-      revenueToday,
-      revenueYesterday,
+      revenueToday: sum(todayOrders),
+      revenueYesterday: sum(yesterdayOrders),
       ordersToday: todayOrders.length,
       ordersYesterday: yesterdayOrders.length,
       averageOrderValue: countingOrders.length ? Math.round(sum(countingOrders) / countingOrders.length) : 0,
       revenueAll: sum(countingOrders),
+      collected: countingOrders.reduce((total, order) => total + poisha(order.advancePaidPoisha), 0),
       delivered,
+      returned,
+      cancelled: cancelledOrders.length,
+      deliveredValue,
+      supplierPayable,
+      estimatedNet,
       deliveryRate,
-      pendingConfirmation: orders.filter((order) => order.status === 'pending_confirmation').length,
+      returnedValue: returnedOrders.reduce((total, order) => total + poisha(order.totalPayablePoisha), 0),
+      cancelledValue: cancelledOrders.reduce((total, order) => total + poisha(order.totalPayablePoisha), 0),
     };
   }, [countingOrders, orders, todayKey, yesterdayKey]);
+
+  const pnl = React.useMemo(() => buildPnlBreakdown(snapshot.moneyMapPnl), [snapshot.moneyMapPnl]);
+  const expenseSummary = React.useMemo(
+    () => summarizeExpenses(snapshot.expenses, { monthCount: expenseRange, now: clock }),
+    // `clock` only advances the month window every 30s; minutes-level churn is not worth it.
+    [snapshot.expenses, expenseRange],
+  );
+  const vendorSummary = React.useMemo(
+    () => summarizeVendorEscrow(snapshot.vendorEscrow?.vendors, snapshot.vendorEscrow?.payoutRequests),
+    [snapshot.vendorEscrow],
+  );
+
+  const remittance = React.useMemo(() => {
+    const rows = snapshot.remittanceLedger ?? [];
+    return {
+      count: rows.length,
+      remitted: rows.reduce((total, row) => total + poisha(row.remittedAmountPoisha), 0),
+      fees: rows.reduce((total, row) => total + poisha(row.courierFeeDeductedPoisha), 0),
+      short: rows.reduce((total, row) => total + poisha(row.shortPaymentPoisha), 0),
+      flagged: rows.filter((row) => row.isShortPaymentFlagged).length,
+    };
+  }, [snapshot.remittanceLedger]);
+
+  /**
+   * Company-wide money is only meaningful when the server sent the profit block; vendors and
+   * restricted roles get an honest, smaller dashboard instead of fake zeros.
+   */
+  const showFinance = !isVendor && Boolean(snapshot.moneyMapPnl);
+  const showVendorLedger = !isVendor && isSuperAdmin && Boolean(snapshot.vendorEscrow?.vendors?.length);
+  const showExpenses = !isVendor && Boolean(snapshot.expenses?.length);
+
+  const courierStuck = poisha(snapshot.moneyMapPnl?.totalCourierStuckCodPoisha);
+  const courierInTransit = poisha(snapshot.moneyMapPnl?.courierInTransitCodPoisha);
+  const courierUnsettled = poisha(snapshot.moneyMapPnl?.courierDeliveredUnsettledCodPoisha) || Math.max(0, courierStuck - courierInTransit);
+  const vendorPayable = showVendorLedger
+    ? vendorSummary.totals.payableToVendors
+    : poisha(snapshot.moneyMapPnl?.vendorPendingPoisha) +
+      poisha(snapshot.moneyMapPnl?.vendorLockedPoisha) +
+      poisha(snapshot.moneyMapPnl?.vendorAvailablePoisha) +
+      poisha(snapshot.moneyMapPnl?.vendorPayoutHoldPoisha);
+  const liquidCash = poisha(snapshot.moneyMapPnl?.estimatedOwnLiquidCashPoisha);
+  const costRatio = pnl.gross > 0 ? (pnl.totalCost / pnl.gross) * 100 : pnl.totalCost > 0 ? 100 : 0;
 
   const trend = React.useMemo<TrendPoint[]>(() => {
     const buckets = new Map<string, { revenue: number; orders: number }>();
@@ -759,7 +770,7 @@ export function AdminCommandDashboard({
       const key = dayKey(new Date(order.createdAt));
       const bucket = buckets.get(key);
       if (!bucket) continue;
-      bucket.revenue += safePoisha(order.totalPayablePoisha);
+      bucket.revenue += poisha(order.totalPayablePoisha);
       bucket.orders += 1;
     }
     return [...buckets.entries()].map(([key, value]) => ({
@@ -770,32 +781,19 @@ export function AdminCommandDashboard({
     }));
   }, [countingOrders, locale, range]);
 
-  const statusSegments = React.useMemo(
-    () =>
-      DASHBOARD_STATUSES.map((entry) => ({
-        key: entry.key,
-        count: orders.filter((order) => order.status === entry.key).length,
-        color: STATUS_COLORS[entry.key] ?? '#9CA3AF',
-        label: bn ? entry.bn : entry.en,
-      })),
-    [orders, bn],
-  );
-
   const topProducts = React.useMemo(() => {
     const map = new Map<string, { label: string; revenue: number; quantity: number }>();
     for (const order of countingOrders) {
       for (const item of order.items ?? []) {
         const label = item.productNameBn?.trim() || (bn ? 'অজানা পণ্য' : 'Unknown product');
         const current = map.get(label) ?? { label, revenue: 0, quantity: 0 };
-        current.revenue += safePoisha(item.lineSubtotalPoisha);
+        current.revenue += poisha(item.lineSubtotalPoisha);
         current.quantity += Number(item.quantity) || 0;
         map.set(label, current);
       }
     }
-    return [...map.values()]
-      .sort((a, b) => (topMetric === 'revenue' ? b.revenue - a.revenue : b.quantity - a.quantity))
-      .slice(0, 5);
-  }, [countingOrders, topMetric, bn]);
+    return [...map.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  }, [countingOrders, bn]);
 
   const topDistricts = React.useMemo(() => {
     const map = new Map<string, number>();
@@ -810,69 +808,20 @@ export function AdminCommandDashboard({
       .map(([label, value]) => ({ key: label, label, value }));
   }, [countingOrders]);
 
-  const lowStock = React.useMemo(() => {
-    const source = snapshot.product360?.length
-      ? snapshot.product360.map((variant) => ({
-          key: `${variant.productId ?? 'p'}-${variant.variantTitleBn ?? 'v'}`,
-          label: variant.productNameBn ?? '',
-          caption: variant.variantTitleBn ?? '',
-          stock: Number(variant.stockAvailable) || 0,
-          cover: Number(variant.daysOfCover) || 0,
+  const channels = React.useMemo(
+    () =>
+      (snapshot.moneyMapPnl?.channelRoas ?? [])
+        .map((row) => ({
+          key: row.source ?? 'other',
+          revenue: poisha(row.revenuePoisha),
+          spend: poisha(row.adSpendPoisha),
+          orders: Number(row.ordersCount) || 0,
+          roas: row.roasMultiple ?? '—',
         }))
-      : [];
-    return source.filter((row) => row.stock <= 5).sort((a, b) => a.stock - b.stock).slice(0, 5);
-  }, [snapshot.product360]);
+        .sort((a, b) => b.revenue - a.revenue),
+    [snapshot.moneyMapPnl?.channelRoas],
+  );
 
-  const recentOrders = React.useMemo(() => {
-    const query = orderQuery.trim().toLowerCase();
-    const filtered = query
-      ? orders.filter((order) =>
-          [order.orderNo, order.customerName, order.districtNameBn, STATUS_LABELS[order.status ?? '']?.[bn ? 'bn' : 'en']]
-            .filter(Boolean)
-            .some((value) => String(value).toLowerCase().includes(query)),
-        )
-      : orders.slice();
-    const direction = orderSortState.direction === 'asc' ? 1 : -1;
-    const value = (order: DashboardOrder) => {
-      switch (orderSortState.key) {
-        case 'totalPayablePoisha':
-          return safePoisha(order.totalPayablePoisha);
-        case 'status':
-          return STATUS_LABELS[order.status ?? '']?.[bn ? 'bn' : 'en'] ?? order.status ?? '';
-        case 'customerName':
-          return order.customerName ?? '';
-        case 'orderNo':
-          return order.orderNo ?? '';
-        default:
-          return order.createdAt ?? '';
-      }
-    };
-    return filtered.sort((a, b) => {
-      const left = value(a);
-      const right = value(b);
-      if (typeof left === 'number' && typeof right === 'number') return (left - right) * direction;
-      return String(left).localeCompare(String(right)) * direction;
-    });
-  }, [orders, orderQuery, orderSortState, bn]);
-
-  const toggleOrderSort = (key: typeof orderSortState.key) => {
-    setOrderSortState((previous) =>
-      previous.key === key
-        ? { key, direction: previous.direction === 'asc' ? 'desc' : 'asc' }
-        : { key, direction: key === 'createdAt' ? 'desc' : 'asc' },
-    );
-  };
-
-  const pendingManualPayments = (snapshot.manualPaymentSubmissions ?? []).filter(
-    (submission) => submission.status === 'pending_verification' || submission.status === 'under_review',
-  ).length;
-  const pendingPayouts = (snapshot.vendorEscrow?.payoutRequests ?? []).filter(
-    (request) => request.status === 'requested' || request.status === 'approved',
-  ).length;
-  const openTickets = (snapshot.vendorSupportTickets ?? []).filter((ticket) => ticket.status === 'open').length;
-  const unreadInquiries = (snapshot.inquiries ?? []).filter((inquiry) => inquiry.status === 'unread').length;
-
-  const queues = snapshot.todayQueues ?? {};
   const greetingName = bn
     ? snapshot.currentUser?.displayNameBn || snapshot.currentUser?.username || 'অ্যাডমিন'
     : snapshot.currentUser?.displayNameEn || snapshot.currentUser?.username || 'Admin';
@@ -882,106 +831,146 @@ export function AdminCommandDashboard({
     ? hour < 12 ? 'শুভ সকাল' : hour < 17 ? 'শুভ অপরাহ্ন' : 'শুভ সন্ধ্যা'
     : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const queueItems = [
-    {
-      key: 'call',
-      label: bn ? 'কনফার্মেশন কল বাকি' : 'Calls to confirm',
-      count: queues.callToConfirmCount ?? 0,
-      tone: 'warning' as const,
-      icon: <MessageSquare className="w-4 h-4" aria-hidden="true" />,
-      onClick: () => onOpenOrderQueue('CALL_TO_CONFIRM'),
-    },
-    {
-      key: 'address',
-      label: bn ? 'ঠিকানা সংশোধন বাকি' : 'Address to fix',
-      count: queues.fixAddressCount ?? 0,
-      tone: 'danger' as const,
-      icon: <TriangleAlert className="w-4 h-4" aria-hidden="true" />,
-      onClick: () => onOpenOrderQueue('FIX_ADDRESS'),
-    },
-    {
-      key: 'bkash',
-      label: bn ? 'বিকাশ TrxID যাচাই' : 'bKash Trx to verify',
-      count: Math.max(queues.verifyBkashCount ?? 0, pendingManualPayments),
-      tone: 'warning' as const,
-      icon: <Banknote className="w-4 h-4" aria-hidden="true" />,
-      onClick: () => onOpenOrderQueue('VERIFY_BKASH_TRX'),
-    },
-    {
-      key: 'pack',
-      label: bn ? 'প্যাকিংয়ের জন্য প্রস্তুত' : 'Ready to pack',
-      count: queues.readyToPackCount ?? 0,
-      tone: 'info' as const,
-      icon: <Package className="w-4 h-4" aria-hidden="true" />,
-      onClick: () => onOpenOrderQueue('READY_TO_PACK'),
-    },
-    {
-      key: 'courier',
-      label: bn ? 'কুরিয়ার বুকিং বাকি' : 'Courier to book',
-      count: queues.readyToBookCourierCount ?? 0,
-      tone: 'info' as const,
-      icon: <Truck className="w-4 h-4" aria-hidden="true" />,
-      onClick: () => onOpenOrderQueue('READY_TO_BOOK_COURIER'),
-    },
-    {
-      key: 'cod',
-      label: bn ? 'সিওডি রেমিট্যান্স বাকি' : 'COD not remitted',
-      count: queues.awaitingCodRemittanceCount ?? 0,
-      tone: 'warning' as const,
-      icon: <Wallet className="w-4 h-4" aria-hidden="true" />,
-      onClick: () => onOpenOrderQueue('AWAITING_COD_REMITTANCE'),
-    },
-    {
-      key: 'lowstock',
-      label: bn ? 'লো-স্টক ভ্যারিয়েন্ট' : 'Low-stock variants',
-      count: queues.lowStockVariantsCount ?? lowStock.length,
-      tone: 'danger' as const,
-      icon: <Boxes className="w-4 h-4" aria-hidden="true" />,
-      onClick: () => onNavigate('product_studio'),
-    },
-    {
-      key: 'inquiries',
-      label: bn ? 'অপঠিত গ্রাহক বার্তা' : 'Unread customer messages',
-      count: unreadInquiries,
-      tone: 'neutral' as const,
-      icon: <MessageSquare className="w-4 h-4" aria-hidden="true" />,
-      onClick: () => onNavigate('crm_contacts'),
-    },
-  ];
+  const heroStats = showFinance
+    ? [
+        { label: bn ? 'ডেলিভারি বিক্রি' : 'Delivered sales', value: formatPoishaToBdt(pnl.gross, locale) },
+        { label: bn ? 'মোট খরচ' : 'Total cost', value: formatPoishaToBdt(pnl.totalCost, locale) },
+        {
+          label: pnl.isNetLoss ? (bn ? 'নিট লোকসান' : 'Net loss') : bn ? 'নিট লাভ' : 'Net profit',
+          value: formatPoishaToBdt(Math.abs(pnl.net), locale),
+        },
+        { label: bn ? 'হাতে নগদ (আনুমানিক)' : 'Liquid cash (est.)', value: formatPoishaToBdt(liquidCash, locale) },
+      ]
+    : [
+        { label: bn ? 'মোট অর্ডার মূল্য' : 'Order value', value: formatPoishaToBdt(stats.revenueAll, locale) },
+        { label: bn ? 'ডেলিভারি সম্পন্ন' : 'Delivered', value: formatLocaleNumber(stats.delivered, locale) },
+        { label: bn ? 'গড় অর্ডার' : 'Average order', value: formatPoishaToBdt(stats.averageOrderValue, locale) },
+        { label: bn ? 'ফেরতের মূল্য' : 'Returned value', value: formatPoishaToBdt(stats.returnedValue, locale) },
+      ];
 
-  if (!isVendor && isSuperAdmin) {
-    queueItems.push(
-      {
-        key: 'payouts',
-        label: bn ? 'পেআউট অনুরোধ (পরিশোধ নয়)' : 'Payout requests (not paid)',
-        count: pendingPayouts,
-        tone: 'warning' as const,
-        icon: <Wallet className="w-4 h-4" aria-hidden="true" />,
-        onClick: () => onNavigate('vendor_payouts'),
-      },
-      {
-        key: 'kyc',
-        label: bn ? 'ভেন্ডর KYC / অনুরোধ' : 'Vendor KYC & requests',
-        count: (snapshot.pendingVendorKycDocs?.length ?? 0) + (snapshot.pendingVendorRequests?.length ?? 0),
-        tone: 'neutral' as const,
-        icon: <FileCheck2 className="w-4 h-4" aria-hidden="true" />,
-        onClick: () => onNavigate('vendors_hub'),
-      },
-      {
-        key: 'tickets',
-        label: bn ? 'খোলা ভেন্ডর সাপোর্ট টিকিট' : 'Open vendor tickets',
-        count: openTickets,
-        tone: 'neutral' as const,
-        icon: <Users className="w-4 h-4" aria-hidden="true" />,
-        onClick: () => onNavigate('vendors_hub'),
-      },
-    );
-  }
+  const ringValue = showFinance ? costRatio : stats.deliveryRate;
+  const ringText = `${formatLocaleNumber(Math.round(Math.abs(ringValue)), locale)}%`;
+  const ringCaption = showFinance
+    ? bn ? 'খরচ / বিক্রি' : 'cost / sales'
+    : bn ? 'ডেলিভারি সফল' : 'delivered';
+  const ringTone: 'success' | 'warning' | 'danger' = showFinance
+    ? costRatio > 100 ? 'danger' : costRatio > 70 ? 'warning' : 'success'
+    : stats.deliveryRate >= 85 ? 'success' : stats.deliveryRate >= 60 ? 'warning' : 'danger';
 
-  const openQueueCount = queueItems.reduce((total, item) => total + (item.count > 0 ? 1 : 0), 0);
+  const kpis: Array<React.ComponentProps<typeof KpiCard>> = showFinance
+    ? [
+        {
+          index: 0,
+          locale,
+          // Per-delivery profit instead of repeating the headline net figure a third time.
+          label: pnl.isNetLoss ? (bn ? 'প্রতি ডেলিভারিতে ক্ষতি' : 'Loss per delivery') : bn ? 'প্রতি ডেলিভারিতে লাভ' : 'Profit per delivery',
+          value: stats.delivered > 0 ? Math.round(pnl.net / stats.delivered) : 0,
+          money: true,
+          icon: pnl.isNetLoss ? <TrendingDown className="w-4 h-4" aria-hidden="true" /> : <TrendingUp className="w-4 h-4" aria-hidden="true" />,
+          tone: pnl.isNetLoss ? 'danger' : 'success',
+          hint: `${formatLocaleNumber(stats.delivered, locale)} ${bn ? 'ডেলিভারি' : 'deliveries'} · ${formatLocaleNumber(Math.round(Math.abs(pnl.marginPercent)), locale)}% ${bn ? 'মার্জিন' : 'margin'}`,
+        },
+        {
+          index: 1,
+          locale,
+          label: bn ? 'আজকের বিক্রি' : "Today's revenue",
+          value: stats.revenueToday,
+          money: true,
+          icon: <Gauge className="w-4 h-4" aria-hidden="true" />,
+          tone: 'info',
+          delta: <DeltaChip current={stats.revenueToday} previous={stats.revenueYesterday} locale={locale} />,
+          hint: bn ? 'বাতিল বাদে' : 'excl. cancellations',
+          onClick: () => onOpenOrderStatus('ALL'),
+        },
+        {
+          index: 2,
+          locale,
+          label: bn ? 'কুরিয়ারে আটকে সিওডি' : 'COD stuck at courier',
+          value: courierStuck,
+          money: true,
+          icon: <Truck className="w-4 h-4" aria-hidden="true" />,
+          tone: 'warning',
+          hint: bn ? 'মিলান সাপেক্ষ' : 'needs reconciliation',
+          onClick: () => onOpenOrderQueue('AWAITING_COD_REMITTANCE'),
+        },
+        {
+          index: 3,
+          locale,
+          label: bn ? 'ভেন্ডরকে দিতে হবে' : 'Owed to vendors',
+          value: vendorPayable,
+          money: true,
+          icon: <Store className="w-4 h-4" aria-hidden="true" />,
+          tone: 'info',
+          hint: bn ? 'এসক্রোতে' : 'in escrow',
+          onClick: () => onNavigate('vendor_payouts'),
+        },
+        {
+          index: 4,
+          locale,
+          label: bn ? 'লেজারে লেখা খরচ' : 'Logged expenses',
+          value: expenseSummary.total || poisha(snapshot.moneyMapPnl?.totalExpensesPoisha),
+          money: true,
+          icon: <Receipt className="w-4 h-4" aria-hidden="true" />,
+          tone: 'danger',
+          hint: bn ? 'বিজ্ঞাপন, প্যাকেজিং, পরিচালনা' : 'ads, packaging, operations',
+          onClick: () => onNavigate('finance_product360'),
+        },
+        {
+          index: 5,
+          locale,
+          label: bn ? 'হাতে নগদ (আনুমানিক)' : 'Liquid cash (est.)',
+          value: liquidCash,
+          money: true,
+          icon: <Wallet className="w-4 h-4" aria-hidden="true" />,
+          tone: 'success',
+          hint: bn ? 'কুরিয়ার মিলান বাদে' : 'after courier settlement',
+        },
+      ]
+    : [
+        {
+          index: 0,
+          locale,
+          label: bn ? 'মোট অর্ডার মূল্য' : 'Total order value',
+          value: stats.revenueAll,
+          money: true,
+          icon: <ShoppingBag className="w-4 h-4" aria-hidden="true" />,
+          tone: 'info',
+          hint: bn ? 'বাতিল বাদে' : 'excl. cancellations',
+          onClick: () => onOpenOrderStatus('ALL'),
+        },
+        {
+          index: 1,
+          locale,
+          label: bn ? 'আজকের বিক্রি' : "Today's revenue",
+          value: stats.revenueToday,
+          money: true,
+          icon: <Gauge className="w-4 h-4" aria-hidden="true" />,
+          delta: <DeltaChip current={stats.revenueToday} previous={stats.revenueYesterday} locale={locale} />,
+        },
+        {
+          index: 2,
+          locale,
+          label: bn ? 'ডেলিভারি সম্পন্ন' : 'Delivered',
+          value: stats.delivered,
+          icon: <Truck className="w-4 h-4" aria-hidden="true" />,
+          tone: 'success',
+          hint: `${formatLocaleNumber(Math.round(stats.deliveryRate), locale)}% ${bn ? 'সফল' : 'success'}`,
+          onClick: () => onOpenOrderStatus('delivered'),
+        },
+        {
+          index: 3,
+          locale,
+          label: bn ? 'ফেরতের মূল্য' : 'Returned value',
+          value: stats.returnedValue,
+          money: true,
+          icon: <Scale className="w-4 h-4" aria-hidden="true" />,
+          tone: 'danger',
+          hint: `${formatLocaleNumber(stats.returned, locale)} ${bn ? 'টি অর্ডার' : 'orders'}`,
+        },
+      ];
 
   return (
-    <section className="space-y-4 sm:space-y-5" aria-label={bn ? 'অ্যাডমিন ড্যাশবোর্ড' : 'Admin dashboard'}>
+    <section className="space-y-4 sm:space-y-5" aria-label={bn ? 'কোম্পানির আর্থিক ড্যাশবোর্ড' : 'Company money dashboard'}>
       {/* Hero */}
       <motion.div
         initial={reduced ? false : { opacity: 0, y: -10 }}
@@ -1002,76 +991,85 @@ export function AdminCommandDashboard({
           />
         </div>
 
-        <div className="relative space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-              <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/80">
-                <LayoutDashboard className="w-3 h-3" aria-hidden="true" />
-                {bn ? 'কমান্ড ড্যাশবোর্ড' : 'Command dashboard'}
-              </p>
-              <h1 className="text-xl font-bold leading-tight sm:text-2xl">
-                {greeting}, {greetingName}
-              </h1>
-              <p className="flex flex-wrap items-center gap-2 text-xs text-white/75">
-                {roleLabel && <span className="rounded-full bg-white/10 px-2 py-0.5">{roleLabel}</span>}
-                <span className="inline-flex items-center gap-1">
-                  <CalendarClock className="w-3.5 h-3.5" aria-hidden="true" />
-                  {new Intl.DateTimeFormat(bn ? 'bn-BD' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(clock)}
-                </span>
-                {loadedAt && (
-                  <span className="inline-flex items-center gap-1 text-white/60">
-                    <Clock3 className="w-3.5 h-3.5" aria-hidden="true" />
-                    {bn ? 'সর্বশেষ সিঙ্ক ' : 'Synced '}
-                    {new Intl.DateTimeFormat(bn ? 'bn-BD' : 'en-GB', { timeStyle: 'medium' }).format(loadedAt)}
+        <div className="relative grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 space-y-1">
+                <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/80">
+                  <LayoutDashboard className="w-3 h-3" aria-hidden="true" />
+                  {bn ? 'কোম্পানির টাকার হিসাব' : 'Company money'}
+                </p>
+                <h1 className="text-xl font-bold leading-tight sm:text-2xl">
+                  {greeting}, {greetingName}
+                </h1>
+                <p className="flex flex-wrap items-center gap-2 text-xs text-white/75">
+                  {roleLabel && <span className="rounded-full bg-white/10 px-2 py-0.5">{roleLabel}</span>}
+                  <span className="inline-flex items-center gap-1">
+                    <CalendarClock className="w-3.5 h-3.5" aria-hidden="true" />
+                    {new Intl.DateTimeFormat(bn ? 'bn-BD' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(clock)}
                   </span>
-                )}
-              </p>
-            </div>
+                  {loadedAt && (
+                    <span className="inline-flex items-center gap-1 text-white/60">
+                      <Clock3 className="w-3.5 h-3.5" aria-hidden="true" />
+                      {bn ? 'সর্বশেষ সিঙ্ক ' : 'Synced '}
+                      {new Intl.DateTimeFormat(bn ? 'bn-BD' : 'en-GB', { timeStyle: 'medium' }).format(loadedAt)}
+                    </span>
+                  )}
+                </p>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setAutoRefresh((value) => !value)}
-                aria-pressed={autoRefresh}
-                className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold transition-colors cursor-pointer ${autoRefresh ? 'border-emerald-300/50 bg-emerald-400/15 text-emerald-100' : 'border-white/25 text-white/70 hover:border-white/50'}`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${autoRefresh ? 'animate-pulse bg-emerald-300' : 'bg-white/50'}`} aria-hidden="true" />
-                {bn ? 'লাইভ (৩ মিনিট)' : 'Live (3 min)'}
-              </button>
-              <button
-                type="button"
-                onClick={() => void refresh()}
-                disabled={refreshing}
-                className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-white/25 px-3 text-[11px] font-semibold text-white transition-colors hover:border-white/60 disabled:opacity-60 cursor-pointer"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-                {bn ? 'রিফ্রেশ' : 'Refresh'}
-              </button>
-              {!isVendor && (
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => onNavigate('smart_order_entry')}
-                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full bg-white px-3.5 text-[11px] font-bold text-[#0F2A21] transition-transform hover:scale-[1.02] cursor-pointer"
+                  onClick={() => setAutoRefresh((value) => !value)}
+                  aria-pressed={autoRefresh}
+                  className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold transition-colors cursor-pointer ${autoRefresh ? 'border-emerald-300/50 bg-emerald-400/15 text-emerald-100' : 'border-white/25 text-white/70 hover:border-white/50'}`}
                 >
-                  <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
-                  {bn ? 'নতুন অর্ডার' : 'New order'}
+                  <span className={`h-1.5 w-1.5 rounded-full ${autoRefresh ? 'animate-pulse bg-emerald-300' : 'bg-white/50'}`} aria-hidden="true" />
+                  {bn ? 'লাইভ (৩ মিনিট)' : 'Live (3 min)'}
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={() => void refresh()}
+                  disabled={refreshing}
+                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-white/25 px-3 text-[11px] font-semibold text-white transition-colors hover:border-white/60 disabled:opacity-60 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+                  {bn ? 'রিফ্রেশ' : 'Refresh'}
+                </button>
+                {!isVendor && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('smart_order_entry')}
+                    className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full bg-white px-3.5 text-[11px] font-bold text-[#0F2A21] transition-transform hover:scale-[1.02] cursor-pointer"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
+                    {bn ? 'নতুন অর্ডার' : 'New order'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {heroStats.map((item) => (
+                <div key={item.label} className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-2">
+                  <p className="truncate text-[10px] uppercase tracking-[0.06em] text-white/60">{item.label}</p>
+                  <p className="mt-0.5 font-mono text-sm font-bold tabular-nums text-white">{item.value}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {[
-              { label: bn ? 'মোট অর্ডার মূল্য' : 'Total order value', value: formatPoishaToBdt(stats.revenueAll, locale) },
-              { label: bn ? 'অপেক্ষমাণ কাজ' : 'Open work items', value: formatLocaleNumber(openQueueCount, locale) },
-              { label: bn ? 'নিশ্চিতকরণ বাকি' : 'Awaiting confirmation', value: formatLocaleNumber(stats.pendingConfirmation, locale) },
-              { label: bn ? 'ডেলিভারি সফলতার হার' : 'Delivery success', value: `${formatLocaleNumber(Math.round(stats.deliveryRate), locale)}%` },
-            ].map((item) => (
-              <div key={item.label} className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-2">
-                <p className="truncate text-[10px] uppercase tracking-[0.06em] text-white/60">{item.label}</p>
-                <p className="font-mono text-sm font-bold tabular-nums text-white">{item.value}</p>
-              </div>
-            ))}
+          <div className="flex items-center justify-center gap-4 lg:flex-col">
+            <Ring fraction={ringValue / 100} valueText={ringText} caption={ringCaption} tone={ringTone} locale={locale} />
+            <button
+              type="button"
+              onClick={() => onNavigate('today_screen')}
+              className="inline-flex min-h-[36px] items-center gap-1 rounded-full border border-white/25 px-3 text-[11px] font-semibold text-white transition-colors hover:border-white/60 cursor-pointer"
+            >
+              {bn ? 'আজকের কাজ' : "Today's work"}
+              <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
           </div>
         </div>
       </motion.div>
@@ -1089,246 +1087,387 @@ export function AdminCommandDashboard({
       )}
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
-        <KpiCard
-          index={0}
-          locale={locale}
-          label={bn ? 'আজকের বিক্রি' : "Today's revenue"}
-          value={stats.revenueToday}
-          money
-          icon={<TrendingUp className="w-4 h-4" aria-hidden="true" />}
-          tone="success"
-          delta={<DeltaChip current={stats.revenueToday} previous={stats.revenueYesterday} locale={locale} />}
-          hint={bn ? 'বাতিল বাদে' : 'excl. cancellations'}
-          onClick={() => onOpenOrderStatus('ALL')}
-        />
-        <KpiCard
-          index={1}
-          locale={locale}
-          label={bn ? 'আজকের অর্ডার' : "Today's orders"}
-          value={stats.ordersToday}
-          icon={<ClipboardList className="w-4 h-4" aria-hidden="true" />}
-          tone="info"
-          delta={<DeltaChip current={stats.ordersToday} previous={stats.ordersYesterday} locale={locale} />}
-          onClick={() => onNavigate('orders_grid')}
-        />
-        <KpiCard
-          index={2}
-          locale={locale}
-          label={bn ? 'গড় অর্ডার মূল্য' : 'Average order value'}
-          value={stats.averageOrderValue}
-          money
-          icon={<Gauge className="w-4 h-4" aria-hidden="true" />}
-          hint={bn ? 'সব অর্ডারে' : 'across orders'}
-          onClick={() => onNavigate('finance_product360')}
-        />
-        <KpiCard
-          index={3}
-          locale={locale}
-          label={bn ? 'ডেলিভারি সম্পন্ন' : 'Delivered orders'}
-          value={stats.delivered}
-          icon={<Truck className="w-4 h-4" aria-hidden="true" />}
-          tone="success"
-          hint={`${formatLocaleNumber(Math.round(stats.deliveryRate), locale)}% ${bn ? 'সফল' : 'success'}`}
-          onClick={() => onOpenOrderStatus('delivered')}
-        />
-        <KpiCard
-          index={4}
-          locale={locale}
-          label={bn ? 'লো-স্টক ভ্যারিয়েন্ট' : 'Low-stock variants'}
-          value={queues.lowStockVariantsCount ?? lowStock.length}
-          icon={<Boxes className="w-4 h-4" aria-hidden="true" />}
-          tone="danger"
-          hint={bn ? 'পণ্য স্টুডিওতে দেখুন' : 'Open product studio'}
-          onClick={() => onNavigate('product_studio')}
-        />
-        <KpiCard
-          index={5}
-          locale={locale}
-          label={bn ? 'সিওডি আটকে আছে' : 'Stuck COD'}
-          value={snapshot.moneyMapPnl?.totalCourierStuckCodPoisha ?? 0}
-          money
-          icon={<Wallet className="w-4 h-4" aria-hidden="true" />}
-          tone="warning"
-          hint={bn ? 'কুরিয়ারে অমীমাংসিত (হিসাব যাচাই সাপেক্ষ)' : 'Unsettled at courier (needs reconciliation)'}
-          onClick={() => onOpenOrderQueue('AWAITING_COD_REMITTANCE')}
-        />
+      <div className={`grid grid-cols-2 gap-2.5 sm:grid-cols-3 ${showFinance ? 'xl:grid-cols-6' : 'xl:grid-cols-4'}`}>
+        {kpis.map((kpi) => (
+          <KpiCard key={kpi.label} {...kpi} />
+        ))}
       </div>
 
-      {/* Charts */}
-      <div className="grid gap-3 xl:grid-cols-[1.55fr_1fr]">
-        <Card surface="bg" padding="md" className="space-y-2">
-          <TrendChart
-            points={trend}
-            locale={locale}
-            metric={metric}
-            range={range}
-            onMetricChange={setMetric}
-            onRangeChange={setRange}
-          />
-        </Card>
-        <Card surface="bg" padding="md">
-          <StatusDonut segments={statusSegments} total={orders.length} locale={locale} onSelect={onOpenOrderStatus} />
-        </Card>
-      </div>
-
-      {/* Queues + top products */}
-      <div className="grid gap-3 xl:grid-cols-[1.4fr_1fr]">
-        <Card surface="bg" padding="md" className="space-y-3">
-          <div className="flex items-center justify-between gap-2">
+      {/* Profit and loss */}
+      {showFinance && (
+        <Card surface="bg" padding="md" className="space-y-4">
+          <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h2 className="text-sm font-bold text-ink">{bn ? 'আজকের করণীয়' : "Today's work queue"}</h2>
-              <p className="text-[11px] text-muted">{bn ? 'ক্লিক করলে সংশ্লিষ্ট তালিকা খুলবে' : 'Select a tile to open the matching queue'}</p>
+              <h2 className="text-sm font-bold text-ink">{bn ? 'লাভ-ক্ষতির হিসাব' : 'Profit and loss'}</h2>
+              <p className="text-[11px] text-muted">
+                {bn
+                  ? 'শুধু ডেলিভারি হওয়া অর্ডারের টাকা থেকে, সার্ভারের হিসাব অনুযায়ী'
+                  : 'From delivered orders only, following the server-calculated ledger'}
+              </p>
             </div>
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5 font-mono text-[10px] text-muted">
-              <Activity className="w-3 h-3" aria-hidden="true" />
-              {formatLocaleNumber(openQueueCount, locale)}
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-mono text-[11px] font-bold ${pnl.isNetLoss ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'}`}
+            >
+              {pnl.isNetLoss ? <TrendingDown className="w-3.5 h-3.5" aria-hidden="true" /> : <TrendingUp className="w-3.5 h-3.5" aria-hidden="true" />}
+              {pnl.isNetLoss ? (bn ? 'লোকসান ' : 'loss ') : bn ? 'লাভ ' : 'profit '}
+              {formatPoishaToBdt(Math.abs(pnl.net), locale)}
             </span>
           </div>
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {queueItems.map((item, index) => (
-              <QueueTile
-                key={item.key}
-                label={item.label}
-                count={item.count}
-                tone={item.tone}
-                icon={item.icon}
-                onClick={item.onClick}
-                index={index}
-              />
-            ))}
-          </ul>
-        </Card>
 
+          {pnl.isEmpty ? (
+            <p className="py-6 text-center text-xs text-muted">
+              {bn
+                ? 'এখনো ডেলিভারি হওয়া বিক্রি বা খরচ নেই — হিসাব শুরু হলে এখানে লাইন ধরে দেখাবে।'
+                : 'No delivered sales or expenses yet — the breakdown appears as soon as there is money to explain.'}
+            </p>
+          ) : (
+            <div className="space-y-2.5">
+              <PnlLine
+                label={bn ? 'ডেলিভারি হওয়া বিক্রি' : 'Delivered sales'}
+                amount={pnl.gross}
+                share={1}
+                locale={locale}
+                tone="revenue"
+                index={0}
+              />
+              {pnl.costs.map((row, index) => (
+                <PnlLine
+                  key={row.key}
+                  label={PNL_LINE_LABELS[row.key]?.[bn ? 'bn' : 'en'] ?? row.key}
+                  amount={row.amount}
+                  share={row.share}
+                  locale={locale}
+                  tone="cost"
+                  index={index + 1}
+                />
+              ))}
+              <div className="border-t border-border pt-2">
+                <PnlLine
+                  label={pnl.isNetLoss ? (bn ? 'নিট লোকসান' : 'Net loss') : bn ? 'নিট লাভ' : 'Net profit'}
+                  amount={pnl.net}
+                  share={Math.min(1, Math.abs(pnl.net) / Math.max(pnl.gross, 1))}
+                  locale={locale}
+                  tone={pnl.isNetLoss ? 'loss' : 'profit'}
+                  index={pnl.costs.length + 1}
+                  emphasis
+                />
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Money map + remittance */}
+      <div className="grid gap-3 xl:grid-cols-[1.25fr_1fr]">
+        {showFinance && (
+          <Card surface="bg" padding="md" className="space-y-3">
+            <div>
+              <h2 className="text-sm font-bold text-ink">{bn ? 'টাকা এখন কোথায়' : 'Where the money sits'}</h2>
+              <p className="text-[11px] text-muted">
+                {bn ? 'কুরিয়ার, ভেন্ডর এসক্রো ও নিজের হাতে — এক নজরে' : 'Courier, vendor escrow and your own cash, at a glance'}
+              </p>
+            </div>
+            <StackedBar
+              locale={locale}
+              emptyLabel={bn ? 'এখনো কোনো টাকা আটকে নেই।' : 'No money is tied up right now.'}
+              segments={[
+                { key: 'courier', label: bn ? 'কুরিয়ারে সিওডি' : 'COD at courier', value: courierStuck, color: '#D97706' },
+                { key: 'vendor', label: bn ? 'ভেন্ডর এসক্রো' : 'Vendor escrow', value: vendorPayable, color: '#2563EB' },
+                { key: 'cash', label: bn ? 'নিজের নগদ' : 'Own cash', value: liquidCash, color: '#15803D' },
+              ]}
+            />
+            <dl className="grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-3">
+              {[
+                { label: bn ? 'পথে আছে' : 'In transit', value: courierInTransit },
+                { label: bn ? 'ডেলিভারি, মিলান বাকি' : 'Delivered, unsettled', value: courierUnsettled },
+                { label: bn ? 'ভেন্ডর পেআউট হোল্ড' : 'Vendor payout hold', value: poisha(snapshot.moneyMapPnl?.vendorPayoutHoldPoisha) },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg border border-border bg-surface px-2 py-1.5">
+                  <dt className="truncate text-[10px] text-muted">{item.label}</dt>
+                  <dd className="font-mono text-xs font-semibold tabular-nums text-ink">{formatPoishaToBdt(item.value, locale)}</dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
+        )}
+
+        <Card surface="bg" padding="md" className="space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-bold text-ink">{bn ? 'কুরিয়ার মিলান' : 'Courier reconciliation'}</h2>
+              <p className="text-[11px] text-muted">
+                {bn ? 'রেমিট্যান্স লেজার থেকে' : 'From the remittance ledger'}
+              </p>
+            </div>
+            {remittance.flagged > 0 && (
+              <span className="rounded-full bg-danger/10 px-2 py-0.5 font-mono text-[10px] font-bold text-danger">
+                {formatLocaleNumber(remittance.flagged, locale)} {bn ? 'শর্ট' : 'short'}
+              </span>
+            )}
+          </div>
+          {remittance.count === 0 ? (
+            <p className="py-6 text-center text-xs text-muted">
+              {bn ? 'এখনো কোনো রেমিট্যান্স রেকর্ড নেই।' : 'No remittance recorded yet.'}
+            </p>
+          ) : (
+            <dl className="grid grid-cols-2 gap-2 text-[11px]">
+              {[
+                { label: bn ? 'রেমিট্যান্স' : 'Remitted', value: remittance.remitted },
+                { label: bn ? 'কুরিয়ার ফি কাটা' : 'Courier fee', value: remittance.fees },
+                { label: bn ? 'শর্ট পেমেন্ট' : 'Short payment', value: remittance.short },
+                { label: bn ? 'রেকর্ড সংখ্যা' : 'Records', value: remittance.count, count: true },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg border border-border bg-surface px-2 py-1.5">
+                  <dt className="truncate text-[10px] text-muted">{item.label}</dt>
+                  <dd className="font-mono text-xs font-semibold tabular-nums text-ink">
+                    {item.count ? formatLocaleNumber(item.value, locale) : formatPoishaToBdt(item.value, locale)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <button
+            type="button"
+            onClick={() => onNavigate('courier_360')}
+            className="inline-flex min-h-[32px] items-center gap-1 text-[11px] font-semibold text-ink underline underline-offset-4 cursor-pointer"
+          >
+            {bn ? 'কুরিয়ার ৩৬০ খুলুন' : 'Open Courier 360'}
+            <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+          </button>
+        </Card>
+      </div>
+
+      {/* Vendor ledger */}
+      {showVendorLedger && (
         <Card surface="bg" padding="md" className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h2 className="text-sm font-bold text-ink">{bn ? 'সেরা পণ্য' : 'Top products'}</h2>
-              <p className="text-[11px] text-muted">{bn ? 'বাতিল বাদে বিক্রয় থেকে' : 'From non-cancelled sales'}</p>
+              <h2 className="text-sm font-bold text-ink">{bn ? 'ভেন্ডর পাওনা ও পেআউট' : 'Vendor payable and payouts'}</h2>
+              <p className="text-[11px] text-muted">
+                {bn ? 'এসক্রো ব্যালান্স আলাদা ব্যালান্স; অনুরোধ করা পেআউট মানেই পরিশোধ নয়।' : 'Escrow buckets are separate; a requested payout is not a paid one.'}
+              </p>
             </div>
-            <div role="group" aria-label={bn ? 'সাজানোর মাপকাঠি' : 'Ranking metric'} className="flex items-center gap-1 rounded-full border border-border bg-surface p-0.5">
-              <button
-                type="button"
-                onClick={() => setTopMetric('revenue')}
-                aria-pressed={topMetric === 'revenue'}
-                className={`min-h-[28px] rounded-full px-2 text-[10px] font-semibold cursor-pointer ${topMetric === 'revenue' ? 'bg-ink text-white' : 'text-muted'}`}
-              >
-                {bn ? 'টাকা' : 'Revenue'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setTopMetric('quantity')}
-                aria-pressed={topMetric === 'quantity'}
-                className={`min-h-[28px] rounded-full px-2 text-[10px] font-semibold cursor-pointer ${topMetric === 'quantity' ? 'bg-ink text-white' : 'text-muted'}`}
-              >
-                {bn ? 'সংখ্যা' : 'Units'}
-              </button>
+            <div className="flex flex-wrap gap-1.5">
+              {vendorSummary.payoutsByStatus.length === 0 ? (
+                <span className="text-[11px] text-muted">{bn ? 'কোনো পেআউট অনুরোধ নেই' : 'No payout requests'}</span>
+              ) : (
+                vendorSummary.payoutsByStatus.map((row) => (
+                  <span key={row.key} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-[10px]">
+                    <span className="text-muted">{PAYOUT_STATUS_LABELS[row.key]?.[bn ? 'bn' : 'en'] ?? row.key}</span>
+                    <span className="font-mono font-semibold tabular-nums text-ink">{formatPoishaToBdt(row.amount, locale)}</span>
+                    <span className="text-muted">· {formatLocaleNumber(row.count, locale)}</span>
+                  </span>
+                ))
+              )}
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              { label: bn ? 'পেন্ডিং' : 'Pending', value: vendorSummary.totals.pending, color: 'text-muted' },
+              { label: bn ? 'লকড' : 'Locked', value: vendorSummary.totals.locked, color: 'text-info' },
+              { label: bn ? 'ছাড়যোগ্য' : 'Available', value: vendorSummary.totals.available, color: 'text-success' },
+              { label: bn ? 'পেআউট হোল্ড' : 'Payout hold', value: vendorSummary.totals.hold, color: 'text-warning' },
+            ].map((item) => (
+              <div key={item.label} className="rounded-lg border border-border bg-surface px-2 py-1.5">
+                <p className="text-[10px] text-muted">{item.label}</p>
+                <p className={`font-mono text-xs font-bold tabular-nums ${item.color}`}>{formatPoishaToBdt(item.value, locale)}</p>
+              </div>
+            ))}
+          </div>
+
+          {vendorSummary.rows.length === 0 ? (
+            <p className="py-6 text-center text-xs text-muted">{bn ? 'ভেন্ডর তালিকা খালি।' : 'No vendors on the ledger yet.'}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[620px] border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-border text-left text-[10px] uppercase tracking-[0.06em] text-muted">
+                    <th scope="col" className="px-2 py-2 font-semibold">{bn ? 'ভেন্ডর' : 'Vendor'}</th>
+                    <th scope="col" className="px-2 py-2 text-right font-semibold">{bn ? 'পেন্ডিং + লকড' : 'Pending + locked'}</th>
+                    <th scope="col" className="px-2 py-2 text-right font-semibold">{bn ? 'ছাড়যোগ্য' : 'Available'}</th>
+                    <th scope="col" className="px-2 py-2 text-right font-semibold">{bn ? 'হোল্ড' : 'Hold'}</th>
+                    <th scope="col" className="px-2 py-2 text-right font-semibold">{bn ? 'মোট পাওনা' : 'Total owed'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vendorSummary.rows.slice(0, 6).map((row, index) => {
+                    const pending = poisha(row.balance.pendingPoisha);
+                    const locked = poisha(row.balance.lockedPoisha);
+                    const available = poisha(row.balance.availablePoisha);
+                    const hold = poisha(row.balance.payoutHoldPoisha);
+                    const total = pending + locked + available + hold;
+                    return (
+                      <motion.tr
+                        key={row.vendorId || index}
+                        initial={reduced ? false : { opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.25, delay: index * 0.04 }}
+                        className="border-b border-border/60 last:border-b-0"
+                      >
+                        <td className="px-2 py-2">
+                          <span className="block truncate text-ink">{bn ? row.nameBn || row.nameEn || '—' : row.nameEn || row.nameBn || '—'}</span>
+                        </td>
+                        <td className="px-2 py-2 text-right font-mono tabular-nums text-ink">{formatPoishaToBdt(pending + locked, locale)}</td>
+                        <td className="px-2 py-2 text-right font-mono tabular-nums text-success">{formatPoishaToBdt(available, locale)}</td>
+                        <td className="px-2 py-2 text-right font-mono tabular-nums text-warning">{formatPoishaToBdt(hold, locale)}</td>
+                        <td className="px-2 py-2 text-right font-mono font-semibold tabular-nums text-ink">{formatPoishaToBdt(total, locale)}</td>
+                      </motion.tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-border text-[11px]">
+                    <th scope="row" className="px-2 py-2 text-left font-semibold text-muted">{bn ? 'মোট' : 'Total'}</th>
+                    <td className="px-2 py-2 text-right font-mono font-semibold tabular-nums text-ink">
+                      {formatPoishaToBdt(vendorSummary.totals.pending + vendorSummary.totals.locked, locale)}
+                    </td>
+                    <td className="px-2 py-2 text-right font-mono font-semibold tabular-nums text-ink">{formatPoishaToBdt(vendorSummary.totals.available, locale)}</td>
+                    <td className="px-2 py-2 text-right font-mono font-semibold tabular-nums text-ink">{formatPoishaToBdt(vendorSummary.totals.hold, locale)}</td>
+                    <td className="px-2 py-2 text-right font-mono font-semibold tabular-nums text-ink">{formatPoishaToBdt(vendorSummary.totals.payableToVendors, locale)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => onNavigate('vendor_payouts')}
+            className="inline-flex min-h-[32px] items-center gap-1 text-[11px] font-semibold text-ink underline underline-offset-4 cursor-pointer"
+          >
+            {bn ? 'পেআউট লেজার খুলুন' : 'Open payout ledger'}
+            <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+          </button>
+        </Card>
+      )}
+
+      {/* Expenses */}
+      {showExpenses && (
+        <div className="grid gap-3 xl:grid-cols-[1.15fr_1fr]">
+          <Card surface="bg" padding="md" className="space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-bold text-ink">{bn ? 'খরচের বিভাজন' : 'Expense breakdown'}</h2>
+                <p className="text-[11px] text-muted">
+                  {bn ? 'মোট ' : 'Total '}
+                  {formatPoishaToBdt(expenseSummary.total, locale)}
+                  {expenseSummary.recurring > 0 && (
+                    <>
+                      {' · '}
+                      {bn ? 'নিয়মিত ' : 'recurring '}
+                      {formatPoishaToBdt(expenseSummary.recurring, locale)}
+                    </>
+                  )}
+                </p>
+              </div>
+              <div role="group" aria-label={bn ? 'মাসের পরিসর' : 'Month range'} className="flex items-center gap-1 rounded-full border border-border bg-surface p-0.5">
+                {([3, 6, 12] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setExpenseRange(option)}
+                    aria-pressed={expenseRange === option}
+                    className={`min-h-[28px] rounded-full px-2 text-[10px] font-semibold cursor-pointer ${expenseRange === option ? 'bg-ink text-white' : 'text-muted'}`}
+                  >
+                    {formatLocaleNumber(option, locale)}{bn ? 'মাস' : 'm'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <BarList
+              locale={locale}
+              tone="cost"
+              rows={expenseSummary.byCategory.map((row) => ({
+                key: row.key,
+                label: EXPENSE_CATEGORY_LABELS[row.key]?.[bn ? 'bn' : 'en'] ?? row.key,
+                value: row.amount,
+                caption: `${formatPoishaToBdt(row.amount, locale)} · ${formatLocaleNumber(Math.round(row.share * 100), locale)}%`,
+              }))}
+              emptyLabel={bn ? 'এই সময়ে কোনো খরচ নেই।' : 'No expenses in this period.'}
+            />
+            <div>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.07em] text-muted">{bn ? 'মাস অনুযায়ী' : 'By month'}</p>
+              <ExpenseColumns
+                rows={expenseSummary.byMonth.map((row) => ({ key: row.key, label: monthLabel(row.key, locale), value: row.amount }))}
+                locale={locale}
+              />
+            </div>
+          </Card>
+
+          <Card surface="bg" padding="md" className="space-y-3">
+            <div>
+              <h2 className="text-sm font-bold text-ink">{bn ? 'ক্যাম্পেইন খরচ' : 'Campaign spend'}</h2>
+              <p className="text-[11px] text-muted">{bn ? 'সবচেয়ে বেশি খরচ হওয়া ক্যাম্পেইন' : 'Highest spending campaigns'}</p>
+            </div>
+            <BarList
+              locale={locale}
+              tone="cost"
+              rows={expenseSummary.byCampaign.map((row) => ({
+                key: row.key,
+                label: row.channel ? `${row.key} · ${row.channel}` : row.key,
+                value: row.amount,
+                caption: formatPoishaToBdt(row.amount, locale),
+              }))}
+              emptyLabel={bn ? 'ক্যাম্পেইনের নাম দেওয়া খরচ নেই।' : 'No campaign-labelled expenses.'}
+            />
+            {channels.length > 0 && (
+              <div className="space-y-2 border-t border-border pt-2">
+                <p className="text-[10px] uppercase tracking-[0.07em] text-muted">{bn ? 'চ্যানেলভিত্তিক আরওএএস' : 'Channel ROAS'}</p>
+                <ul className="space-y-1.5">
+                  {channels.map((row, index) => (
+                    <motion.li
+                      key={row.key}
+                      initial={reduced ? false : { opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.25, delay: index * 0.04 }}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-2 py-1.5 text-[11px]"
+                    >
+                      <span className="truncate text-ink">{row.key}</span>
+                      <span className="shrink-0 font-mono tabular-nums text-muted">
+                        {formatPoishaToBdt(row.revenue, locale)} · ROAS {row.roas}
+                      </span>
+                      <span className="shrink-0 rounded-full bg-success/10 px-1.5 font-mono text-[10px] font-semibold text-success">
+                        {formatLocaleNumber(row.orders, locale)}
+                      </span>
+                    </motion.li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* Sales analytics */}
+      <Card surface="bg" padding="md" className="space-y-2">
+        <TrendChart
+          points={trend}
+          locale={locale}
+          metric={metric}
+          range={range}
+          onMetricChange={setMetric}
+          onRangeChange={setRange}
+        />
+      </Card>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        <Card surface="bg" padding="md" className="space-y-3">
+          <div>
+            <h2 className="text-sm font-bold text-ink">{bn ? 'সেরা পণ্য' : 'Top products'}</h2>
+            <p className="text-[11px] text-muted">{bn ? 'বাতিল বাদে বিক্রয় থেকে' : 'From non-cancelled sales'}</p>
           </div>
           <BarList
             rows={topProducts.map((row) => ({
               key: row.label,
               label: row.label,
-              value: topMetric === 'revenue' ? row.revenue : row.quantity,
-              caption:
-                topMetric === 'revenue'
-                  ? formatPoishaToBdt(row.revenue, locale)
-                  : `${formatLocaleNumber(row.quantity, locale)} ${bn ? 'পিস' : 'pcs'}`,
+              value: row.revenue,
+              caption: `${formatPoishaToBdt(row.revenue, locale)} · ${formatLocaleNumber(row.quantity, locale)} ${bn ? 'পিস' : 'pcs'}`,
             }))}
             locale={locale}
             emptyLabel={bn ? 'এখনো কোনো পণ্য বিক্রি হয়নি।' : 'No product sales yet.'}
           />
         </Card>
-      </div>
 
-      {/* Recent orders with sorting */}
-      <Card surface="bg" padding="md" className="space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-bold text-ink">{bn ? 'সাম্প্রতিক অর্ডার' : 'Recent orders'}</h2>
-            <p className="text-[11px] text-muted">
-              {bn ? 'কলামে ক্লিক করে সাজান; সার্চ বক্সে খুঁজুন' : 'Select a column to sort, or search below'}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="relative">
-              <span className="sr-only">{bn ? 'অর্ডার খুঁজুন' : 'Search orders'}</span>
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 w-3.5 h-3.5 -translate-y-1/2 text-muted" aria-hidden="true" />
-              <input
-                value={orderQuery}
-                onChange={(event) => setOrderQuery(event.target.value)}
-                placeholder={bn ? 'অর্ডার নম্বর / নাম / জেলা' : 'Order no / name / district'}
-                className="min-h-[34px] w-52 rounded-lg border border-border bg-bg pl-8 pr-2 text-xs text-ink placeholder:text-muted focus:border-ink focus:outline-none"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() => onNavigate('orders_grid')}
-              className="inline-flex min-h-[34px] items-center gap-1 rounded-lg border border-border px-2.5 text-[11px] font-semibold text-ink transition-colors hover:border-ink cursor-pointer"
-            >
-              {bn ? 'সব অর্ডার' : 'All orders'}
-              <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-
-        {recentOrders.length === 0 ? (
-          <p className="py-8 text-center text-xs text-muted">
-            {orders.length ? (bn ? 'কোনো অর্ডার মেলেনি।' : 'No matching orders.') : bn ? 'এখনো কোনো অর্ডার নেই।' : 'No orders yet.'}
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[680px] border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-border text-left">
-                  <SortableHeader label={bn ? 'অর্ডার' : 'Order'} active={orderSortState.key === 'orderNo'} direction={orderSortState.direction} onClick={() => toggleOrderSort('orderNo')} />
-                  <SortableHeader label={bn ? 'গ্রাহক' : 'Customer'} active={orderSortState.key === 'customerName'} direction={orderSortState.direction} onClick={() => toggleOrderSort('customerName')} />
-                  <SortableHeader label={bn ? 'অবস্থা' : 'Status'} active={orderSortState.key === 'status'} direction={orderSortState.direction} onClick={() => toggleOrderSort('status')} />
-                  <SortableHeader label={bn ? 'টাকা' : 'Amount'} align="right" active={orderSortState.key === 'totalPayablePoisha'} direction={orderSortState.direction} onClick={() => toggleOrderSort('totalPayablePoisha')} />
-                  <SortableHeader label={bn ? 'সময়' : 'Placed'} active={orderSortState.key === 'createdAt'} direction={orderSortState.direction} onClick={() => toggleOrderSort('createdAt')} />
-                </tr>
-              </thead>
-              <tbody>
-                {recentOrders.slice(0, 8).map((order, index) => {
-                  const statusLabel = STATUS_LABELS[order.status ?? '']?.[bn ? 'bn' : 'en'] ?? order.status ?? '—';
-                  return (
-                    <motion.tr
-                      key={order.orderNo ?? index}
-                      initial={reduced ? false : { opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.25, delay: index * 0.03 }}
-                      className="border-b border-border/60 last:border-b-0 hover:bg-surface/70"
-                    >
-                      <td className="px-2 py-2 font-mono text-[11px] text-ink">{order.orderNo ?? '—'}</td>
-                      <td className="px-2 py-2">
-                        <span className="block truncate text-ink">{order.customerName ?? '—'}</span>
-                        <span className="block truncate text-[10px] text-muted">{order.districtNameBn ?? ''}</span>
-                      </td>
-                      <td className="px-2 py-2">
-                        <span
-                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                          style={{ backgroundColor: `${STATUS_COLORS[order.status ?? ''] ?? '#9CA3AF'}1A`, color: STATUS_COLORS[order.status ?? ''] ?? '#6B7280' }}
-                        >
-                          {statusLabel}
-                        </span>
-                      </td>
-                      <td className="px-2 py-2 text-right font-mono tabular-nums text-ink">{formatPoishaToBdt(safePoisha(order.totalPayablePoisha), locale)}</td>
-                      <td className="px-2 py-2 text-muted">
-                        {order.createdAt
-                          ? new Intl.DateTimeFormat(bn ? 'bn-BD' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(order.createdAt))
-                          : '—'}
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-
-      {/* Bottom insight row */}
-      <div className="grid gap-3 lg:grid-cols-3">
         <Card surface="bg" padding="md" className="space-y-3">
           <div>
             <h2 className="text-sm font-bold text-ink">{bn ? 'শীর্ষ জেলা' : 'Top districts'}</h2>
@@ -1338,97 +1477,157 @@ export function AdminCommandDashboard({
         </Card>
 
         <Card surface="bg" padding="md" className="space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-bold text-ink">{bn ? 'ইনভেন্টরি অ্যালার্ট' : 'Inventory alerts'}</h2>
-              <p className="text-[11px] text-muted">{bn ? 'সবচেয়ে কম স্টক আগে' : 'Lowest stock first'}</p>
-            </div>
-            <button type="button" onClick={() => onNavigate('product_studio')} className="text-[11px] font-semibold text-ink underline underline-offset-4 cursor-pointer">
-              {bn ? 'স্টুডিও' : 'Studio'}
-            </button>
-          </div>
-          {lowStock.length === 0 ? (
-            <p className="py-6 text-center text-xs text-muted">{bn ? 'স্টক পরিস্থিতি স্বাভাবিক।' : 'Stock levels look healthy.'}</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {lowStock.map((row) => (
-                <li key={row.key} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5">
-                  <span className="min-w-0">
-                    <span className="block truncate text-xs text-ink">{row.label || '—'}</span>
-                    <span className="block truncate text-[10px] text-muted">{row.caption}</span>
-                  </span>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] font-bold ${row.stock <= 0 ? 'bg-danger/10 text-danger' : 'bg-warning/10 text-warning'}`}>
-                    {formatLocaleNumber(row.stock, locale)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        <Card surface="bg" padding="md" className="space-y-3">
           <div>
-            <h2 className="text-sm font-bold text-ink">{bn ? 'সাম্প্রতিক অ্যাক্টিভিটি' : 'Recent activity'}</h2>
-            <p className="text-[11px] text-muted">{bn ? 'অডিট লগ (পরিবর্তনযোগ্য নয়)' : 'Immutable audit log'}</p>
+            <h2 className="text-sm font-bold text-ink">{bn ? 'অর্ডার পরিণতি' : 'Order outcomes'}</h2>
+            <p className="text-[11px] text-muted">{bn ? 'টাকার অঙ্কে, মোট দৃশ্যমান অর্ডার' : 'In taka, across visible orders'}</p>
           </div>
-          {(snapshot.auditLogs ?? []).length === 0 ? (
-            <p className="py-6 text-center text-xs text-muted">{bn ? 'কোনো লগ নেই।' : 'No activity recorded.'}</p>
-          ) : (
-            <ol className="space-y-2">
-              {[...(snapshot.auditLogs ?? [])]
-                .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
-                .slice(0, 5)
-                .map((entry) => (
-                  <li key={entry.id ?? `${entry.createdAt}-${entry.actionCode}`} className="flex gap-2">
-                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-success" aria-hidden="true" />
-                    <span className="min-w-0">
-                      <span className="block truncate text-xs text-ink">{entry.summaryBn || entry.actionCode || '—'}</span>
-                      <span className="block text-[10px] text-muted">
-                        {entry.actorUsername ?? 'system'}
-                        {entry.createdAt
-                          ? ` · ${new Intl.DateTimeFormat(bn ? 'bn-BD' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(entry.createdAt))}`
-                          : ''}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-            </ol>
-          )}
+          <ul className="space-y-2">
+            {[
+              { key: 'delivered', label: bn ? 'ডেলিভারি সম্পন্ন' : 'Delivered', count: stats.delivered, value: stats.deliveredValue, tone: 'text-success', color: '#15803D' },
+              { key: 'returned', label: bn ? 'ফেরত' : 'Returned', count: stats.returned, value: stats.returnedValue, tone: 'text-danger', color: '#DC2626' },
+              { key: 'cancelled', label: bn ? 'বাতিল' : 'Cancelled', count: stats.cancelled, value: stats.cancelledValue, tone: 'text-muted', color: '#6B7280' },
+            ].map((row, index) => {
+              const max = Math.max(1, stats.deliveredValue, stats.returnedValue, stats.cancelledValue);
+              return (
+                <li key={row.key} className="space-y-1">
+                  <div className="flex items-baseline justify-between gap-2 text-xs">
+                    <button type="button" onClick={() => onOpenOrderStatus(row.key)} className="truncate text-left text-ink underline-offset-4 hover:underline cursor-pointer">
+                      {row.label}
+                    </button>
+                    <span className={`shrink-0 font-mono tabular-nums ${row.tone}`}>{formatPoishaToBdt(row.value, locale)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: row.color }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.max(3, (row.value / max) * 100)}%` }}
+                        transition={{ duration: 0.6, delay: index * 0.05 }}
+                      />
+                    </div>
+                    <span className="w-10 shrink-0 text-right font-mono text-[10px] text-muted">{formatLocaleNumber(row.count, locale)}</span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="text-[10px] text-muted">
+            {bn ? 'অর্ডার তালিকা ও স্ট্যাটাস ফিল্টার "আজকের কাজ" স্ক্রিনে।' : 'Order lists and status filters live on the Today screen.'}
+          </p>
         </Card>
       </div>
 
-      {/* Quick actions */}
-      <Card surface="bg" padding="md" className="space-y-3">
-        <h2 className="text-sm font-bold text-ink">{bn ? 'দ্রুত কাজ' : 'Quick actions'}</h2>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
-          {[
-            { key: 'smart_order_entry', label: bn ? 'নতুন অর্ডার' : 'New order', icon: <ShoppingBag className="w-4 h-4" aria-hidden="true" />, hidden: isVendor },
-            { key: 'orders_grid', label: bn ? 'অর্ডার গ্রিড' : 'Orders grid', icon: <ClipboardList className="w-4 h-4" aria-hidden="true" /> },
-            { key: 'product_studio', label: bn ? 'প্রোডাক্ট স্টুডিও' : 'Product studio', icon: <Package className="w-4 h-4" aria-hidden="true" /> },
-            { key: 'print_engine', label: bn ? 'প্রিন্ট' : 'Print labels', icon: <Printer className="w-4 h-4" aria-hidden="true" /> },
-            { key: 'courier_360', label: bn ? 'কুরিয়ার ৩৬০' : 'Courier 360', icon: <Truck className="w-4 h-4" aria-hidden="true" /> },
-            { key: 'vendors_hub', label: bn ? 'ভেন্ডর হাব' : 'Vendors hub', icon: <Store className="w-4 h-4" aria-hidden="true" />, hidden: isVendor },
-          ]
-            .filter((action) => !action.hidden)
-            .map((action) => (
-              <button
-                key={action.key}
-                type="button"
-                onClick={() => onNavigate(action.key as AdminTabKey)}
-                className="inline-flex min-h-[52px] items-center gap-2 rounded-[var(--radius-md)] border border-border bg-bg px-3 text-left text-xs font-semibold text-ink transition-colors hover:border-ink hover:bg-surface cursor-pointer"
-              >
-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface">{action.icon}</span>
-                <span className="truncate">{action.label}</span>
-              </button>
-            ))}
+      {/* Single pointer to the action screen, so the two screens never look alike */}
+      <Card surface="surface" padding="md" className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-sm font-bold text-ink">{bn ? 'করণীয় দেখতে চান?' : 'Looking for the action list?'}</h2>
+          <p className="text-[11px] text-muted">
+            {bn
+              ? 'কল কনফার্ম, ঠিকানা সংশোধন, বিকাশ যাচাই, প্যাকিং ও কুরিয়ার বুকিং — সব "আজকের কাজ" স্ক্রিনে। এখানে শুধু টাকার হিসাব।'
+              : 'Calls, address fixes, bKash checks, packing and courier booking all live on the Today screen. This screen is only about money.'}
+          </p>
         </div>
-        <p className="text-[10px] text-muted">
-          {bn
-            ? 'সব সংখ্যা রোল-অনুযায়ী ফিল্টার করা ওয়ার্কস্পেস স্ন্যাপশট থেকে; কুরিয়ার বুকিং ও লাইভ ট্র্যাকিং এখনো সংযুক্ত নয়, আর সিওডি/পেআউট সংখ্যা যাচাই সাপেক্ষ।'
-            : 'Every figure comes from the role-filtered workspace snapshot; courier booking and live tracking are not connected, and COD/payout numbers require reconciliation.'}
-        </p>
+        <button
+          type="button"
+          onClick={() => onNavigate('today_screen')}
+          className="inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full bg-ink px-4 text-xs font-bold text-white transition-transform hover:scale-[1.02] cursor-pointer"
+        >
+          <Users className="w-4 h-4" aria-hidden="true" />
+          {bn ? 'আজকের কাজ খুলুন' : "Open Today's work"}
+          <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
       </Card>
+
+      <p className="px-1 text-[10px] leading-relaxed text-muted">
+        {bn
+          ? 'সব সংখ্যা রোল-অনুযায়ী ফিল্টার করা ওয়ার্কস্পেস স্ন্যাপশট থেকে, কোনো অনুমান যোগ করা হয়নি। কুরিয়ার বুকিং ও লাইভ ট্র্যাকিং এখনো সংযুক্ত নয়, তাই সিওডি, পেআউট ও নগদ সংখ্যা মিলান সাপেক্ষ।'
+          : 'Every figure comes from the role-filtered workspace snapshot with no estimated additions. Courier booking and live tracking are not connected yet, so COD, payout and cash numbers require reconciliation.'}
+      </p>
     </section>
+  );
+}
+
+/* ------------------------------------------------------------------ P&L line */
+
+function PnlLine({
+  label,
+  amount,
+  share,
+  locale,
+  tone,
+  index,
+  emphasis,
+}: {
+  label: string;
+  amount: number;
+  share: number;
+  locale: Locale;
+  tone: 'revenue' | 'cost' | 'profit' | 'loss';
+  index: number;
+  emphasis?: boolean;
+}) {
+  const animated = useAnimatedNumber(amount);
+  const tones: Record<string, string> = {
+    revenue: 'bg-gradient-to-r from-[#15803D] to-[#7FD1A8]',
+    cost: 'bg-gradient-to-r from-[#D97706] to-[#F87171]',
+    profit: 'bg-gradient-to-r from-[#15803D] to-[#0EA5E9]',
+    loss: 'bg-gradient-to-r from-[#DC2626] to-[#F87171]',
+  };
+  const text: Record<string, string> = {
+    revenue: 'text-ink',
+    cost: 'text-ink',
+    profit: 'text-success',
+    loss: 'text-danger',
+  };
+  return (
+    <div className="space-y-1">
+      <div className="flex items-baseline justify-between gap-2 text-xs">
+        <span className={`truncate ${emphasis ? 'font-bold text-ink' : 'text-muted'}`}>{label}</span>
+        <span className={`shrink-0 font-mono tabular-nums ${emphasis ? 'text-sm font-bold' : 'font-semibold'} ${text[tone]}`}>
+          {formatPoishaToBdt(Math.round(animated) || 0, locale)}
+        </span>
+      </div>
+      <div className={`overflow-hidden rounded-full bg-surface ${emphasis ? 'h-2.5' : 'h-1.5'}`}>
+        <motion.div
+          className={`h-full rounded-full ${tones[tone]}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.max(3, Math.min(100, share * 100))}%` }}
+          transition={{ duration: 0.7, ease: 'easeOut', delay: index * 0.05 }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ expense columns */
+
+function ExpenseColumns({
+  rows,
+  locale,
+}: {
+  rows: Array<{ key: string; label: string; value: number }>;
+  locale: Locale;
+}) {
+  const reduced = useReducedMotion();
+  const max = Math.max(1, ...rows.map((row) => row.value));
+  if (!rows.length) return null;
+  return (
+    <ul className="flex h-28 items-end gap-1.5" aria-label={locale === 'bn' ? 'মাস অনুযায়ী খরচ' : 'Expenses by month'}>
+      {rows.map((row, index) => (
+        <li key={row.key} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1">
+          <motion.div
+            className="w-full rounded-t-md bg-gradient-to-t from-[#D97706] to-[#F59E0B]"
+            initial={reduced ? false : { height: 0 }}
+            animate={{ height: `${Math.max(4, (row.value / max) * 82)}px` }}
+            transition={{ duration: 0.6, delay: index * 0.05, ease: 'easeOut' }}
+            title={`${row.label}: ${formatPoishaToBdt(row.value, locale)}`}
+          />
+          <span className="w-full truncate text-center text-[9px] text-muted">{row.label}</span>
+          <span className="sr-only">{formatPoishaToBdt(row.value, locale)}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

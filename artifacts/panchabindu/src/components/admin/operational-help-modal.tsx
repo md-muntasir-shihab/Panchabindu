@@ -17,31 +17,35 @@ interface OperationalHelpGuideItem {
 
 export const OPERATIONAL_HELP_GUIDE: Record<AdminTabKey, OperationalHelpGuideItem> = {
   dashboard: {
-    titleBn: 'কমান্ড ড্যাশবোর্ড (Command Dashboard)',
-    titleEn: 'Command Dashboard',
-    purposeBn: 'আজকের বিক্রি, অর্ডারের অবস্থা, করণীয় কাজ, স্টক ও সাম্প্রতিক অর্ডার এক পর্দায় দেখে সিদ্ধান্ত নিন। প্রতিটি সংখ্যা আপনার রোল-অনুযায়ী ফিল্টার করা ডেটা থেকে আসে।',
-    purposeEn: 'See today’s revenue, order status mix, open work, stock pressure and recent orders on one screen. Every number comes from the role-filtered workspace data you are allowed to see.',
+    titleBn: 'টাকার হিসাব (Money Dashboard)',
+    titleEn: 'Money Dashboard',
+    purposeBn:
+      'কোম্পানির টাকা কোথায় আছে, কোথা থেকে আসছে আর কোথায় যাচ্ছে — লাভ-ক্ষতি, কুরিয়ারে আটকে সিওডি, ভেন্ডরের পাওনা, খরচ ও নগদ এক পর্দায়। করণীয় কাজের তালিকা আলাদা “আজকের কাজ” স্ক্রিনে।',
+    purposeEn:
+      'Where the company money is, where it comes from and where it goes — profit and loss, COD stuck at the courier, vendor payable, expenses and cash on one screen. The action queues live on the separate Today screen.',
     workflowBn: [
-      '১. উপরের কার্ডে ক্লিক করে সংশ্লিষ্ট অর্ডার তালিকা বা পেজে যান (আজকের বিক্রি, লো-স্টক, সিওডি ইত্যাদি)।',
-      '২. “আজকের করণীয়” টালি থেকে কল কনফার্মেশন, ঠিকানা সংশোধন, বিকাশ যাচাই বা কুরিয়ার বুকিংয়ের কিউ খুলুন।',
-      '৩. সাম্প্রতিক অর্ডার টেবিলে কলাম হেডারে ক্লিক করে সাজান; সার্চ বক্সে অর্ডার নম্বর, নাম বা জেলা লিখে খুঁজুন।',
-      '৪. “লাইভ” চালু থাকলে প্রতি মিনিটে ডেটা নিজে নিজে রিফ্রেশ হয়; ম্যানুয়াল রিফ্রেশেও সর্বশেষ স্ন্যাপশট আসে।',
+      '১. “লাভ-ক্ষতির হিসাব” থেকে ডেলিভারি বিক্রি, সাপ্লায়ার পাওনা, বিজ্ঞাপন, প্যাকেজিং ও অন্যান্য খরচের লাইন দেখুন — নিট লাভ/লোকসান নিচে।',
+      '২. “টাকা এখন কোথায়” ও “কুরিয়ার মিলান” থেকে বোঝে নিন কত টাকা কুরিয়ারে আটকে আছে, ভেন্ডর এসক্রোতে কত, আর নিজের হাতে কত।',
+      '৩. “ভেন্ডর পাওনা ও পেআউট” টেবিলে পেন্ডিং, লকড, ছাড়যোগ্য ও হোল্ড আলাদা করে দেখুন; অনুরোধ করা পেআউট মানেই পরিশোধ নয়।',
+      '৪. “খরচের বিভাজন” ও “ক্যাম্পেইন খরচ” থেকে মাস অনুযায়ী খরচের প্রবণতা দেখুন; চ্যানেলভিত্তিক ROAS পাশে আছে।',
+      '৫. করণীয় (কল, ঠিকানা, বিকাশ, প্যাকিং, কুরিয়ার) দেখতে নিচের “আজকের কাজ খুলুন” বাটন চাপুন।',
     ],
     workflowEn: [
-      '1. Use the summary cards to jump to the matching order list or page (today’s revenue, low stock, COD, and so on).',
-      '2. Open the call confirmation, address fix, bKash verification or courier booking queue from the work-queue tiles.',
-      '3. Sort the recent-orders table from its column headers and search by order number, customer name or district.',
-      '4. With “Live” on, the snapshot refreshes every minute; the refresh button pulls the latest one immediately.',
+      '1. Read the profit-and-loss lines (delivered sales, supplier payable, ads, packaging, others) with net profit or loss below them.',
+      '2. Use “Where the money sits” and “Courier reconciliation” to see how much is stuck at the courier, held in vendor escrow, or actually in hand.',
+      '3. In “Vendor payable and payouts”, pending, locked, available and hold are separate buckets; a requested payout is not a paid one.',
+      '4. “Expense breakdown” and “Campaign spend” show monthly expense trend, with channel ROAS alongside.',
+      '5. Press “Open Today’s work” for the action queues (calls, address, bKash, packing, courier).',
     ],
     rulesBn: [
-      '• ড্যাশবোর্ড কোনো নতুন ডেটা তৈরি করে না; শুধু বিদ্যমান ওয়ার্কস্পেস স্ন্যাপশট ও অডিট লগ দেখায়।',
-      '• বাতিল ও ফেরত আসা অর্ডার বিক্রির হিসাবে ধরা হয় না; সিওডি ও পেআউট সংখ্যা হিসাব মিলিয়ে দেখার আগে প্রাপ্ত টাকা নয়।',
-      '• কুরিয়ার বুকিং ও লাইভ ট্র্যাকিং এখনো সংযুক্ত নয়, তাই এখানে কোনো ডেলিভারি প্রতিশ্রুতি দেখানো হয় না।',
+      '• সব সংখ্যা রোল-অনুযায়ী ফিল্টার করা ওয়ার্কস্পেস স্ন্যাপশট থেকে; কোনো অনুমানযোগ্য সংখ্যা যোগ করা হয় না।',
+      '• বাতিল ও ফেরত আসা অর্ডার বিক্রির হিসাবে ধরা হয় না; সিওডি, পেআউট ও নগদ সংখ্যা মিলিয়ে দেখার আগে প্রাপ্ত টাকা নয়।',
+      '• লাভ-ক্ষতির হিসাব শুধু ডেলিভারি হওয়া অর্ডারের টাকা থেকে হয়; খরচ লেজারে যা লেখা আছে তাই ধরা হয়।',
     ],
     rulesEn: [
-      '• The dashboard creates no data; it only presents the existing workspace snapshot and audit log.',
-      '• Cancelled and returned orders are excluded from revenue; COD and payout figures are not received funds until reconciled.',
-      '• Courier booking and live tracking are not connected, so no delivery promise is shown here.',
+      '• Every figure comes from the role-filtered workspace snapshot; no estimated number is added.',
+      '• Cancelled and returned orders are excluded from revenue; COD, payout and cash figures are not received money until reconciled.',
+      '• Profit and loss only counts delivered orders, and expenses are exactly what the expense ledger records.',
     ],
   },
   crm_contacts: {
