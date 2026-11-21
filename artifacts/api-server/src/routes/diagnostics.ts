@@ -1,6 +1,7 @@
 import { Router, type RequestHandler } from 'express';
 import { createHash } from 'node:crypto';
 import { probeRuntimePersistence, usesPostgresPersistence } from '../../imported/src/lib/db/runtime-persistence';
+import { isObservabilityEnabled } from '../lib/observability';
 
 /**
  * Unauthenticated, read-only deployment diagnostics.
@@ -39,6 +40,11 @@ const readOnly: RequestHandler = async (_req, res) => {
       ),
     },
     database: persistence,
+    observability: {
+      sentryConfigured: Boolean(process.env.SENTRY_DSN?.trim()),
+      sentryActive: isObservabilityEnabled(),
+      tracesSampleRate: process.env.SENTRY_TRACES_SAMPLE_RATE ?? '0.1',
+    },
     requestBodyContract: 'buffered-with-15s-watchdog',
     elapsedMs: Math.round(performance.now() - started),
   });

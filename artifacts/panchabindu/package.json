@@ -76,5 +76,8 @@
     "wouter": "^3.3.5",
     "zod": "^4.6.7",
     "zustand": "^5.1.0"
+  },
+  "dependencies": {
+    "@sentry/react": "^11.16.0"
   }
 }

@@ -4,7 +4,11 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { importedRouter } from "./routes/imported";
+import { initServerObservability, attachServerErrorReporting } from "./lib/observability";
 import diagnosticsRouter from "./routes/diagnostics";
+
+// Cold start: initialise error reporting before any route runs (no-op without SENTRY_DSN).
+initServerObservability();
 
 const app: Express = express();
 app.disable("x-powered-by");
@@ -71,5 +75,8 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 app.use("/api", router);
+
+// Registered last so it sees every route above it; a no-op when observability is disabled.
+attachServerErrorReporting(app);
 
 export default app;

@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck, tests and builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.9
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck every workspace
+        run: pnpm run typecheck
+
+      - name: Build the API bundle
+        run: pnpm run build --workspace=@workspace/api-server
+
+      # The serverless handler test imports the built bundle, so it runs after the build above.
+      - name: Serverless handler and request-body contract
+        run: node --test scripts/src/vercel-handler.test.mjs
+
+      - name: Domain logic (money, validators, persistence)
+        run: npx tsx --tsconfig artifacts/api-server/tsconfig.json --test artifacts/api-server/imported/src/lib/money.test.ts artifacts/api-server/imported/src/lib/validators/validators.test.ts artifacts/api-server/imported/src/lib/db/runtime-persistence.test.ts
+
+      - name: Admin dashboard render checks
+        run: pnpm run test:dashboard
+
+      - name: Build the storefront bundle
+        run: pnpm run build --workspace=@workspace/panchabindu
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
