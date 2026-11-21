@@ -38,6 +38,8 @@ import {
   ChevronRight,
   ChevronDown,
   X,
+  LogOut,
+  CircleUserRound,
   TrendingUp,
   ArrowUpRight,
 } from 'lucide-react';
@@ -146,6 +148,59 @@ export function StorefrontShell({
     setIsSearchFocused(false);
   }, [pathname]);
   const [isCategoryAccordionOpen, setIsCategoryAccordionOpen] = React.useState(true);
+
+  // Account menu: sign-in state is read lazily so guests never see a log-out action.
+  const [accountMenuOpen, setAccountMenuOpen] = React.useState(false);
+  const [accountIdentifier, setAccountIdentifier] = React.useState<string | null>(null);
+  const [accountBusy, setAccountBusy] = React.useState(false);
+
+  const openAccountMenu = React.useCallback(() => {
+    setAccountMenuOpen((open) => !open);
+    void (async () => {
+      try {
+        const response = await fetch('/api/account/orders', { cache: 'no-store' });
+        const data = (await response.json()) as {
+          authenticated?: boolean;
+          identifier?: string;
+          customerPhone?: string;
+          customerEmail?: string | null;
+        };
+        setAccountIdentifier(
+          data.authenticated ? (data.identifier || data.customerPhone || data.customerEmail || '') : null,
+        );
+      } catch {
+        setAccountIdentifier(null);
+      }
+    })();
+  }, []);
+
+  const handleShellLogout = React.useCallback(async () => {
+    if (accountBusy) return;
+    setAccountBusy(true);
+    try {
+      await fetch('/api/account/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+    } catch {
+      // Ignore: the menu is reset either way so a stale session cannot trap the shopper.
+    } finally {
+      setAccountBusy(false);
+      setAccountMenuOpen(false);
+      setAccountIdentifier(null);
+      window.location.assign('/account');
+    }
+  }, [accountBusy]);
+
+  React.useEffect(() => {
+    if (!accountMenuOpen) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setAccountMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [accountMenuOpen]);
 
   // Live Instant Search State
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
@@ -630,19 +685,81 @@ export function StorefrontShell({
                 <span className="sr-only"> — {uiText("Toggle language", locale)}</span>
               </button>
 
-              {/* Circular Account Trigger */}
-              <Link
-                href="/account"
-                aria-label={dict.common.account}
-                className={`hidden sm:inline-flex items-center justify-center w-11 h-11 rounded-full border transition-colors ${
-                  pathname === '/account'
-                    ? 'border-[#1B4332] bg-[#1B4332] text-white'
-                    : 'border-[#1B4332] text-[#1B4332] hover:bg-[#1B4332] hover:text-white'
-                }`}
-                title={dict.common.account}
-              >
-                <User className="w-4 h-4" aria-hidden="true" />
-              </Link>
+              {/* Circular Account Trigger + Menu (sign in / sign out) */}
+              <div className="relative hidden sm:block">
+                <button
+                  type="button"
+                  onClick={openAccountMenu}
+                  aria-label={dict.common.account}
+                  aria-haspopup="menu"
+                  aria-expanded={accountMenuOpen}
+                  className={`inline-flex items-center justify-center w-11 h-11 rounded-full border transition-colors cursor-pointer ${
+                    accountMenuOpen || pathname === '/account'
+                      ? 'border-[#1B4332] bg-[#1B4332] text-white'
+                      : 'border-[#1B4332] text-[#1B4332] hover:bg-[#1B4332] hover:text-white'
+                  }`}
+                  title={dict.common.account}
+                >
+                  {accountIdentifier ? (
+                    <CircleUserRound className="w-4 h-4" aria-hidden="true" />
+                  ) : (
+                    <User className="w-4 h-4" aria-hidden="true" />
+                  )}
+                </button>
+                {accountMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      aria-hidden="true"
+                      onClick={() => setAccountMenuOpen(false)}
+                    />
+                    <div
+                      role="menu"
+                      aria-label={dict.common.account}
+                      className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-xl border border-[#E5E2D9] bg-[#FDFCF8] shadow-[0_18px_40px_rgba(27,67,50,0.14)]"
+                    >
+                      <p className="border-b border-[#E5E2D9] px-3.5 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#1B4332]/60 break-all">
+                        {accountIdentifier
+                          ? accountIdentifier
+                          : locale === 'bn'
+                          ? 'লগইন করা নেই'
+                          : 'Not signed in'}
+                      </p>
+                      <Link
+                        role="menuitem"
+                        href="/account"
+                        onClick={() => setAccountMenuOpen(false)}
+                        className="flex min-h-[44px] w-full items-center gap-2 px-3.5 text-sm text-[#1B4332] transition-colors hover:bg-[#F2EFE9]"
+                      >
+                        <User className="w-4 h-4" aria-hidden="true" />
+                        {locale === 'bn' ? 'আমার অ্যাকাউন্ট' : 'My account'}
+                      </Link>
+                      {accountIdentifier ? (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={handleShellLogout}
+                          disabled={accountBusy}
+                          className="flex min-h-[44px] w-full items-center gap-2 border-t border-[#E5E2D9] px-3.5 text-sm text-[#A84A28] transition-colors hover:bg-[#F2EFE9] disabled:opacity-60 cursor-pointer"
+                        >
+                          <LogOut className="w-4 h-4" aria-hidden="true" />
+                          {locale === 'bn' ? 'লগ আউট' : 'Log out'}
+                        </button>
+                      ) : (
+                        <Link
+                          role="menuitem"
+                          href="/account"
+                          onClick={() => setAccountMenuOpen(false)}
+                          className="flex min-h-[44px] w-full items-center gap-2 border-t border-[#E5E2D9] px-3.5 text-sm text-[#1B4332] transition-colors hover:bg-[#F2EFE9]"
+                        >
+                          <LogOut className="w-4 h-4 rotate-180" aria-hidden="true" />
+                          {locale === 'bn' ? 'লগ ইন করুন' : 'Sign in'}
+                        </Link>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
 
               {/* Minimal Wishlist Icon Trigger */}
               <Link

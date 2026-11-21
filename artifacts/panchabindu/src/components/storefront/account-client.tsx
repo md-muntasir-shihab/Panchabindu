@@ -23,6 +23,7 @@ import {
   Trash2,
   RotateCcw,
   CheckCircle2,
+  LogOut,
   Copy,
   Check,
   ChevronDown,
@@ -140,6 +141,8 @@ export function AccountClient({
   const [newPassword, setNewPassword] = React.useState('');
   const [registering, setRegistering] = React.useState(false);
   const [verifiedPhone, setVerifiedPhone] = React.useState<string | null>(null);
+  // Signed-in state must not depend on a phone number: email accounts have no phone yet.
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [authBypassed, setAuthBypassed] = React.useState(false);
   const [customerOrders, setCustomerOrders] = React.useState<PublicOrderTrackingDTO[]>([]);
   const [authLoading, setAuthLoading] = React.useState(false);
@@ -216,6 +219,7 @@ export function AccountClient({
         if (controller.signal.aborted) return;
         if (data.authenticated && typeof data.customerPhone === 'string') {
           setVerifiedPhone(data.identifier || data.customerPhone);
+          setIsAuthenticated(true);
           setAuthBypassed(Boolean(data.authBypassed));
           setLoginPhone(data.identifier || data.customerPhone);
           setCustomerOrders(Array.isArray(data.orders) ? data.orders : []);
@@ -292,6 +296,8 @@ export function AccountClient({
       if (!response.ok || !data.success) throw new Error('Logout failed');
       queryClient.removeQueries({ predicate: query => query.queryKey[0] === 'page-data' && String(query.queryKey[1]).startsWith('/order-tracking') });
       setVerifiedPhone(null);
+      setIsAuthenticated(false);
+      setAuthBypassed(false);
       setLoginPhone('');
       setCustomerOrders([]);
       setDeliveryProfile(null);
@@ -323,6 +329,7 @@ export function AccountClient({
       else {
         queryClient.removeQueries({ predicate: query => query.queryKey[0] === 'page-data' && String(query.queryKey[1]).startsWith('/order-tracking') });
         setVerifiedPhone(data.identifier || identifier);
+        setIsAuthenticated(true);
         setCustomerOrders(data.orders ?? []);
         const prof = data.deliveryProfile ?? null;
         setDeliveryProfile(prof);
@@ -361,7 +368,7 @@ export function AccountClient({
       const res = await fetch('/api/account/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'change_password', currentPassword: password, newPassword }) });
       const data = await res.json() as { success: boolean; errorBn?: string; errorEn?: string };
       if (!res.ok || !data.success) setAuthError((locale === 'bn' ? data.errorBn : data.errorEn) ?? 'Password change failed.');
-      else { setVerifiedPhone(null); setCustomerOrders([]); setDeliveryProfile(null); setPassword(''); setNewPassword(''); setAuthNotice(locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তিত হয়েছে। আবার লগইন করুন।' : 'Password changed. Please sign in again.'); }
+      else { setVerifiedPhone(null); setIsAuthenticated(false); setCustomerOrders([]); setDeliveryProfile(null); setPassword(''); setNewPassword(''); setAuthNotice(locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তিত হয়েছে। আবার লগইন করুন।' : 'Password changed. Please sign in again.'); }
     } catch { setAuthError(locale === 'bn' ? 'নেটওয়ার্ক ত্রুটি।' : 'Network error.'); }
     finally { setAuthLoading(false); }
   };
@@ -702,11 +709,11 @@ export function AccountClient({
               <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 sm:pb-4 border-b border-[#E5E2D9] text-xs">
                 <span
                   className={`font-mono text-[11px] uppercase tracking-[0.06em] inline-flex items-center gap-1.5 ${
-                    verifiedPhone ? 'text-[#15803D]' : 'text-[#1B4332]/60'
+                    isAuthenticated ? 'text-[#15803D]' : 'text-[#1B4332]/60'
                   }`}
                 >
-                  {verifiedPhone && <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />}
-                  {verifiedPhone
+                  {isAuthenticated && <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />}
+                  {isAuthenticated
                     ? locale === 'bn'
                       ? 'লগইন করা আছে'
                       : 'Signed in'
@@ -715,14 +722,15 @@ export function AccountClient({
                     : 'Guest Account'}
                 </span>
 
-                {verifiedPhone && !authBypassed && (
+                {isAuthenticated && (
                   <button
                     type="button"
                     onClick={handleLogout}
                     disabled={authLoading}
-                    className="inline-flex min-h-[36px] items-center px-1 font-mono text-[11px] uppercase tracking-[0.08em] text-[#A84A28] hover:underline underline-offset-4 cursor-pointer disabled:opacity-50"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[#A84A28]/45 px-3 font-mono text-[11px] uppercase tracking-[0.08em] text-[#A84A28] transition-colors hover:border-[#A84A28] hover:bg-[#A84A28] hover:text-white disabled:opacity-50 cursor-pointer"
                   >
-                    {locale === 'bn' ? 'লগআউট' : 'Log out'}
+                    <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+                    {locale === 'bn' ? 'লগ আউট' : 'Log out'}
                   </button>
                 )}
               </div>
