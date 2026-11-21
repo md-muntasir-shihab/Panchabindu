@@ -28,7 +28,7 @@
     "test:print:browser": "node scripts/src/admin-print-engine-audit-browser.mjs",
     "test:catalog:api": "node --test scripts/src/admin-product-studio-audit-api.test.mjs",
     "test:catalog:browser": "node scripts/src/admin-product-studio-audit-browser.mjs",
-    "test:dashboard": "tsx --tsconfig artifacts/panchabindu/tsconfig.json --test artifacts/panchabindu/src/components/admin/admin-command-dashboard.test.ts"
+    "test:dashboard": "tsx --tsconfig artifacts/panchabindu/tsconfig.json --test artifacts/panchabindu/src/components/admin/admin-command-dashboard.test.ts scripts/src/dashboard-summary.test.ts"
   },
   "dependencies": {
     "@replit/connectors-sdk": "^0.7.0"

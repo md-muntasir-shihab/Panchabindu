@@ -1950,17 +1950,14 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       groupLabelEn: '01. Overview',
       items: [
         {
+          // The dashboard is the money view; work queues stay on the Today screen below so the two
+          // pages never show the same tiles twice.
           key: 'dashboard',
-          labelBn: 'ড্যাশবোর্ড',
-          labelEn: 'Dashboard',
-          fullLabelBn: 'কমান্ড ড্যাশবোর্ড',
-          fullLabelEn: 'Command Dashboard',
+          labelBn: 'টাকার হিসাব',
+          labelEn: 'Money',
+          fullLabelBn: 'কোম্পানির আর্থিক ড্যাশবোর্ড',
+          fullLabelEn: 'Company Money Dashboard',
           icon: <LayoutDashboard className="w-4 h-4 shrink-0" aria-hidden="true" />,
-          badge:
-            (today.callToConfirmCount ?? 0) + (today.fixAddressCount ?? 0) + (today.verifyBkashCount ?? 0) > 0
-              ? (today.callToConfirmCount ?? 0) + (today.fixAddressCount ?? 0) + (today.verifyBkashCount ?? 0)
-              : undefined,
-          badgeStatus: 'danger',
         },
         {
           key: 'today_screen',
@@ -2644,16 +2641,23 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
               <div>
                 <h1 className="text-xl font-bold text-ink">
-                  {locale === 'bn'
-                    ? 'আজকের অপারেশনাল কমান্ড স্ক্রিন (Today Screen)'
-                    : 'Today Operational Command Screen'}
+                  {locale === 'bn' ? 'আজকের কাজ' : "Today's work"}
                 </h1>
                 <p className="text-xs text-muted">
                   {locale === 'bn'
-                    ? 'অনুমতিপ্রাপ্ত অর্ডার ও স্টকের বর্তমান অবস্থা দেখুন এবং বাকি কাজ বেছে নিন।'
-                    : 'Review the current state of orders and stock available to your role, and choose pending work.'}
+                    ? 'আজকের করণীয়: কল কনফার্ম, ঠিকানা সংশোধন, বিকাশ যাচাই, প্যাকিং ও কুরিয়ার বুকিং — এখানেই।'
+                    : "Today's action queues: calls, address fixes, bKash checks, packing and courier booking live here."}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('dashboard')}
+                className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-[11px] font-semibold text-ink transition-colors hover:border-ink cursor-pointer"
+              >
+                <Wallet className="w-3.5 h-3.5" aria-hidden="true" />
+                {locale === 'bn' ? 'টাকার হিসাব দেখুন' : 'View the money'}
+                <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
             </div>
 
             <Card surface="surface" padding="md" className="space-y-3" >
