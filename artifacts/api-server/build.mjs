@@ -105,7 +105,10 @@ async function buildAll() {
       "puppeteer-core",
       "electron",
     ],
-    sourcemap: "linked",
+    // Source maps triple the bundle size (22 MB of the 36 MB dist) and every one of
+    // the 11 Vercel functions ships a copy of this output. Keep them locally for
+    // debugging, skip them in the Vercel build where they only waste artifact space.
+    sourcemap: process.env.VERCEL ? false : "linked",
     plugins: [
       // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
       esbuildPluginPino({ transports: ["pino-pretty"] })
