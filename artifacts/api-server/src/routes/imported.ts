@@ -1,5 +1,4 @@
 import { Router, type RequestHandler } from 'express';
-import { Readable } from 'node:stream';
 import { ApiRequest } from '../../imported/src/lib/http';
 import * as account from '../../imported/app/api/account/orders/route';
 import * as adminAuth from '../../imported/app/api/admin/auth/route';
@@ -42,18 +41,124 @@ import { pageData, manifest, sitemap, robots } from './page-data';
 
 type Handler = (request: ApiRequest, context: { params: Promise<Record<string, string>> }) => Promise<Response>;
 
+const BODY_LIMIT_BYTES = 8 * 1024 * 1024;
+// A serverless platform may hand over a body that never ends (already consumed upstream).
+// Bind every read so a write request can never hang the browser indefinitely.
+const BODY_READ_TIMEOUT_MS = (() => {
+  const configured = Number(process.env.IMPORTED_BODY_TIMEOUT_MS);
+  return Number.isFinite(configured) && configured > 0 ? configured : 15_000;
+})();
+
+type PlatformRequest = Parameters<RequestHandler>[0] & {
+  body?: unknown;
+  rawBody?: unknown;
+  readableEnded?: boolean;
+  destroyed?: boolean;
+  readable?: boolean;
+};
+
+function declaredPayloadBytes(req: PlatformRequest): number {
+  const length = Number(req.headers['content-length']);
+  if (Number.isFinite(length) && length > 0) return length;
+  return req.headers['transfer-encoding'] ? -1 : 0;
+}
+
+/** Rebuild raw bytes when the platform already parsed the body for us. */
+function platformBodyBytes(req: PlatformRequest): Uint8Array | null {
+  const candidates = [req.rawBody, req.body];
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) continue;
+    if (Buffer.isBuffer(candidate)) return candidate;
+    if (candidate instanceof Uint8Array) return candidate;
+    if (typeof candidate === 'string') return Buffer.from(candidate);
+    if (typeof candidate === 'object') {
+      const contentType = String(req.headers['content-type'] || '');
+      // Re-serialising is only lossless for JSON/urlencoded bodies; never rewrite signed bytes.
+      if (contentType.includes('application/json')) return Buffer.from(JSON.stringify(candidate));
+      if (contentType.includes('application/x-www-form-urlencoded')) {
+        return Buffer.from(new URLSearchParams(candidate as Record<string, string>).toString());
+      }
+      return null;
+    }
+  }
+  return null;
+}
+
+async function readIncomingBody(req: PlatformRequest): Promise<{ bytes: Uint8Array; unavailable: boolean }> {
+  const declared = declaredPayloadBytes(req);
+  const parsed = declared > 0 ? platformBodyBytes(req) : null;
+  if (parsed) return { bytes: parsed, unavailable: false };
+
+  // The stream is already drained: nothing left to read, so never wait on an 'end' that never comes.
+  if (req.readableEnded || req.destroyed || req.readable === false) {
+    return { bytes: platformBodyBytes(req) ?? Buffer.alloc(0), unavailable: declared > 0 };
+  }
+
+  const read = await new Promise<{ bytes: Uint8Array; failure?: Error }>((resolve) => {
+    const chunks: Buffer[] = [];
+    let size = 0;
+    let settled = false;
+    const finish = (failure?: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      req.off('data', onData);
+      req.off('end', onEnd);
+      req.off('error', onError);
+      resolve({ bytes: Buffer.concat(chunks), failure });
+    };
+    const timer = setTimeout(() => finish(new Error('BODY_READ_TIMEOUT')), BODY_READ_TIMEOUT_MS);
+    timer.unref?.();
+    const onData = (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > BODY_LIMIT_BYTES) {
+        finish(new Error('PAYLOAD_TOO_LARGE'));
+        return;
+      }
+      chunks.push(chunk);
+    };
+    const onEnd = () => finish();
+    const onError = (error: Error) => finish(error);
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('error', onError);
+    req.resume?.();
+  });
+
+  if (read.failure) {
+    req.log?.error({ err: read.failure, declaredBytes: declared, url: req.originalUrl }, 'Imported application body read failed');
+    if (read.failure.message === 'PAYLOAD_TOO_LARGE') {
+      return { bytes: Buffer.alloc(0), unavailable: false };
+    }
+    return { bytes: read.bytes, unavailable: true };
+  }
+  return { bytes: read.bytes, unavailable: declared > 0 && read.bytes.length === 0 };
+}
+
 /** Preserve original raw request bytes (including webhook signatures and multipart uploads). */
 function adapt(handler: Handler): RequestHandler {
   return async (req, res) => {
     try {
       const headers = new Headers();
       for (const [key, value] of Object.entries(req.headers)) {
+        // The body is re-buffered below, so never forward framing headers that could contradict it.
+        if (key === 'content-length' || key === 'transfer-encoding') continue;
         if (Array.isArray(value)) value.forEach(v => headers.append(key, v));
         else if (value !== undefined) headers.set(key, value);
       }
       const init: RequestInit & { duplex?: 'half' } = { method: req.method, headers };
       if (!['GET', 'HEAD'].includes(req.method)) {
-        init.body = Readable.toWeb(req) as ReadableStream;
+        const { bytes, unavailable } = await readIncomingBody(req as PlatformRequest);
+        if (unavailable) {
+          res.status(400).json({
+            success: false,
+            code: 'REQUEST_BODY_UNAVAILABLE',
+            errorBn: 'অনুরোধের তথ্য সার্ভারে পৌঁছায়নি। পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।',
+            errorEn: 'The request body did not reach the server. Refresh the page and try again.',
+          });
+          return;
+        }
+        init.body = bytes;
         init.duplex = 'half';
       }
       const request = new ApiRequest(`${req.protocol}://${req.get('host')}${req.originalUrl}`, init);

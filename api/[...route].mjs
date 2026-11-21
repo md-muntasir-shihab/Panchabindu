@@ -3,7 +3,8 @@
 // webhook signatures and multipart uploads.
 import app from '../artifacts/api-server/dist/app.mjs';
 
-export const config = { api: { bodyParser: false } };
+// Bound the invocation: a stuck write must surface as a 504 instead of an endless spinner.
+export const config = { api: { bodyParser: false }, maxDuration: 60 };
 
 export default function handler(req, res) {
   // The public metadata routes are rewritten to this function by vercel.json.

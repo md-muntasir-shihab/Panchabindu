@@ -1,4 +1,5 @@
 'use client';
+import { fetchWithTimeout, isTimeoutError } from '@/lib/http/fetch-with-timeout';
 import { localizedFetch as fetch } from '@/lib/i18n/localized-fetch';
 import { uiText } from '@/lib/i18n/ui-text';
 
@@ -140,6 +141,12 @@ export function CheckoutClient({
 
   React.useEffect(() => {
     const controller = new AbortController();
+    let disposed = false;
+    // A blocked or very slow session probe must never leave checkout permanently disabled.
+    const sessionTimer = window.setTimeout(
+      () => controller.abort(new DOMException('Request timed out', 'TimeoutError')),
+      15_000,
+    );
     fetch('/api/account/orders', { cache: 'no-store', signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error('Account unavailable');
@@ -191,10 +198,12 @@ export function CheckoutClient({
           }
         }
       })
-      .catch(() => {
-        if (!controller.signal.aborted) setSessionStatus('error');
-      });
-    return () => controller.abort();
+      .catch((error) => {
+        if (disposed) return;
+        setSessionStatus(isTimeoutError(error) ? 'anonymous' : 'error');
+      })
+      .finally(() => window.clearTimeout(sessionTimer));
+    return () => { disposed = true; window.clearTimeout(sessionTimer); controller.abort(); };
   }, []);
 
   React.useEffect(() => {
@@ -400,7 +409,7 @@ export function CheckoutClient({
             : activeDeliveryCalc.finalChargePoisha
           : 0;
 
-      const response = await fetch('/api/orders', {
+      const response = await fetchWithTimeout('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -470,8 +479,10 @@ export function CheckoutClient({
 
       clearCart();
       navigate(`/order-tracking/${encodeURIComponent(trackingRef)}`);
-    } catch {
-      setSubmitError('নেটওয়ার্ক ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।');
+    } catch (error) {
+      setSubmitError(isTimeoutError(error)
+        ? 'সার্ভার সময়মতো সাড়া দেয়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।'
+        : 'নেটওয়ার্ক ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।');
       setIsSubmitting(false);
     } finally {
       submittingRef.current = false;

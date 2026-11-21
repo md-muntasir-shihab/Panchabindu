@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { importedRouter } from "./routes/imported";
+import diagnosticsRouter from "./routes/diagnostics";
 
 const app: Express = express();
 app.disable("x-powered-by");
@@ -64,6 +65,7 @@ app.use(
     credentials: true,
   }),
 );
+app.use("/api/diagnostics", diagnosticsRouter);
 app.use(importedRouter);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));

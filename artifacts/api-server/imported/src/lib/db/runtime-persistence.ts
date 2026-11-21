@@ -73,13 +73,92 @@ export function writeRuntimeDocument(file: string, value: object): boolean {
   return true;
 }
 
+function databaseTimeoutMs(): number {
+  const configured = Number(process.env.SUPABASE_REQUEST_TIMEOUT_MS);
+  return Number.isFinite(configured) && configured > 0 ? configured : 20_000;
+}
+
+/**
+ * A stalled connection must surface as an error, never as a request that never returns.
+ * Serverless platforms otherwise keep the browser waiting until the whole invocation is killed.
+ */
+function timeoutFetch(input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]): Promise<Response> {
+  const timeout = AbortSignal.timeout(databaseTimeoutMs());
+  const combined = init?.signal
+    ? (typeof AbortSignal.any === 'function' ? AbortSignal.any([init.signal, timeout]) : timeout)
+    : timeout;
+  return fetch(input, { ...init, signal: combined });
+}
+
 function databaseClient() {
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!url || !key || url.includes('your-project-ref') || key.includes('your-supabase')) {
     throw new Error('DATABASE_NOT_CONFIGURED');
   }
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  // A quoted or whitespace-padded key produces a 401 from PostgREST; strip the wrapping quotes.
+  const normalizedKey = key.replace(/^(['"])(.*)\1$/, '$2').trim();
+  return createClient(url.trim(), normalizedKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: timeoutFetch },
+  });
+}
+
+export interface RuntimePersistenceProbe {
+  mode: 'postgres' | 'json';
+  configured: boolean;
+  supabaseHost: string | null;
+  keyPresent: boolean;
+  readMs: number | null;
+  revision: string | null;
+  documents: number | null;
+  stateBytes: number | null;
+  error: string | null;
+}
+
+let cachedProbe: { at: number; value: RuntimePersistenceProbe } | null = null;
+
+/** Read-only health probe for the diagnostics endpoint (never writes a revision). */
+export async function probeRuntimePersistence(): Promise<RuntimePersistenceProbe> {
+  if (cachedProbe && Date.now() - cachedProbe.at < 5_000) return cachedProbe.value;
+  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+  const mode = usesPostgresPersistence() ? 'postgres' : 'json';
+  let supabaseHost: string | null = null;
+  try { supabaseHost = url ? new URL(url).host : null; } catch { supabaseHost = null; }
+  const probe: RuntimePersistenceProbe = {
+    mode,
+    configured: false,
+    supabaseHost,
+    keyPresent: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
+    readMs: null,
+    revision: null,
+    documents: null,
+    stateBytes: null,
+    error: null,
+  };
+  if (mode !== 'postgres') {
+    probe.error = 'NOT_POSTGRES_MODE';
+  } else {
+    try {
+      const client = databaseClient();
+      probe.configured = true;
+      const started = performance.now();
+      const { data, error } = await client.rpc('erp_read_runtime_state');
+      probe.readMs = Math.round(performance.now() - started);
+      if (error) probe.error = String(error.message || 'READ_FAILED').slice(0, 200);
+      else if (data?.documents) {
+        probe.revision = data.revision ? String(data.revision) : null;
+        probe.documents = Object.keys(data.documents).length;
+        probe.stateBytes = JSON.stringify(data.documents).length;
+      } else {
+        probe.error = 'DATABASE_INITIALIZATION_REQUIRED';
+      }
+    } catch (error) {
+      probe.error = (error instanceof Error ? error.message : 'PROBE_FAILED').slice(0, 200);
+    }
+  }
+  cachedProbe = { at: Date.now(), value: probe };
+  return probe;
 }
 
 function restoreLocalJournal(directory: string): void {
