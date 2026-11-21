@@ -67,3 +67,7 @@ Thumbs.db
 
 # Legacy Next.js app kept only in git history
 .migration-backup/
+
+# Orphaned AI-studio export assets (never referenced by any build)
+/public/
+/src/
