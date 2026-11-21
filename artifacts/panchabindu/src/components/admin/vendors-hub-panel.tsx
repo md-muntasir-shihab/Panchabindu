@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ClipboardCheck,
+  Coins,
   ExternalLink,
   GitFork,
   KeyRound,
@@ -41,6 +42,8 @@ import { localizedField } from '@/lib/i18n/ui-text';
 import { Badge, Button, EmptyState, Skeleton } from '@/components/ui/primitives';
 import { ResponsiveSheet } from '@/components/ui/responsive-sheet';
 import { KycPanel } from '@/components/vendor/kyc-panel';
+import { VendorLedgerSupplyPanel } from './vendor-ledger-supply-panel';
+import { summarizeSupply, type SupplySummary } from './vendor-ledger-summary';
 import { cn } from '@/lib/utils';
 import type { OrderGridRowDTO, VendorEscrowBalance } from '@/types/domain';
 import type {
@@ -65,7 +68,7 @@ import type {
   VendorCapabilityFlags,
 } from '@/lib/vendor/vendor-types';
 
-export type VendorsHubSubTab = 'directory' | 'approvals' | 'performance';
+export type VendorsHubSubTab = 'directory' | 'approvals' | 'ledger_supply' | 'performance';
 
 export interface VendorsHubPanelProps {
   locale: 'bn' | 'en';
@@ -102,6 +105,7 @@ export interface VendorsHubPanelProps {
 type ProfileTab =
   | 'overview'
   | 'permissions'
+  | 'ledger_supply'
   | 'products_stock'
   | 'orders_payouts'
   | 'kyc_onboarding';
@@ -421,6 +425,19 @@ export function VendorsHubPanel({
     });
   }, [controlSnapshot, payoutRequests, product360, vendorScorecards, vendorsEscrow]);
 
+  // Stock still missing per vendor, so the directory itself shows who owes goods (not only taka).
+  const supplyByVendor = React.useMemo(() => {
+    const grouped = new Map<string, typeof lots>();
+    for (const lot of lots) {
+      const list = grouped.get(lot.vendorId) ?? [];
+      list.push(lot);
+      grouped.set(lot.vendorId, list);
+    }
+    const summary = new Map<string, SupplySummary>();
+    for (const [vendorId, vendorLots] of grouped) summary.set(vendorId, summarizeSupply(vendorLots));
+    return summary;
+  }, [lots]);
+
   const filteredVendors = React.useMemo(() => {
     const q = search.trim().toLowerCase();
     return unifiedVendors.filter((row) => {
@@ -586,6 +603,13 @@ export function VendorsHubPanel({
               highlight: totalApprovalsPending > 0,
             },
             {
+              key: 'ledger_supply' as const,
+              label: t('হিসাব ও সরবরাহ', 'Money & Supply'),
+              icon: <Coins className="h-4 w-4 shrink-0" aria-hidden="true" />,
+              count: pendingLots.length,
+              highlight: pendingLots.length > 0,
+            },
+            {
               key: 'performance' as const,
               label: t('SLA স্কোরকার্ড ও সাপ্লাই', 'SLA & Multi-Supplier'),
               icon: <Award className="h-4 w-4 shrink-0" aria-hidden="true" />,
@@ -717,7 +741,7 @@ export function VendorsHubPanel({
             />
           ) : (
             <div className="overflow-x-auto rounded-[var(--radius-md)] border border-border bg-bg">
-              <table className="w-full min-w-[780px] border-collapse text-left text-xs">
+              <table className="w-full min-w-[900px] border-collapse text-left text-xs">
                 <thead>
                   <tr className="border-b border-border bg-surface/70 text-[11px] font-semibold text-muted">
                     <th className="py-2.5 px-3.5">{t('ভেন্ডর', 'Vendor')}</th>
@@ -725,6 +749,7 @@ export function VendorsHubPanel({
                     <th className="py-2.5 px-3 text-right">{t('পণ্য (স্টক)', 'Products (Stock)')}</th>
                     <th className="py-2.5 px-3 text-right">{t('মোট অর্জিত', 'Total Earned')}</th>
                     <th className="py-2.5 px-3 text-right">{t('পরিশোধিত', 'Paid')}</th>
+                    <th className="py-2.5 px-3 text-right">{t('মাল বাকি', 'Stock pending')}</th>
                     <th className="py-2.5 px-3 text-right">{t('পাওনা / উত্তোলনযোগ্য', 'Owed / Withdrawable')}</th>
                     <th className="py-2.5 px-3 text-right">SLA</th>
                     <th className="py-2.5 px-3.5 text-right">{t('অ্যাকশন', 'Action')}</th>
@@ -783,6 +808,36 @@ export function VendorsHubPanel({
 
                         <td className="py-3 px-3 text-right font-mono tabular-nums text-success whitespace-nowrap">
                           {money(row.paidPoisha)}
+                        </td>
+
+                        <td className="py-3 px-3 text-right whitespace-nowrap">
+                          {(() => {
+                            const supply = supplyByVendor.get(row.profile.vendorId);
+                            if (!supply || supply.lotCount === 0) {
+                              return <span className="text-muted">—</span>;
+                            }
+                            if (supply.unresolvedQty === 0) {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-success">
+                                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                  {t('সব পেয়েছি', 'all received')}
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="inline-flex flex-col items-end">
+                                <span className="font-mono font-semibold tabular-nums text-danger">
+                                  {formatLocaleNumber(supply.unresolvedQty, locale)} {t('পিস', 'pcs')}
+                                </span>
+                                <span className="text-[10px] text-muted">
+                                  {money(supply.pendingValuePoisha)}
+                                  {supply.oldestPendingDays > 0
+                                    ? ` · ${formatLocaleNumber(supply.oldestPendingDays, locale)} ${t('দিন', 'd')}`
+                                    : ''}
+                                </span>
+                              </span>
+                            );
+                          })()}
                         </td>
 
                         <td className="py-3 px-3 text-right font-mono tabular-nums whitespace-nowrap">
@@ -1285,6 +1340,25 @@ export function VendorsHubPanel({
       {/* ====================================================================
           SUB-TAB 3: SLA SCORECARD & MULTI-SUPPLIER OFFERS
          ==================================================================== */}
+      {/* ====================================================================
+          SUB-TAB: MONEY TIMELINE & STOCK SUPPLY (received / not received)
+         ==================================================================== */}
+      {subTab === 'ledger_supply' && (
+        <VendorLedgerSupplyPanel
+          locale={locale}
+          vendors={vendorsEscrow}
+          ledgerEntries={ledgerEntries}
+          payoutRequests={payoutRequests}
+          lots={lots}
+          variant="hub"
+          onOpenVendor={(vendorId) => {
+            setDrawerVendorId(vendorId);
+            setProfileTab('ledger_supply');
+          }}
+          onViewPayouts={(vendorId) => onOpenPayoutsForVendor(vendorId, 'register')}
+        />
+      )}
+
       {subTab === 'performance' && (
         <div className="space-y-6">
           <div className="space-y-3">
@@ -1765,6 +1839,7 @@ function Vendor360ProfileBody({
           [
             ['overview', t('তথ্য ও শর্তাবলি', 'Profile & Terms')],
             ['permissions', t('পোর্টাল অনুমতি', 'Permissions')],
+            ['ledger_supply', t('হিসাব ও সরবরাহ', 'Money & Supply')],
             [
               'products_stock',
               t(`পণ্য ও চালান (${products.length}/${lots.length})`, `Products & Stock (${products.length}/${lots.length})`),
@@ -2151,6 +2226,19 @@ function Vendor360ProfileBody({
       )}
 
       {/* TAB C: PRODUCTS & CONSIGNMENT STOCK INTAKE HISTORY */}
+      {activeTab === 'ledger_supply' && (
+        <VendorLedgerSupplyPanel
+          locale={locale}
+          vendors={[{ profile: vendor.profile, balance: vendor.balance }]}
+          ledgerEntries={ledger}
+          payoutRequests={payouts}
+          lots={lots}
+          variant="vendor"
+          vendorId={vendor.profile.vendorId}
+          onViewPayouts={() => onOpenPayouts('register')}
+        />
+      )}
+
       {activeTab === 'products_stock' && (
         <div className="space-y-5">
           {/* Supplied Products */}
