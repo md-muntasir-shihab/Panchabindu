@@ -9,9 +9,10 @@ import { LocalizedText } from '@/components/ui/localized-text';
 // src/components/storefront/homepage-client.tsx
 // Botanical Heritage Calm — Modern Minimalist Storefront Homepage
 // Features:
-//   - Spacious Split Editorial Hero on Soft Linen (#F2EFE9) with Forest Green (#1B4332) CTA
+//   - Spacious Split Editorial Hero on Soft Linen with accent CTA
 //   - Hairline-Divided 4-Pillar Trust Strip (COD, 64-District Courier, 7-Day Returns, Artisan Provenance)
 //   - Unified Interactive Collection Showcase with Frameless 4:5 Portrait Product Grid (Zero Duplication)
+// Design tokens only (tokens.css): no arbitrary hex in UI (HOME-01).
 
 import * as React from 'react';
 import { Link } from 'wouter';
@@ -178,19 +179,19 @@ export function HomepageClient({
       <div className="max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-10 py-4 sm:py-10 pb-8 sm:pb-16 flex flex-col gap-9 sm:gap-18">
         {/* 1. BOTANICAL EDITORIAL HERO (Variation 2) */}
         {browsing && visible('hero') && hero && (
-          <section style={position('hero')} className="rounded-xl bg-[#F9F8F3] overflow-hidden border border-[#E5E2D9]">
+          <section style={position('hero')} className="rounded-xl bg-surface overflow-hidden border border-border">
             <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch">
               <div className="lg:col-span-6 p-5 sm:p-12 lg:p-16 flex flex-col justify-center space-y-4 sm:space-y-6">
                 {/* Quiet Editorial Kicker */}
-                <p className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.14em] text-[#A84A28]">
+                <p className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.14em] text-[var(--store-terracotta)]">
                   {locale === 'bn' ? hero.badgeBn : hero.badgeEn}
                 </p>
 
-                <h1 className="font-display text-3xl sm:text-5xl lg:text-[3.6rem] font-bold tracking-tight text-[#1B4332] leading-[1.1] max-w-2xl [text-wrap:balance]">
+                <h1 className="font-display text-3xl sm:text-5xl lg:text-[3.6rem] font-bold tracking-tight text-ink leading-[1.1] max-w-2xl [text-wrap:balance]">
                   {locale === 'bn' ? hero.titleBn : hero.titleEn}
                 </h1>
 
-                <p className="text-sm sm:text-base text-[#1B4332]/75 max-w-xl leading-relaxed text-left">
+                <p className="text-sm sm:text-base text-ink/75 max-w-xl leading-relaxed text-left">
                   {locale === 'bn' ? hero.subtitleBn : hero.subtitleEn}
                 </p>
                 {hero.ctaHref && safeStoreUrl(hero.ctaHref) && (
@@ -214,7 +215,7 @@ export function HomepageClient({
                         className={`h-11 min-w-11 rounded-lg font-mono border text-xs cursor-pointer transition-colors ${
                           index === heroIndex
                             ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)]'
-                            : 'border-[#E5E2D9] text-[#1B4332] hover:border-[#1B4332]'
+                            : 'border-border text-ink hover:border-accent'
                         }`}
                       >
                         {formatLocaleNumber(index + 1, locale)}
@@ -224,7 +225,7 @@ export function HomepageClient({
                 )}
               </div>
 
-              <div className="lg:col-span-6 relative aspect-[4/3] sm:aspect-[5/4] lg:aspect-auto lg:min-h-[480px] w-full border-t lg:border-t-0 lg:border-l border-[#E5E2D9] bg-[#FDFCF8]">
+              <div className="lg:col-span-6 relative aspect-[4/3] sm:aspect-[5/4] lg:aspect-auto lg:min-h-[480px] w-full border-t lg:border-t-0 lg:border-l border-border bg-bg">
                 {hero.imageUrl && (
                   <img
                     src={productImageUrl(hero.imageUrl)}
@@ -248,21 +249,21 @@ export function HomepageClient({
           <section
             style={position('trust_strip')}
             aria-label={uiText("Trust guarantees", locale)}
-            className="border-y border-[#E5E2D9] py-5 sm:py-6 grid grid-cols-2 lg:grid-cols-4 gap-x-3.5 gap-y-5 sm:gap-6"
+            className="border-y border-border py-5 sm:py-6 grid grid-cols-2 lg:grid-cols-4 gap-x-3.5 gap-y-5 sm:gap-6"
           >
             {siteSettings.trustBadges.map((badge, idx) => {
               const icons = [Truck, RotateCcw, ShieldCheck, CheckCircle2];
               const IconComp = icons[idx % icons.length] ?? ShieldCheck;
               return (
                 <div key={badge.id} className="flex items-start gap-2.5 sm:gap-3.5 min-w-0">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-full border border-[#E5E2D9] bg-[#F9F8F3] text-[#1B4332] flex items-center justify-center">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-full border border-border bg-surface text-ink flex items-center justify-center">
                     <IconComp className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
-                    <h2 className="text-xs sm:text-sm font-semibold text-[#1B4332] leading-snug">
+                    <h2 className="text-xs sm:text-sm font-semibold text-ink leading-snug">
                       {locale === 'bn' ? badge.labelBn : badge.labelEn}
                     </h2>
-                    <p className="text-[11px] sm:text-xs text-[#1B4332]/80 mt-0.5 leading-snug">
+                    <p className="text-[11px] sm:text-xs text-ink/80 mt-0.5 leading-snug">
                       {locale === 'bn' ? badge.descBn : badge.descEn}
                     </p>
                   </div>
@@ -274,18 +275,18 @@ export function HomepageClient({
 
         {/* 3. PROMO BANNER (If Active) */}
         {browsing && visible('promo_banner') && siteSettings.promoCampaign.enabled && (
-          <section style={position('promo_banner')} className="p-5 sm:p-6 rounded-xl border border-[#E5E2D9] bg-[#F9F8F3] flex flex-wrap items-center justify-between gap-4">
+          <section style={position('promo_banner')} className="p-5 sm:p-6 rounded-xl border border-border bg-surface flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full border border-[#E5E2D9] bg-[#FDFCF8] text-[#A84A28] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full border border-border bg-bg text-[var(--store-terracotta)] flex items-center justify-center shrink-0">
                 <Tag className="w-4 h-4" aria-hidden="true" />
               </div>
               <div>
-                <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#A84A28]">
+                <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--store-terracotta)]">
                   {locale === 'bn'
                     ? siteSettings.promoCampaign.discountLabelBn
                     : siteSettings.promoCampaign.discountLabelEn}
                 </p>
-                <h2 className="font-display text-lg sm:text-xl font-bold text-[#1B4332] mt-0.5">
+                <h2 className="font-display text-lg sm:text-xl font-bold text-ink mt-0.5">
                   {locale === 'bn'
                     ? siteSettings.promoCampaign.titleBn
                     : siteSettings.promoCampaign.titleEn}
@@ -293,10 +294,10 @@ export function HomepageClient({
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#1B4332]/80">
+              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink/80">
                 {locale === 'bn' ? 'কুপন কোড:' : 'Code:'}
               </span>
-              <span className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold border border-[#1B4332] bg-[#FDFCF8] text-[#1B4332]">
+              <span className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold border border-accent bg-bg text-ink">
                 {siteSettings.promoCampaign.code}
               </span>
             </div>
@@ -306,11 +307,11 @@ export function HomepageClient({
         {/* 4. UNIFIED INTERACTIVE CATALOG SHOWCASE */}
         {(visible('featured_products') || !browsing) && <section id="unified-catalog" style={position('featured_products')} className="space-y-5 sm:space-y-7 scroll-mt-24">
           {/* Editorial Section Header & Filter Trigger */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3.5 sm:gap-4 border-b border-[#E5E2D9] pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3.5 sm:gap-4 border-b border-border pb-4">
             <div className="min-w-0">
-              {browsing && <p className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.14em] text-[#A84A28] mb-1.5">{text(section('featured_products')?.titleBn ?? '', section('featured_products')?.titleEn ?? '')}</p>}
+              {browsing && <p className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.14em] text-[var(--store-terracotta)] mb-1.5">{text(section('featured_products')?.titleBn ?? '', section('featured_products')?.titleEn ?? '')}</p>}
               <div className="flex flex-wrap items-baseline gap-2">
-                <h2 className="font-display text-2xl sm:text-4xl font-bold text-[#1B4332] tracking-tight [text-wrap:balance]">
+                <h2 className="font-display text-2xl sm:text-4xl font-bold text-ink tracking-tight [text-wrap:balance]">
                   {activeCategory
                     ? locale === 'bn'
                       ? activeCategory.nameBn
@@ -323,13 +324,13 @@ export function HomepageClient({
                     ? config.collectionTitleBn
                     : config.collectionTitleEn}
                 </h2>
-                <span aria-hidden="true" className="text-[#1B4332]/60">·</span>
-                <span className="font-mono text-xs text-[#1B4332]/80 tabular-nums">
+                <span aria-hidden="true" className="text-ink/60">·</span>
+                <span className="font-mono text-xs text-ink/80 tabular-nums">
                   {formatLocaleNumber(displayedProducts.length, locale)}
                   {locale === 'bn' ? 'টি পণ্য' : ' items'}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-[#1B4332]/80 mt-1">
+              <p className="text-xs sm:text-sm text-ink/80 mt-1">
                 {activeCategory
                   ? locale === 'bn'
                     ? activeCategory.descriptionBn
@@ -345,7 +346,7 @@ export function HomepageClient({
               <button
                 type="button"
                 onClick={() => setIsFilterOpen(true)}
-                className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] border border-[#1B4332] bg-transparent text-[#1B4332] hover:bg-[#1B4332] hover:text-white transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] border border-accent bg-transparent text-ink hover:bg-accent hover:text-white transition-colors cursor-pointer"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>{locale === 'bn' ? 'ফিল্টার ও বাজেট' : 'Filter & Budget'}</span>
@@ -354,7 +355,7 @@ export function HomepageClient({
                 <button
                   type="button"
                   onClick={resetAllFilters}
-                  className="inline-flex items-center min-h-[44px] px-3.5 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] border border-[#E5E2D9] bg-[#F9F8F3] text-[#1B4332] hover:border-[#1B4332] transition-colors cursor-pointer"
+                  className="inline-flex items-center min-h-[44px] px-3.5 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.1em] border border-border bg-surface text-ink hover:border-accent transition-colors cursor-pointer"
                 >
                   {locale === 'bn' ? 'রিসেট' : 'Reset'}
                 </button>
@@ -363,7 +364,7 @@ export function HomepageClient({
           </div>
 
           {/* Interactive Collection Switcher Bar & Sort Selector */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E2D9] pb-1">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-1">
             {/* Editorial Underline Collection Tabs */}
             <div className="inline-flex items-center gap-4 sm:gap-6 overflow-x-auto scrollbar-none max-w-full">
               <button
@@ -372,8 +373,8 @@ export function HomepageClient({
                 aria-pressed={activeCollection === 'all'}
                 className={`min-h-[44px] px-1 py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'all'
-                    ? 'border-[#1B4332] text-[#1B4332] font-bold'
-                    : 'border-transparent text-[#1B4332]/80 hover:text-[#1B4332]'
+                    ? 'border-accent text-ink font-bold'
+                    : 'border-transparent text-ink/80 hover:text-ink'
                 }`}
               >
                 {locale === 'bn' ? 'সব পণ্য' : 'All Products'}
@@ -385,8 +386,8 @@ export function HomepageClient({
                 aria-pressed={activeCollection === 'featured'}
                 className={`min-h-[44px] px-1 py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'featured'
-                    ? 'border-[#1B4332] text-[#1B4332] font-bold'
-                    : 'border-transparent text-[#1B4332]/80 hover:text-[#1B4332]'
+                    ? 'border-accent text-ink font-bold'
+                    : 'border-transparent text-ink/80 hover:text-ink'
                 }`}
               >
                 {locale === 'bn' ? 'নির্বাচিত' : 'Featured'}
@@ -398,8 +399,8 @@ export function HomepageClient({
                 aria-pressed={activeCollection === 'best_sellers'}
                 className={`min-h-[44px] px-1 py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'best_sellers'
-                    ? 'border-[#1B4332] text-[#1B4332] font-bold'
-                    : 'border-transparent text-[#1B4332]/80 hover:text-[#1B4332]'
+                    ? 'border-accent text-ink font-bold'
+                    : 'border-transparent text-ink/80 hover:text-ink'
                 }`}
               >
                 {locale === 'bn' ? 'বেস্ট সেলার' : 'Best Sellers'}
@@ -411,8 +412,8 @@ export function HomepageClient({
                 aria-pressed={activeCollection === 'new_arrivals'}
                 className={`min-h-[44px] px-1 py-2.5 font-mono text-xs uppercase tracking-[0.1em] border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                   activeCollection === 'new_arrivals'
-                    ? 'border-[#1B4332] text-[#1B4332] font-bold'
-                    : 'border-transparent text-[#1B4332]/80 hover:text-[#1B4332]'
+                    ? 'border-accent text-ink font-bold'
+                    : 'border-transparent text-ink/80 hover:text-ink'
                 }`}
               >
                 {locale === 'bn' ? 'নতুন আগমন' : 'New Arrivals'}
@@ -421,7 +422,7 @@ export function HomepageClient({
 
             {/* Sort Selector */}
             <div className="flex items-center gap-2 text-xs pb-1.5">
-              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#1B4332]/80 hidden sm:inline">
+              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink/80 hidden sm:inline">
                 {locale === 'bn' ? 'সাজান:' : 'Sort:'}
               </span>
               <select
@@ -432,7 +433,7 @@ export function HomepageClient({
                     e.target.value as 'popular' | 'price_asc' | 'price_desc' | 'rating'
                   )
                 }
-                className="min-h-[44px] px-2.5 py-2 text-base lg:text-xs font-medium bg-transparent border-0 border-b border-[#E5E2D9] text-[#1B4332] focus:outline-none focus:border-[#1B4332]"
+                className="min-h-[44px] px-2.5 py-2 text-base lg:text-xs font-medium bg-transparent border-0 border-b border-border text-ink focus:outline-none focus:border-accent"
               >
                 <option value="popular">
                   {locale === 'bn' ? 'জনপ্রিয়তা অনুযায়ী' : 'Most Popular'}
@@ -459,7 +460,7 @@ export function HomepageClient({
               className={`min-h-[44px] px-3.5 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.08em] border transition-all whitespace-nowrap cursor-pointer ${
                 !activeCategorySlug
                   ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)]'
-                  : 'bg-[#FDFCF8] text-[#1B4332] border-[#E5E2D9] hover:border-[#1B4332]'
+                  : 'bg-bg text-ink border-border hover:border-accent'
               }`}
             >
               <span>{locale === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories'}</span>
@@ -476,11 +477,11 @@ export function HomepageClient({
                   className={`min-h-[44px] px-3.5 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.08em] border transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                     isSelected
                       ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)]'
-                      : 'bg-[#FDFCF8] text-[#1B4332] border-[#E5E2D9] hover:border-[#1B4332]'
+                      : 'bg-bg text-ink border-border hover:border-accent'
                   }`}
                 >
                   <span>{locale === 'bn' ? c.nameBn : c.nameEn}</span>
-                  <span className={`text-[10px] tabular-nums ${isSelected ? 'text-white/90' : 'text-[#1B4332]/80'}`}>
+                  <span className={`text-[10px] tabular-nums ${isSelected ? 'text-white/90' : 'text-ink/80'}`}>
                     ({formatLocaleNumber(count, locale)})
                   </span>
                 </button>
@@ -508,8 +509,8 @@ export function HomepageClient({
             </div>
           )}
         </section>}
-        {browsing && visible('categories') && categories.length > 0 && <section style={position('categories')} className="space-y-5 sm:space-y-6"><div className="flex items-end justify-between gap-4 border-b border-[#E5E2D9] pb-3"><h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#1B4332]">{text(section('categories')?.titleBn ?? '', section('categories')?.titleEn ?? '')}</h2><Link href="/shop" className="min-h-[44px] inline-flex items-center font-mono text-[11px] uppercase tracking-[0.1em] text-[#1B4332]/85 hover:text-[#1B4332] underline underline-offset-4 shrink-0">{text('সব দেখুন', 'View all')}</Link></div><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">{categories.filter(c => !c.parentId).map(category => { const image = products.find(p => p.categoryId === category.id)?.images[0]; return <Link key={category.id} href={`/category/${category.slug}`} className="group space-y-2.5 sm:space-y-3 min-w-0"><div className="relative aspect-square bg-[#F9F8F3] rounded-xl overflow-hidden border border-[#E5E2D9]">{image ? <img  src={productImageUrl(image)} onError={productImageFallback} alt="" className="object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} /> : <span className="flex h-full items-center justify-center font-display text-4xl text-[var(--store-accent)]">{Array.from(text(category.nameBn, category.nameEn))[0]}</span>}</div><span className="flex items-center justify-between gap-1 text-xs sm:text-sm font-medium text-[#1B4332]"><span className="truncate">{text(category.nameBn, category.nameEn)}</span><ArrowRight className="w-3.5 h-3.5 shrink-0 text-[#1B4332]/75 group-hover:text-[#1B4332]" /></span></Link>; })}</div></section>}
-        {browsing && !visible('featured_products') && (['new_arrivals', 'best_sellers'] as const).filter(visible).map(type => { const list = type === 'best_sellers' ? [...products].filter(p => p.totalSoldCount > 0).sort((a,b) => b.totalSoldCount - a.totalSoldCount) : [...products].reverse(); return list.length > 0 && <section key={type} style={position(type)} className="space-y-5 sm:space-y-6"><div className="flex items-end justify-between gap-4 border-b border-[#E5E2D9] pb-3"><h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#1B4332]">{text(section(type)?.titleBn ?? '', section(type)?.titleEn ?? '')}</h2><Link href="/shop" className="min-h-[44px] inline-flex items-center font-mono text-[11px] uppercase tracking-[0.1em] text-[#1B4332]/85 hover:text-[#1B4332] underline underline-offset-4 shrink-0">{text('সব পণ্য', 'Shop all')}</Link></div><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 sm:gap-x-6 gap-y-6 sm:gap-y-8">{list.slice(0,4).map(product => <ProductCard key={product.productId} product={product} />)}</div></section>; })}
+        {browsing && visible('categories') && categories.length > 0 && <section style={position('categories')} className="space-y-5 sm:space-y-6"><div className="flex items-end justify-between gap-4 border-b border-border pb-3"><h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-ink">{text(section('categories')?.titleBn ?? '', section('categories')?.titleEn ?? '')}</h2><Link href="/shop" className="min-h-[44px] inline-flex items-center font-mono text-[11px] uppercase tracking-[0.1em] text-ink/85 hover:text-ink underline underline-offset-4 shrink-0">{text('সব দেখুন', 'View all')}</Link></div><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">{categories.filter(c => !c.parentId).map(category => { const image = products.find(p => p.categoryId === category.id)?.images[0]; return <Link key={category.id} href={`/category/${category.slug}`} className="group space-y-2.5 sm:space-y-3 min-w-0"><div className="relative aspect-square bg-surface rounded-xl overflow-hidden border border-border">{image ? <img  src={productImageUrl(image)} onError={productImageFallback} alt="" className="object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} /> : <span className="flex h-full items-center justify-center font-display text-4xl text-[var(--store-accent)]">{Array.from(text(category.nameBn, category.nameEn))[0]}</span>}</div><span className="flex items-center justify-between gap-1 text-xs sm:text-sm font-medium text-ink"><span className="truncate">{text(category.nameBn, category.nameEn)}</span><ArrowRight className="w-3.5 h-3.5 shrink-0 text-ink/75 group-hover:text-ink" /></span></Link>; })}</div></section>}
+        {browsing && !visible('featured_products') && (['new_arrivals', 'best_sellers'] as const).filter(visible).map(type => { const list = type === 'best_sellers' ? [...products].filter(p => p.totalSoldCount > 0).sort((a,b) => b.totalSoldCount - a.totalSoldCount) : [...products].reverse(); return list.length > 0 && <section key={type} style={position(type)} className="space-y-5 sm:space-y-6"><div className="flex items-end justify-between gap-4 border-b border-border pb-3"><h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-ink">{text(section(type)?.titleBn ?? '', section(type)?.titleEn ?? '')}</h2><Link href="/shop" className="min-h-[44px] inline-flex items-center font-mono text-[11px] uppercase tracking-[0.1em] text-ink/85 hover:text-ink underline underline-offset-4 shrink-0">{text('সব পণ্য', 'Shop all')}</Link></div><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 sm:gap-x-6 gap-y-6 sm:gap-y-8">{list.slice(0,4).map(product => <ProductCard key={product.productId} product={product} />)}</div></section>; })}
       </div>
       {/* FILTER DRAWER / SHEET */}
       <ResponsiveSheet
@@ -520,11 +521,11 @@ export function HomepageClient({
         <div className="p-4 space-y-6 text-xs">
           {/* Category Selector */}
           <fieldset className="space-y-2">
-            <legend className="font-mono font-semibold uppercase text-[11px] tracking-[0.1em] text-[#1B4332]/80">
+            <legend className="font-mono font-semibold uppercase text-[11px] tracking-[0.1em] text-ink/80">
               {locale === 'bn' ? 'ক্যাটাগরি' : 'Category'}
             </legend>
             <div className="space-y-1">
-              <label className="flex items-center gap-2.5 min-h-[44px] cursor-pointer px-2 py-2 rounded-lg hover:bg-[#F9F8F3]">
+              <label className="flex items-center gap-2.5 min-h-[44px] cursor-pointer px-2 py-2 rounded-lg hover:bg-surface">
                 <input
                   type="radio"
                   name="catFilter"
@@ -532,14 +533,14 @@ export function HomepageClient({
                   onChange={() => setActiveCategorySlug(null)}
                   className="w-4 h-4 accent-[var(--store-accent)]"
                 />
-                <span className="text-[#1B4332] font-medium">
+                <span className="text-ink font-medium">
                   {locale === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories'}
                 </span>
               </label>
               {categories.map((c) => (
                 <label
                   key={c.id}
-                  className="flex items-center gap-2.5 min-h-[44px] cursor-pointer px-2 py-2 rounded-lg hover:bg-[#F9F8F3]"
+                  className="flex items-center gap-2.5 min-h-[44px] cursor-pointer px-2 py-2 rounded-lg hover:bg-surface"
                 >
                   <input
                     type="radio"
@@ -548,7 +549,7 @@ export function HomepageClient({
                     onChange={() => setActiveCategorySlug(c.slug)}
                     className="w-4 h-4 accent-[var(--store-accent)]"
                   />
-                  <span className="text-[#1B4332] font-medium">
+                  <span className="text-ink font-medium">
                     {locale === 'bn' ? c.nameBn : c.nameEn}
                   </span>
                 </label>
@@ -557,11 +558,11 @@ export function HomepageClient({
           </fieldset>
 
           {/* Budget Range Slider */}
-          <div className="space-y-2 pt-3 border-t border-[#E5E2D9]">
+          <div className="space-y-2 pt-3 border-t border-border">
             <div className="flex items-center justify-between">
               <label
                 htmlFor={maxBudgetInputId}
-                className="font-mono font-semibold uppercase text-[11px] tracking-[0.1em] text-[#1B4332]/80"
+                className="font-mono font-semibold uppercase text-[11px] tracking-[0.1em] text-ink/80"
               >
                 {locale === 'bn' ? 'সর্বোচ্চ বাজেট' : 'Max Budget'}
               </label>
@@ -577,14 +578,14 @@ export function HomepageClient({
               onChange={(e) => setMaxPriceBdt(Number(e.target.value))}
               className="w-full h-11 accent-[var(--store-accent)] cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-[#1B4332]/80 font-mono">
+            <div className="flex justify-between text-[10px] text-ink/80 font-mono">
               <span>৳{formatLocaleNumber(0, locale)}</span>
               <span>৳{formatLocaleNumber(budgetLimit, locale)}</span>
             </div>
           </div>
 
           {/* In Stock Only Checkbox */}
-          <div className="pt-3 border-t border-[#E5E2D9]">
+          <div className="pt-3 border-t border-border">
             <label className="flex items-center gap-2.5 min-h-[44px] cursor-pointer">
               <input
                 type="checkbox"
@@ -592,14 +593,14 @@ export function HomepageClient({
                 onChange={(e) => setInStockOnly(e.target.checked)}
                 className="w-4 h-4 accent-[var(--store-accent)]"
               />
-              <span className="font-semibold text-[#1B4332]">
+              <span className="font-semibold text-ink">
                 {locale === 'bn' ? 'শুধুমাত্র স্টকে থাকা পণ্য' : 'In-Stock Only'}
               </span>
             </label>
           </div>
 
           {/* Apply / Reset Buttons */}
-          <div className="pt-4 border-t border-[#E5E2D9] flex items-center justify-end gap-2">
+          <div className="pt-4 border-t border-border flex items-center justify-end gap-2">
             <Button variant="outline" size="sm" onClick={resetAllFilters}>
               {locale === 'bn' ? 'রিসেট' : 'Reset'}
             </Button>
