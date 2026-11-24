@@ -9,12 +9,13 @@ import { LocalizedText } from '@/components/ui/localized-text';
 
 // src/components/storefront/storefront-shell.tsx
 // Botanical Heritage Calm — Global Storefront Layout Shell:
-//   - Deep Forest Green (#1B4332) Top Utility Bar (Delivery, QC Provenance & Helpline)
-//   - Sticky Minimalist Header on Warm Alabaster (#FAF9F5) with Brand Monogram, Pill Live Search, Bilingual Switcher, Wishlist & Cart
+//   - Accent Utility Bar (Delivery, QC Provenance & Helpline)
+//   - Sticky Minimalist Header on Warm Alabaster with Brand Monogram, Pill Live Search, Bilingual Switcher, Wishlist & Cart
 //   - Clean Horizontal Category Navigation Bar
 //   - Mobile Bottom Tab Navigation (Home, Categories, Cart, Account — <= 768px)
-//   - Slide-in / Bottom-Sheet Cart Drawer with 4:5 Portrait Thumbnails & Forest-Green Free Delivery Progress Bar
-//   - Spacious Editorial Linen Footer (#F2EFE9)
+//   - Slide-in / Bottom-Sheet Cart Drawer with 4:5 Portrait Thumbnails & Free Delivery Progress Bar
+//   - Spacious Editorial Linen Footer
+// Design tokens only (tokens.css): no arbitrary hex in UI (SHELL-01).
 
 import * as React from 'react';
 import { Link } from 'wouter';
@@ -313,13 +314,13 @@ export function StorefrontShell({
   // Maintenance Mode Gate (Admin Toggle)
   if (siteSettings.maintenanceMode) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 storefront-theme bg-[#FDFCF8] text-[#1B4332]">
-        <div className="max-w-md w-full border border-[#E5E2D9] rounded-xl p-8 text-center space-y-4 bg-[#F9F8F3]">
-          <div className="w-12 h-12 mx-auto flex items-center justify-center rounded-full border border-[#E5E2D9] bg-[#FDFCF8]">
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 storefront-theme bg-bg text-ink">
+        <div className="max-w-md w-full border border-border rounded-xl p-8 text-center space-y-4 bg-surface">
+          <div className="w-12 h-12 mx-auto flex items-center justify-center rounded-full border border-border bg-bg">
             <Wrench className="w-5 h-5 text-[var(--store-accent)]" aria-hidden="true" />
           </div>
-          <h1 className="font-display text-2xl font-bold text-[#1B4332]">{brandName}</h1>
-          <p className="text-sm text-[#1B4332]/75">
+          <h1 className="font-display text-2xl font-bold text-ink">{brandName}</h1>
+          <p className="text-sm text-ink/75">
             {text(siteSettings.maintenanceMessageBn, siteSettings.maintenanceMessageEn ?? 'We will be back shortly.')}
           </p>
         </div>
@@ -328,8 +329,8 @@ export function StorefrontShell({
   }
 
   return (
-    <div style={{ '--store-accent': config.accentColor } as React.CSSProperties} className={`min-h-[100dvh] flex flex-col min-w-0 storefront-theme storefront-shell bg-[#FDFCF8] text-[#1B4332] ${pathname === '/checkout' ? 'pb-[calc(8.75rem+var(--safe-bottom))] md:pb-24 lg:pb-0' : pathname.startsWith('/product/') ? 'pb-[calc(8.75rem+var(--safe-bottom))] md:pb-0' : 'pb-[calc(4rem+var(--safe-bottom))] md:pb-0'}`}>
-      {/* 1. Deep Forest Top Utility Banner */}
+    <div style={{ '--store-accent': config.accentColor } as React.CSSProperties} className={`min-h-[100dvh] flex flex-col min-w-0 storefront-theme storefront-shell bg-bg text-ink ${pathname === '/checkout' ? 'pb-[calc(8.75rem+var(--safe-bottom))] md:pb-24 lg:pb-0' : pathname.startsWith('/product/') ? 'pb-[calc(8.75rem+var(--safe-bottom))] md:pb-0' : 'pb-[calc(4rem+var(--safe-bottom))] md:pb-0'}`}>
+      {/* 1. Accent Top Utility Banner */}
       {siteSettings.delayBanner.enabled && (
         <div className="storefront-delay-banner bg-[var(--store-accent)] text-white px-3.5 sm:px-6 lg:px-10 py-1.5 sm:py-2 text-[11px] sm:text-xs tracking-[0.04em]">
           <div className="max-w-[1600px] mx-auto flex justify-center sm:justify-between items-center gap-4">
@@ -350,7 +351,7 @@ export function StorefrontShell({
       )}
 
       {/* 2. Sticky Editorial Header (Compact single row on mobile) */}
-      <header className="storefront-header sticky top-0 z-40 border-b border-[#E5E2D9] bg-[#FDFCF8]/95 backdrop-blur-sm">
+      <header className="storefront-header sticky top-0 z-40 border-b border-border bg-bg/95 backdrop-blur-sm">
         <div className="max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-10 py-2.5 sm:py-4">
           <div className="flex items-center justify-between gap-2 sm:gap-6">
             {/* Left: Brand Identity & Tablet Menu Trigger */}
@@ -359,7 +360,7 @@ export function StorefrontShell({
                 type="button"
                 onClick={() => setIsMenuOpen(true)}
                 aria-label={locale === 'bn' ? 'মেনু খুলুন' : 'Open menu'}
-                className="hidden md:flex xl:hidden p-2 -ml-1 text-[#1B4332] hover:bg-[#F9F8F3] border border-[#E5E2D9] rounded-lg cursor-pointer touch-target items-center justify-center transition-colors"
+                className="hidden md:flex xl:hidden p-2 -ml-1 text-ink hover:bg-surface border border-border rounded-lg cursor-pointer touch-target items-center justify-center transition-colors"
               >
                 <Menu className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -389,7 +390,7 @@ export function StorefrontShell({
                         className={`whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-lg border font-mono text-[11px] uppercase tracking-[0.08em] transition-colors ${
                           isActive
                             ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)]'
-                            : 'bg-[#F9F8F3] text-[#1B4332] border-[#1B4332]/25 hover:border-[var(--store-accent)] hover:bg-[var(--store-accent)] hover:text-white'
+                            : 'bg-surface text-ink border-accent/25 hover:border-[var(--store-accent)] hover:bg-[var(--store-accent)] hover:text-white'
                         }`}
                       >
                         <Package className="w-3.5 h-3.5" aria-hidden="true" />
@@ -403,8 +404,8 @@ export function StorefrontShell({
                       href={link.href}
                       className={`whitespace-nowrap shrink-0 inline-flex items-center min-h-[44px] px-1 py-1 transition-all border-b-2 ${
                         isActive
-                          ? 'text-[#1B4332] border-[#1B4332] font-semibold'
-                          : 'text-[#1B4332]/85 border-transparent hover:text-[#1B4332] hover:border-[#1B4332]/40'
+                          ? 'text-ink border-accent font-semibold'
+                          : 'text-ink/85 border-transparent hover:text-ink hover:border-accent/40'
                       }`}
                     >
                       {text(link.labelBn, link.labelEn)}
@@ -420,7 +421,7 @@ export function StorefrontShell({
               >
                 <div className="relative w-full">
                   <Search
-                    className="w-3.5 h-3.5 text-[#1B4332]/75 absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none"
+                    className="w-3.5 h-3.5 text-ink/75 absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none"
                     aria-hidden="true"
                   />
                   <input
@@ -439,7 +440,7 @@ export function StorefrontShell({
                         : 'Search products or SKU...'
                     }
                     aria-label={dict.common.searchPlaceholder}
-                    className="w-full min-h-[44px] pl-6 pr-10 py-2 text-sm bg-transparent text-[#1B4332] border-0 border-b border-[#E5E2D9] placeholder:text-[#1B4332]/65 focus:border-[#1B4332] focus:outline-none transition-colors"
+                    className="w-full min-h-[44px] pl-6 pr-10 py-2 text-sm bg-transparent text-ink border-0 border-b border-border placeholder:text-ink/65 focus:border-accent focus:outline-none transition-colors"
                   />
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center">
                     {searchQuery ? (
@@ -450,12 +451,12 @@ export function StorefrontShell({
                           desktopSearchInputRef.current?.focus();
                         }}
                         aria-label={uiText("Clear search", locale)}
-                        className="w-11 h-11 flex items-center justify-center text-[#1B4332]/80 hover:text-[#1B4332] cursor-pointer transition-colors"
+                        className="w-11 h-11 flex items-center justify-center text-ink/80 hover:text-ink cursor-pointer transition-colors"
                       >
                         <X className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                     ) : (
-                      <kbd className="hidden md:inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded border border-[#E5E2D9] bg-[#F9F8F3] text-[#1B4332]/80 select-none">
+                      <kbd className="hidden md:inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded border border-border bg-surface text-ink/80 select-none">
                         /
                       </kbd>
                     )}
@@ -464,12 +465,12 @@ export function StorefrontShell({
 
                 {/* Live Instant Search Dropdown (Desktop) */}
                 {isSearchFocused && (
-                  <div className="absolute top-full right-0 w-[420px] mt-3 z-50 bg-[#FDFCF8] border border-[#E5E2D9] rounded-xl shadow-[0_14px_36px_rgba(27,67,50,0.08)] overflow-hidden max-h-[420px] overflow-y-auto">
+                  <div className="absolute top-full right-0 w-[420px] mt-3 z-50 bg-bg border border-border rounded-xl shadow-[0_14px_36px_rgba(27,67,50,0.08)] overflow-hidden max-h-[420px] overflow-y-auto">
                     {searchQuery.trim().length > 0 ? (
                       <div className="p-5 space-y-4">
                         {matchingCategories.length > 0 && (
                           <div className="space-y-2">
-                            <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#1B4332]/80">
+                            <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink/80">
                               {locale === 'bn' ? 'সংশ্লিষ্ট ক্যাটাগরি' : 'Matching Categories'}
                             </p>
                             <div className="flex flex-wrap gap-3">
@@ -482,7 +483,7 @@ export function StorefrontShell({
                                     onSelectCategory?.(c.slug);
                                     setIsSearchFocused(false);
                                   }}
-                                  className="min-h-[36px] text-xs font-medium text-[#1B4332] underline underline-offset-4 decoration-[#E5E2D9] hover:decoration-[#1B4332] transition-colors cursor-pointer"
+                                  className="min-h-[36px] text-xs font-medium text-ink underline underline-offset-4 decoration-border hover:decoration-accent transition-colors cursor-pointer"
                                 >
                                   {locale === 'bn' ? c.nameBn : c.nameEn}
                                 </button>
@@ -493,18 +494,18 @@ export function StorefrontShell({
 
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between pb-1">
-                            <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#1B4332]/60">
+                            <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink/60">
                               {locale === 'bn' ? 'পণ্যসমূহ' : 'Matching Products'}
                             </p>
                             {matchingProducts.length > 0 && (
-                              <span className="font-mono text-[10px] text-[#1B4332]/60">
+                              <span className="font-mono text-[10px] text-ink/60">
                                 {formatLocaleNumber(matchingProducts.length, locale)} {locale === 'bn' ? 'টি' : 'items'}
                               </span>
                             )}
                           </div>
 
                           {matchingProducts.length > 0 ? (
-                            <div className="divide-y divide-[#E5E2D9]">
+                            <div className="divide-y divide-border">
                               {matchingProducts.map((p) => {
                                 const variant = p.variants[0];
                                 return (
@@ -512,10 +513,10 @@ export function StorefrontShell({
                                     key={p.productId}
                                     href={`/product/${p.slug}`}
                                     onClick={() => setIsSearchFocused(false)}
-                                    className="flex items-center gap-3 py-2.5 px-1.5 hover:bg-[#F9F8F3] transition-colors group"
+                                    className="flex items-center gap-3 py-2.5 px-1.5 hover:bg-surface transition-colors group"
                                   >
                                     {p.images[0] ? (
-                                      <div className="w-10 h-12 rounded-lg border border-[#E5E2D9] overflow-hidden shrink-0 bg-[#F9F8F3] relative">
+                                      <div className="w-10 h-12 rounded-lg border border-border overflow-hidden shrink-0 bg-surface relative">
                                         <img
                                           src={productImageUrl(p.images[0])}
                                           onError={productImageFallback}
@@ -524,20 +525,20 @@ export function StorefrontShell({
                                           referrerPolicy="no-referrer" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
                                       </div>
                                     ) : (
-                                      <div className="w-10 h-12 rounded-lg border border-[#E5E2D9] bg-[#F9F8F3] flex items-center justify-center shrink-0">
-                                        <Package className="w-4 h-4 text-[#1B4332]/50" />
+                                      <div className="w-10 h-12 rounded-lg border border-border bg-surface flex items-center justify-center shrink-0">
+                                        <Package className="w-4 h-4 text-ink/50" />
                                       </div>
                                     )}
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-xs font-semibold text-[#1B4332] truncate group-hover:text-[#A84A28]">
+                                      <p className="text-xs font-semibold text-ink truncate group-hover:text-[var(--store-terracotta)]">
                                         {locale === 'bn' ? p.nameBn : p.nameEn}
                                       </p>
-                                      <p className="font-mono text-[10px] text-[#1B4332]/60 truncate">
+                                      <p className="font-mono text-[10px] text-ink/60 truncate">
                                         <LocalizedText source={"SKU:"} area="storefront" />{" "}{variant?.publicSku || 'BG-SKU'}
                                       </p>
                                     </div>
                                     <div className="text-right shrink-0">
-                                      <p className="text-xs font-semibold text-[#1B4332] tabular-nums">
+                                      <p className="text-xs font-semibold text-ink tabular-nums">
                                         {variant
                                           ? formatPoishaToBdt(variant.salePricePoisha, locale)
                                           : '৳ 0'}
@@ -549,12 +550,12 @@ export function StorefrontShell({
                             </div>
                           ) : (
                             <div className="py-6 text-center space-y-1">
-                              <p className="text-xs font-semibold text-[#1B4332]">
+                              <p className="text-xs font-semibold text-ink">
                                 {locale === 'bn'
                                   ? `"${searchQuery}" নামে কোনো পণ্য পাওয়া যায়নি`
                                   : `No products found for "${searchQuery}"`}
                               </p>
-                              <p className="text-[11px] text-[#1B4332]/60">
+                              <p className="text-[11px] text-ink/60">
                                 {locale === 'bn'
                                   ? 'বানান পরীক্ষা করুন অথবা নিচের ক্যাটাগরিগুলো থেকে বেছে নিন'
                                   : 'Check your spelling or explore our categories'}
@@ -562,11 +563,11 @@ export function StorefrontShell({
                             </div>
                           )}
 
-                          <div className="pt-3 border-t border-[#E5E2D9] flex items-center justify-between">
+                          <div className="pt-3 border-t border-border flex items-center justify-between">
                             <Link
                               href={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
                               onClick={() => setIsSearchFocused(false)}
-                              className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#1B4332] hover:underline flex items-center gap-1"
+                              className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink hover:underline flex items-center gap-1"
                             >
                               <span>
                                 {locale === 'bn'
@@ -578,7 +579,7 @@ export function StorefrontShell({
                             <Link
                               href="/shop"
                               onClick={() => setIsSearchFocused(false)}
-                              className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#1B4332]/60 hover:text-[#1B4332]"
+                              className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink/60 hover:text-ink"
                             >
                               {locale === 'bn' ? 'সকল পণ্য' : 'Shop All'}
                             </Link>
@@ -588,8 +589,8 @@ export function StorefrontShell({
                     ) : (
                       <div className="p-5 space-y-4">
                         <div className="space-y-2.5">
-                          <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#1B4332]/60 flex items-center gap-1.5">
-                            <TrendingUp className="w-3.5 h-3.5 text-[#A84A28]" />
+                          <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink/60 flex items-center gap-1.5">
+                            <TrendingUp className="w-3.5 h-3.5 text-[var(--store-terracotta)]" />
                             <span>{locale === 'bn' ? 'জনপ্রিয় অনুসন্ধান' : 'Popular Searches'}</span>
                           </p>
                           <div className="flex flex-wrap gap-x-4 gap-y-1.5">
@@ -602,7 +603,7 @@ export function StorefrontShell({
                                   onSearchChange?.(term);
                                   setIsSearchFocused(true);
                                 }}
-                                className="text-xs font-medium text-[#1B4332]/80 hover:text-[#1B4332] underline underline-offset-4 decoration-[#E5E2D9] hover:decoration-[#1B4332] transition-colors cursor-pointer"
+                                className="text-xs font-medium text-ink/80 hover:text-ink underline underline-offset-4 decoration-border hover:decoration-accent transition-colors cursor-pointer"
                               >
                                 {locale === 'bn' ? item.labelBn : item.labelEn}
                               </button>
@@ -610,8 +611,8 @@ export function StorefrontShell({
                           </div>
                         </div>
 
-                        <div className="space-y-2 pt-3 border-t border-[#E5E2D9]">
-                          <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#1B4332]/60">
+                        <div className="space-y-2 pt-3 border-t border-border">
+                          <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink/60">
                             {locale === 'bn' ? 'ক্যাটাগরি অনুযায়ী দেখুন' : 'Explore Categories'}
                           </p>
                           <div className="grid grid-cols-2 gap-1.5">
@@ -623,12 +624,12 @@ export function StorefrontShell({
                                   onSelectCategory?.(c.slug);
                                   setIsSearchFocused(false);
                                 }}
-                                className="flex items-center justify-between p-2 text-xs font-medium border border-[#E5E2D9] bg-[#F9F8F3] hover:border-[#1B4332] text-left text-[#1B4332] transition-colors cursor-pointer rounded-lg"
+                                className="flex items-center justify-between p-2 text-xs font-medium border border-border bg-surface hover:border-accent text-left text-ink transition-colors cursor-pointer rounded-lg"
                               >
                                 <span className="truncate">
                                   {locale === 'bn' ? c.nameBn : c.nameEn}
                                 </span>
-                                <ChevronRight className="w-3.5 h-3.5 text-[#1B4332]/50 shrink-0" />
+                                <ChevronRight className="w-3.5 h-3.5 text-ink/50 shrink-0" />
                               </button>
                             ))}
                           </div>
@@ -658,7 +659,7 @@ export function StorefrontShell({
                 className={`xl:hidden w-11 h-11 inline-flex items-center justify-center rounded-lg border transition-colors cursor-pointer ${
                   isMobileSearchOpen
                     ? 'border-[var(--store-accent)] bg-[var(--store-accent)] text-white'
-                    : 'border-[#E5E2D9] bg-[#F9F8F3] text-[#1B4332] hover:border-[#1B4332]'
+                    : 'border-border bg-surface text-ink hover:border-accent'
                 }`}
               >
                 {isMobileSearchOpen ? (
@@ -673,13 +674,13 @@ export function StorefrontShell({
                 type="button"
                 onClick={toggleLocale}
                 title={uiText("Toggle language", locale)}
-                className="inline-flex items-center gap-1 font-mono text-[11px] tracking-[0.08em] min-h-[44px] min-w-[44px] justify-center px-2 text-[#1B4332] cursor-pointer transition-opacity whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-1 font-mono text-[11px] tracking-[0.08em] min-h-[44px] min-w-[44px] justify-center px-2 text-ink cursor-pointer transition-opacity whitespace-nowrap shrink-0"
               >
-                <span className={locale === 'bn' ? 'font-bold underline underline-offset-4 text-[#1B4332]' : 'text-[#1B4332]/75 hover:text-[#1B4332]'}>
+                <span className={locale === 'bn' ? 'font-bold underline underline-offset-4 text-ink' : 'text-ink/75 hover:text-ink'}>
                   <LocalizedText source={"BN"} area="storefront" />
                 </span>
-                <span className="text-[#1B4332]/60" aria-hidden="true">|</span>
-                <span className={locale === 'en' ? 'font-bold underline underline-offset-4 text-[#1B4332]' : 'text-[#1B4332]/75 hover:text-[#1B4332]'}>
+                <span className="text-ink/60" aria-hidden="true">|</span>
+                <span className={locale === 'en' ? 'font-bold underline underline-offset-4 text-ink' : 'text-ink/75 hover:text-ink'}>
                   <LocalizedText source={"EN"} area="storefront" />
                 </span>
                 <span className="sr-only"> — {uiText("Toggle language", locale)}</span>
@@ -695,8 +696,8 @@ export function StorefrontShell({
                   aria-expanded={accountMenuOpen}
                   className={`inline-flex items-center justify-center w-11 h-11 rounded-full border transition-colors cursor-pointer ${
                     accountMenuOpen || pathname === '/account'
-                      ? 'border-[#1B4332] bg-[#1B4332] text-white'
-                      : 'border-[#1B4332] text-[#1B4332] hover:bg-[#1B4332] hover:text-white'
+                      ? 'border-accent bg-accent text-white'
+                      : 'border-accent text-ink hover:bg-accent hover:text-white'
                   }`}
                   title={dict.common.account}
                 >
@@ -716,9 +717,9 @@ export function StorefrontShell({
                     <div
                       role="menu"
                       aria-label={dict.common.account}
-                      className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-xl border border-[#E5E2D9] bg-[#FDFCF8] shadow-[0_18px_40px_rgba(27,67,50,0.14)]"
+                      className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-xl border border-border bg-bg shadow-[0_18px_40px_rgba(27,67,50,0.14)]"
                     >
-                      <p className="border-b border-[#E5E2D9] px-3.5 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#1B4332]/60 break-all">
+                      <p className="border-b border-border px-3.5 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-ink/60 break-all">
                         {accountIdentifier
                           ? accountIdentifier
                           : locale === 'bn'
@@ -729,7 +730,7 @@ export function StorefrontShell({
                         role="menuitem"
                         href="/account"
                         onClick={() => setAccountMenuOpen(false)}
-                        className="flex min-h-[44px] w-full items-center gap-2 px-3.5 text-sm text-[#1B4332] transition-colors hover:bg-[#F2EFE9]"
+                        className="flex min-h-[44px] w-full items-center gap-2 px-3.5 text-sm text-ink transition-colors hover:bg-surface"
                       >
                         <User className="w-4 h-4" aria-hidden="true" />
                         {locale === 'bn' ? 'আমার অ্যাকাউন্ট' : 'My account'}
@@ -740,7 +741,7 @@ export function StorefrontShell({
                           role="menuitem"
                           onClick={handleShellLogout}
                           disabled={accountBusy}
-                          className="flex min-h-[44px] w-full items-center gap-2 border-t border-[#E5E2D9] px-3.5 text-sm text-[#A84A28] transition-colors hover:bg-[#F2EFE9] disabled:opacity-60 cursor-pointer"
+                          className="flex min-h-[44px] w-full items-center gap-2 border-t border-border px-3.5 text-sm text-[var(--store-terracotta)] transition-colors hover:bg-surface disabled:opacity-60 cursor-pointer"
                         >
                           <LogOut className="w-4 h-4" aria-hidden="true" />
                           {locale === 'bn' ? 'লগ আউট' : 'Log out'}
@@ -750,7 +751,7 @@ export function StorefrontShell({
                           role="menuitem"
                           href="/account"
                           onClick={() => setAccountMenuOpen(false)}
-                          className="flex min-h-[44px] w-full items-center gap-2 border-t border-[#E5E2D9] px-3.5 text-sm text-[#1B4332] transition-colors hover:bg-[#F2EFE9]"
+                          className="flex min-h-[44px] w-full items-center gap-2 border-t border-border px-3.5 text-sm text-ink transition-colors hover:bg-surface"
                         >
                           <LogOut className="w-4 h-4 rotate-180" aria-hidden="true" />
                           {locale === 'bn' ? 'লগ ইন করুন' : 'Sign in'}
@@ -765,12 +766,12 @@ export function StorefrontShell({
               <Link
                 href="/account?tab=wishlist"
                 aria-label={dict.common.wishlist}
-                className="relative w-11 h-11 hidden sm:inline-flex items-center justify-center rounded-full border border-[#E5E2D9] text-[#1B4332] hover:border-[#1B4332] transition-colors"
+                className="relative w-11 h-11 hidden sm:inline-flex items-center justify-center rounded-full border border-border text-ink hover:border-accent transition-colors"
                 title={dict.common.wishlist}
               >
                 <Heart className="w-4 h-4" aria-hidden="true" />
                 {wishlistCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center text-[10px] font-mono bg-[#A84A28] text-white rounded-full tabular-nums">
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center text-[10px] font-mono bg-[var(--store-terracotta)] text-white rounded-full tabular-nums">
                     {formatLocaleNumber(wishlistCount, locale)}
                   </span>
                 )}
@@ -796,11 +797,11 @@ export function StorefrontShell({
           {isMobileSearchOpen && (
             <div
               ref={mobileSearchContainerRef}
-              className="xl:hidden pt-2.5 mt-2.5 border-t border-[#E5E2D9] relative"
+              className="xl:hidden pt-2.5 mt-2.5 border-t border-border relative"
             >
               <div className="relative w-full">
                 <Search
-                  className="w-4 h-4 text-[#1B4332]/55 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  className="w-4 h-4 text-ink/55 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                   aria-hidden="true"
                 />
                 <input
@@ -819,7 +820,7 @@ export function StorefrontShell({
                       : 'Search products, categories or SKU...'
                   }
                   aria-label={dict.common.searchPlaceholder}
-                  className="w-full min-h-[44px] pl-9 pr-11 py-2 text-base rounded-lg bg-[#F9F8F3] text-[#1B4332] border border-[#E5E2D9] placeholder:text-[#1B4332]/65 focus:border-[var(--store-accent)] focus:bg-white focus:outline-none"
+                  className="w-full min-h-[44px] pl-9 pr-11 py-2 text-base rounded-lg bg-surface text-ink border border-border placeholder:text-ink/65 focus:border-[var(--store-accent)] focus:bg-white focus:outline-none"
                 />
                 {searchQuery && (
                   <button
@@ -829,7 +830,7 @@ export function StorefrontShell({
                       mobileSearchInputRef.current?.focus();
                     }}
                     aria-label={uiText("Clear search", locale)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-[#1B4332]/80 hover:text-[#1B4332] cursor-pointer"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-ink/80 hover:text-ink cursor-pointer"
                   >
                     <X className="w-4 h-4" aria-hidden="true" />
                   </button>
@@ -837,11 +838,11 @@ export function StorefrontShell({
               </div>
 
               {isSearchFocused && (
-                <div className="mt-2 bg-[#FDFCF8] border border-[#E5E2D9] rounded-xl shadow-[0_14px_36px_rgba(27,67,50,0.08)] overflow-hidden max-h-[min(360px,55dvh)] overflow-y-auto p-3.5 space-y-3">
+                <div className="mt-2 bg-bg border border-border rounded-xl shadow-[0_14px_36px_rgba(27,67,50,0.08)] overflow-hidden max-h-[min(360px,55dvh)] overflow-y-auto p-3.5 space-y-3">
                   {searchQuery.trim().length > 0 ? (
                     <>
                       {matchingProducts.length > 0 ? (
-                        <div className="divide-y divide-[#E5E2D9]">
+                        <div className="divide-y divide-border">
                           {matchingProducts.map((p) => {
                             const variant = p.variants[0];
                             return (
@@ -852,29 +853,29 @@ export function StorefrontShell({
                                   setIsSearchFocused(false);
                                   setIsMobileSearchOpen(false);
                                 }}
-                                className="flex items-center gap-3 py-2.5 min-h-[44px] hover:bg-[#F9F8F3] transition-colors"
+                                className="flex items-center gap-3 py-2.5 min-h-[44px] hover:bg-surface transition-colors"
                               >
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-semibold text-[#1B4332] truncate">
+                                  <p className="text-sm font-semibold text-ink truncate">
                                     {locale === 'bn' ? p.nameBn : p.nameEn}
                                   </p>
-                                  <p className="text-xs font-mono text-[#1B4332]/65 tabular-nums">
+                                  <p className="text-xs font-mono text-ink/65 tabular-nums">
                                     {variant
                                       ? formatPoishaToBdt(variant.salePricePoisha, locale)
                                       : ''}
                                   </p>
                                 </div>
-                                <ChevronRight className="w-4 h-4 text-[#1B4332]/50 shrink-0" />
+                                <ChevronRight className="w-4 h-4 text-ink/50 shrink-0" />
                               </Link>
                             );
                           })}
                         </div>
                       ) : (
-                        <p className="text-xs text-center py-4 text-[#1B4332]/65">
+                        <p className="text-xs text-center py-4 text-ink/65">
                           {locale === 'bn' ? 'কোনো পণ্য খুঁজে পাওয়া যায়নি' : 'No products found'}
                         </p>
                       )}
-                      <div className="pt-2.5 border-t border-[#E5E2D9] flex items-center justify-between">
+                      <div className="pt-2.5 border-t border-border flex items-center justify-between">
                         <Link
                           href={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
                           onClick={() => {
@@ -892,7 +893,7 @@ export function StorefrontShell({
                             setIsSearchFocused(false);
                             setIsMobileSearchOpen(false);
                           }}
-                          className="min-h-[36px] inline-flex items-center font-mono text-[11px] uppercase tracking-[0.08em] text-[#1B4332]/65"
+                          className="min-h-[36px] inline-flex items-center font-mono text-[11px] uppercase tracking-[0.08em] text-ink/65"
                         >
                           {locale === 'bn' ? 'সকল পণ্য' : 'Shop All'}
                         </Link>
@@ -900,7 +901,7 @@ export function StorefrontShell({
                     </>
                   ) : (
                     <div className="space-y-2.5">
-                      <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#1B4332]/60">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink/60">
                         {locale === 'bn' ? 'জনপ্রিয় অনুসন্ধান' : 'Popular Searches'}
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -917,7 +918,7 @@ export function StorefrontShell({
                                 navigate(`/search?q=${encodeURIComponent(term)}`);
                               }
                             }}
-                            className="px-3 py-1.5 min-h-[36px] rounded-lg border border-[#E5E2D9] bg-[#F9F8F3] text-xs font-medium text-[#1B4332] hover:border-[var(--store-accent)] cursor-pointer"
+                            className="px-3 py-1.5 min-h-[36px] rounded-lg border border-border bg-surface text-xs font-medium text-ink hover:border-[var(--store-accent)] cursor-pointer"
                           >
                             {locale === 'bn' ? item.labelBn : item.labelEn}
                           </button>
@@ -936,27 +937,27 @@ export function StorefrontShell({
       <main className="flex-1 min-w-0">{children}</main>
 
       {/* 4. Editorial Linen Footer (Variation 2) */}
-      <footer className="border-t border-[#E5E2D9] bg-[#F9F8F3] mt-10 sm:mt-20">
+      <footer className="border-t border-border bg-surface mt-10 sm:mt-20">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-10 py-9 sm:py-14 grid grid-cols-1 md:grid-cols-12 gap-8 sm:gap-10">
           <div className="md:col-span-5 space-y-4">
             <Link href="/" aria-label={brandName}>
               <BrandMark settings={siteSettings} compact />
             </Link>
-            <p className="text-sm text-[#1B4332]/80 leading-7 max-w-sm whitespace-pre-line">
+            <p className="text-sm text-ink/80 leading-7 max-w-sm whitespace-pre-line">
               {text(config.footerTextBn, config.footerTextEn)}
             </p>
-            <div className="flex flex-col gap-1.5 text-xs font-mono text-[#1B4332]/85">
+            <div className="flex flex-col gap-1.5 text-xs font-mono text-ink/85">
               {safeSupportPhoneHref && (
-                <a href={`tel:${safeSupportPhoneHref}`} className="hover:text-[#1B4332] break-all">
+                <a href={`tel:${safeSupportPhoneHref}`} className="hover:text-ink break-all">
                   {siteSettings.supportPhone}
                 </a>
               )}
               {siteSettings.supportEmail && (
-                <a href={`mailto:${siteSettings.supportEmail}`} className="hover:text-[#1B4332] break-all">
+                <a href={`mailto:${siteSettings.supportEmail}`} className="hover:text-ink break-all">
                   {siteSettings.supportEmail}
                 </a>
               )}
-              <p className="font-sans text-xs text-[#1B4332]/80">
+              <p className="font-sans text-xs text-ink/80">
                 {text(siteSettings.aboutContactPage?.helplineHoursBn ?? '', siteSettings.aboutContactPage?.helplineHoursEn ?? '')}
               </p>
             </div>
@@ -967,7 +968,7 @@ export function StorefrontShell({
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#1B4332]/85 hover:text-[#1B4332] underline underline-offset-4"
+                  className="text-ink/85 hover:text-ink underline underline-offset-4"
                 >
                   {text(link.labelBn, link.labelEn)}
                 </a>
@@ -977,13 +978,13 @@ export function StorefrontShell({
 
           <div className="grid grid-cols-2 md:contents gap-6">
             <div className="md:col-span-3">
-              <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-[#1B4332]/80 mb-3 sm:mb-4">
+              <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-ink/80 mb-3 sm:mb-4">
                 {text('সাথে থাকুন', 'Explore')}
               </h2>
-              <ul className="space-y-1.5 sm:space-y-2.5 text-sm text-[#1B4332]/85">
+              <ul className="space-y-1.5 sm:space-y-2.5 text-sm text-ink/85">
                 {config.footerLinks.filter(link => link.enabled).map(link => (
                   <li key={link.id}>
-                    <Link className="inline-flex min-h-[44px] sm:min-h-[36px] items-center hover:text-[#1B4332] hover:underline underline-offset-4" href={link.href}>
+                    <Link className="inline-flex min-h-[44px] sm:min-h-[36px] items-center hover:text-ink hover:underline underline-offset-4" href={link.href}>
                       {text(link.labelBn, link.labelEn)}
                     </Link>
                   </li>
@@ -992,13 +993,13 @@ export function StorefrontShell({
             </div>
 
             <div className="md:col-span-4">
-              <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-[#1B4332]/80 mb-3 sm:mb-4">
+              <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-ink/80 mb-3 sm:mb-4">
                 {text('নীতিমালা', 'Useful information')}
               </h2>
-              <ul className="space-y-1.5 sm:space-y-2.5 text-sm text-[#1B4332]/85">
+              <ul className="space-y-1.5 sm:space-y-2.5 text-sm text-ink/85">
                 {Object.entries(siteSettings.legalPages).map(([slug, page]) => (
                   <li key={slug}>
-                    <Link href={`/legal/${slug}`} className="inline-flex min-h-[44px] sm:min-h-[36px] items-center hover:text-[#1B4332] hover:underline underline-offset-4">
+                    <Link href={`/legal/${slug}`} className="inline-flex min-h-[44px] sm:min-h-[36px] items-center hover:text-ink hover:underline underline-offset-4">
                       {text(page.titleBn, page.titleEn)}
                     </Link>
                   </li>
@@ -1008,8 +1009,8 @@ export function StorefrontShell({
           </div>
         </div>
 
-        <div className="storefront-footer-bottom border-t border-[#E5E2D9] px-4 sm:px-8 lg:px-10 py-5">
-          <div className="max-w-[1600px] mx-auto flex flex-wrap justify-between items-center gap-3 text-[11px] text-[#1B4332]/80">
+        <div className="storefront-footer-bottom border-t border-border px-4 sm:px-8 lg:px-10 py-5">
+          <div className="max-w-[1600px] mx-auto flex flex-wrap justify-between items-center gap-3 text-[11px] text-ink/80">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <span>
                 {text(config.copyrightBn, config.copyrightEn)
@@ -1017,14 +1018,14 @@ export function StorefrontShell({
                   .replaceAll('{brand}', brandName)}
               </span>
               {text(config.footerNoteBn, config.footerNoteEn) && (
-                <span className="text-[#1B4332]/80">
+                <span className="text-ink/80">
                   {text(config.footerNoteBn, config.footerNoteEn)}
                 </span>
               )}
             </div>
             <div className="hidden sm:flex flex-wrap items-center gap-6">
               {Object.entries(siteSettings.legalPages).slice(0, 3).map(([slug, page]) => (
-                <Link key={slug} href={`/legal/${slug}`} className="hover:text-[#1B4332] transition-colors">
+                <Link key={slug} href={`/legal/${slug}`} className="hover:text-ink transition-colors">
                   {text(page.titleBn, page.titleEn)}
                 </Link>
               ))}
@@ -1048,14 +1049,14 @@ export function StorefrontShell({
       {/* 5. Mobile 5-Button Bottom Tab Bar (< 768px) */}
       <nav
         aria-label={uiText("Mobile bottom navigation", locale)}
-        className="storefront-bottom-nav md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[#E5E2D9] bg-[#FDFCF8]/95 backdrop-blur safe-bottom-bar"
+        className="storefront-bottom-nav md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-bg/95 backdrop-blur safe-bottom-bar"
       >
         <div className="grid grid-cols-5 h-14">
           <Link
             href="/"
             onClick={() => onSelectCategory?.(null)}
             aria-current={pathname === '/' ? 'page' : undefined}
-            className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-semibold leading-none active:scale-95 transition-transform ${pathname === '/' ? 'text-[var(--store-accent)]' : 'text-[#1B4332]/80 hover:text-[#1B4332]'}`}
+            className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-semibold leading-none active:scale-95 transition-transform ${pathname === '/' ? 'text-[var(--store-accent)]' : 'text-ink/80 hover:text-ink'}`}
           >
             <Home className="w-[18px] h-[18px]" aria-hidden="true" />
             <span className="truncate max-w-full">{dict.common.home}</span>
@@ -1064,7 +1065,7 @@ export function StorefrontShell({
           <Link
             href="/shop"
             aria-current={pathname === '/shop' ? 'page' : pathname.startsWith('/category/') || pathname === '/categories' || pathname.startsWith('/product/') || pathname.startsWith('/search') ? 'location' : undefined}
-            className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-semibold leading-none active:scale-95 transition-transform ${pathname === '/shop' || pathname.startsWith('/category/') || pathname === '/categories' || pathname.startsWith('/product/') || pathname.startsWith('/search') ? 'text-[var(--store-accent)]' : 'text-[#1B4332]/80 hover:text-[#1B4332]'}`}
+            className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-semibold leading-none active:scale-95 transition-transform ${pathname === '/shop' || pathname.startsWith('/category/') || pathname === '/categories' || pathname.startsWith('/product/') || pathname.startsWith('/search') ? 'text-[var(--store-accent)]' : 'text-ink/80 hover:text-ink'}`}
           >
             <Grid className="w-[18px] h-[18px]" aria-hidden="true" />
             <span className="truncate max-w-full">{locale === 'bn' ? 'শপ' : 'Shop'}</span>
@@ -1073,7 +1074,7 @@ export function StorefrontShell({
           <Link
             href="/order-tracking"
             aria-current={pathname.startsWith('/order-tracking') ? 'page' : undefined}
-            className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-semibold leading-none active:scale-95 transition-transform ${pathname.startsWith('/order-tracking') ? 'text-[var(--store-accent)]' : 'text-[#1B4332]/80 hover:text-[#1B4332]'}`}
+            className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-semibold leading-none active:scale-95 transition-transform ${pathname.startsWith('/order-tracking') ? 'text-[var(--store-accent)]' : 'text-ink/80 hover:text-ink'}`}
           >
             <Package className="w-[18px] h-[18px]" aria-hidden="true" />
             <span className="truncate max-w-full">{locale === 'bn' ? 'ট্র্যাক' : 'Track'}</span>
@@ -1082,7 +1083,7 @@ export function StorefrontShell({
           <Link
             href="/account"
             aria-current={pathname === '/account' ? 'page' : undefined}
-            className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-semibold leading-none active:scale-95 transition-transform ${pathname === '/account' ? 'text-[var(--store-accent)]' : 'text-[#1B4332]/80 hover:text-[#1B4332]'}`}
+            className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-semibold leading-none active:scale-95 transition-transform ${pathname === '/account' ? 'text-[var(--store-accent)]' : 'text-ink/80 hover:text-ink'}`}
           >
             <User className="w-[18px] h-[18px]" aria-hidden="true" />
             <span className="truncate max-w-full">{dict.common.account}</span>
@@ -1094,7 +1095,7 @@ export function StorefrontShell({
             data-active={isMenuOpen ? 'true' : undefined}
             aria-expanded={isMenuOpen}
             aria-label={locale === 'bn' ? 'মেনু খুলুন' : 'Open menu'}
-            className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-semibold leading-none cursor-pointer active:scale-95 transition-transform ${isMenuOpen ? 'text-[var(--store-accent)]' : 'text-[#1B4332]/80 hover:text-[#1B4332]'}`}
+            className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-semibold leading-none cursor-pointer active:scale-95 transition-transform ${isMenuOpen ? 'text-[var(--store-accent)]' : 'text-ink/80 hover:text-ink'}`}
           >
             <Menu className="w-[18px] h-[18px]" aria-hidden="true" />
             <span className="truncate max-w-full">{locale === 'bn' ? 'মেনু' : 'Menu'}</span>
@@ -1111,8 +1112,8 @@ export function StorefrontShell({
           cartItems.length > 0 ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#1B4332]/70">{dict.common.subtotal}</span>
-                <span className="font-display text-xl font-bold text-[#1B4332] tabular-nums">
+                <span className="text-ink/70">{dict.common.subtotal}</span>
+                <span className="font-display text-xl font-bold text-ink tabular-nums">
                   {formatPoishaToBdt(freeDeliveryProgress.subtotalPoisha, locale)}
                 </span>
               </div>
@@ -1129,15 +1130,15 @@ export function StorefrontShell({
       >
         <div className="space-y-4">
           {/* Free Delivery Threshold Progress Booster */}
-          <div className="p-3.5 border border-[#E5E2D9] rounded-xl bg-[#F9F8F3] space-y-2">
+          <div className="p-3.5 border border-border rounded-xl bg-surface space-y-2">
             <div className="flex items-center justify-between text-xs font-medium">
               {freeDeliveryProgress.isQualifiedForFreeDelivery ? (
-                <span className="text-[#15803D] font-semibold flex items-center gap-1.5">
+                <span className="text-success font-semibold flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4" aria-hidden="true" />
                   {dict.cart.unlockedFreeDelivery}
                 </span>
               ) : (
-                <span className="text-[#1B4332]">
+                <span className="text-ink">
                   {dict.cart.addMoreForFreeDelivery(
                     formatPoishaToBdt(
                       freeDeliveryProgress.remainingForFreeDeliveryPoisha,
@@ -1146,11 +1147,11 @@ export function StorefrontShell({
                   )}
                 </span>
               )}
-              <span className="font-mono tabular-nums text-[#1B4332]/65">
+              <span className="font-mono tabular-nums text-ink/65">
                 {formatLocaleNumber(freeDeliveryProgress.progressPercent, locale)}%
               </span>
             </div>
-            <div className="w-full h-1.5 rounded-full bg-[#FDFCF8] border border-[#E5E2D9] overflow-hidden">
+            <div className="w-full h-1.5 rounded-full bg-bg border border-border overflow-hidden">
               <div
                 className="h-full rounded-full bg-[var(--store-accent)] transition-all duration-200"
                 style={{ width: `${freeDeliveryProgress.progressPercent}%` }}
@@ -1160,8 +1161,8 @@ export function StorefrontShell({
 
           {/* Undo Remove Banner */}
           {lastRemovedItem && (
-            <div className="flex items-center justify-between gap-2 p-3 border border-[#E5E2D9] rounded-xl bg-[#F9F8F3] text-xs">
-              <span className="text-[#1B4332] truncate">
+            <div className="flex items-center justify-between gap-2 p-3 border border-border rounded-xl bg-surface text-xs">
+              <span className="text-ink truncate">
                 {dict.cart.itemRemovedToast}
               </span>
               <Button
@@ -1184,15 +1185,15 @@ export function StorefrontShell({
               onAction={() => setCartOpen(false)}
             />
           ) : (
-            <ul className="divide-y divide-[#E5E2D9] border border-[#E5E2D9] rounded-xl overflow-hidden">
+            <ul className="divide-y divide-border border border-border rounded-xl overflow-hidden">
               {cartItems.map((item) => {
                 const itemName = locale === 'bn' ? item.nameBn : item.nameEn;
                 const variantTitle =
                   locale === 'bn' ? item.variantTitleBn : item.variantTitleEn;
                 return (
-                  <li key={item.variantId} className="p-3 sm:p-3.5 flex gap-3 sm:gap-3.5 bg-[#FDFCF8] min-w-0">
+                  <li key={item.variantId} className="p-3 sm:p-3.5 flex gap-3 sm:gap-3.5 bg-bg min-w-0">
                     {/* 4:5 Portrait Thumbnail */}
-                    <div className="relative w-16 h-20 shrink-0 border border-[#E5E2D9] rounded-lg overflow-hidden bg-[#F9F8F3]">
+                    <div className="relative w-16 h-20 shrink-0 border border-border rounded-lg overflow-hidden bg-surface">
                       {item.imageUrl && (
                         <img
                           src={productImageUrl(item.imageUrl)}
@@ -1203,11 +1204,11 @@ export function StorefrontShell({
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-display text-base font-bold text-[#1B4332] truncate">
+                      <p className="font-display text-base font-bold text-ink truncate">
                         {itemName}
                       </p>
-                      <p className="text-xs text-[#1B4332]/80">{variantTitle}</p>
-                      <p className="font-mono text-xs font-bold text-[#1B4332] mt-1 tabular-nums">
+                      <p className="text-xs text-ink/80">{variantTitle}</p>
+                      <p className="font-mono text-xs font-bold text-ink mt-1 tabular-nums">
                         {formatPoishaToBdt(
                           item.unitSalePricePoisha * item.quantity,
                           locale
@@ -1215,18 +1216,18 @@ export function StorefrontShell({
                       </p>
 
                       <div className="mt-2.5 flex items-center justify-between">
-                        <div className="inline-flex items-center border border-[#E5E2D9] rounded-lg bg-[#F9F8F3] overflow-hidden">
+                        <div className="inline-flex items-center border border-border rounded-lg bg-surface overflow-hidden">
                           <button
                             type="button"
                             onClick={() =>
                               updateQuantity(item.variantId, item.quantity - 1)
                             }
                             aria-label={uiText("Decrease quantity", locale)}
-                            className="w-11 h-11 flex items-center justify-center text-[#1B4332] hover:bg-white cursor-pointer"
+                            className="w-11 h-11 flex items-center justify-center text-ink hover:bg-white cursor-pointer"
                           >
                             <Minus className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
-                          <span className="px-3 font-mono text-xs font-semibold tabular-nums text-[#1B4332]">
+                          <span className="px-3 font-mono text-xs font-semibold tabular-nums text-ink">
                             {formatLocaleNumber(item.quantity, locale)}
                           </span>
                           <button
@@ -1235,7 +1236,7 @@ export function StorefrontShell({
                               updateQuantity(item.variantId, item.quantity + 1)
                             }
                             aria-label={uiText("Increase quantity", locale)}
-                            className="w-11 h-11 flex items-center justify-center text-[#1B4332] hover:bg-white cursor-pointer"
+                            className="w-11 h-11 flex items-center justify-center text-ink hover:bg-white cursor-pointer"
                           >
                             <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
@@ -1245,7 +1246,7 @@ export function StorefrontShell({
                           type="button"
                           onClick={() => removeItem(item.variantId)}
                           aria-label={locale === 'bn' ? `${itemName} সরান` : `Remove ${itemName}`}
-                          className="w-11 h-11 flex items-center justify-center text-[#1B4332]/80 hover:text-[#A84A28] cursor-pointer"
+                          className="w-11 h-11 flex items-center justify-center text-ink/80 hover:text-[var(--store-terracotta)] cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" aria-hidden="true" />
                         </button>
@@ -1292,7 +1293,7 @@ export function StorefrontShell({
 
           {/* Primary Navigation Links + Wishlist */}
           <div className="space-y-1.5">
-            <p className="px-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#1B4332]/60">
+            <p className="px-1 font-mono text-[11px] uppercase tracking-[0.1em] text-ink/60">
               {locale === 'bn' ? 'প্রধান পেজসমূহ' : 'Main Pages'}
             </p>
 
@@ -1302,7 +1303,7 @@ export function StorefrontShell({
                   key={link.id}
                   href={link.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className="p-3 min-h-[44px] min-w-0 break-words flex items-center rounded-lg border border-[#E5E2D9] bg-[#FDFCF8] text-sm font-medium text-[#1B4332] hover:bg-[#F9F8F3]"
+                  className="p-3 min-h-[44px] min-w-0 break-words flex items-center rounded-lg border border-border bg-bg text-sm font-medium text-ink hover:bg-surface"
                 >
                   {text(link.labelBn, link.labelEn)}
                 </Link>
@@ -1310,14 +1311,14 @@ export function StorefrontShell({
               <Link
                 href="/account?tab=wishlist"
                 onClick={() => setIsMenuOpen(false)}
-                className="p-3 min-h-[44px] min-w-0 flex items-center justify-between gap-2 rounded-lg border border-[#E5E2D9] bg-[#FDFCF8] text-sm font-medium text-[#1B4332] hover:bg-[#F9F8F3]"
+                className="p-3 min-h-[44px] min-w-0 flex items-center justify-between gap-2 rounded-lg border border-border bg-bg text-sm font-medium text-ink hover:bg-surface"
               >
                 <span className="inline-flex items-center gap-1.5 truncate">
-                  <Heart className="w-3.5 h-3.5 text-[#A84A28] shrink-0" aria-hidden="true" />
+                  <Heart className="w-3.5 h-3.5 text-[var(--store-terracotta)] shrink-0" aria-hidden="true" />
                   <span className="truncate">{dict.common.wishlist}</span>
                 </span>
                 {wishlistCount > 0 && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-mono bg-[#A84A28] text-white rounded-full tabular-nums shrink-0">
+                  <span className="px-1.5 py-0.5 text-[10px] font-mono bg-[var(--store-terracotta)] text-white rounded-full tabular-nums shrink-0">
                     {formatLocaleNumber(wishlistCount, locale)}
                   </span>
                 )}
@@ -1326,12 +1327,12 @@ export function StorefrontShell({
           </div>
 
           {/* Touch-Friendly Category Accordion */}
-          <div className="space-y-2 border-t border-[#E5E2D9] pt-4">
+          <div className="space-y-2 border-t border-border pt-4">
             <button
               type="button"
               onClick={() => setIsCategoryAccordionOpen((prev) => !prev)}
               aria-expanded={isCategoryAccordionOpen}
-              className="w-full min-h-[44px] flex items-center justify-between px-1 py-1 font-mono text-xs uppercase tracking-[0.1em] text-[#1B4332] cursor-pointer"
+              className="w-full min-h-[44px] flex items-center justify-between px-1 py-1 font-mono text-xs uppercase tracking-[0.1em] text-ink cursor-pointer"
             >
               <span>
                 {dict.common.categories} ({formatLocaleNumber(categories.length, locale)})
@@ -1359,7 +1360,7 @@ export function StorefrontShell({
                   className={`w-full min-h-[44px] flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold text-left transition-all border cursor-pointer ${
                     !activeCategorySlug
                       ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)]'
-                      : 'bg-[#FDFCF8] text-[#1B4332] border-[#E5E2D9] hover:bg-[#F9F8F3]'
+                      : 'bg-bg text-ink border-border hover:bg-surface'
                   }`}
                 >
                   <span>{locale === 'bn' ? 'সব কালেকশন' : 'All Collections'}</span>
@@ -1383,7 +1384,7 @@ export function StorefrontShell({
                       className={`w-full min-h-[44px] flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold text-left transition-all border cursor-pointer ${
                         isSelected
                           ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)]'
-                          : 'bg-[#FDFCF8] text-[#1B4332] border-[#E5E2D9] hover:bg-[#F9F8F3]'
+                          : 'bg-bg text-ink border-border hover:bg-surface'
                       }`}
                     >
                       <span className="truncate">
@@ -1398,9 +1399,9 @@ export function StorefrontShell({
           </div>
 
           {/* Footer Options: Language Toggle, Support, Portals */}
-          <div className="pt-4 border-t border-[#E5E2D9] space-y-2.5">
-            <div className="flex items-center justify-between p-3 border border-[#E5E2D9] rounded-xl bg-[#F9F8F3]">
-              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#1B4332]">
+          <div className="pt-4 border-t border-border space-y-2.5">
+            <div className="flex items-center justify-between p-3 border border-border rounded-xl bg-surface">
+              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink">
                 {locale === 'bn' ? 'ভাষা / Language' : 'Switch Language'}
               </span>
               <Button
@@ -1416,13 +1417,13 @@ export function StorefrontShell({
             {safeSupportPhoneHref && (
               <a
                 href={`tel:${safeSupportPhoneHref}`}
-                className="p-3 min-h-[44px] border border-[#E5E2D9] rounded-xl bg-[#F9F8F3] flex items-center justify-between text-xs hover:border-[var(--store-accent)] transition-colors"
+                className="p-3 min-h-[44px] border border-border rounded-xl bg-surface flex items-center justify-between text-xs hover:border-[var(--store-accent)] transition-colors"
               >
-                <span className="text-[#1B4332]/80 font-medium flex items-center gap-2">
+                <span className="text-ink/80 font-medium flex items-center gap-2">
                   <PhoneCall className="w-3.5 h-3.5 text-[var(--store-accent)]" aria-hidden="true" />
                   <span>{locale === 'bn' ? 'হেল্পলাইন:' : 'Helpline:'}</span>
                 </span>
-                <span className="font-mono font-bold text-[#1B4332] tabular-nums text-xs">
+                <span className="font-mono font-bold text-ink tabular-nums text-xs">
                   {siteSettings.supportPhone}
                 </span>
               </a>
@@ -1433,7 +1434,7 @@ export function StorefrontShell({
                 href={`https://wa.me/${whatsappDigits}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3 min-h-[44px] rounded-xl border border-[#15803D]/30 bg-[#EEF6F0] flex items-center justify-between text-xs font-semibold text-[#1B4332]"
+                className="p-3 min-h-[44px] rounded-xl border border-success/30 bg-success/10 flex items-center justify-between text-xs font-semibold text-ink"
               >
                 <span>{text('হোয়াটসঅ্যাপ সাপোর্ট', 'WhatsApp Support')}</span>
                 <ArrowUpRight className="w-4 h-4 text-[var(--store-accent)]" aria-hidden="true" />
