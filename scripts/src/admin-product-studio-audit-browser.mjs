@@ -1,10 +1,13 @@
+import fs from 'node:fs';
 import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
 
 const BASE = process.env.TEST_BASE_URL || 'http://127.0.0.1:3000';
 const CHROME_PATH =
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ||
-  '/ms-playwright/chrome-headless-shell-linux64/chrome-headless-shell';
+  (fs.existsSync('/ms-playwright/chrome-headless-shell-linux64/chrome-headless-shell')
+    ? '/ms-playwright/chrome-headless-shell-linux64/chrome-headless-shell'
+    : undefined);
 
 const VIEWPORTS = [
   { name: '360x800', width: 360, height: 800, mobile: true },
@@ -96,10 +99,9 @@ async function checkDialogBannerClearance(page, label, failures) {
 }
 
 async function main() {
-  const browser = await chromium.launch({
-    headless: true,
-    executablePath: CHROME_PATH,
-  });
+  const launchOptions = { headless: true };
+  if (CHROME_PATH) launchOptions.executablePath = CHROME_PATH;
+  const browser = await chromium.launch(launchOptions);
   const failures = [];
 
   try {
