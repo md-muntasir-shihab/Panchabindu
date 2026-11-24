@@ -4,7 +4,7 @@ import { productImageUrl, productImageFallback } from '@/lib/storefront/product-
 // src/components/storefront/product-card.tsx
 // Botanical Heritage Calm — Frameless 4:5 Portrait Product Card
 // Features:
-//   - Frameless 4:5 portrait image canvas (#F2EFE9) with hover 2nd product photo swap
+//   - Frameless 4:5 portrait image canvas (surface tone) with hover 2nd product photo swap
 //   - Floating Quick-Add CTA on hover (desktop) + accessible touch bar (mobile, >=44px)
 //   - Clean unboxed metadata & tabular-nums Poisha price below the photo
 //   - Wishlist heart toggle & next/image with referrerPolicy="no-referrer"
@@ -104,7 +104,7 @@ export function ProductCard({ product }: ProductCardProps) {
     >
       <div className="min-w-0">
         {/* 4:5 Editorial Portrait Image Canvas */}
-        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-[#F9F8F3] border border-[#E5E2D9]">
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-surface border border-border">
           <Link
             href={`/product/${product.slug}`}
             className="block w-full h-full relative"
@@ -121,19 +121,19 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Subtle Top-Left Editorial Status Tag (bounded to avoid colliding with wishlist button on 360px 2-col) */}
           <div className="absolute top-2 left-2 sm:top-3 sm:left-3 max-w-[calc(100%-3.25rem)] sm:max-w-[calc(100%-4rem)] flex flex-col gap-1 z-10 pointer-events-none">
             {isOutOfStock ? (
-              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-[#FDFCF8]/95 text-[#B91C1C] border border-[#E5E2D9] truncate">
+              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-bg/95 text-danger border border-border truncate">
                 {dict.common.outOfStock}
               </span>
             ) : isLowStock ? (
-              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-[#FDFCF8]/95 text-[#A84A28] border border-[#E5E2D9] truncate">
+              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-bg/95 text-[var(--store-terracotta)] border border-border truncate">
                 {dict.common.lowStockRemaining(totalStock)}
               </span>
             ) : product.isFreeDelivery ? (
-              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-[#FDFCF8]/95 text-[#1B4332] border border-[#E5E2D9] truncate">
+              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-bg/95 text-accent border border-border truncate">
                 {dict.common.freeDelivery}
               </span>
             ) : product.requiresAdvanceCourierCharge ? (
-              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-[#FDFCF8]/95 text-[#A84A28] border border-[#E5E2D9] truncate">
+              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.06em] bg-bg/95 text-[var(--store-terracotta)] border border-border truncate">
                 {locale === 'bn' ? 'অগ্রিম চার্জ' : 'Advance'}
               </span>
             ) : null}
@@ -153,11 +153,11 @@ export function ProductCard({ product }: ProductCardProps) {
                 : `Add ${displayName} to wishlist`
             }
             aria-pressed={isWishlisted}
-            className="absolute top-2 right-2 sm:top-3 sm:right-3 w-11 h-11 flex items-center justify-center rounded-full bg-[#FDFCF8]/95 text-[#1B4332] border border-[#E5E2D9] hover:bg-white hover:border-[#1B4332] cursor-pointer z-10 transition-all active:scale-95"
+            className="absolute top-2 right-2 sm:top-3 sm:right-3 w-11 h-11 flex items-center justify-center rounded-full bg-bg/95 text-ink border border-border hover:bg-white hover:border-accent cursor-pointer z-10 transition-all active:scale-95"
           >
             <Heart
               className={`w-4 h-4 transition-colors ${
-                isWishlisted ? 'fill-[#A84A28] text-[#A84A28]' : 'text-[#1B4332]'
+                isWishlisted ? 'fill-[var(--store-terracotta)] text-[var(--store-terracotta)]' : 'text-ink'
               }`}
               aria-hidden="true"
             />
@@ -171,7 +171,7 @@ export function ProductCard({ product }: ProductCardProps) {
               onClick={handleQuickAdd}
               className={`w-full min-h-[44px] px-4 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.12em] flex items-center justify-center gap-2 transition-all cursor-pointer ${
                 isOutOfStock
-                  ? 'bg-[#FDFCF8]/95 text-[#1B4332]/75 border border-[#E5E2D9] cursor-not-allowed'
+                  ? 'bg-bg/95 text-ink/75 border border-border cursor-not-allowed'
                   : 'bg-[var(--store-accent)] text-white hover:opacity-90 active:scale-[0.98]'
               }`}
             >
@@ -196,20 +196,20 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Frameless Editorial Typography Below Image */}
         <div className="pt-2.5 sm:pt-3.5 space-y-1 min-w-0">
           {/* Unboxed Metadata Line */}
-          <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] text-[#1B4332]/80 min-w-0 overflow-hidden">
-            <span className="inline-flex items-center gap-0.5 sm:gap-1 font-medium text-[#1B4332] shrink-0">
-              <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-[#A84A28] text-[#A84A28]" aria-hidden="true" />
+          <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] text-ink/80 min-w-0 overflow-hidden">
+            <span className="inline-flex items-center gap-0.5 sm:gap-1 font-medium text-ink shrink-0">
+              <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-[var(--store-terracotta)] text-[var(--store-terracotta)]" aria-hidden="true" />
               <span className="font-mono tabular-nums">
                 {locale === 'bn' ? toBanglaDigits(ratingValue) : ratingValue}
               </span>
-              <span className="text-[#1B4332]/80 font-normal">
+              <span className="text-ink/80 font-normal">
                 ({formatLocaleNumber(product.reviewCount, locale)})
               </span>
             </span>
             {!isOutOfStock && (
               <>
                 <span aria-hidden="true" className="shrink-0">·</span>
-                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.05em] text-[#15803D] truncate">
+                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.05em] text-success truncate">
                   {dict.common.inStock}
                 </span>
               </>
@@ -219,20 +219,20 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Product Name */}
           <Link
             href={`/product/${product.slug}`}
-            className="block font-display text-[15px] sm:text-lg font-semibold text-[#1B4332] group-hover:text-[#A84A28] line-clamp-2 leading-snug transition-colors"
+            className="block font-display text-[15px] sm:text-lg font-semibold text-ink group-hover:text-[var(--store-terracotta)] line-clamp-2 leading-snug transition-colors"
           >
             {displayName}
           </Link>
 
           {/* Price Row */}
           <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-0.5 tabular-nums">
-            <span className="text-sm sm:text-base font-semibold text-[#1B4332]">
+            <span className="text-sm sm:text-base font-semibold text-ink">
               {formatPoishaToBdt(primaryVariant.salePricePoisha, locale)}
             </span>
             {primaryVariant.compareAtPricePoisha &&
               primaryVariant.compareAtPricePoisha >
                 primaryVariant.salePricePoisha && (
-                <span className="text-[11px] sm:text-xs text-[#1B4332]/75 line-through">
+                <span className="text-[11px] sm:text-xs text-ink/75 line-through">
                   {formatPoishaToBdt(primaryVariant.compareAtPricePoisha, locale)}
                 </span>
               )}
@@ -248,7 +248,7 @@ export function ProductCard({ product }: ProductCardProps) {
           onClick={handleQuickAdd}
           className={`w-full min-h-[44px] px-2.5 py-2 rounded-lg font-mono text-[10px] uppercase tracking-[0.06em] flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
             isOutOfStock
-              ? 'bg-[#F9F8F3] text-[#1B4332]/75 border border-[#E5E2D9] cursor-not-allowed'
+              ? 'bg-surface text-ink/75 border border-border cursor-not-allowed'
               : 'bg-[var(--store-accent)] text-white active:scale-[0.98]'
           }`}
         >
