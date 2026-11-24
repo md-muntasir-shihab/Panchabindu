@@ -7,7 +7,7 @@ import https from 'node:https';
 import net from 'node:net';
 import tls from 'node:tls';
 import { createRequire, syncBuiltinESMExports } from 'node:module';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const fixture = process.env.PANCHABINDU_SANDBOX_FIXTURE;
 assert.ok(fixture && process.send, 'Start this app through the sandbox test or isolated preview launcher');
@@ -76,7 +76,8 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const web = path.join(root, 'artifacts/panchabindu');
 const require = createRequire(path.join(web, 'package.json'));
 const { createServer } = await import(require.resolve('vite'));
-const { default: app } = await import('../../artifacts/api-server/src/app.ts');
+// Windows paths (F:\...) are invalid ESM URL schemes; always import via file:// URL.
+const { default: app } = await import(pathToFileURL(path.join(root, 'artifacts/api-server/src/app.ts')).href);
 const server = http.createServer(app);
 const vite = await createServer({
   configFile: path.join(web, 'vite.config.ts'),
@@ -91,7 +92,7 @@ if (preview) {
     if (req.method !== 'GET' || req.path === '/api' || req.path.startsWith('/api/') || req.path.startsWith('/@') || !String(req.headers.accept || '').includes('text/html')) return next();
     try {
       const template = await fs.promises.readFile(path.join(web, 'index.html'), 'utf8');
-      const banner = '<div role="status" style="position:sticky;top:0;z-index:99999;text-align:center;padding:8px 12px;background:#fff3c4;color:#382a00;font:600 13px/1.4 system-ui,sans-serif">ডেমো প্রিভিউ — নমুনা তথ্য; কোনো অর্ডার বা পেমেন্ট বাস্তব নয়। / Demo preview — sample data; no real orders or payments.</div>';
+      const banner = '<div role="status" style="position:sticky;top:0;z-index:99999;text-align:center;padding:8px 12px;background:#fff3c4;color:#382a00;font:600 13px/1.4 system-ui,sans-serif">ডেমো প্রিভিউ — নমুনা তথ্য; কোনো অর্ডার বা পেমেন্ট বাস্তব নয়। / Demo preview — sample data; no real orders or payments.</div>';
       const html = await vite.transformIndexHtml(req.originalUrl, template.replace('<div id="root">', banner + '<div id="root">'));
       res.status(200).type('html').send(html);
     } catch (error) { next(error); }
