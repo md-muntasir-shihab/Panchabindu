@@ -34,6 +34,7 @@ import {
   MapPin,
   Eye,
   EyeOff,
+  ContactRound,
 } from 'lucide-react';
 import type {
   CategoryRecord,
@@ -458,7 +459,17 @@ export function AccountClient({
 
   const handleSavePersonalProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (profName.trim().length < 2) return;
+    // Backend requires customerName min 2 chars; never fail silently.
+    if (profName.trim().length < 2) {
+      setPersonalFeedback({
+        type: 'error',
+        text:
+          locale === 'bn'
+            ? 'পূর্ণ নাম কমপক্ষে ২ অক্ষরের হতে হবে।'
+            : 'Full name must be at least 2 characters.',
+      });
+      return;
+    }
     setPersonalSaving(true);
     setPersonalFeedback(null);
     try {
@@ -516,7 +527,19 @@ export function AccountClient({
 
   const handleSaveDefaultProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profStreet.trim()) return;
+    // Backend requires streetAddress min 6 chars (zod min(6)); validate before
+    // submitting so the shopper gets a clear localized message instead of a
+    // generic 400 from the server.
+    if (profStreet.trim().length < 6) {
+      setProfileFeedback({
+        type: 'error',
+        text:
+          locale === 'bn'
+            ? 'বিস্তারিত ঠিকানা কমপক্ষে ৬ অক্ষরের হতে হবে (বাসা/রোড/এলাকা সহ লিখুন)।'
+            : 'Street address must be at least 6 characters (include house, road and area).',
+      });
+      return;
+    }
     setProfileSaving(true);
     setProfileFeedback(null);
     try {
@@ -686,6 +709,8 @@ export function AccountClient({
     'inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-lg bg-accent text-white font-mono text-xs uppercase tracking-[0.12em] hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer';
   const outlineEditorialBtn =
     'inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-lg bg-transparent border border-accent/35 text-ink font-mono text-xs uppercase tracking-[0.12em] hover:border-accent hover:bg-accent hover:text-white disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer';
+  const sectionIconChip =
+    'w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full border border-border bg-surface text-accent flex items-center justify-center';
 
   return (
     <StorefrontShell siteSettings={siteSettings} categories={categories}>
@@ -1402,12 +1427,17 @@ export function AccountClient({
                   <>
                     {/* 5A. Dedicated Personal Information Card (Name, Mobile, Email) */}
                     <section className="bg-white p-4 sm:p-8 rounded-xl border border-border shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-4 sm:space-y-5">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-4">
-                        <div>
-                          <h2 className="font-display text-2xl sm:text-[1.65rem] font-semibold text-ink">
-                            {locale === 'bn' ? 'ব্যক্তিগত তথ্য' : 'Personal Information'}
-                          </h2>
-                          <p className="text-xs text-ink/65 mt-0.5">
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-3">
+                            <span aria-hidden="true" className={sectionIconChip}>
+                              <ContactRound className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                            </span>
+                            <h2 className="font-display text-2xl sm:text-[1.65rem] font-semibold text-ink">
+                              {locale === 'bn' ? 'ব্যক্তিগত তথ্য' : 'Personal Information'}
+                            </h2>
+                          </div>
+                          <p className="text-xs text-ink/65 mt-1.5">
                             {locale === 'bn'
                               ? 'আপনার নাম, মোবাইল নম্বর ও ইমেইল এখান থেকে আপডেট করুন।'
                               : 'Keep your name, mobile number, and email updated for order notifications.'}
@@ -1428,6 +1458,8 @@ export function AccountClient({
                               onChange={(e) => setProfName(e.target.value)}
                               placeholder={locale === 'bn' ? 'আপনার পূর্ণ নাম' : 'Your full name'}
                               minLength={2}
+                              maxLength={120}
+                              autoComplete="name"
                               required
                               className={editorialInputClass}
                             />
@@ -1440,9 +1472,12 @@ export function AccountClient({
                             <input
                               id="prof-phone"
                               type="tel"
+                              inputMode="tel"
                               value={profPhone}
                               onChange={(e) => setProfPhone(e.target.value)}
                               placeholder="01XXXXXXXXX"
+                              autoComplete="tel"
+                              maxLength={30}
                               className={`${editorialInputClass} font-mono`}
                             />
                           </div>
@@ -1454,9 +1489,12 @@ export function AccountClient({
                             <input
                               id="prof-email"
                               type="email"
+                              inputMode="email"
                               value={profEmail}
                               onChange={(e) => setProfEmail(e.target.value)}
                               placeholder="name@example.com"
+                              autoComplete="email"
+                              maxLength={254}
                               className={editorialInputClass}
                             />
                           </div>
@@ -1464,14 +1502,17 @@ export function AccountClient({
 
                         {personalFeedback && (
                           <p
-                            role="status"
-                            className={`text-xs font-medium p-3 rounded-lg border ${
+                            role={personalFeedback.type === 'success' ? 'status' : 'alert'}
+                            className={`flex items-start gap-2 text-xs font-medium p-3 rounded-lg border ${
                               personalFeedback.type === 'success'
                                 ? 'text-success border-success/35 bg-surface'
                                 : 'text-danger border-danger/35 bg-surface'
                             }`}
                           >
-                            {personalFeedback.text}
+                            {personalFeedback.type === 'success' && (
+                              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                            )}
+                            <span>{personalFeedback.text}</span>
                           </p>
                         )}
 
@@ -1497,12 +1538,17 @@ export function AccountClient({
                     <section className="bg-white p-4 sm:p-8 rounded-xl border border-border shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-4 sm:space-y-5">
                       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
                         <div className="min-w-0">
-                          <h2 className="font-display text-xl sm:text-[1.65rem] font-semibold text-ink">
-                            {locale === 'bn'
-                              ? 'ডিফল্ট ডেলিভারি ঠিকানা'
-                              : 'Default Delivery Address'}
-                          </h2>
-                          <p className="text-xs text-ink/65 mt-0.5">
+                          <div className="flex items-center gap-3">
+                            <span aria-hidden="true" className={sectionIconChip}>
+                              <MapPin className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                            </span>
+                            <h2 className="font-display text-xl sm:text-[1.65rem] font-semibold text-ink">
+                              {locale === 'bn'
+                                ? 'ডিফল্ট ডেলিভারি ঠিকানা'
+                                : 'Default Delivery Address'}
+                            </h2>
+                          </div>
+                          <p className="text-xs text-ink/65 mt-1.5">
                             {locale === 'bn'
                               ? 'চেকআউটে স্বয়ংক্রিয়ভাবে এই ঠিকানা যুক্ত হবে।'
                               : 'Automatically pre-filled when you place an order.'}
@@ -1595,11 +1641,13 @@ export function AccountClient({
                             <input
                               id="prof-postcode"
                               type="text"
+                              inputMode="numeric"
                               value={profPostCode}
                               maxLength={4}
                               onChange={(e) =>
                                 setProfPostCode(e.target.value.replace(/\D/g, '').slice(0, 4))
                               }
+                              autoComplete="postal-code"
                               className={`${editorialInputClass} font-mono`}
                             />
                           </div>
@@ -1634,9 +1682,17 @@ export function AccountClient({
                                   ? 'বাড়ি ২৪, রোড ৭/এ, ধানমন্ডি'
                                   : 'House 24, Road 7/A, Dhanmondi'
                               }
+                              minLength={6}
+                              maxLength={500}
+                              autoComplete="street-address"
                               required
                               className={editorialInputClass}
                             />
+                            <p className="text-[11px] text-ink/55">
+                              {locale === 'bn'
+                                ? 'কমপক্ষে ৬ অক্ষর — বাসা/রোড ও এলাকা লিখুন।'
+                                : 'Minimum 6 characters — include house/road and area.'}
+                            </p>
                           </div>
 
                           <div className="space-y-1.5">
@@ -1651,6 +1707,7 @@ export function AccountClient({
                               placeholder={
                                 locale === 'bn' ? 'যেমন: ওভারব্রিজের পাশে' : 'e.g. Near Overbridge'
                               }
+                              maxLength={200}
                               className={editorialInputClass}
                             />
                           </div>
@@ -1747,14 +1804,17 @@ export function AccountClient({
 
                         {profileFeedback && (
                           <p
-                            role="status"
-                            className={`text-xs font-medium p-3 rounded-lg border ${
+                            role={profileFeedback.type === 'success' ? 'status' : 'alert'}
+                            className={`flex items-start gap-2 text-xs font-medium p-3 rounded-lg border ${
                               profileFeedback.type === 'success'
                                 ? 'text-success border-success/35 bg-surface'
                                 : 'text-danger border-danger/35 bg-surface'
                             }`}
                           >
-                            {profileFeedback.text}
+                            {profileFeedback.type === 'success' && (
+                              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                            )}
+                            <span>{profileFeedback.text}</span>
                           </p>
                         )}
 
@@ -1952,6 +2012,7 @@ export function AccountClient({
                           <input
                             id="addr-postcode"
                             type="text"
+                            inputMode="numeric"
                             value={addrPostCode}
                             maxLength={4}
                             placeholder="1200"
