@@ -19,6 +19,8 @@ import { AdminErpClient } from '@/components/admin/admin-erp-client';
 import { VendorClient } from '@/components/vendor/vendor-client';
 import { PageDataRefreshContext } from '@/lib/page-data/context';
 import { applyMetadata, type PageMetadata } from '@/lib/page-data/head';
+import { ConsentBanner } from '@/lib/analytics/consent-banner';
+import { trackPageView } from '@/lib/analytics/tracker';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false, staleTime: 0 } },
@@ -113,6 +115,11 @@ function PageDataRoute() {
     if (data) applyMetadata(data.metadata);
   }, [data]);
 
+  // First-party page view: consent-gated and staff-excluded inside the tracker.
+  useEffect(() => {
+    trackPageView(location);
+  }, [location]);
+
   if (isPending) return <LoadingPage />;
   if (isError || !data) return <ErrorPage reset={() => void refetchRef.current()} />;
 
@@ -174,6 +181,8 @@ function App() {
       </WouterRouter>
       {/* Vercel Web Analytics — no PII, no cookies; fires on every route view. */}
       <Analytics />
+      {/* First-party consent banner; renders only when no choice exists yet. */}
+      <ConsentBanner />
     </QueryClientProvider>
   );
 }
