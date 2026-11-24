@@ -18,7 +18,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/"
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors shadow-sm min-h-[44px]"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity shadow-sm min-h-[44px]"
       >
         {locale === 'bn' ? 'হোমপেজে ফিরে যান' : 'Back to homepage'}
       </Link>
