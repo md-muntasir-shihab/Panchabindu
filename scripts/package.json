@@ -14,6 +14,8 @@
     "test:security": "node ./src/isolated-domain-tests.mjs security",
     "test:payments": "node ./src/isolated-domain-tests.mjs payments",
     "test:quarantine": "node ./src/isolated-domain-tests.mjs quarantine",
+    "test:crm": "node --test ./src/crm-blacklist-enforcement.test.mjs",
+    "test:vendor-profile": "node --test ./src/vendor-profile-guard.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:preview": "node --test ./src/preview.test.mjs"
   },
