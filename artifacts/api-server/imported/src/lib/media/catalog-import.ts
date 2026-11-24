@@ -50,7 +50,7 @@ export function planCatalogImport(source: string, actorId: string, mapping: Reco
         hasControlChars(nameBn) || hasControlChars(nameEn) || hasControlChars(sku) ||
         hasControlChars(variantBn) || hasControlChars(variantEn) ||
         cost <= 0 || profit < 0 || sale < cost + profit ||
-        !Number.isSafeInteger(weight) || weight < 1 || weight > 100_000
+        !Number.isSafeInteger(weight) || weight < 100 || weight > 100_000
       ) throw new Error('INVALID_CATALOG_ROW');
       if (!knownCategories.has(value('category_id'))) throw new Error('UNKNOWN_CATEGORY');
       if (!activeVendorIds.has(value('vendor_id'))) throw new Error('UNKNOWN_VENDOR');
@@ -91,7 +91,7 @@ export function commitCatalogImport(actor: ActorSecurityContext, source: string,
   const store = readAdminStore();
   appendImmutableAuditLog(store, { actorUserId: actor.userId, actorUsername: actor.username, actorRole: actor.roleSlug,
     actionCode: 'CATALOG_CSV_IMPORTED', targetType: 'system', targetId: previewHash,
-    summaryBn: 'সিএসভি যাচাই শেষে ড্রাফট পণ্য আমদানি করা হয়েছে।', metadata: { previewHash, productIds: created, rows: created.length },
+    summaryBn: 'সিএসভি যাচাই শেষে ড্রাফট পণ্য আমদানি করা হয়েছে।', metadata: { previewHash, productIds: created, rows: created.length },
   });
   writeAdminStore(store);
   return { success: true, productIds: created, imported: created.length };

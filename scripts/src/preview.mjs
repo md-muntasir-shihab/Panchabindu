@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fork } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { randomBytes } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 if (process.env.NODE_ENV === 'production' || process.env.VERCEL || process.env.VERCEL_ENV) {
   console.error('The disposable preview cannot run as a production or Vercel server.');
@@ -24,7 +24,8 @@ fs.mkdirSync(path.join(fixture, '.data'), { mode: 0o700 });
 const secret = () => randomBytes(32).toString('hex');
 const child = fork(path.join(root, 'scripts/src/sandbox-fixture-app.mjs'), [], {
   cwd: fixture,
-  execArgv: ['--import', require.resolve('tsx/esm')],
+  // Windows paths (F:\...) are invalid ESM URL schemes; always pass a file:// URL.
+  execArgv: ['--import', pathToFileURL(require.resolve('tsx/esm')).href],
   // Allowlist, never spread process.env: no credentials or inherited .env.
   env: {
     PATH: process.env.PATH || '',
