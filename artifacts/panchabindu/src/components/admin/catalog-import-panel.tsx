@@ -25,6 +25,7 @@ export function CatalogImportPanel({
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<'success' | 'failure' | 'file_too_large' | null>(null);
+  const [failureDetail, setFailureDetail] = useState<string | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
 
@@ -33,6 +34,7 @@ export function CatalogImportPanel({
     setPreview(null);
     setMapping({});
     setMessage(null);
+    setFailureDetail(null);
     try {
       setHeaders(parseCatalogCsv(text)[0] ?? []);
     } catch {
@@ -43,11 +45,11 @@ export function CatalogImportPanel({
   const errorMessage = (code: string) => {
     const messages: Record<string, [string, string]> = {
       DUPLICATE_CATALOG_ITEM: [
-        'পণ্য, SKU বা slug পুনরাবৃত্তি হয়েছে।',
+        'পণ্য, SKU বা slug পুনরাবৃত্তি হয়েছে।',
         'Duplicate product, SKU or slug.',
       ],
-      UNKNOWN_CATEGORY: ['ক্যাটাগরি পাওয়া যায়নি।', 'Category not found.'],
-      UNKNOWN_VENDOR: ['সক্রিয় ভেন্ডর পাওয়া যায়নি।', 'Active vendor not found.'],
+      UNKNOWN_CATEGORY: ['ক্যাটাগরি পাওয়া যায়নি।', 'Category not found.'],
+      UNKNOWN_VENDOR: ['সক্রিয় ভেন্ডর পাওয়া যায়নি।', 'Active vendor not found.'],
       INVALID_CATALOG_ROW: [
         'নাম, পরিমাণ, ওজন ও মূল্য যাচাই করুন।',
         'Check names, quantities, weight and prices.',
@@ -64,6 +66,7 @@ export function CatalogImportPanel({
     if (busy) return;
     setBusy(true);
     setMessage(null);
+    setFailureDetail(null);
     try {
       const response = await adminFetch('/api/catalog/import', {
         method: 'POST',
@@ -71,7 +74,8 @@ export function CatalogImportPanel({
         body: JSON.stringify({ mode, csv, mapping, previewHash: preview?.previewHash }),
       });
       const data = await response.json();
-      if (!response.ok || !data.success) throw new Error('IMPORT_FAILED');
+      if (!response.ok || !data.success)
+        throw new Error((bn ? data?.errorBn : data?.errorEn) || 'IMPORT_FAILED');
       if (mode === 'preview') {
         setPreview(data);
       } else {
@@ -82,8 +86,10 @@ export function CatalogImportPanel({
         setMapping({});
         await onComplete();
       }
-    } catch {
+    } catch (error) {
       setMessage('failure');
+      const detail = error instanceof Error ? error.message : '';
+      setFailureDetail(detail && detail !== 'IMPORT_FAILED' ? detail : null);
     } finally {
       setBusy(false);
     }
@@ -119,6 +125,7 @@ export function CatalogImportPanel({
               event.currentTarget.value = '';
               setPreview(null);
               setMessage(null);
+              setFailureDetail(null);
               if (!file) return;
               if (file.size > 256 * 1024) {
                 setMessage('file_too_large');
@@ -144,7 +151,7 @@ export function CatalogImportPanel({
         {headers.length > 0 && (
           <fieldset className="grid gap-2 sm:grid-cols-2">
             <legend className="mb-2 text-sm font-semibold text-ink">
-              {bn ? 'CSV কলাম মিলিয়ে নিন' : 'Map CSV columns'}
+              {bn ? 'CSV কলাম মিলিয়ে নিন' : 'Map CSV columns'}
             </legend>
             {CATALOG_IMPORT_COLUMNS.map((column) => (
               <label key={column} htmlFor={`${idPrefix}-col-${column}`} className="block min-w-0 text-xs break-words">
@@ -219,16 +226,19 @@ export function CatalogImportPanel({
           >
             {message === 'success'
               ? bn
-                ? 'ড্রাফট পণ্যগুলো সংরক্ষিত হয়েছে।'
+                ? 'ড্রাফট পণ্যগুলো সংরক্ষিত হয়েছে।'
                 : 'Draft products were saved.'
               : message === 'file_too_large'
               ? bn
                 ? 'CSV ফাইলের আকার ২৫৬ KB এর বেশি হতে পারবে না।'
                 : 'CSV file size must not exceed 256 KB.'
               : bn
-              ? 'আমদানি হয়নি। ফাইল, অনুমতি ও সারির তথ্য যাচাই করে আবার চেষ্টা করুন।'
+              ? 'আমদানি হয়নি। ফাইল, অনুমতি ও সারির তথ্য যাচাই করে আবার চেষ্টা করুন।'
               : 'Import failed. Check the file, permissions and row details, then retry.'}
           </p>
+        )}
+        {message === 'failure' && failureDetail && (
+          <p className="text-xs font-medium text-danger">{failureDetail}</p>
         )}
       </div>
     </details>
