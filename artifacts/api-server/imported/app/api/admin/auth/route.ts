@@ -6,6 +6,13 @@ import { backendRoute } from '@/src/lib/db/backend-route';
 //   - HttpOnly, SameSite=lax, Secure in production, 8-hour expiry
 //   - Session rotation on login & first-login completion, server-side revocation on logout
 //   - Rate limiting, payload size cap, and CSRF/Origin protection
+//
+// AUTH-01 (2026-11-24): login responses no longer echo the session token in the
+// response body. The HttpOnly cookie is the sole carrier of full-session tokens so
+// an XSS payload reading fetch responses cannot steal a super-admin session. The
+// first-login enrollment branch still returns its short-lived (10-minute,
+// enrollment-purpose) token + csrfToken so the client can complete the gate flow;
+// enrollment tokens are rejected by every other admin route (401/403).
 
 import { ApiRequest as NextRequest, ApiResponse as NextResponse } from '@/src/lib/http';
 import { z } from 'zod';
@@ -84,7 +91,7 @@ async function handlePOST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          errorBn: 'লগইন তথ্য সঠিক নয়।',
+          errorBn: 'লগইন তথ্য সঠিক নয়।',
         },
         { status: 400 }
       );
@@ -111,13 +118,13 @@ async function handlePOST(req: NextRequest) {
 
     if (data.action === 'sandbox_totp_preview') {
       return NextResponse.json(
-        { success: false, errorBn: 'TOTP প্রিভিউ নিষ্ক্রিয়। অথেনটিকেটর অ্যাপ ব্যবহার করুন।' },
+        { success: false, errorBn: 'TOTP প্রিভিউ নিষ্ক্রিয়। অথেনটিকেটর অ্যাপ ব্যবহার করুন।' },
         { status: 403 }
       );
     }
 
     if (process.env.NODE_ENV === 'production' && !hasDurableRuntimeContext()) {
-      return NextResponse.json({ success: false, code: 'NOT_INTEGRATED', errorBn: 'Production identity adapter এখনও সংযুক্ত নয়।' }, { status: 503 });
+      return NextResponse.json({ success: false, code: 'NOT_INTEGRATED', errorBn: 'Production identity adapter এখনও সংযুক্ত নয়।' }, { status: 503 });
     }
 
     // Rate limit authentication attempts per IP
@@ -139,7 +146,7 @@ async function handlePOST(req: NextRequest) {
     if (data.action === 'start_mfa' || data.action === 'enable_mfa' || data.action === 'disable_mfa' || data.action === 'change_password') {
       const token = req.cookies.get(ADMIN_SESSION_COOKIE_NAME)?.value || extractAdminSessionTokenFromRequest(req);
       const session = verifyAdminSessionToken(token);
-      if (!session || session.purpose === 'enrollment' || !verifyOriginAndCsrf(req, session).ok) return NextResponse.json({ success: false, errorBn: 'সঠিক সেশন ও নিরাপত্তা যাচাই প্রয়োজন।' }, { status: 403 });
+      if (!session || session.purpose === 'enrollment' || !verifyOriginAndCsrf(req, session).ok) return NextResponse.json({ success: false, errorBn: 'সঠিক সেশন ও নিরাপত্তা যাচাই প্রয়োজন।' }, { status: 403 });
       const result = updateOwnSecurity(session.userId, data);
       const res = NextResponse.json(result, { status: result.success ? 200 : 400 });
       if (result.sessionRevoked) res.cookies.delete(ADMIN_SESSION_COOKIE_NAME);
@@ -173,10 +180,13 @@ async function handlePOST(req: NextRequest) {
           ip: clientIp,
         });
 
+        // AUTH-01: the full session token lives ONLY in the HttpOnly cookie.
+        // The response body intentionally omits sessionToken; csrfToken is
+        // still returned because double-submit CSRF needs a readable token.
         const res = NextResponse.json({
           ...result,
           totpSetupUri: undefined,
-          sessionToken: session.token,
+          sessionToken: undefined,
           csrfToken: session.csrfToken,
         });
 
@@ -206,7 +216,7 @@ async function handlePOST(req: NextRequest) {
     if (data.action === 'complete_first_login') {
       const gate = verifyAdminSessionToken(req.cookies.get(ADMIN_SESSION_COOKIE_NAME)?.value || extractAdminSessionTokenFromRequest(req));
       if (!gate || gate.purpose !== 'enrollment' || gate.userId !== data.userId || !verifyOriginAndCsrf(req, gate).ok) {
-        return NextResponse.json({ success: false, errorBn: 'নিরাপদ প্রথম-লগইন সেশন প্রয়োজন।' }, { status: 403 });
+        return NextResponse.json({ success: false, errorBn: 'নিরাপদ প্রথম-লগইন সেশন প্রয়োজন।' }, { status: 403 });
       }
       const result = completeFirstLoginGate({
         userId: gate.userId,
@@ -233,9 +243,10 @@ async function handlePOST(req: NextRequest) {
         ip: clientIp,
       });
 
+      // AUTH-01: full session token only via the HttpOnly cookie.
       const res = NextResponse.json({
         ...result,
-        sessionToken: session.token,
+        sessionToken: undefined,
         csrfToken: session.csrfToken,
       });
       res.cookies.set(ADMIN_SESSION_COOKIE_NAME, session.token, {
