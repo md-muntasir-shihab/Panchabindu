@@ -21,7 +21,7 @@
     "audit:eslint:print": "eslint artifacts/panchabindu/src/components/admin/print-engine-panel.tsx artifacts/panchabindu/src/components/admin/order-print-preview-sheet.tsx artifacts/api-server/imported/app/api/print/[orderNo]/route.ts artifacts/api-server/imported/src/lib/security/workspace-policy.ts artifacts/panchabindu/src/lib/security/workspace-policy.ts",
     "audit:eslint:catalog": "eslint artifacts/panchabindu/src/components/admin/product-studio-panel.tsx artifacts/panchabindu/src/components/admin/catalog-import-panel.tsx artifacts/api-server/imported/src/lib/media/catalog-import.ts",
     "test:home:api": "node --test scripts/src/home-audit-api.test.mjs",
-    "test:home:browser": "node scripts/src/scripts/src/home-audit-browser.mjs",
+    "test:home:browser": "node scripts/src/home-audit-browser.mjs",
     "test:orders:api": "node --test scripts/src/admin-orders-audit-api.test.mjs",
     "test:orders:browser": "node scripts/src/admin-orders-audit-browser.mjs",
     "test:print:api": "node --test scripts/src/admin-print-engine-audit-api.test.mjs",
@@ -29,19 +29,14 @@
     "test:catalog:api": "node --test scripts/src/admin-product-studio-audit-api.test.mjs",
     "test:catalog:import-weight": "node --test scripts/src/admin-product-studio-catalog-import-weight.test.mjs",
     "test:catalog:browser": "node scripts/src/admin-product-studio-audit-browser.mjs",
-    "test:dashboard": "tsx --tsconfig artifacts/panel-admin/tsconfig.json --test artifacts/panel-admin/src/components/admin/admin-command-dashboard.test.ts scripts/src/dashboard-summary.test.ts",
-    "test:vendors": "tsx --tsconfig artifacts/panel-admin/tsconfig.json --test artifacts/panel-admin/src/components/admin/vendor-ledger-supply-panel.test.ts scripts/src/vendor-ledger-summary.test.ts"
+    "test:dashboard": "tsx --tsconfig artifacts/panchabindu/tsconfig.json --test artifacts/panchabindu/src/components/admin/admin-command-dashboard.test.ts scripts/src/dashboard-summary.test.ts",
+    "test:vendors": "tsx --tsconfig artifacts/panchabindu/tsconfig.json --test artifacts/panchabindu/src/components/admin/vendor-ledger-supply-panel.test.ts scripts/src/vendor-ledger-summary.test.ts"
   },
   "dependencies": {
     "@replit/connectors-sdk": "^0.7.0"
   },
-  "docs": {
-    "dependencies": [
-      "docs/audit/pages/admin-product-studio-threats.md"
-    ]
-  },
   "devDependencies": {
-    "@axe-core/playwright": "^4. matrix",
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.15.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
