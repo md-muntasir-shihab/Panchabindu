@@ -5,7 +5,19 @@ import { POST } from '../../../app/api/admin/auth/route';
 import { readAdminStore, writeAdminStore } from '../admin/phase4a-service';
 import { hashPassword, generateTotpCode, verifyAdminSessionToken } from './crypto-session';
 
+// AUTH-01: login responses no longer echo the full session token in the body;
+// the HttpOnly Set-Cookie header is the only carrier. Tests read the token from
+// the response's set-cookie header instead of the JSON body.
+
 const req = (body: object, cookie?: string, csrf?: string) => new ApiRequest('http://localhost/api/admin/auth', { method: 'POST', headers: { host: 'localhost', origin: 'http://localhost', 'content-type': 'application/json', ...(cookie ? { cookie } : {}), ...(csrf ? { 'x-csrf-token': csrf } : {}) }, body: JSON.stringify(body) });
+
+/** Extract the bg_admin_session value from a Response's set-cookie headers. */
+function sessionTokenFromResponse(response: Response): string | undefined {
+  return response.headers
+    .getSetCookie()
+    .map((raw: string) => raw.match(/^bg_admin_session=([^;]+)/)?.[1])
+    .find((value: string | undefined): value is string => Boolean(value));
+}
 
 test('self-service MFA setup, backup codes, password and session revocation', async () => {
   const store = readAdminStore();
@@ -17,8 +29,12 @@ test('self-service MFA setup, backup codes, password and session revocation', as
   const login = async (password: string, totpCode = '') => POST(req({ action: 'login', username: user.username, password, totpCode }));
   const initial = await login('initial test password');
   assert.equal(initial.status, 200, await initial.clone().text());
-  const first = await initial.json() as { csrfToken: string; sessionToken: string };
-  const cookie = `bg_admin_session=${first.sessionToken}`;
+  const first = await initial.json() as { csrfToken: string };
+  // AUTH-01: the body must NOT carry the session token any more.
+  assert.equal((first as { sessionToken?: string }).sessionToken, undefined);
+  const firstToken = sessionTokenFromResponse(initial);
+  assert.ok(firstToken, 'set-cookie must carry bg_admin_session');
+  const cookie = `bg_admin_session=${firstToken}`;
   assert.equal((await POST(req({ action: 'start_mfa', currentPassword: 'initial test password' }, cookie))).status, 403);
   const start = await POST(req({ action: 'start_mfa', currentPassword: 'initial test password' }, cookie, first.csrfToken));
   assert.equal(start.status, 200, await start.clone().text());
@@ -31,23 +47,27 @@ test('self-service MFA setup, backup codes, password and session revocation', as
   assert.equal(enable.status, 200, await enable.clone().text());
   const { recoveryBackupCodes } = await enable.json() as { recoveryBackupCodes: string[] };
   assert.equal(recoveryBackupCodes.length, 8);
-  assert.equal(verifyAdminSessionToken(first.sessionToken), null);
+  assert.equal(verifyAdminSessionToken(firstToken), null);
   assert.equal((await login('initial test password')).status, 401);
   const backupLogin = await login('initial test password', recoveryBackupCodes[0]);
   assert.equal(backupLogin.status, 200, await backupLogin.clone().text());
   assert.equal((await login('initial test password', recoveryBackupCodes[0])).status, 401);
-  const active = await backupLogin.json() as { csrfToken: string; sessionToken: string };
-  const activeCookie = `bg_admin_session=${active.sessionToken}`;
+  const active = await backupLogin.json() as { csrfToken: string };
+  const activeToken = sessionTokenFromResponse(backupLogin);
+  assert.ok(activeToken);
+  const activeCookie = `bg_admin_session=${activeToken}`;
   assert.equal((await POST(req({ action: 'disable_mfa', currentPassword: 'wrong', totpCode: recoveryBackupCodes[1] }, activeCookie, active.csrfToken))).status, 400);
   assert.equal((await POST(req({ action: 'disable_mfa', currentPassword: 'initial test password', totpCode: recoveryBackupCodes[1] }, activeCookie, active.csrfToken))).status, 400);
   const disable = await POST(req({ action: 'disable_mfa', currentPassword: 'initial test password', totpCode: generateTotpCode(secret, Date.now() + 30_000) }, activeCookie, active.csrfToken));
   assert.equal(disable.status, 200, await disable.clone().text());
-  assert.equal(verifyAdminSessionToken(active.sessionToken), null);
+  assert.equal(verifyAdminSessionToken(activeToken), null);
   const withoutMfa = await login('initial test password'); assert.equal(withoutMfa.status, 200);
-  const changedSession = await withoutMfa.json() as { csrfToken: string; sessionToken: string };
-  const change = await POST(req({ action: 'change_password', currentPassword: 'initial test password', newPassword: 'another secure password' }, `bg_admin_session=${changedSession.sessionToken}`, changedSession.csrfToken));
+  const changedSession = await withoutMfa.json() as { csrfToken: string };
+  const changedToken = sessionTokenFromResponse(withoutMfa);
+  assert.ok(changedToken);
+  const change = await POST(req({ action: 'change_password', currentPassword: 'initial test password', newPassword: 'another secure password' }, `bg_admin_session=${changedToken}`, changedSession.csrfToken));
   assert.equal(change.status, 200, await change.clone().text());
-  assert.equal(verifyAdminSessionToken(changedSession.sessionToken), null);
+  assert.equal(verifyAdminSessionToken(changedToken), null);
   assert.equal((await login('initial test password')).status, 401);
   assert.equal((await login('another secure password')).status, 200);
 });
