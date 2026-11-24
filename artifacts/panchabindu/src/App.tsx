@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Route, Switch, Redirect, useLocation, useSearch, Router as WouterRouter } from 'wouter';
+import { Analytics } from '@vercel/analytics/react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import NotFound from '@/pages/not-found';
 import LoadingPage from '@/pages/loading';
@@ -171,6 +172,7 @@ function App() {
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
         <Router />
       </WouterRouter>
+      <Analytics />
     </QueryClientProvider>
   );
 }
