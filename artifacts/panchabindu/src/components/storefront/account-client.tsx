@@ -32,6 +32,8 @@ import {
   Mail,
   SlidersHorizontal,
   MapPin,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import type {
   CategoryRecord,
@@ -140,6 +142,7 @@ export function AccountClient({
   const [password, setPassword] = React.useState('');
   const [newPassword, setNewPassword] = React.useState('');
   const [registering, setRegistering] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
   const [verifiedPhone, setVerifiedPhone] = React.useState<string | null>(null);
   // Signed-in state must not depend on a phone number: email accounts have no phone yet.
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
@@ -349,6 +352,7 @@ export function AccountClient({
           setProfLandmark(prof.landmark || '');
         }
         setPassword('');
+        setShowPassword(false);
         refreshPageData();
         const params = new URLSearchParams(window.location.search);
         if (params.get('returnTo') === 'checkout') navigate('/checkout');
@@ -673,15 +677,15 @@ export function AccountClient({
   const displayName = deliveryProfile?.customerName || profName || '';
 
   const editorialFieldLabel =
-    'block text-[11px] uppercase font-semibold tracking-[0.06em] text-[#1B4332]/80';
+    'block text-[11px] uppercase font-semibold tracking-[0.06em] text-ink/80';
   const editorialInputClass =
-    'w-full min-h-[44px] rounded-lg border border-[#E5E2D9] bg-[#FDFCF8] px-3.5 py-2 text-sm text-[#1B4332] placeholder:text-[#1B4332]/40 focus:border-[#1B4332] focus:bg-white focus:outline-none transition-colors';
+    'w-full min-h-[44px] rounded-lg border border-border bg-bg px-3.5 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-accent focus:bg-white focus:outline-none transition-colors';
   const editorialSelectClass =
-    'w-full min-h-[44px] rounded-lg border border-[#E5E2D9] bg-[#FDFCF8] px-3.5 py-2 text-sm text-[#1B4332] focus:border-[#1B4332] focus:bg-white focus:outline-none transition-colors cursor-pointer';
+    'w-full min-h-[44px] rounded-lg border border-border bg-bg px-3.5 py-2 text-sm text-ink focus:border-accent focus:bg-white focus:outline-none transition-colors cursor-pointer';
   const primaryEditorialBtn =
-    'inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-lg bg-[#1B4332] text-white font-mono text-xs uppercase tracking-[0.12em] hover:bg-[#143325] disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer';
+    'inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-lg bg-accent text-white font-mono text-xs uppercase tracking-[0.12em] hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer';
   const outlineEditorialBtn =
-    'inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-lg bg-transparent border border-[#1B4332]/35 text-[#1B4332] font-mono text-xs uppercase tracking-[0.12em] hover:border-[#1B4332] hover:bg-[#1B4332] hover:text-white disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer';
+    'inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-lg bg-transparent border border-accent/35 text-ink font-mono text-xs uppercase tracking-[0.12em] hover:border-accent hover:bg-accent hover:text-white disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer';
 
   return (
     <StorefrontShell siteSettings={siteSettings} categories={categories}>
@@ -689,27 +693,27 @@ export function AccountClient({
         <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5 sm:gap-8 lg:gap-10 items-start">
           {/* 1. Left Sidebar Profile Card */}
           <aside className="lg:sticky lg:top-28 min-w-0">
-            <div className="bg-[#F9F8F3] p-4 sm:p-7 rounded-xl border border-[#E5E2D9]">
+            <div className="bg-surface p-4 sm:p-7 rounded-xl border border-border">
               <div
                 aria-hidden="true"
-                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#1B4332] text-white flex items-center justify-center font-display text-2xl sm:text-3xl font-semibold leading-none mb-3 sm:mb-4 select-none"
+                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-accent text-white flex items-center justify-center font-display text-2xl sm:text-3xl font-semibold leading-none mb-3 sm:mb-4 select-none"
               >
                 {avatarInitial}
               </div>
 
-              <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-[#1B4332]/60 mb-1">
+              <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-ink/60 mb-1">
                 {locale === 'bn' ? 'গ্রাহক প্রোফাইল' : 'Customer Profile'}
               </span>
 
-              <h1 className="font-display text-xl sm:text-[1.85rem] font-semibold leading-tight text-[#1B4332] mb-2 break-words">
+              <h1 className="font-display text-xl sm:text-[1.85rem] font-semibold leading-tight text-ink mb-2 break-words">
                 {displayName || (locale === 'bn' ? 'আমার অ্যাকাউন্ট' : 'My Account')}
               </h1>
 
               {/* Clean Status & Logout Row */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 sm:pb-4 border-b border-[#E5E2D9] text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 sm:pb-4 border-b border-border text-xs">
                 <span
                   className={`font-mono text-[11px] uppercase tracking-[0.06em] inline-flex items-center gap-1.5 ${
-                    isAuthenticated ? 'text-[#15803D]' : 'text-[#1B4332]/60'
+                    isAuthenticated ? 'text-success' : 'text-ink/60'
                   }`}
                 >
                   {isAuthenticated && <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />}
@@ -727,7 +731,7 @@ export function AccountClient({
                     type="button"
                     onClick={handleLogout}
                     disabled={authLoading}
-                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[#A84A28]/45 px-3 font-mono text-[11px] uppercase tracking-[0.08em] text-[#A84A28] transition-colors hover:border-[#A84A28] hover:bg-[#A84A28] hover:text-white disabled:opacity-50 cursor-pointer"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[var(--store-terracotta)]/45 px-3 font-mono text-[11px] uppercase tracking-[0.08em] text-[var(--store-terracotta)] transition-colors hover:border-[var(--store-terracotta)] hover:bg-[var(--store-terracotta)] hover:text-white disabled:opacity-50 cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
                     {locale === 'bn' ? 'লগ আউট' : 'Log out'}
@@ -736,13 +740,13 @@ export function AccountClient({
               </div>
 
               {/* Clean Contact Summary (ID, Mobile, Email — no repeated address clutter) */}
-              <div className="mt-4 space-y-2.5 text-xs text-[#1B4332]/85">
+              <div className="mt-4 space-y-2.5 text-xs text-ink/85">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[#1B4332]/55 shrink-0">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink/55 shrink-0">
                     {locale === 'bn' ? 'আইডি' : 'ID'}
                   </span>
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="font-mono text-[11px] text-[#1B4332] truncate">
+                    <span className="font-mono text-[11px] text-ink truncate">
                       {verifiedPhone ?? '—'}
                     </span>
                     {verifiedPhone && (
@@ -754,10 +758,10 @@ export function AccountClient({
                             ? 'অ্যাকাউন্ট পরিচয় কপি করুন'
                             : 'Copy account identifier'
                         }
-                        className="p-1 rounded-md text-[#1B4332]/60 hover:text-[#1B4332] hover:bg-white cursor-pointer inline-flex items-center shrink-0"
+                        className="p-1 rounded-md text-ink/60 hover:text-ink hover:bg-white cursor-pointer inline-flex items-center shrink-0"
                       >
                         {isCopiedId ? (
-                          <Check className="w-3.5 h-3.5 text-[#15803D]" />
+                          <Check className="w-3.5 h-3.5 text-success" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
@@ -768,11 +772,11 @@ export function AccountClient({
 
                 {displayPhone && (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-[#1B4332]/60 shrink-0">
+                    <span className="inline-flex items-center gap-1.5 text-ink/60 shrink-0">
                       <Phone className="w-3.5 h-3.5" aria-hidden="true" />
                       <span>{locale === 'bn' ? 'মোবাইল' : 'Mobile'}</span>
                     </span>
-                    <span className="font-mono text-[11px] text-[#1B4332] tabular-nums truncate">
+                    <span className="font-mono text-[11px] text-ink tabular-nums truncate">
                       {displayPhone}
                     </span>
                   </div>
@@ -780,11 +784,11 @@ export function AccountClient({
 
                 {displayEmail && (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-[#1B4332]/60 shrink-0">
+                    <span className="inline-flex items-center gap-1.5 text-ink/60 shrink-0">
                       <Mail className="w-3.5 h-3.5" aria-hidden="true" />
                       <span>{locale === 'bn' ? 'ইমেইল' : 'Email'}</span>
                     </span>
-                    <span className="text-[11px] text-[#1B4332] truncate">
+                    <span className="text-[11px] text-ink truncate">
                       {displayEmail}
                     </span>
                   </div>
@@ -792,30 +796,30 @@ export function AccountClient({
               </div>
 
               {/* 3-Column Stats Grid */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-2.5 mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-[#E5E2D9]">
-                <div className="text-center p-2 rounded-lg bg-[#FDFCF8] border border-[#E5E2D9]/70">
-                  <span className="block font-display text-xl sm:text-2xl font-semibold text-[#1B4332] tabular-nums leading-none">
+              <div className="grid grid-cols-3 gap-2 sm:gap-2.5 mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-border">
+                <div className="text-center p-2 rounded-lg bg-bg border border-border/70">
+                  <span className="block font-display text-xl sm:text-2xl font-semibold text-ink tabular-nums leading-none">
                     {verifiedPhone ? formatPaddedStat(customerOrders.length) : '—'}
                   </span>
-                  <span className="block font-mono text-[10px] uppercase tracking-[0.06em] text-[#1B4332]/55 mt-1.5">
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.06em] text-ink/55 mt-1.5">
                     {locale === 'bn' ? 'অর্ডার' : 'Orders'}
                   </span>
                 </div>
 
-                <div className="text-center p-2 rounded-lg bg-[#FDFCF8] border border-[#E5E2D9]/70">
-                  <span className="block font-display text-xl sm:text-2xl font-semibold text-[#1B4332] tabular-nums leading-none">
+                <div className="text-center p-2 rounded-lg bg-bg border border-border/70">
+                  <span className="block font-display text-xl sm:text-2xl font-semibold text-ink tabular-nums leading-none">
                     {formatPaddedStat(wishlistedProducts.length)}
                   </span>
-                  <span className="block font-mono text-[10px] uppercase tracking-[0.06em] text-[#1B4332]/55 mt-1.5">
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.06em] text-ink/55 mt-1.5">
                     {locale === 'bn' ? 'উইশলিস্ট' : 'Wishlist'}
                   </span>
                 </div>
 
-                <div className="text-center p-2 rounded-lg bg-[#FDFCF8] border border-[#E5E2D9]/70">
-                  <span className="block font-display text-xl sm:text-2xl font-semibold text-[#1B4332] tabular-nums leading-none">
+                <div className="text-center p-2 rounded-lg bg-bg border border-border/70">
+                  <span className="block font-display text-xl sm:text-2xl font-semibold text-ink tabular-nums leading-none">
                     {formatPaddedStat(savedAddresses.length + (deliveryProfile?.streetAddress ? 1 : 0))}
                   </span>
-                  <span className="block font-mono text-[10px] uppercase tracking-[0.06em] text-[#1B4332]/55 mt-1.5">
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.06em] text-ink/55 mt-1.5">
                     {locale === 'bn' ? 'ঠিকানা' : 'Address'}
                   </span>
                 </div>
@@ -828,7 +832,7 @@ export function AccountClient({
             {/* Editorial Underline Tab Navigation */}
             <nav
               aria-label={locale === 'bn' ? 'অ্যাকাউন্ট মেনু' : 'Account navigation'}
-              className="flex gap-5 sm:gap-9 border-b border-[#E5E2D9] overflow-x-auto scrollbar-none -mx-3.5 px-3.5 sm:mx-0 sm:px-0"
+              className="flex gap-5 sm:gap-9 border-b border-border overflow-x-auto scrollbar-none -mx-3.5 px-3.5 sm:mx-0 sm:px-0"
             >
               <button
                 type="button"
@@ -836,8 +840,8 @@ export function AccountClient({
                 aria-current={activeTab === 'tracking' ? 'page' : undefined}
                 className={`min-h-[44px] inline-flex items-center shrink-0 py-2.5 bg-transparent border-0 font-mono text-xs uppercase tracking-[0.1em] whitespace-nowrap cursor-pointer relative transition-opacity ${
                   activeTab === 'tracking'
-                    ? 'opacity-100 text-[#1B4332] after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#1B4332]'
-                    : 'opacity-50 hover:opacity-85 text-[#1B4332]'
+                    ? 'opacity-100 text-ink after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-accent'
+                    : 'opacity-50 hover:opacity-85 text-ink'
                 }`}
               >
                 {locale === 'bn' ? 'অর্ডার স্ট্যাটাস' : 'Order Status'}
@@ -849,8 +853,8 @@ export function AccountClient({
                 aria-current={activeTab === 'orders' ? 'page' : undefined}
                 className={`min-h-[44px] inline-flex items-center shrink-0 py-2.5 bg-transparent border-0 font-mono text-xs uppercase tracking-[0.1em] whitespace-nowrap cursor-pointer relative transition-opacity ${
                   activeTab === 'orders'
-                    ? 'opacity-100 text-[#1B4332] after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#1B4332]'
-                    : 'opacity-50 hover:opacity-85 text-[#1B4332]'
+                    ? 'opacity-100 text-ink after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-accent'
+                    : 'opacity-50 hover:opacity-85 text-ink'
                 }`}
               >
                 {locale === 'bn'
@@ -864,8 +868,8 @@ export function AccountClient({
                 aria-current={activeTab === 'addresses' ? 'page' : undefined}
                 className={`min-h-[44px] inline-flex items-center shrink-0 py-2.5 bg-transparent border-0 font-mono text-xs uppercase tracking-[0.1em] whitespace-nowrap cursor-pointer relative transition-opacity ${
                   activeTab === 'addresses'
-                    ? 'opacity-100 text-[#1B4332] after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#1B4332]'
-                    : 'opacity-50 hover:opacity-85 text-[#1B4332]'
+                    ? 'opacity-100 text-ink after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-accent'
+                    : 'opacity-50 hover:opacity-85 text-ink'
                 }`}
               >
                 {locale === 'bn' ? 'প্রোফাইল ও ঠিকানা' : 'Profile & Addresses'}
@@ -877,8 +881,8 @@ export function AccountClient({
                 aria-current={activeTab === 'wishlist' ? 'page' : undefined}
                 className={`min-h-[44px] inline-flex items-center shrink-0 py-2.5 bg-transparent border-0 font-mono text-xs uppercase tracking-[0.1em] whitespace-nowrap cursor-pointer relative transition-opacity ${
                   activeTab === 'wishlist'
-                    ? 'opacity-100 text-[#1B4332] after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#1B4332]'
-                    : 'opacity-50 hover:opacity-85 text-[#1B4332]'
+                    ? 'opacity-100 text-ink after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-accent'
+                    : 'opacity-50 hover:opacity-85 text-ink'
                 }`}
               >
                 {wishlistedProducts.length > 0
@@ -889,17 +893,17 @@ export function AccountClient({
 
             {/* 3. Tab Panel 1: Order Lookup */}
             {activeTab === 'tracking' && (
-              <section className="bg-white p-4 sm:p-8 rounded-xl border border-[#E5E2D9] shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-5 sm:space-y-6">
+              <section className="bg-white p-4 sm:p-8 rounded-xl border border-border shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-5 sm:space-y-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
-                  <h2 className="font-display text-2xl sm:text-[1.75rem] font-semibold text-[#1B4332]">
+                  <h2 className="font-display text-2xl sm:text-[1.75rem] font-semibold text-ink">
                     {locale === 'bn' ? 'অর্ডারের অবস্থা দেখুন' : 'Check Order Status'}
                   </h2>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#1B4332]/55">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink/55">
                     {locale === 'bn' ? 'নিরাপদ ট্র্যাকিং' : 'Secure Lookup'}
                   </span>
                 </div>
 
-                <p className="text-sm text-[#1B4332]/70 max-w-2xl">
+                <p className="text-sm text-ink/70 max-w-2xl">
                   {locale === 'bn'
                     ? 'নিরাপদ ট্র্যাকিং টোকেন দিন, অথবা নিজের অর্ডার নম্বর দেখতে অ্যাকাউন্টে লগইন করুন। এখানে কুরিয়ারের লাইভ আপডেট দেখানো হয় না।'
                     : 'Enter a secure tracking token, or sign in to view your own order number. Live courier updates are not connected.'}
@@ -940,15 +944,15 @@ export function AccountClient({
                 </form>
 
                 {recentOrders.length > 0 && (
-                  <div className="pt-5 border-t border-[#E5E2D9] flex flex-wrap items-center gap-2.5 text-xs">
-                    <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#1B4332]/55">
+                  <div className="pt-5 border-t border-border flex flex-wrap items-center gap-2.5 text-xs">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink/55">
                       {locale === 'bn' ? 'সাম্প্রতিক অর্ডার:' : 'Recent Orders:'}
                     </span>
                     {recentOrders.map((ordNo) => (
                       <Link
                         key={ordNo}
                         href={`/order-tracking/${encodeURIComponent(ordNo)}`}
-                        className="px-3 py-1.5 rounded-lg font-mono text-xs border border-[#E5E2D9] bg-[#F9F8F3] text-[#1B4332] hover:border-[#1B4332] transition-colors"
+                        className="px-3 py-1.5 rounded-lg font-mono text-xs border border-border bg-surface text-ink hover:border-accent transition-colors"
                       >
                         {ordNo}
                       </Link>
@@ -961,9 +965,9 @@ export function AccountClient({
             {/* 4. Tab Panel 2: Account Order History & Auth */}
             {activeTab === 'orders' && (
               <div className="space-y-5 sm:space-y-6">
-                <section className="bg-white p-4 sm:p-8 rounded-xl border border-[#E5E2D9] shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-5 sm:space-y-6">
+                <section className="bg-white p-4 sm:p-8 rounded-xl border border-border shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-5 sm:space-y-6">
                   <div className="flex flex-wrap items-baseline justify-between gap-3">
-                    <h2 className="font-display text-2xl sm:text-[1.75rem] font-semibold text-[#1B4332]">
+                    <h2 className="font-display text-2xl sm:text-[1.75rem] font-semibold text-ink">
                       {verifiedPhone
                         ? locale === 'bn'
                           ? 'অর্ডার হিস্ট্রি'
@@ -973,7 +977,7 @@ export function AccountClient({
                         : 'Customer Account'}
                     </h2>
                     {verifiedPhone && (
-                      <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#1B4332]/60">
+                      <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink/60">
                         {locale === 'bn'
                           ? `${formatLocaleNumber(customerOrders.length, locale)}টি অর্ডার`
                           : `${customerOrders.length} Orders`}
@@ -982,21 +986,62 @@ export function AccountClient({
                   </div>
 
                   {sessionLoading ? (
-                    <p role="status" className="text-sm text-[#1B4332]/65 font-mono">
+                    <p role="status" className="text-sm text-ink/65 font-mono">
                       {locale === 'bn' ? 'অ্যাকাউন্ট যাচাই হচ্ছে…' : 'Checking your account…'}
                     </p>
                   ) : !verifiedPhone ? (
-                    <div className="space-y-6">
-                      <p className="text-sm text-[#1B4332]/70 max-w-2xl">
+                    <div className="space-y-5">
+                      <p className="text-sm text-ink/70 max-w-2xl">
                         {locale === 'bn'
                           ? 'ফোন নম্বর বা ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন। অতিথি হিসেবে করা অর্ডার স্বয়ংক্রিয়ভাবে যুক্ত হয় না।'
                           : 'Sign in with your phone number or email and password. Guest orders are not linked automatically.'}
                       </p>
 
-                      <form
-                        onSubmit={handlePasswordAuth}
-                        className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end"
+                      {/* Segmented mode switcher: Sign In / Create Account */}
+                      <div
+                        role="tablist"
+                        aria-label={
+                          locale === 'bn'
+                            ? 'লগইন বা নতুন অ্যাকাউন্ট তৈরি'
+                            : 'Sign in or create an account'
+                        }
+                        className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-surface border border-border max-w-md"
                       >
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={!registering}
+                          onClick={() => {
+                            setRegistering(false);
+                            setAuthError(null);
+                          }}
+                          className={`min-h-[44px] rounded-md font-mono text-xs uppercase tracking-[0.08em] transition-colors cursor-pointer ${
+                            !registering
+                              ? 'bg-accent text-white'
+                              : 'text-ink/70 hover:text-ink'
+                          }`}
+                        >
+                          {locale === 'bn' ? 'লগইন' : 'Sign In'}
+                        </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={registering}
+                          onClick={() => {
+                            setRegistering(true);
+                            setAuthError(null);
+                          }}
+                          className={`min-h-[44px] rounded-md font-mono text-xs uppercase tracking-[0.08em] transition-colors cursor-pointer ${
+                            registering
+                              ? 'bg-accent text-white'
+                              : 'text-ink/70 hover:text-ink'
+                          }`}
+                        >
+                          {locale === 'bn' ? 'নতুন অ্যাকাউন্ট' : 'Create Account'}
+                        </button>
+                      </div>
+
+                      <form onSubmit={handlePasswordAuth} className="space-y-4 max-w-md">
                         <div className="space-y-1.5">
                           <label htmlFor="account-login-identifier" className={editorialFieldLabel}>
                             {locale === 'bn' ? 'ফোন নম্বর অথবা ইমেইল' : 'Phone Number or Email'}
@@ -1016,21 +1061,59 @@ export function AccountClient({
                           <label htmlFor="account-login-password" className={editorialFieldLabel}>
                             {locale === 'bn' ? 'পাসওয়ার্ড' : 'Password'}
                           </label>
-                          <input
-                            id="account-login-password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            minLength={registering ? 10 : 1}
-                            maxLength={128}
-                            autoComplete={registering ? 'new-password' : 'current-password'}
-                            required
-                            className={editorialInputClass}
-                          />
+                          <div className="relative">
+                            <input
+                              id="account-login-password"
+                              type={showPassword ? 'text' : 'password'}
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              minLength={registering ? 10 : 1}
+                              maxLength={128}
+                              autoComplete={registering ? 'new-password' : 'current-password'}
+                              required
+                              className={`${editorialInputClass} pr-12`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword((prev) => !prev)}
+                              aria-label={
+                                showPassword
+                                  ? locale === 'bn'
+                                    ? 'পাসওয়ার্ড লুকান'
+                                    : 'Hide password'
+                                  : locale === 'bn'
+                                  ? 'পাসওয়ার্ড দেখান'
+                                  : 'Show password'
+                              }
+                              aria-pressed={showPassword}
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-md text-ink/60 hover:text-ink hover:bg-surface cursor-pointer"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="w-4 h-4" aria-hidden="true" />
+                              ) : (
+                                <Eye className="w-4 h-4" aria-hidden="true" />
+                              )}
+                            </button>
+                          </div>
+                          {registering && (
+                            <p className="text-xs text-ink/65">
+                              {locale === 'bn'
+                                ? 'পাসওয়ার্ড অন্তত ১০ অক্ষরের হতে হবে।'
+                                : 'Use at least 10 characters for your password.'}
+                            </p>
+                          )}
                         </div>
 
-                        <button type="submit" disabled={authLoading} className={primaryEditorialBtn}>
-                          {registering
+                        <button
+                          type="submit"
+                          disabled={authLoading}
+                          className={`${primaryEditorialBtn} w-full sm:w-auto`}
+                        >
+                          {authLoading
+                            ? locale === 'bn'
+                              ? 'যাচাই হচ্ছে…'
+                              : 'Signing in…'
+                            : registering
                             ? locale === 'bn'
                               ? 'অ্যাকাউন্ট তৈরি করুন'
                               : 'Create Account'
@@ -1039,39 +1122,11 @@ export function AccountClient({
                             : 'Sign In'}
                         </button>
                       </form>
-
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                        <button
-                          type="button"
-                          className="font-mono text-xs uppercase tracking-[0.08em] text-[#1B4332] underline underline-offset-4 cursor-pointer hover:text-[#A84A28]"
-                          onClick={() => {
-                            setRegistering(!registering);
-                            setPassword('');
-                            setAuthError(null);
-                          }}
-                        >
-                          {registering
-                            ? locale === 'bn'
-                              ? 'আগেই অ্যাকাউন্ট আছে? লগইন'
-                              : 'Already have an account? Sign in'
-                            : locale === 'bn'
-                            ? 'নতুন অ্যাকাউন্ট তৈরি করুন'
-                            : 'Create an account'}
-                        </button>
-
-                        {registering && (
-                          <p className="text-xs text-[#1B4332]/65">
-                            {locale === 'bn'
-                              ? 'পাসওয়ার্ড অন্তত ১০ অক্ষরের হতে হবে।'
-                              : 'Use at least 10 characters for your password.'}
-                          </p>
-                        )}
-                      </div>
                     </div>
                   ) : null}
 
                   {authNotice && (
-                    <p role="status" className="text-xs font-medium text-[#15803D] p-3.5 rounded-lg border border-[#15803D]/30 bg-[#F9F8F3]">
+                    <p role="status" className="text-xs font-medium text-success p-3.5 rounded-lg border border-success/30 bg-surface">
                       {authNotice}
                     </p>
                   )}
@@ -1079,7 +1134,7 @@ export function AccountClient({
                   {authError && (
                     <div
                       role="alert"
-                      className="text-xs font-medium text-[#B91C1C] p-3.5 rounded-lg border border-[#B91C1C]/30 bg-[#F9F8F3] space-y-1.5"
+                      className="text-xs font-medium text-danger p-3.5 rounded-lg border border-danger/30 bg-surface space-y-1.5"
                     >
                       <p>{authError}</p>
                       {!verifiedPhone && (
@@ -1100,19 +1155,19 @@ export function AccountClient({
                   {verifiedPhone && (
                     <div className="space-y-4">
                       {customerOrders.length === 0 ? (
-                        <div className="p-8 rounded-xl border border-[#E5E2D9] bg-[#F9F8F3] text-center space-y-2">
-                          <p className="text-sm text-[#1B4332]/75">
+                        <div className="p-8 rounded-xl border border-border bg-surface text-center space-y-2">
+                          <p className="text-sm text-ink/75">
                             {locale === 'bn'
                               ? 'আপনার অ্যাকাউন্টে কোনো অর্ডার পাওয়া যায়নি।'
                               : 'No orders found in this account.'}
                           </p>
                         </div>
                       ) : (
-                        <div className="divide-y divide-[#E5E2D9] rounded-xl border border-[#E5E2D9] overflow-hidden">
+                        <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
                           {customerOrders.map((ord) => (
                             <div
                               key={ord.orderNo}
-                              className="p-4 sm:p-6 bg-[#F9F8F3]/60 hover:bg-[#F9F8F3] transition-colors flex flex-wrap items-center justify-between gap-3.5 sm:gap-4"
+                              className="p-4 sm:p-6 bg-surface/60 hover:bg-surface transition-colors flex flex-wrap items-center justify-between gap-3.5 sm:gap-4"
                             >
                               <div className="space-y-1.5 min-w-0 break-words">
                                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -1120,21 +1175,21 @@ export function AccountClient({
                                     href={`/order-tracking/${encodeURIComponent(
                                       ord.secureTrackingToken || ord.orderNo
                                     )}`}
-                                    className="font-mono text-sm font-bold text-[#1B4332] hover:underline underline-offset-4 break-all"
+                                    className="font-mono text-sm font-bold text-ink hover:underline underline-offset-4 break-all"
                                   >
                                     {ord.orderNo}
                                   </Link>
-                                  <span className="text-[#1B4332]/30" aria-hidden="true">·</span>
-                                  <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#A84A28]">
+                                  <span className="text-ink/30" aria-hidden="true">·</span>
+                                  <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[var(--store-terracotta)]">
                                     {ord.status.replaceAll('_', ' ')}
                                   </span>
                                 </div>
-                                <p className="text-xs text-[#1B4332]/75">
+                                <p className="text-xs text-ink/75">
                                   {ord.items
                                     .map((i) => `${i.productNameBn} × ${i.quantity}`)
                                     .join(', ')}
                                 </p>
-                                <p className="font-display text-lg font-bold text-[#1B4332] tabular-nums">
+                                <p className="font-display text-lg font-bold text-ink tabular-nums">
                                   {formatPoishaToBdt(ord.totalPayablePoisha, locale)}
                                 </p>
                               </div>
@@ -1144,7 +1199,7 @@ export function AccountClient({
                                   href={`/order-tracking/${encodeURIComponent(
                                     ord.secureTrackingToken || ord.orderNo
                                   )}`}
-                                  className="inline-flex min-h-[44px] items-center justify-center px-3.5 sm:px-4 rounded-lg border border-[#1B4332]/35 text-[#1B4332] hover:border-[#1B4332] hover:bg-[#1B4332] hover:text-white font-mono text-[11px] uppercase tracking-[0.1em] transition-colors"
+                                  className="inline-flex min-h-[44px] items-center justify-center px-3.5 sm:px-4 rounded-lg border border-accent/35 text-ink hover:border-accent hover:bg-accent hover:text-white font-mono text-[11px] uppercase tracking-[0.1em] transition-colors"
                                 >
                                   {locale === 'bn' ? 'বিস্তারিত' : 'Details'}
                                 </Link>
@@ -1158,7 +1213,7 @@ export function AccountClient({
                                       );
                                       setReturnFeedback(null);
                                     }}
-                                    className="inline-flex min-h-[44px] items-center justify-center px-3.5 sm:px-4 rounded-lg border border-[#A84A28] text-[#A84A28] hover:bg-[#A84A28] hover:text-white font-mono text-[11px] uppercase tracking-[0.1em] transition-colors cursor-pointer"
+                                    className="inline-flex min-h-[44px] items-center justify-center px-3.5 sm:px-4 rounded-lg border border-[var(--store-terracotta)] text-[var(--store-terracotta)] hover:bg-[var(--store-terracotta)] hover:text-white font-mono text-[11px] uppercase tracking-[0.1em] transition-colors cursor-pointer"
                                   >
                                     {locale === 'bn' ? 'রিটার্ন অনুরোধ' : 'Return'}
                                   </button>
@@ -1167,7 +1222,7 @@ export function AccountClient({
                                 <button
                                   type="button"
                                   onClick={() => handleReorder(ord)}
-                                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 px-3.5 sm:px-4 rounded-lg bg-[#1B4332] text-white hover:bg-[#143325] font-mono text-[11px] uppercase tracking-[0.1em] transition-colors cursor-pointer"
+                                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 px-3.5 sm:px-4 rounded-lg bg-accent text-white hover:opacity-90 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors cursor-pointer"
                                 >
                                   <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                                   <span>{locale === 'bn' ? 'পুনরায় অর্ডার' : 'Reorder'}</span>
@@ -1175,8 +1230,8 @@ export function AccountClient({
                               </div>
 
                               {returnTargetOrderNo === ord.orderNo && (
-                                <div className="w-full pt-5 mt-3 border-t border-[#E5E2D9] space-y-4">
-                                  <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#1B4332]">
+                                <div className="w-full pt-5 mt-3 border-t border-border space-y-4">
+                                  <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink">
                                     {locale === 'bn'
                                       ? `${ord.orderNo}-এর জন্য রিটার্ন অনুরোধ ফর্ম`
                                       : `Return Request for ${ord.orderNo}`}
@@ -1248,7 +1303,7 @@ export function AccountClient({
                                     <button
                                       type="button"
                                       onClick={() => setReturnTargetOrderNo(null)}
-                                      className="min-h-[44px] px-4 rounded-lg border border-[#E5E2D9] text-[#1B4332] font-mono text-[11px] uppercase tracking-[0.1em] hover:border-[#1B4332] cursor-pointer"
+                                      className="min-h-[44px] px-4 rounded-lg border border-border text-ink font-mono text-[11px] uppercase tracking-[0.1em] hover:border-accent cursor-pointer"
                                     >
                                       {locale === 'bn' ? 'বাতিল' : 'Cancel'}
                                     </button>
@@ -1258,7 +1313,7 @@ export function AccountClient({
                                         returnSubmitting || returnDetailsBn.trim().length < 5
                                       }
                                       onClick={() => handleSubmitReturnRequest(ord)}
-                                      className="min-h-[44px] px-4 rounded-lg bg-[#1B4332] text-white font-mono text-[11px] uppercase tracking-[0.1em] hover:bg-[#143325] disabled:opacity-50 cursor-pointer"
+                                      className="min-h-[44px] px-4 rounded-lg bg-accent text-white font-mono text-[11px] uppercase tracking-[0.1em] hover:opacity-90 disabled:opacity-50 cursor-pointer"
                                     >
                                       {returnSubmitting
                                         ? locale === 'bn'
@@ -1280,8 +1335,8 @@ export function AccountClient({
                         <p
                           className={`text-xs font-medium p-3.5 rounded-lg border ${
                             returnFeedback.type === 'success'
-                              ? 'text-[#15803D] border-[#15803D]/35 bg-[#F9F8F3]'
-                              : 'text-[#B91C1C] border-[#B91C1C]/35 bg-[#F9F8F3]'
+                              ? 'text-success border-success/35 bg-surface'
+                              : 'text-danger border-danger/35 bg-surface'
                           }`}
                         >
                           {returnFeedback.text}
@@ -1293,9 +1348,9 @@ export function AccountClient({
 
                 {/* Change Password Section */}
                 {verifiedPhone && !authBypassed && (
-                  <section className="bg-white p-4 sm:p-8 rounded-xl border border-[#E5E2D9] shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-4 sm:space-y-5">
-                    <h3 className="font-display text-xl sm:text-2xl font-semibold text-[#1B4332]">
-                      {locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তন' : 'Change Password'}
+                  <section className="bg-white p-4 sm:p-8 rounded-xl border border-border shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-4 sm:space-y-5">
+                    <h3 className="font-display text-xl sm:text-2xl font-semibold text-ink">
+                      {locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তন' : 'Change Password'}
                     </h3>
                     <form
                       onSubmit={handleChangePassword}
@@ -1303,7 +1358,7 @@ export function AccountClient({
                     >
                       <div className="space-y-1.5">
                         <label htmlFor="account-current-pw" className={editorialFieldLabel}>
-                          {locale === 'bn' ? 'বর্তমান পাসওয়ার্ড' : 'Current Password'}
+                          {locale === 'bn' ? 'বর্তমান পাসওয়ার্ড' : 'Current Password'}
                         </label>
                         <input
                           id="account-current-pw"
@@ -1317,7 +1372,7 @@ export function AccountClient({
                       </div>
                       <div className="space-y-1.5">
                         <label htmlFor="account-new-pw" className={editorialFieldLabel}>
-                          {locale === 'bn' ? 'নতুন পাসওয়ার্ড' : 'New Password'}
+                          {locale === 'bn' ? 'নতুন পাসওয়ার্ড' : 'New Password'}
                         </label>
                         <input
                           id="account-new-pw"
@@ -1332,7 +1387,7 @@ export function AccountClient({
                         />
                       </div>
                       <button type="submit" disabled={authLoading} className={outlineEditorialBtn}>
-                        {locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তন' : 'Update Password'}
+                        {locale === 'bn' ? 'পাসওয়ার্ড পরিবর্তন' : 'Update Password'}
                       </button>
                     </form>
                   </section>
@@ -1346,13 +1401,13 @@ export function AccountClient({
                 {verifiedPhone ? (
                   <>
                     {/* 5A. Dedicated Personal Information Card (Name, Mobile, Email) */}
-                    <section className="bg-white p-4 sm:p-8 rounded-xl border border-[#E5E2D9] shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-4 sm:space-y-5">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[#E5E2D9] pb-4">
+                    <section className="bg-white p-4 sm:p-8 rounded-xl border border-border shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-4 sm:space-y-5">
+                      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-4">
                         <div>
-                          <h2 className="font-display text-2xl sm:text-[1.65rem] font-semibold text-[#1B4332]">
+                          <h2 className="font-display text-2xl sm:text-[1.65rem] font-semibold text-ink">
                             {locale === 'bn' ? 'ব্যক্তিগত তথ্য' : 'Personal Information'}
                           </h2>
-                          <p className="text-xs text-[#1B4332]/65 mt-0.5">
+                          <p className="text-xs text-ink/65 mt-0.5">
                             {locale === 'bn'
                               ? 'আপনার নাম, মোবাইল নম্বর ও ইমেইল এখান থেকে আপডেট করুন।'
                               : 'Keep your name, mobile number, and email updated for order notifications.'}
@@ -1412,8 +1467,8 @@ export function AccountClient({
                             role="status"
                             className={`text-xs font-medium p-3 rounded-lg border ${
                               personalFeedback.type === 'success'
-                                ? 'text-[#15803D] border-[#15803D]/35 bg-[#F9F8F3]'
-                                : 'text-[#B91C1C] border-[#B91C1C]/35 bg-[#F9F8F3]'
+                                ? 'text-success border-success/35 bg-surface'
+                                : 'text-danger border-danger/35 bg-surface'
                             }`}
                           >
                             {personalFeedback.text}
@@ -1439,22 +1494,22 @@ export function AccountClient({
                     </section>
 
                     {/* 5B. Clean Default Delivery Address Card (No Duplicate Name/Phone/Zone Walls) */}
-                    <section className="bg-white p-4 sm:p-8 rounded-xl border border-[#E5E2D9] shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-4 sm:space-y-5">
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E2D9] pb-4">
+                    <section className="bg-white p-4 sm:p-8 rounded-xl border border-border shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-4 sm:space-y-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
                         <div className="min-w-0">
-                          <h2 className="font-display text-xl sm:text-[1.65rem] font-semibold text-[#1B4332]">
+                          <h2 className="font-display text-xl sm:text-[1.65rem] font-semibold text-ink">
                             {locale === 'bn'
                               ? 'ডিফল্ট ডেলিভারি ঠিকানা'
                               : 'Default Delivery Address'}
                           </h2>
-                          <p className="text-xs text-[#1B4332]/65 mt-0.5">
+                          <p className="text-xs text-ink/65 mt-0.5">
                             {locale === 'bn'
                               ? 'চেকআউটে স্বয়ংক্রিয়ভাবে এই ঠিকানা যুক্ত হবে।'
                               : 'Automatically pre-filled when you place an order.'}
                           </p>
                         </div>
-                        <span className="inline-flex max-w-full min-w-0 items-center gap-1.5 px-3 py-1 rounded-lg bg-[#F9F8F3] border border-[#E5E2D9] font-mono text-[11px] text-[#1B4332]/75">
-                          <MapPin className="w-3.5 h-3.5 text-[#A84A28] shrink-0" aria-hidden="true" />
+                        <span className="inline-flex max-w-full min-w-0 items-center gap-1.5 px-3 py-1 rounded-lg bg-surface border border-border font-mono text-[11px] text-ink/75">
+                          <MapPin className="w-3.5 h-3.5 text-[var(--store-terracotta)] shrink-0" aria-hidden="true" />
                           <span className="truncate">
                             {profCity} → {profZone} ({profPostCode})
                           </span>
@@ -1607,7 +1662,7 @@ export function AccountClient({
                             type="button"
                             onClick={() => setShowDefaultCourierAdvanced((prev) => !prev)}
                             aria-expanded={showDefaultCourierAdvanced}
-                            className="inline-flex min-h-[44px] items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-[#1B4332]/75 hover:text-[#1B4332] hover:bg-[#F9F8F3] border border-transparent hover:border-[#E5E2D9] transition-colors cursor-pointer"
+                            className="inline-flex min-h-[44px] items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-ink/75 hover:text-ink hover:bg-surface border border-transparent hover:border-border transition-colors cursor-pointer"
                           >
                             <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
                             <span>
@@ -1624,7 +1679,7 @@ export function AccountClient({
                           </button>
 
                           {showDefaultCourierAdvanced && (
-                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#F9F8F3] p-4 rounded-xl border border-[#E5E2D9]">
+                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4 bg-surface p-4 rounded-xl border border-border">
                               <div className="space-y-1.5">
                                 <label htmlFor="prof-city" className={editorialFieldLabel}>
                                   {locale === 'bn' ? 'কুরিয়ার সিটি' : 'Courier City'}
@@ -1695,8 +1750,8 @@ export function AccountClient({
                             role="status"
                             className={`text-xs font-medium p-3 rounded-lg border ${
                               profileFeedback.type === 'success'
-                                ? 'text-[#15803D] border-[#15803D]/35 bg-[#F9F8F3]'
-                                : 'text-[#B91C1C] border-[#B91C1C]/35 bg-[#F9F8F3]'
+                                ? 'text-success border-success/35 bg-surface'
+                                : 'text-danger border-danger/35 bg-surface'
                             }`}
                           >
                             {profileFeedback.text}
@@ -1722,12 +1777,12 @@ export function AccountClient({
                     </section>
                   </>
                 ) : (
-                  <section className="bg-white p-4 sm:p-8 rounded-xl border border-[#E5E2D9] flex flex-wrap items-center justify-between gap-4">
+                  <section className="bg-white p-4 sm:p-8 rounded-xl border border-border flex flex-wrap items-center justify-between gap-4">
                     <div className="space-y-1">
-                      <h2 className="font-display text-xl font-semibold text-[#1B4332]">
+                      <h2 className="font-display text-xl font-semibold text-ink">
                         {locale === 'bn' ? 'ব্যক্তিগত প্রোফাইল সংরক্ষণ করুন' : 'Sign in to manage your profile'}
                       </h2>
-                      <p className="text-xs text-[#1B4332]/70">
+                      <p className="text-xs text-ink/70">
                         {locale === 'bn'
                           ? 'নাম, মোবাইল, ইমেইল এবং ডিফল্ট ডেলিভারি ঠিকানা সিঙ্ক করতে লগইন করুন।'
                           : 'Sign in to save your name, mobile, email, and default checkout address.'}
@@ -1744,13 +1799,13 @@ export function AccountClient({
                 )}
 
                 {/* 5C. Saved Address Book + On-Demand Add New Address Panel */}
-                <section className="bg-white p-4 sm:p-8 rounded-xl border border-[#E5E2D9] shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-4 sm:space-y-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E2D9] pb-4">
+                <section className="bg-white p-4 sm:p-8 rounded-xl border border-border shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-4 sm:space-y-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
                     <div>
-                      <h2 className="font-display text-2xl sm:text-[1.65rem] font-semibold text-[#1B4332]">
+                      <h2 className="font-display text-2xl sm:text-[1.65rem] font-semibold text-ink">
                         {locale === 'bn' ? 'অতিরিক্ত সংরক্ষিত ঠিকানা' : 'Saved Addresses'}
                       </h2>
-                      <p className="text-xs text-[#1B4332]/65 mt-0.5">
+                      <p className="text-xs text-ink/65 mt-0.5">
                         {locale === 'bn'
                           ? `বাসা, অফিস বা উপহারের ঠিকানা সংরক্ষণ করুন (${formatLocaleNumber(savedAddresses.length, locale)})`
                           : `Save home, office, or gift delivery addresses (${savedAddresses.length})`}
@@ -1777,13 +1832,13 @@ export function AccountClient({
                   </div>
 
                   {savedAddresses.length === 0 && !isAddAddressOpen ? (
-                    <div className="p-6 rounded-xl bg-[#F9F8F3] border border-[#E5E2D9] text-center space-y-2">
-                      <p className="text-sm text-[#1B4332]/75">
+                    <div className="p-6 rounded-xl bg-surface border border-border text-center space-y-2">
+                      <p className="text-sm text-ink/75">
                         {locale === 'bn'
                           ? 'এখনো কোনো অতিরিক্ত ঠিকানা সংরক্ষণ করা হয়নি।'
                           : 'No extra delivery addresses saved yet.'}
                       </p>
-                      <p className="text-xs text-[#1B4332]/55">
+                      <p className="text-xs text-ink/55">
                         {locale === 'bn'
                           ? 'অফিস বা পরিবারের ঠিকানা যুক্ত করতে উপরের "নতুন ঠিকানা যোগ করুন" বাটনে ক্লিক করুন।'
                           : 'Click "Add New Address" above to save an office or family address.'}
@@ -1809,19 +1864,19 @@ export function AccountClient({
                         return (
                           <div
                             key={addr.id}
-                            className="p-4 border border-[#E5E2D9] rounded-xl bg-[#F9F8F3] flex flex-col justify-between gap-3 text-xs"
+                            className="p-4 border border-border rounded-xl bg-surface flex flex-col justify-between gap-3 text-xs"
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="space-y-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[#1B4332]/65">
-                                  <span className="font-bold text-[#1B4332]">{addr.label}</span>
+                                <div className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.08em] text-ink/65">
+                                  <span className="font-bold text-ink">{addr.label}</span>
                                   <span aria-hidden="true">·</span>
                                   <span>{geo.postCode}</span>
                                 </div>
-                                <p className="font-medium text-sm text-[#1B4332] pt-0.5">
+                                <p className="font-medium text-sm text-ink pt-0.5">
                                   {addr.streetAddress}
                                 </p>
-                                <p className="text-[#1B4332]/70">
+                                <p className="text-ink/70">
                                   {locale === 'bn' ? upz?.name_bn : upz?.name_en},{' '}
                                   {locale === 'bn' ? dist?.name_bn : dist?.name_en}
                                   {addr.landmark ? ` (${addr.landmark})` : ''}
@@ -1841,21 +1896,21 @@ export function AccountClient({
                                   }
                                 }}
                                 aria-label={uiText('Remove address', locale)}
-                                className="min-w-[40px] min-h-[40px] inline-flex items-center justify-center text-[#1B4332]/50 hover:text-[#B91C1C] cursor-pointer rounded-lg hover:bg-white transition-colors shrink-0"
+                                className="min-w-[40px] min-h-[40px] inline-flex items-center justify-center text-ink/50 hover:text-danger cursor-pointer rounded-lg hover:bg-white transition-colors shrink-0"
                               >
                                 <Trash2 className="w-4 h-4" aria-hidden="true" />
                               </button>
                             </div>
 
                             {verifiedPhone && (
-                              <div className="pt-2 border-t border-[#E5E2D9]/80 flex flex-wrap items-center justify-between gap-2">
-                                <span className="font-mono text-[10px] text-[#1B4332]/55 truncate">
+                              <div className="pt-2 border-t border-border/80 flex flex-wrap items-center justify-between gap-2">
+                                <span className="font-mono text-[10px] text-ink/55 truncate">
                                   {geo.recipientCity} → {geo.recipientZone}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handlePromoteAddressToDefault(addr)}
-                                  className="inline-flex min-h-[36px] items-center font-mono text-[11px] uppercase tracking-[0.06em] text-[#1B4332] hover:text-[#A84A28] underline underline-offset-4 cursor-pointer"
+                                  className="inline-flex min-h-[36px] items-center font-mono text-[11px] uppercase tracking-[0.06em] text-ink hover:text-[var(--store-terracotta)] underline underline-offset-4 cursor-pointer"
                                 >
                                   {locale === 'bn' ? 'ডিফল্ট হিসেবে ব্যবহার করুন' : 'Use as Default'}
                                 </button>
@@ -1871,7 +1926,7 @@ export function AccountClient({
                   {isAddAddressOpen && (
                     <form
                       onSubmit={handleSaveAddress}
-                      className="p-4 sm:p-6 rounded-xl bg-[#F9F8F3] border border-[#E5E2D9] space-y-4"
+                      className="p-4 sm:p-6 rounded-xl bg-surface border border-border space-y-4"
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
@@ -2020,7 +2075,7 @@ export function AccountClient({
                           type="button"
                           onClick={() => setShowAddCourierAdvanced((prev) => !prev)}
                           aria-expanded={showAddCourierAdvanced}
-                          className="inline-flex min-h-[44px] items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-[#1B4332]/75 hover:text-[#1B4332] hover:bg-white border border-transparent hover:border-[#E5E2D9] transition-colors cursor-pointer"
+                          className="inline-flex min-h-[44px] items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-ink/75 hover:text-ink hover:bg-white border border-transparent hover:border-border transition-colors cursor-pointer"
                         >
                           <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
                           <span>
@@ -2037,7 +2092,7 @@ export function AccountClient({
                         </button>
 
                         {showAddCourierAdvanced && (
-                          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-[#E5E2D9]">
+                          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-border">
                             <div className="space-y-1.5">
                               <label htmlFor="addr-city" className={editorialFieldLabel}>
                                 {locale === 'bn' ? 'কুরিয়ার সিটি' : 'Courier City'}
@@ -2105,7 +2160,7 @@ export function AccountClient({
                         <button
                           type="button"
                           onClick={() => setIsAddAddressOpen(false)}
-                          className="min-h-[44px] px-4 rounded-lg border border-[#E5E2D9] bg-white text-[#1B4332] font-mono text-xs uppercase tracking-[0.1em] hover:border-[#1B4332] cursor-pointer"
+                          className="min-h-[44px] px-4 rounded-lg border border-border bg-white text-ink font-mono text-xs uppercase tracking-[0.1em] hover:border-accent cursor-pointer"
                         >
                           {locale === 'bn' ? 'বাতিল' : 'Cancel'}
                         </button>
@@ -2121,16 +2176,16 @@ export function AccountClient({
 
             {/* 6. Tab Panel 4: Saved Wishlist Section */}
             {activeTab === 'wishlist' && (
-              <section className="bg-white p-4 sm:p-8 rounded-xl border border-[#E5E2D9] shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-5 sm:space-y-6">
-                <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-[#E5E2D9] pb-4">
-                  <h2 className="font-display text-xl sm:text-[1.75rem] font-semibold text-[#1B4332]">
+              <section className="bg-white p-4 sm:p-8 rounded-xl border border-border shadow-[0_8px_24px_rgba(27,67,50,0.03)] space-y-5 sm:space-y-6">
+                <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-4">
+                  <h2 className="font-display text-xl sm:text-[1.75rem] font-semibold text-ink">
                     {dict.common.wishlist} ({formatLocaleNumber(wishlistedProducts.length, locale)})
                   </h2>
                   {wishlistedProducts.length > 0 && (
                     <button
                       type="button"
                       onClick={clearWishlist}
-                      className="inline-flex min-h-[36px] items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#A84A28] hover:underline underline-offset-4 cursor-pointer"
+                      className="inline-flex min-h-[36px] items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--store-terracotta)] hover:underline underline-offset-4 cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                       <span>{locale === 'bn' ? 'সব মুছুন' : 'Clear All'}</span>
