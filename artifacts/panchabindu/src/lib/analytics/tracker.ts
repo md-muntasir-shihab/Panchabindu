@@ -22,7 +22,7 @@ const MAX_BATCH = 20;
 const MAX_BUFFER = 200;
 const FLUSH_INTERVAL_MS = 15_000;
 const MAX_EVENT_BYTES = 300;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export interface ConsentRecord {
   v: 1;
@@ -49,7 +49,7 @@ export function setConsent(choice: ConsentRecord['choice'], detailed = false): v
       CONSENT_KEY,
       JSON.stringify({ v: 1, choice, detailed, ts: new Date().toISOString() } satisfies ConsentRecord),
     );
-    // Changing consent also changes live behavior immediately.
+    // Changing consent changes live behavior immediately.
     if (choice === 'decline') hardReset();
     else startSessionIfIdle();
   } catch {
@@ -68,7 +68,7 @@ function uuid(): string {
   try {
     return crypto.randomUUID();
   } catch {
-    // Deterministic fallback must never be used for identity — session stays null if UUIDs unavailable.
+    // Never fall back to a deterministic id for identity — no session if UUIDs unavailable.
     return '';
   }
 }
@@ -102,12 +102,8 @@ function getSessionRecord(): { sid: string; lastSeen: number; seen: boolean } {
     localStorage.setItem(SESSION_KEY, JSON.stringify({ sid, lastSeen: now }));
     return { sid, lastSeen: now, seen: false };
   } catch {
-    return { sid: '', lastSeen: nowSafe(), seen: false };
+    return { sid: '', lastSeen: Date.now(), seen: false };
   }
-}
-
-function nowSafe(): number {
-  return Date.now();
 }
 
 let buffer: AnalyticsEvent[] = [];
@@ -119,6 +115,8 @@ let dwellStart: number | null = null;
 let dwellProductId: string | null = null;
 let dwellScrollPct = 0;
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+let flushTimer: ReturnType<typeof setInterval> | null = null;
+let idleResetTimer: ReturnType<typeof setTimeout> | null = null;
 
 function queue(event: AnalyticsEvent): void {
   if (!analyticsEnabled()) return;
@@ -143,7 +141,7 @@ function post(body: string, useBeacon: boolean): void {
     }
     void fetch('/api/analytics/ingest', {
       method: 'POST',
-      headers: { 'Content-Type': '/application/json' as unknown as string, Accept: 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body,
       keepalive: true,
       credentials: 'omit',
@@ -158,16 +156,12 @@ function post(body: string, useBeacon: boolean): void {
 
 export async function flush(reason: string): Promise<void> {
   if (!analyticsEnabled()) return;
-  const env = envelope();
-  // eslint-disable-next-line no-constant-condition
-  if (false) { /* placeholder to keep shape stable */ }
   if (buffer.length === 0) return;
+  const env = envelope();
   env.events = buffer;
   buffer = [];
   post(JSON.stringify(env), reason === 'pagehide' || reason === 'visibilitychange');
 }
-
-let idleResetTimer: ReturnType<typeof setTimeout> | null = null;
 
 function markActivity(): void {
   try {
@@ -182,12 +176,21 @@ function markActivity(): void {
 }
 
 function isIdle(): boolean {
-  return idleResetTimer === null && Date.now() - (Number(sessionStorage.getItem('pb_last_activity')) || 0) > IDLE_TIMEOUT_MS;
+  try {
+    if (idleResetTimer !== null) return false;
+    return Date.now() - (Number(sessionStorage.getItem('pb_last_activity')) || 0) > IDLE_TIMEOUT_MS;
+  } catch {
+    return true;
+  }
 }
 
 function isStaffPath(): boolean {
-  return location.pathname.startsWith('/admin') || location.pathname.startsWith('/vendor');
-
+  try {
+    const p = location.pathname;
+    return p.startsWith('/admin') || p.startsWith('/vendor');
+  } catch {
+    return true;
+  }
 }
 
 function deviceBucket(): string {
@@ -195,18 +198,23 @@ function deviceBucket(): string {
   if (w <= 430) return 'mobile';
   if (w <= 1024) return 'tablet';
   return 'desktop';
-
 }
 
 function startSessionIfIdle(): void {
   if (!analyticsEnabled() || isStaffPath()) return;
   const session = getSessionRecord();
   if (session.sid && !session.seen) {
+    let newVisitor = false;
+    try {
+      newVisitor = !localStorage.getItem(VISITOR_KEY);
+    } catch {
+      newVisitor = false;
+    }
     queue({
       type: 'session_start',
       ts: Date.now(),
       event_uuid: uuid(),
-      new_visitor: !localStorage.getItem(VISITOR_KEY),
+      new_visitor: newVisitor,
       device: deviceBucket(),
     });
   }
@@ -217,7 +225,6 @@ function startSessionIfIdle(): void {
   }
 }
 
-let flushTimer: ReturnType<typeof setInterval> | null = null;
 function ensureFlushTimer(): void {
   if (!flushTimer) flushTimer = setInterval(() => void flush('interval'), FLUSH_INTERVAL_MS);
 }
@@ -230,12 +237,12 @@ function startDwell(productId: string): void {
   dwellScrollPct = 0;
   dwellStart = document.visibilityState === 'visible' && !isIdle() ? Date.now() : null;
   if (!dwellTimer) {
- dwellTimer = setInterval(() => {
+    dwellTimer = setInterval(() => {
       if (dwellProductId && dwellStart !== null && document.visibilityState === 'visible' && !isIdle()) {
         dwellActiveMs += 1_000;
         dwellStart = Date.now();
       }
-  }, 1_000);
+    }, 1_000);
   }
 }
 
@@ -253,8 +260,7 @@ function stopDwell(): void {
   dwellProductId = null;
   dwellActiveMs = 0;
   dwellStart = null;
-  dwellScrollPct =  +0;
-  dwellStart = null;
+  dwellScrollPct = 0;
 }
 
 export function trackPageView(path: string): void {
@@ -263,7 +269,7 @@ export function trackPageView(path: string): void {
     startSessionIfIdle();
     ensureFlushTimer();
     markActivity();
-    // De-dup: same path within 3s (route remount / StrictMode double-invoke).
+    // De-dup: identical path within 3 s (route remount / StrictMode double-invoke).
     if (path === lastPagePath && Date.now() - lastPageTs < 3_000) return;
     lastPagePath = path;
     lastPageTs = Date.now();
@@ -289,7 +295,7 @@ function referrerHost(): string {
     if (!document.referrer) return '';
     const url = new URL(document.referrer);
     return cap(url.hostname, 60);
-  } {
+  } catch {
     return '';
   }
 }
@@ -332,7 +338,7 @@ export function trackError(message: string, stackTop: string, path: string): voi
   }
 }
 
-// --- Lifecycle wiring (one call from main.tsx) ---
+// --- Lifecycle wiring (one call from the app bootstrap) ---
 
 export function installLifecycle(): void {
   if (typeof window === 'undefined') return;
@@ -351,13 +357,19 @@ export function installLifecycle(): void {
   ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach((evt) =>
     window.addEventListener(evt, () => markActivity(), { passive: true, capture: true }),
   );
-  window.addEventListener('scroll', () => {
-    try {
-      const doc = document.documentElement;
-      const pct = Math.round((doc.scrollTop / Math.max(1, doc.scrollHeight - doc.clientHeight)) * 100);
-      if (pct > dwellScrollPct) dwellScrollPct = pct;
-    } captureEvent();
-  }, { passive: true });
+  window.addEventListener(
+    'scroll',
+    () => {
+      try {
+        const doc = document.documentElement;
+        const pct = Math.round((doc.scrollTop / Math.max(1, doc.scrollHeight - doc.clientHeight)) * 100);
+        if (pct > dwellScrollPct) dwellScrollPct = pct;
+      } catch {
+        /* ignore */
+      }
+    },
+    { passive: true },
+  );
   window.addEventListener('error', (ev) => {
     trackError(String(ev.message ?? 'error'), String((ev.error?.stack ?? '').split('\n')[1] ?? ''), location.pathname);
   });
@@ -366,16 +378,12 @@ export function installLifecycle(): void {
   });
 }
 
-function captureEvent(): void {
-  /* no-op: kept for scroll listener shape */
-}
-
 export function hardReset(): void {
   buffer = [];
   lastPagePath = '';
   lastPageTs = 0;
   dwellProductId = null;
-  dwellActiveMs =  +0;
+  dwellActiveMs = 0;
   dwellStart = null;
   dwellScrollPct = 0;
   if (dwellTimer) clearInterval(dwellTimer);
