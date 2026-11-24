@@ -29,6 +29,7 @@
     "test:catalog:api": "node --test scripts/src/admin-product-studio-audit-api.test.mjs",
     "test:catalog:import-weight": "node --test scripts/src/admin-product-studio-catalog-import-weight.test.mjs",
     "test:catalog:browser": "node scripts/src/admin-product-studio-audit-browser.mjs",
+    "test:messaging:api": "node --test scripts/src/messaging-preview-fallback.test.mjs",
     "test:dashboard": "tsx --tsconfig artifacts/panchabindu/tsconfig.json --test artifacts/panchabindu/src/components/admin/admin-command-dashboard.test.ts scripts/src/dashboard-summary.test.ts",
     "test:vendors": "tsx --tsconfig artifacts/panchabindu/tsconfig.json --test artifacts/panchabindu/src/components/admin/vendor-ledger-supply-panel.test.ts scripts/src/vendor-ledger-summary.test.ts"
   },
