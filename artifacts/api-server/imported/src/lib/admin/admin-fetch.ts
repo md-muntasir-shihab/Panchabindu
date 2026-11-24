@@ -1,7 +1,9 @@
 // src/lib/admin/admin-fetch.ts
 // Safe client-side API request wrapper for Admin ERP panels that wraps native 'fetch'
-// internally to inject x-admin-session-token & x-csrf-token headers and handle logging,
+// internally to inject the x-csrf-token header and handle logging,
 // without attempting to override or mutate 'window.fetch' (which has only a getter).
+// Admin session authentication travels exclusively in the HttpOnly cookie (AUTH-01);
+// no script-readable session token is stored or sent as a header.
 
 import { localizedFetch } from '../i18n/localized-fetch';
 
@@ -11,7 +13,7 @@ export interface AdminFetchOptions extends RequestInit {
 
 /**
  * Custom API request wrapper for Admin ERP dashboard.
- * Wraps 'fetch' internally to inject authentication headers (session token + CSRF token)
+ * Wraps 'fetch' internally to inject the CSRF token header
  * and handle request/response logging, preventing runtime TypeErrors from window.fetch mutation.
  */
 export async function adminFetch(
@@ -40,12 +42,8 @@ export async function adminFetch(
   if (requestUrl && requestUrl.origin === window.location.origin &&
       ['/api/admin/', '/api/media', '/api/catalog/import', '/api/print/'].some(prefix => requestUrl.pathname === prefix || requestUrl.pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`))) {
     try {
-      const storedToken = window.sessionStorage.getItem('bg_admin_session_token');
       const storedCsrf = window.sessionStorage.getItem('bg_admin_csrf_token');
 
-      if (storedToken && !headers.has('x-admin-session-token')) {
-        headers.set('x-admin-session-token', storedToken);
-      }
       if (storedCsrf && !headers.has('x-csrf-token')) {
         headers.set('x-csrf-token', storedCsrf);
       }
