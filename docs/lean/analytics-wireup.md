@@ -1,34 +1,39 @@
-# Analytics admin panel — integration status (2026-11-24)
+# Analytics + Customer 360 — admin wire-up status (updated 2026-11-25)
 
-> This slice added the API route and the React panel. The final wire-up inside
-> `admin-erp-client.tsx` is a 3-line manual edit (the file is 241 KB; rewriting it
-> through the GitHub API without a shell was rejected as unsafe by the
-> read-before-write rule). Exact instructions below.
+> New files are on the branch. The two remaining wire-ups touch two large files
+> (`admin-erp-client.tsx` 241 KB, `customer-az-profile-view.tsx` 85 KB) — done as
+> exact manual edits per the read-before-write rule, not blind API rewrites.
 
-## What is already on this branch `[TRACED — commits]`
+## On the branch already `[TRACED — commits]`
 
 | Piece | File | Commit |
 | --- | --- | --- |
-| Aggregation endpoint (RBAC, Dhaka-time keys) | `artifacts/api-server/imported/app/api/admin/analytics/route.ts` | `e1d779b` |
-| Route registration | `artifacts/api-server/src/routes/imported.ts` | `b7cb080` |
-| Analytics panel (5 views, CSV, skeletons) | `artifacts/panchabindu/src/components/admin/analytics-panel.tsx` | `e30de8b` |
+| Recon / plan / gap / privacy / runbook docs | `docs/lean/*` | `a7485b0`, `f3aa421`, `183ba30`, `ba5e508` |
+| Tracker + consent banner | `artifacts/panchabindu/src/lib/analytics/*` | `655d3f4`→`6f07090`, `a5a9420`, `405ae54` |
+| Ingestion endpoint | `.../app/api/analytics/ingest/route.ts` | `8aa56bb` ⚠️ see pending fix below |
+| Events repository (phase6 doc) | `.../src/lib/analytics/analytics-repository.ts` | `31ac675` |
+| Admin aggregation endpoint | `.../app/api/admin/analytics/route.ts` | `e1d779b` |
+| Analytics panel (5 views) | `.../components/admin/analytics-panel.tsx` | `e30de8b` |
+| Route registrations (ingest/analytics/privacy) | `artifacts/api-server/src/routes/imported.ts` | `ce0bc44`, `b7cb080`, `b6d3b23` |
+| Privacy route (reveal/export/consent) | `.../app/api/admin/customer-privacy/route.ts` | `4984882` |
+| C360 Activity/Privacy components | `.../components/admin/customer-privacy-sections.tsx` | `08b58ce` |
 | Repository budget test | `scripts/src/analytics-repository.test.mjs` | `9dd75d3` |
 
-## Manual wire-up (5 minutes, exact anchors)
+## ⚠️ Pending fix (must-do #1)
 
-All three edits are in `artifacts/panchabindu/src/components/admin/admin-erp-client.tsx`:
+`.../app/api/analytics/ingest/route.ts` on the branch still has the OLD body:
+`next/server` import + `globalThis.__pbRuntime` shim → events silently dropped.
+Full replacement file was provided in chat (2026-11-24 message). Paste it, then:
 
-1. **Tab type** — find `export type AdminTabKey =` and add one line to the union:
-   ```ts
-     | 'phase5_readiness'
-     | 'analytics';        // ← ADD
-   ```
+```powershell
+Select-String -Path "artifacts/api-server/imported/app/api/analytics/ingest/route.ts" -Pattern "appendAnalyticsEvents"
+Select-String -Path "artifacts/api-server/imported/app/api/analytics/ingest/route.ts" -Pattern "__pbRuntime"   # কিছু না আসলে ঠিক
+```
 
-2. **Nav item** — in the `operations` group (`{ id: 'operations', bn: 'সিআরএম, মেসেজিং ও সিঙ্ক', ... keys: ['crm_contacts', 'messaging_hub', 'sync_health'] }`), change the keys array to:
-   ```ts
-   keys: ['analytics', 'crm_contacts', 'messaging_hub', 'sync_health']
-   ```
-   and add the nav entry inside that group's `items:` — copy the `sync_health` item shape:
+## Manual wire-up A: admin Analytics tab (`admin-erp-client.tsx`)
+
+1. `export type AdminTabKey =` union — add `| 'analytics';`
+2. `operations` NAV group keys — `['analytics', 'crm_contacts', 'messaging_hub', 'sync_health']`, and add the nav item (copy `sync_health` shape, `TrendingUp` icon — already imported):
    ```tsx
    {
      key: 'analytics',
@@ -40,29 +45,73 @@ All three edits are in `artifacts/panchabindu/src/components/admin/admin-erp-cli
      hidden: !isSuperAdmin,
    },
    ```
-
-3. **Panel mount** — add above the `TAB: CRM & CONTACTS` block (before `{activeTab === 'crm_contacts' && !isVendor && (`):
+3. Above the `TAB: CRM & CONTACTS` block:
    ```tsx
-   {/* =========================================================
-       TAB: ANALYTICS (Visitor & Product Analytics)
-      ========================================================= */}
    {activeTab === 'analytics' && isSuperAdmin && (
      <AnalyticsPanel locale={locale} isSuperAdmin={isSuperAdmin} />
    )}
    ```
-   and the import next to the other panel imports:
+   plus `import { AnalyticsPanel } from './analytics-panel';` near the other panel imports.
+
+## Manual wire-up B: Customer 360 Privacy + Activity (`customer-az-profile-view.tsx`)
+
+1. Add to imports:
    ```tsx
-   import { AnalyticsPanel } from './analytics-panel';
+   import { CustomerActivitySection, CustomerPrivacySection } from './customer-privacy-sections';
    ```
+2. `type ProfileTab = 'overview' | 'orders' | 'timeline' | 'messages' | 'privacy';`
+3. Nav array (the `[...] as const` list with `['overview', ...]` entries) — add:
+   ```tsx
+   ['privacy', t('গোপনীয়তা', 'Privacy'), null],
+   ```
+4. Mount at the end of the tab panels (after the `messages` block):
+   ```tsx
+   {activeTab === 'privacy' && (
+     <CustomerPrivacySection
+       phoneKey={customer.phoneKey}
+       displayPhone={customer.displayPhone}
+       locale={locale}
+       consent={null /* follow-up: join from snapshot when consent records are added to the DTO */}
+       busyKey={busyKey}
+       onReveal={async () => {
+         const res = await fetch('/api/admin/customer-privacy', {
+           method: 'POST',
+           credentials: 'include',
+           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+           body: JSON.stringify({ action: 'reveal', phoneKey: customer.phoneKey }),
+         });
+         if (!res.ok) return null;
+         const body = (await res.json()) as { fullPhone?: string };
+         return body.fullPhone ?? null;
+       }}
+       onExport={async () => {
+         await fetch('/api/admin/customer-privacy', {
+           method: 'POST',
+           credentials: 'include',
+           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+           body: JSON.stringify({ action: 'export', phoneKey: customer.phoneKey }),
+         });
+         // Download assembly happens client-side from the profile props (DSR follow-up note in privacy.md §4)
+       }}
+     />
+   )}
+   ```
+   Note: the admin fetch wrapper (`adminApiRequest`) applies CSRF headers globally — if the
+   file's other fetches use the local `fetch` alias, keep the same pattern for consistency.
+5. The **Activity** section: the profile view's existing timeline already covers order
+   events. The consent-gated browsing timeline (`CustomerActivitySection`) is ready, but its
+   data needs the visitor→customer link which depends on the login-time merge hook
+   (privacy.md §3 follow-up). Do NOT mount it with fake data; leave it for the follow-up
+   slice so the empty-by-design state is honest.
 
-`TrendingUp` is already imported from `lucide-react` in this file `[TRACED]` — no new dependency.
-
-## Verify after wiring
+## Verify (PowerShell)
 
 ```powershell
 pnpm run typecheck
 pnpm run build
+node --test scripts/src/analytics-repository.test.mjs
+git add . ; git commit -m "feat(analytics,c360): wire admin analytics tab + customer privacy tab" ; git push
 ```
 
-Then open `/admin` as super admin → "অ্যানালিটিক্স" tab → empty state should render
-(no events yet until consent is given in the storefront and traffic flows).
+Then in a browser: `/admin` → অ্যানালিটিক্স (super admin), and CRM → customer → গোপনীয়তা →
+Reveal must show the full phone AND an audit entry must appear in Audit Trail.
