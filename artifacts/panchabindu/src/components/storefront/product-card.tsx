@@ -5,6 +5,7 @@ import { productImageUrl, productImageFallback } from '@/lib/storefront/product-
 // Botanical Heritage Calm — Frameless 4:5 Portrait Product Card
 // Features:
 //   - Frameless 4:5 portrait image canvas (surface tone) with hover 2nd product photo swap
+//   - Soft token-driven card elevation (see .store-product-media in index.css)
 //   - Floating Quick-Add CTA on hover (desktop) + accessible touch bar (mobile, >=44px)
 //   - Clean unboxed metadata & tabular-nums Poisha price below the photo
 //   - Wishlist heart toggle & next/image with referrerPolicy="no-referrer"
@@ -104,7 +105,7 @@ export function ProductCard({ product }: ProductCardProps) {
     >
       <div className="min-w-0">
         {/* 4:5 Editorial Portrait Image Canvas */}
-        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-surface border border-border">
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-surface border border-border store-product-media">
           <Link
             href={`/product/${product.slug}`}
             className="block w-full h-full relative"
@@ -158,7 +159,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <Heart
               className={`w-4 h-4 transition-colors ${
                 isWishlisted ? 'fill-[var(--store-terracotta)] text-[var(--store-terracotta)]' : 'text-ink'
-              }`}
+              }`
               aria-hidden="true"
             />
           </button>
@@ -172,7 +173,7 @@ export function ProductCard({ product }: ProductCardProps) {
               className={`w-full min-h-[44px] px-4 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[0.12em] flex items-center justify-center gap-2 transition-all cursor-pointer ${
                 isOutOfStock
                   ? 'bg-bg/95 text-ink/75 border border-border cursor-not-allowed'
-                  : 'bg-[var(--store-accent)] text-white hover:opacity-90 active:scale-[0.98]'
+                  : 'bg-[var(--store-accent)] text-white hover:bg-[var(--store-accent-hover)] hover:shadow-[var(--store-shadow-card)] active:scale-[0.98]'
               }`}
             >
               {justAdded ? (
@@ -185,7 +186,7 @@ export function ProductCard({ product }: ProductCardProps) {
                   ? dict.common.outOfStock
                   : justAdded
                   ? locale === 'bn'
-                    ? 'যুক্ত হয়েছে'
+                    ? 'যুক্ত হয়েছে'
                     : 'Added'
                   : dict.common.addToCart}
               </span>
@@ -219,20 +220,20 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Product Name */}
           <Link
             href={`/product/${product.slug}`}
-            className="block font-display text-[15px] sm:text-lg font-semibold text-ink group-hover:text-[var(--store-terracotta)] line-clamp-2 leading-snug transition-colors"
+            className="block font-display text-[15px] sm:text-lg font-semibold text-ink group-hover:text-[var(--store-terracotta)] hover:underline decoration-[var(--store-terracotta)] decoration-1 underline-offset-4 line-clamp-2 leading-snug transition-colors"
           >
             {displayName}
           </Link>
 
           {/* Price Row */}
           <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-0.5 tabular-nums">
-            <span className="text-sm sm:text-base font-semibold text-ink">
+            <span className="text-[15px] sm:text-lg font-semibold text-ink tracking-tight">
               {formatPoishaToBdt(primaryVariant.salePricePoisha, locale)}
             </span>
             {primaryVariant.compareAtPricePoisha &&
               primaryVariant.compareAtPricePoisha >
                 primaryVariant.salePricePoisha && (
-                <span className="text-[11px] sm:text-xs text-ink/75 line-through">
+                <span className="text-[11px] sm:text-xs text-muted line-through">
                   {formatPoishaToBdt(primaryVariant.compareAtPricePoisha, locale)}
                 </span>
               )}
@@ -262,7 +263,7 @@ export function ProductCard({ product }: ProductCardProps) {
               ? dict.common.outOfStock
               : justAdded
               ? locale === 'bn'
-                ? 'যুক্ত হয়েছে'
+                ? 'যুক্ত হয়েছে'
                 : 'Added'
               : locale === 'bn'
               ? 'কার্টে যোগ'
