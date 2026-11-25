@@ -9,11 +9,11 @@ import { LocalizedText } from '@/components/ui/localized-text';
 // src/components/storefront/product-detail-client.tsx
 // Botanical Heritage Calm — Product Detail Page (PDP)
 // Features:
-//   - Frameless 4:5 portrait gallery (#F2EFE9) with thumbnail switcher
+//   - Frameless 4:5 portrait gallery (surface tone) with soft token elevation & thumbnail switcher
 //   - Dynamic Variant Selector with live Poisha price, compare-at price, Public SKU, & stock status
 //   - Interactive 64-District Delivery Rate & Lead-Time Estimator (Courier vs BD Post)
 //   - Specifications Table, Verified Purchase Reviews, & Related Products Grid (4:5 Portrait Cards)
-//   - Zero vendor/cost leakage
+//   - Zero vendor/cost leakage — design tokens only (PDP-01): no arbitrary hex, no blurs
 
 import * as React from 'react';
 import { Link } from 'wouter';
@@ -222,9 +222,9 @@ export function ProductDetailClient({
         {/* Breadcrumb */}
         <nav
           aria-label={uiText("Breadcrumb", locale)}
-          className="flex flex-wrap items-center gap-1.5 text-xs text-[#5A655D]"
+          className="flex flex-wrap items-center gap-1.5 text-xs text-muted"
         >
-          <Link href="/" className="hover:text-[var(--store-accent)] hover:underline">
+          <Link href="/" className="hover:text-accent hover:underline">
             {dict.common.home}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
@@ -232,14 +232,14 @@ export function ProductDetailClient({
             <>
               <Link
                 href={`/category/${category.slug}`}
-                className="text-[#5A655D] hover:text-[var(--store-accent)] hover:underline"
+                className="text-muted hover:text-accent hover:underline"
               >
                 {locale === 'bn' ? category.nameBn : category.nameEn}
               </Link>
               <ChevronRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             </>
           )}
-          <span className="text-[#162119] font-medium truncate max-w-[200px] sm:max-w-xs">
+          <span className="text-ink font-medium truncate max-w-[200px] sm:max-w-xs">
             {displayName}
           </span>
         </nav>
@@ -248,9 +248,8 @@ export function ProductDetailClient({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 lg:gap-12 items-start">
           {/* Left: 4:5 Portrait Product Image Gallery */}
           <div className="lg:col-span-6 min-w-0 space-y-3">
-            <div className="relative aspect-[4/5] w-full border border-[#E4E2DC] rounded-2xl overflow-hidden bg-[#F2EFE9]">
+            <div className="relative aspect-[4/5] w-full border border-border rounded-2xl overflow-hidden bg-surface store-product-media">
               <img
-                  
                 src={activeImageUrl}
                 alt={displayName}
                 referrerPolicy="no-referrer"
@@ -258,17 +257,17 @@ export function ProductDetailClient({
                 className="object-cover" loading="eager" fetchPriority="high" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} />
               <div className="absolute top-3.5 left-3.5 flex flex-col gap-1.5">
                 {isOutOfStock ? (
-                  <span className="px-3 py-1 text-xs font-semibold bg-[#FAF9F5]/95 backdrop-blur-sm text-[#B91C1C] rounded-md border border-[#E4E2DC]">
+                  <span className="px-3 py-1 text-xs font-semibold bg-bg/95 text-danger rounded-md border border-border">
                     {dict.common.outOfStock}
                   </span>
                 ) : isLowStock ? (
-                  <span className="px-3 py-1 text-xs font-semibold bg-[#FAF9F5]/95 backdrop-blur-sm text-[#B45309] rounded-md border border-[#E4E2DC]">
+                  <span className="px-3 py-1 text-xs font-semibold bg-bg/95 text-warning rounded-md border border-border">
                     {dict.common.lowStockRemaining(
                       selectedVariant.stockAvailable
                     )}
                   </span>
                 ) : product.isFreeDelivery ? (
-                  <span className="px-3 py-1 text-xs font-semibold bg-[#FAF9F5]/95 backdrop-blur-sm text-[var(--store-accent)] rounded-md border border-[#E4E2DC]">
+                  <span className="px-3 py-1 text-xs font-semibold bg-bg/95 text-accent rounded-md border border-border">
                     {dict.common.freeDelivery}
                   </span>
                 ) : null}
@@ -285,12 +284,11 @@ export function ProductDetailClient({
                     aria-label={`View image ${idx + 1}`}
                     className={`relative w-16 h-20 sm:w-20 sm:h-24 rounded-xl border overflow-hidden shrink-0 cursor-pointer transition-all ${
                       selectedImageIdx === idx
-                        ? 'border-[var(--store-accent)] ring-2 ring-[var(--store-accent)]/20'
-                        : 'border-[#E4E2DC] opacity-75 hover:opacity-100'
+                        ? 'border-accent ring-2 ring-[var(--store-accent)]/20'
+                        : 'border-border opacity-75 hover:opacity-100'
                     }`}
                   >
                     <img
-                  
                       src={imgUrl}
                       alt={`${displayName} thumbnail ${idx + 1}`}
                       referrerPolicy="no-referrer"
@@ -304,13 +302,13 @@ export function ProductDetailClient({
 
           {/* Right: Editorial Details, Variant Selector, Pricing & Estimator */}
           <div className="lg:col-span-6 min-w-0 space-y-5 sm:space-y-7">
-            <div className="space-y-2.5 sm:space-y-3 border-b border-[#E4E2DC] pb-4 sm:pb-5">
+            <div className="space-y-2.5 sm:space-y-3 border-b border-border pb-4 sm:pb-5">
               {/* Unboxed Metadata Row */}
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#5A655D]">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1 font-semibold text-[#162119]">
+                  <span className="inline-flex items-center gap-1 font-semibold text-ink">
                     <Star
-                      className="w-4 h-4 fill-[var(--store-accent)] text-[var(--store-accent)]"
+                      className="w-4 h-4 fill-accent text-accent"
                       aria-hidden="true"
                     />
                     <span className="tabular-nums">
@@ -327,7 +325,7 @@ export function ProductDetailClient({
                       <span aria-hidden="true">·</span>
                       <span
                         className={`font-semibold ${
-                          isLowStock ? 'text-[#B45309]' : 'text-[#15803D]'
+                          isLowStock ? 'text-warning' : 'text-success'
                         }`}
                       >
                         {isLowStock
@@ -340,23 +338,23 @@ export function ProductDetailClient({
                   )}
                 </div>
 
-                <span className="font-mono text-[#5A655D]">
+                <span className="font-mono text-muted">
                   <LocalizedText source={"SKU:"} area="storefront" />{" "}{selectedVariant.publicSku}
                 </span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#162119] leading-snug tracking-tight">
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink leading-snug tracking-tight">
                 {displayName}
               </h1>
 
               <div className="flex items-baseline gap-3 pt-1 tabular-nums">
-                <span className="text-2xl sm:text-3xl font-bold text-[#162119]">
+                <span className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
                   {formatPoishaToBdt(selectedVariant.salePricePoisha, locale)}
                 </span>
                 {selectedVariant.compareAtPricePoisha &&
                   selectedVariant.compareAtPricePoisha >
                     selectedVariant.salePricePoisha && (
-                    <span className="text-sm text-[#5A655D] line-through">
+                    <span className="text-sm text-muted line-through">
                       {formatPoishaToBdt(
                         selectedVariant.compareAtPricePoisha,
                         locale
@@ -366,13 +364,13 @@ export function ProductDetailClient({
               </div>
             </div>
 
-            <p className="text-sm sm:text-[15px] text-[#5A655D] leading-relaxed">
+            <p className="text-sm sm:text-[15px] text-muted leading-relaxed">
               {displayDesc}
             </p>
 
             {/* Dynamic Variant Selector */}
             <div className="space-y-2.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#5A655D]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
                 {locale === 'bn' ? 'ভ্যারিয়েন্ট নির্বাচন করুন' : 'Select Variant'}
               </label>
               <div className="flex flex-wrap gap-2.5">
@@ -389,16 +387,16 @@ export function ProductDetailClient({
                       }}
                       className={`min-h-[44px] px-4 py-2 text-xs sm:text-sm font-medium rounded-xl border transition-all cursor-pointer flex items-center gap-2 ${
                         isSelected
-                          ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)] font-semibold'
+                          ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)] font-semibold'
                           : vOut
-                          ? 'bg-[#F2EFE9] text-[#5A655D] border-[#E4E2DC] line-through'
-                          : 'bg-[#FAF9F5] text-[#162119] border-[#E4E2DC] hover:border-[var(--store-accent)]'
+                          ? 'bg-surface text-muted border-border line-through'
+                          : 'bg-bg text-ink border-border hover:border-accent'
                       }`}
                     >
                       <span>{locale === 'bn' ? v.titleBn : v.titleEn}</span>
                       <span
                         className={`text-xs tabular-nums ${
-                          isSelected ? 'text-[#E8F0EC]' : 'text-[#5A655D]'
+                          isSelected ? 'text-white/90' : 'text-muted'
                         }`}
                       >
                         ({formatPoishaToBdt(v.salePricePoisha, locale)})
@@ -412,13 +410,13 @@ export function ProductDetailClient({
             {/* Quantity & Primary Actions */}
             <div className="space-y-3.5 pt-1">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="inline-flex items-center border border-[#E4E2DC] rounded-xl bg-[#FAF9F5] min-h-[44px]">
+                <div className="inline-flex items-center border border-border rounded-xl bg-bg min-h-[44px]">
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     disabled={isOutOfStock || quantity <= 1}
                     aria-label={uiText("Decrease quantity", locale)}
-                    className="px-3.5 py-2.5 text-[#162119] hover:bg-[#F2EFE9] rounded-l-xl disabled:opacity-40 cursor-pointer"
+                    className="px-3.5 py-2.5 text-ink hover:bg-surface rounded-l-xl disabled:opacity-40 cursor-pointer"
                   >
                     <Minus className="w-4 h-4" aria-hidden="true" />
                   </button>
@@ -436,7 +434,7 @@ export function ProductDetailClient({
                       isOutOfStock || quantity >= selectedVariant.stockAvailable
                     }
                     aria-label={uiText("Increase quantity", locale)}
-                    className="px-3.5 py-2.5 text-[#162119] hover:bg-[#F2EFE9] rounded-r-xl disabled:opacity-40 cursor-pointer"
+                    className="px-3.5 py-2.5 text-ink hover:bg-surface rounded-r-xl disabled:opacity-40 cursor-pointer"
                   >
                     <Plus className="w-4 h-4" aria-hidden="true" />
                   </button>
@@ -445,11 +443,11 @@ export function ProductDetailClient({
                 <button
                   type="button"
                   onClick={() => toggleWishlist(product.productId)}
-                  className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 text-xs sm:text-sm font-medium rounded-xl border border-[#E4E2DC] bg-[#FAF9F5] text-[#162119] hover:border-[var(--store-accent)] transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 text-xs sm:text-sm font-medium rounded-xl border border-border bg-bg text-ink hover:border-accent transition-colors cursor-pointer"
                 >
                   <Heart
                     className={`w-4 h-4 ${
-                      isWishlisted ? 'fill-[var(--store-accent)] text-[var(--store-accent)]' : 'text-[#162119]'
+                      isWishlisted ? 'fill-[var(--store-terracotta)] text-[var(--store-terracotta)]' : 'text-ink'
                     }`}
                     aria-hidden="true"
                   />
@@ -465,10 +463,10 @@ export function ProductDetailClient({
                       window.setTimeout(() => setCopiedLink(false), 1500);
                     }
                   }}
-                  className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 text-xs sm:text-sm font-medium rounded-xl border border-[#E4E2DC] bg-[#FAF9F5] text-[#162119] hover:border-[var(--store-accent)] transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 text-xs sm:text-sm font-medium rounded-xl border border-border bg-bg text-ink hover:border-accent transition-colors cursor-pointer"
                 >
                   {copiedLink ? (
-                    <Check className="w-4 h-4 text-[#15803D]" aria-hidden="true" />
+                    <Check className="w-4 h-4 text-success" aria-hidden="true" />
                   ) : (
                     <Share2 className="w-4 h-4" aria-hidden="true" />
                   )}
@@ -485,9 +483,9 @@ export function ProductDetailClient({
               </div>
 
               {isOutOfStock ? (
-                <div className="p-4 rounded-xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-2.5">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[#162119]">
-                    <BellRing className="w-4 h-4 text-[var(--store-accent)]" aria-hidden="true" />
+                <div className="p-4 rounded-xl border border-border bg-surface space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+                    <BellRing className="w-4 h-4 text-accent" aria-hidden="true" />
                     <span>
                       {locale === 'bn'
                         ? 'পণ্যটি স্টকে এলে এসএমএস পেতে নম্বর দিন:'
@@ -495,7 +493,7 @@ export function ProductDetailClient({
                     </span>
                   </div>
                   {notifySaved ? (
-                    <p className="text-xs font-semibold text-[#15803D]">
+                    <p className="text-xs font-semibold text-success">
                       {locale === 'bn'
                         ? 'আপনার নম্বরটি সংরক্ষিত হয়েছে। স্টকে আসা মাত্রই জানানো হবে।'
                         : 'Your number has been registered for restock alert.'}
@@ -507,7 +505,7 @@ export function ProductDetailClient({
                         value={notifyPhone}
                         onChange={(e) => setNotifyPhone(e.target.value)}
                         placeholder="017XXXXXXXX"
-                        className="flex-1 min-h-[44px] px-3 py-2 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-lg"
+                        className="flex-1 min-h-[44px] px-3 py-2 text-sm bg-bg text-ink border border-border rounded-lg"
                       />
                       <Button
                         type="button"
@@ -531,7 +529,7 @@ export function ProductDetailClient({
                     type="button"
                     disabled={isOutOfStock}
                     onClick={() => handleAddToCart(false)}
-                    className="min-h-[48px] px-3 sm:px-5 py-3 rounded-xl border border-[var(--store-accent)] bg-[#FAF9F5] text-[var(--store-accent)] hover:bg-[#E8F0EC] text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 sm:gap-2 transition-colors cursor-pointer whitespace-nowrap"
+                    className="min-h-[48px] px-3 sm:px-5 py-3 rounded-xl border border-accent bg-bg text-accent hover:bg-accent-soft text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 sm:gap-2 transition-colors cursor-pointer whitespace-nowrap"
                   >
                     {justAdded ? (
                       <Check className="w-4 h-4 shrink-0" aria-hidden="true" />
@@ -551,7 +549,7 @@ export function ProductDetailClient({
                     type="button"
                     disabled={isOutOfStock}
                     onClick={() => handleAddToCart(true)}
-                    className="min-h-[48px] px-3 sm:px-5 py-3 rounded-xl bg-[var(--store-accent)] text-[#FAF9F5] hover:opacity-90 text-xs sm:text-sm font-semibold flex items-center justify-center transition-colors cursor-pointer whitespace-nowrap"
+                    className="min-h-[48px] px-3 sm:px-5 py-3 rounded-xl bg-[var(--store-accent)] text-white hover:bg-[var(--store-accent-hover)] hover:shadow-[var(--store-shadow-card)] active:scale-[0.98] text-xs sm:text-sm font-semibold flex items-center justify-center transition-all cursor-pointer whitespace-nowrap"
                   >
                     {dict.common.buyNow}
                   </button>
@@ -560,10 +558,10 @@ export function ProductDetailClient({
             </div>
 
             {/* Interactive 64-District Delivery Charge & Lead-Time Estimator */}
-            <div className="p-4 sm:p-5 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-4">
+            <div className="p-4 sm:p-5 rounded-2xl border border-border bg-surface shadow-[var(--store-shadow-card)] space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2 text-sm font-semibold text-[#162119]">
-                  <MapPin className="w-4 h-4 text-[var(--store-accent)] shrink-0" aria-hidden="true" />
+                <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+                  <MapPin className="w-4 h-4 text-accent shrink-0" aria-hidden="true" />
                   <span>
                     {locale === 'bn'
                       ? 'জেলাভিত্তিক ডেলিভারি চার্জ ও সময় হিসাব'
@@ -577,7 +575,7 @@ export function ProductDetailClient({
                   onChange={(e) =>
                     setEstimatorDistrictId(Number(e.target.value))
                   }
-                  className="w-full sm:w-auto min-h-[44px] sm:min-h-[38px] px-3 py-1.5 text-xs font-medium border border-[#E4E2DC] rounded-lg bg-[#FAF9F5] text-[#162119]"
+                  className="w-full sm:w-auto min-h-[44px] sm:min-h-[38px] px-3 py-1.5 text-xs font-medium border border-border rounded-lg bg-bg text-ink"
                 >
                   {BD_DISTRICTS.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -588,19 +586,18 @@ export function ProductDetailClient({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="p-3.5 border border-[#E4E2DC] rounded-xl bg-[#FAF9F5] flex items-center justify-between">
+                <div className="p-3.5 border border-border rounded-xl bg-bg flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-[#162119]">
+                    <p className="font-semibold text-ink">
                       {locale === 'bn'
                         ? 'কুরিয়ার হোম ডেলিভারি'
                         : 'Courier Home Delivery'}
                     </p>
-                    <p className="text-[#5A655D] mt-0.5">
+                    <p className="text-muted mt-0.5">
                       {locale === 'bn' ? `আনুমানিক ${toBanglaDigits(leadTimeDays)}-${toBanglaDigits(leadTimeDays + 1)} কার্যদিবস` : `Est. ${leadTimeDays}-${leadTimeDays + 1} business days`}
-
                     </p>
                   </div>
-                  <span className="text-sm font-bold text-[#162119] tabular-nums">
+                  <span className="text-sm font-bold text-ink tabular-nums">
                     {courierEstimate.isFreeDeliveryApplied
                       ? dict.common.freeDelivery
                       : formatPoishaToBdt(
@@ -610,20 +607,20 @@ export function ProductDetailClient({
                   </span>
                 </div>
 
-                <div className="p-3.5 border border-[#E4E2DC] rounded-xl bg-[#FAF9F5] flex items-center justify-between">
+                <div className="p-3.5 border border-border rounded-xl bg-bg flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-[#162119]">
+                    <p className="font-semibold text-ink">
                       {locale === 'bn'
                         ? 'বাংলাদেশ ডাক বিভাগ (BD Post)'
                         : 'Bangladesh Post Office'}
                     </p>
-                    <p className="text-[#5A655D] mt-0.5">
+                    <p className="text-muted mt-0.5">
                       {locale === 'bn'
                         ? 'সরকারি ডাক বিভাগ (জিপিও)'
                         : 'Government Post Office'}
                     </p>
                   </div>
-                  <span className="text-sm font-bold text-[#162119] tabular-nums">
+                  <span className="text-sm font-bold text-ink tabular-nums">
                     {bdPostEstimate.isFreeDeliveryApplied
                       ? dict.common.freeDelivery
                       : formatPoishaToBdt(
@@ -635,7 +632,7 @@ export function ProductDetailClient({
               </div>
 
               {product.requiresAdvanceCourierCharge && (
-                <div className="p-3 rounded-xl border border-[#B45309]/30 bg-[#FFFBEB] text-xs text-[#92400E] flex items-start gap-2.5">
+                <div className="p-3 rounded-xl border border-warning/30 bg-bg text-xs text-warning flex items-start gap-2.5">
                   <span className="font-bold text-sm">ⓘ</span>
                   <div>
                     <span className="font-bold block">
@@ -652,34 +649,34 @@ export function ProductDetailClient({
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-[#5A655D]">{siteSettings.trustBadges.map(badge => <span key={badge.id} className="inline-flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-[var(--store-accent)]" />{locale === 'bn' ? badge.labelBn : badge.labelEn}</span>)}</div>
+              <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-muted">{siteSettings.trustBadges.map(badge => <span key={badge.id} className="inline-flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-accent" />{locale === 'bn' ? badge.labelBn : badge.labelEn}</span>)}</div>
             </div>
 
             {/* Product Specifications */}
             {product.specs.length > 0 && (
               <div className="space-y-2.5">
-                <h2 className="text-sm font-semibold text-[#162119]">
+                <h2 className="text-sm font-semibold text-ink">
                   {locale === 'bn' ? 'পণ্যের বিবরণী' : 'Product Specifications'}
                 </h2>
-                <div className="border border-[#E4E2DC] rounded-xl divide-y divide-[#E4E2DC] overflow-hidden text-xs">
+                <div className="border border-border rounded-xl divide-y divide-border overflow-hidden text-xs">
                   {product.specs.map((spec, i) => (
                     <div
                       key={i}
-                      className="grid grid-cols-3 gap-2 p-3 bg-[#FAF9F5] items-center [&>*]:min-w-0 [&>*]:break-words"
+                      className="grid grid-cols-3 gap-2 p-3 bg-bg items-center [&>*]:min-w-0 [&>*]:break-words"
                     >
-                      <span className="text-[#5A655D] font-medium">
+                      <span className="text-muted font-medium">
                         {locale === 'bn' ? spec.labelBn : spec.labelEn}
                       </span>
-                      <span className="col-span-2 text-[#162119] font-semibold">
+                      <span className="col-span-2 text-ink font-semibold">
                         {locale === 'bn' ? spec.valueBn : spec.valueEn}
                       </span>
                     </div>
                   ))}
-                  <div className="grid grid-cols-3 gap-2 p-3 bg-[#FAF9F5] items-center [&>*]:min-w-0 [&>*]:break-words">
-                    <span className="text-[#5A655D] font-medium">
+                  <div className="grid grid-cols-3 gap-2 p-3 bg-bg items-center [&>*]:min-w-0 [&>*]:break-words">
+                    <span className="text-muted font-medium">
                       {locale === 'bn' ? 'ওজন' : 'Unit Weight'}
                     </span>
-                    <span className="col-span-2 text-[#162119] font-semibold tabular-nums">
+                    <span className="col-span-2 text-ink font-semibold tabular-nums">
                       {formatLocaleNumber(selectedVariant.weightGrams, locale)}{' '}
                       {locale === 'bn' ? 'গ্রাম' : 'g'}
                     </span>
@@ -691,9 +688,9 @@ export function ProductDetailClient({
         </div>
 
         {/* Verified Customer Reviews */}
-        <section className="space-y-5 border-t border-[#E4E2DC] pt-10">
+        <section className="space-y-5 border-t border-border pt-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl sm:text-2xl font-bold text-[#162119]">
+            <h2 className="font-display text-xl sm:text-2xl font-bold text-ink">
               {locale === 'bn'
                 ? `গ্রাহক রিভিউ (${toBanglaDigits(reviewList.length)})`
                 : `Verified Customer Reviews (${reviewList.length})`}
@@ -711,7 +708,7 @@ export function ProductDetailClient({
           </div>
 
           {reviewList.length === 0 ? (
-            <p className="text-sm text-[#5A655D]">
+            <p className="text-sm text-muted">
               {locale === 'bn'
                 ? 'এই পণ্যে এখনো কোনো রিভিউ যোগ হয়নি।'
                 : 'No reviews yet for this product.'}
@@ -721,34 +718,34 @@ export function ProductDetailClient({
               {reviewList.map((rev) => (
                 <div
                   key={rev.id}
-                  className="p-4 sm:p-5 rounded-2xl border border-[#E4E2DC] bg-[#F2EFE9] space-y-2"
+                  className="p-4 sm:p-5 rounded-2xl border border-border bg-surface space-y-2"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                      <span className="text-sm font-bold text-[#162119]">
+                      <span className="text-sm font-bold text-ink">
                         {rev.customerName}
                       </span>
                       {rev.isVerifiedPurchase && (
                         <>
-                          <span aria-hidden="true" className="text-[#5A655D]">·</span>
-                          <span className="inline-flex items-center gap-1 text-[#15803D] font-medium">
+                          <span aria-hidden="true" className="text-muted">·</span>
+                          <span className="inline-flex items-center gap-1 text-success font-medium">
                             <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
                             <span>{locale === 'bn' ? 'ভেরিফাইড ক্রেতা' : 'Verified Buyer'}</span>
                           </span>
                         </>
                       )}
                     </div>
-                    <div className="flex items-center gap-0.5 text-[var(--store-accent)] shrink-0">
+                    <div className="flex items-center gap-0.5 text-accent shrink-0">
                       {Array.from({ length: rev.rating }).map((_, idx) => (
                         <Star
                           key={idx}
-                          className="w-3.5 h-3.5 fill-[var(--store-accent)] text-[var(--store-accent)]"
+                          className="w-3.5 h-3.5 fill-[var(--store-terracotta)] text-[var(--store-terracotta)]"
                           aria-hidden="true"
                         />
                       ))}
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-[#162119] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-ink leading-relaxed">
                     {rev.comment}
                   </p>
                 </div>
@@ -759,8 +756,8 @@ export function ProductDetailClient({
 
         {/* Related Products (Frameless 4:5 Portrait Grid) */}
         {relatedProducts.length > 0 && (
-          <section className="space-y-5 sm:space-y-6 border-t border-[#E4E2DC] pt-8 sm:pt-10">
-            <h2 className="text-xl sm:text-2xl font-bold text-[#162119]">
+          <section className="space-y-5 sm:space-y-6 border-t border-border pt-8 sm:pt-10">
+            <h2 className="font-display text-xl sm:text-2xl font-bold text-ink">
               {locale === 'bn' ? 'সম্পর্কিত অন্যান্য পণ্য' : 'Related Products'}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 sm:gap-x-5 gap-y-6 sm:gap-y-10">
@@ -840,7 +837,7 @@ export function ProductDetailClient({
             required
           />
           <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-[#162119]">
+            <label className="block text-xs font-medium text-ink">
               {locale === 'bn' ? 'রেটিং নির্বাচন করুন *' : 'Select Rating *'}
             </label>
             <div className="flex items-center gap-2">
@@ -851,8 +848,8 @@ export function ProductDetailClient({
                   onClick={() => setRevRating(star)}
                   className={`min-h-[40px] px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer ${
                     revRating >= star
-                      ? 'bg-[var(--store-accent)] text-[#FAF9F5] border-[var(--store-accent)]'
-                      : 'bg-[#FAF9F5] text-[#162119] border-[#E4E2DC]'
+                      ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)]'
+                      : 'bg-bg text-ink border-border'
                   }`}
                 >
                   <Star className="w-3.5 h-3.5 fill-current" aria-hidden="true" />
@@ -862,7 +859,7 @@ export function ProductDetailClient({
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-[#162119]">
+            <label className="block text-xs font-medium text-ink">
               {locale === 'bn' ? 'আপনার মতামত *' : 'Your Review *'}
             </label>
             <textarea
@@ -875,11 +872,11 @@ export function ProductDetailClient({
                   : 'Share your experience with the product quality...'
               }
               required
-              className="w-full p-3 text-sm bg-[#FAF9F5] text-[#162119] border border-[#E4E2DC] rounded-xl"
+              className="w-full p-3 text-sm bg-bg text-ink border border-border rounded-xl"
             />
           </div>
           {revError && (
-            <p className="text-xs font-medium text-[#B91C1C]">{revError}</p>
+            <p className="text-xs font-medium text-danger">{revError}</p>
           )}
           <Button
             type="submit"
@@ -901,10 +898,10 @@ export function ProductDetailClient({
 
       {/* Single Mobile Sticky Purchase Bar (< 768px, flush above 5-tab bar) */}
       {!isOutOfStock && (
-        <div className="storefront-action-bar md:hidden fixed bottom-[calc(3.5rem+var(--safe-bottom))] left-0 right-0 z-30 py-2.5 bg-[#FAF9F5]/95 backdrop-blur border-t border-[#E4E2DC] flex items-center justify-between gap-2.5 shadow-[0_-4px_16px_rgba(27,67,50,0.06)]">
+        <div className="storefront-action-bar md:hidden fixed bottom-[calc(3.5rem+var(--safe-bottom))] left-0 right-0 z-30 py-2.5 bg-bg/95 border-t border-border flex items-center justify-between gap-2.5 shadow-[var(--store-shadow-chrome-up)]">
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium text-[#5A655D] truncate">{displayName}</p>
-            <p className="text-sm font-bold text-[#162119] tabular-nums leading-tight">
+            <p className="text-[11px] font-medium text-muted truncate">{displayName}</p>
+            <p className="text-sm font-bold text-ink tabular-nums leading-tight">
               {formatPoishaToBdt(selectedVariant.salePricePoisha, locale)}
             </p>
           </div>
@@ -912,7 +909,7 @@ export function ProductDetailClient({
             <button
               type="button"
               onClick={() => handleAddToCart(false)}
-              className="min-h-[44px] px-3 py-2 rounded-lg border border-[var(--store-accent)] bg-[#FAF9F5] text-[var(--store-accent)] text-xs font-semibold cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] px-3 py-2 rounded-lg border border-accent bg-bg text-accent text-xs font-semibold cursor-pointer whitespace-nowrap"
             >
               {justAdded
                 ? locale === 'bn'
@@ -925,7 +922,7 @@ export function ProductDetailClient({
             <button
               type="button"
               onClick={() => handleAddToCart(true)}
-              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-[var(--store-accent)] text-[#FAF9F5] text-xs font-semibold cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-[var(--store-accent)] text-white text-xs font-semibold cursor-pointer whitespace-nowrap"
             >
               {dict.common.buyNow}
             </button>
