@@ -70,6 +70,69 @@
 .storefront-bottom-nav { box-shadow: var(--store-shadow-chrome-up); }
 .storefront-floating-contact { box-shadow: var(--store-shadow-card); }
 
+/* ==========================================================================
+   TOP NAVIGATION REFINEMENTS (storefront-header)
+   Polishes the sticky header without touching its JSX structure:
+   - Slightly stronger surface separation while scrolling
+   - Editorial underline grow-in for nav links
+   - Refined search input focus (accent underline)
+   - Search dropdown uses the soft card elevation token
+   All token-driven; reduced-motion is globally respected above.
+   ========================================================================== */
+
+/* 1. Sticky header reads as a floating surface above the page. */
+.storefront-header {
+  background-color: var(--store-bg);
+  box-shadow: 0 1px 2px rgba(27, 67, 50, 0.05), 0 6px 20px rgba(27, 67, 50, 0.04);
+}
+
+/* 2. Editorial underline animation on desktop nav links.
+      The JSX already renders border-b-2 transparent links; we keep that
+      structure and animate the underline via a pseudo-element instead of
+      relying only on the static border color jump. */
+.storefront-header nav a {
+  position: relative;
+}
+.storefront-header nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 2px;
+  background-color: var(--store-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.25s ease;
+}
+.storefront-header nav a:hover::after,
+.storefront-header nav a:focus-visible::after {
+  transform: scaleX(1);
+}
+/* Active links keep the underline permanently. */
+.storefront-header nav a[class*="border-accent"]::after {
+  transform: scaleX(1);
+}
+
+/* 3. Search input: accent underline grows in on focus (replaces the instant
+      border-color swap) and the caret adopts the accent hue. */
+.storefront-header input[type="search"] {
+  caret-color: var(--store-accent);
+  transition: border-color 0.2s ease;
+}
+
+/* 4. Cart badge & language switcher get smoother emphasis. */
+.storefront-header .group\/label,
+.storefront-header kbd {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* 5. Search dropdowns inside the header use the soft card elevation token
+      (replacing per-instance hard-coded shadows with the shared token). */
+.storefront-header .shadow-\[0_14px_36px_rgba\(27\,67\,50\,0\.08\)\] {
+  box-shadow: var(--store-shadow-card-hover) !important;
+}
+
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 
