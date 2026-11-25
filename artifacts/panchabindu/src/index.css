@@ -122,7 +122,6 @@
 }
 
 /* 4. Cart badge & language switcher get smoother emphasis. */
-.storefront-header .group\/label,
 .storefront-header kbd {
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
@@ -135,6 +134,67 @@
 
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* ==========================================================================
+   ADMIN SIDEBAR REFINEMENTS (admin-erp-client aside)
+   Groups the nav visually without touching the 243KB JSX: each group becomes
+   one soft surface panel, expanded groups show a hairline connector rail so
+   sub-items visually belong to their group, and number badges can no longer
+   spill onto neighbouring rows. Hooks into the existing data-nav-group
+   attribute and semantic tokens only — no arbitrary hex, no blurs.
+   ========================================================================== */
+
+/* 1. Each nav group reads as one tidy soft card on the sidebar surface. */
+aside nav [data-nav-group] {
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.25rem;
+  transition: border-color 0.2s ease;
+}
+
+/* The group containing the active tab is emphasized with an ink border. */
+aside nav [data-nav-group]:has(button[aria-current]) {
+  border-color: var(--color-ink);
+}
+
+/* 2. Expanded group body: a hairline rail on the left ties sub-items to
+      their group header — clear containment instead of floating rows.
+      Collapsed mode (space-y-0.5 class on the same div) stays rail-free. */
+aside nav [data-nav-group] > div:last-child {
+  position: relative;
+}
+aside nav [data-nav-group] > div:last-child:not(.space-y-0\.5) {
+  padding-left: 0.5rem;
+}
+aside nav [data-nav-group] > div:last-child:not(.space-y-0\.5)::before {
+  content: '';
+  position: absolute;
+  left: 0.375rem;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  width: 1px;
+  background-color: var(--color-border);
+}
+
+/* 3. Badge containment — the count pill stays inside its row and can no
+      longer overlap the row above/below (the old spill-over bug). */
+aside nav [data-nav-group] button {
+  min-width: 0;
+}
+aside nav [data-nav-group] button > span:last-child {
+  flex: none;
+  line-height: 1.2;
+  max-width: 4.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 4. Sub-item hover keeps the row inside its group card. */
+aside nav [data-nav-group] button:not([aria-current]):hover {
+  border-color: var(--color-border);
+}
 
 /* Print previews use paper-safe colors regardless of the admin theme. */
 .print-slips {
@@ -158,7 +218,7 @@
 .print-brand-fallback { font-size: 16px; font-weight: 700; line-height: 1; }
 .print-brand-logo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; }
 .print-customer-part { border-color: #6aa78a; border-top: 3px solid #18724e; background: #fff; }
-.print-courier-part { border-color: #84a9c5; border-top: 3px solid #256391; background: #fff; }
+.print-courier-part { border-color: #84a7c5; border-top: 3px solid #256391; background: #fff; }
 .print-internal-part { border-color: #b68a43; border-top: 3px solid #a86a11; background: #fffaf0; }
 .print-customer-part thead tr { background: #eaf5ee; }
 .print-courier-part .bg-surface { background: #eef6fc; }
