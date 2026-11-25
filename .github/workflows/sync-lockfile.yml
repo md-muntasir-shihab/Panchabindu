@@ -23,24 +23,24 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
-- name: Install pnpm
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.34.9
 
-- name: Install Node
+      - name: Install Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
 
-- name: Regenerate pnpm-lock.yaml from manifests
+      - name: Regenerate pnpm-lock.yaml from manifests
         run: pnpm install --no-frozen-lockfile
 
-- name: Verify frozen install now passes
+      - name: Verify frozen install now passes
         run: pnpm install --frozen-lockfile
 
-- name: Apply admin notification wire-up patch (skip if it fails)
+      - name: Apply admin notification wire-up patch (skip if it fails)
         id: patch
         continue-on-error: true
         run: |
@@ -50,17 +50,17 @@ jobs:
             echo "patch file missing; skipping"
           fi
 
-- name: Typecheck all workspaces
+      - name: Typecheck all workspaces
         if: steps.patch.outcome == 'success'
         run: pnpm run typecheck
 
-- name: Revert wire-up patch if typecheck failed
+      - name: Revert wire-up patch if typecheck failed
         if: failure() && steps.patch.outcome == 'success'
         run: |
           git checkout -- artifacts/panchabindu/src/components/admin/admin-erp-client.tsx
           echo "Patch reverted after failed typecheck; committing the lockfile only."
 
-- name: Commit and push
+      - name: Commit and push
         if: always()
         run: |
           BRANCH="feat/analytics-customers-2026-11-24"
