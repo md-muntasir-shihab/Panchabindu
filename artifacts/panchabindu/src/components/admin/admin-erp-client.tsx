@@ -1241,9 +1241,16 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
       Array.from(new Set([...prev, ...payload.orderNos]))
     );
     try {
+      // The workspace POST enforces the signed session's CSRF token; without it
+      // every grid action (confirm, verify bKash, status bulk update) is refused
+      // with a 403 before it ever reaches the domain service.
+      const csrfToken = window.sessionStorage.getItem('bg_admin_csrf_token');
       const res = await fetch('/api/admin/workspace', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
+        },
         body: JSON.stringify({
           operation: 'order_grid_action',
           ...payload,
@@ -4427,6 +4434,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
         locale={locale}
         isVendor={isVendor}
         isSuperAdmin={isSuperAdmin}
+        currentUsername={currentUser.username}
         products={products}
         manualPaymentSubmissions={snapshot?.manualPaymentSubmissions ?? []}
         siteSettings={siteSettings}

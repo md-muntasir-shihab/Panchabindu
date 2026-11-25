@@ -3198,6 +3198,25 @@ export function reviewManualBkashSubmission(
     };
   }
 
+  // Never report a verification as done when the claim cannot actually move the
+  // order: an already-approved TrxID used to fall through every guard below and
+  // return success with zero state change (the caller then showed a green toast).
+  if (input.decision === 'approved' && sub.status === 'approved') {
+    return {
+      success: false,
+      errorBn: `এই TrxID (${sub.trxId}) ইতিমধ্যেই যাচাই ও অনুমোদিত — নতুন করে যাচাই করার কিছু নেই।`,
+    };
+  }
+  if (
+    input.decision === 'approved' &&
+    !['pending_verification', 'under_review'].includes(sub.status)
+  ) {
+    return {
+      success: false,
+      errorBn: `এই TrxID (${sub.trxId}) এর বর্তমান অবস্থা "${sub.status}" — শুধু অপেক্ষমাণ (pending) দাবি যাচাই করা যায়। নতুন পেমেন্ট হলে "+ অগ্রিম জমা দিন" দিয়ে TrxID লিখুন।`,
+    };
+  }
+
   // Maker-Checker guard: staff member who created/submitted the bKash entry cannot approve it themselves
   if (
     input.decision === 'approved' &&

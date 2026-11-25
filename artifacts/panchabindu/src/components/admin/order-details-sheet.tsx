@@ -74,6 +74,8 @@ export interface OrderDetailsSheetProps {
   locale: 'bn' | 'en';
   isVendor: boolean;
   isSuperAdmin: boolean;
+  /** Signed-in operator's username, used to detect their own maker entries. */
+  currentUsername?: string;
   products: ProductCatalogOption[];
   manualPaymentSubmissions: PendingMfsSubmissionLike[];
   siteSettings: PublicSafeSiteSettingsDTO;
@@ -177,12 +179,28 @@ function detectBdCarrier(phone: string): string | null {
   return 'BD Mobile';
 }
 
+/**
+ * Every /api/admin/workspace POST is a state-changing request and is verified
+ * against the signed session's CSRF token. Send it whenever we hold one.
+ */
+function adminMutationHeaders(): Record<string, string> {
+  const csrf =
+    typeof window !== 'undefined'
+      ? window.sessionStorage.getItem('bg_admin_csrf_token')
+      : null;
+  return {
+    'Content-Type': 'application/json',
+    ...(csrf ? { 'x-csrf-token': csrf } : {}),
+  };
+}
+
 export function OrderDetailsSheet({
   order,
   initialFocus = 'top',
   locale,
   isVendor,
   isSuperAdmin,
+  currentUsername,
   products,
   manualPaymentSubmissions,
   siteSettings,
@@ -672,7 +690,7 @@ export function OrderDetailsSheet({
     try {
       const res = await fetch('/api/admin/workspace', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: adminMutationHeaders(),
         body: JSON.stringify({
           operation: 'input_manual_mfs',
           orderNo: order.orderNo,
@@ -752,7 +770,7 @@ export function OrderDetailsSheet({
     try {
       const res = await fetch('/api/admin/workspace', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: adminMutationHeaders(),
         body: JSON.stringify({
           operation: 'review_manual_bkash',
           orderNo: order.orderNo,
@@ -956,7 +974,7 @@ export function OrderDetailsSheet({
 
         const res = await fetch('/api/admin/workspace', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: adminMutationHeaders(),
           body: JSON.stringify(corePayload),
         });
         const data = await res.json();
@@ -976,7 +994,7 @@ export function OrderDetailsSheet({
         // Non-super-admin staff: update courier meta + staff note
         const metaRes = await fetch('/api/admin/workspace', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: adminMutationHeaders(),
           body: JSON.stringify({
             operation: 'update_order_courier_meta',
             orderNo: order.orderNo,
@@ -1017,7 +1035,7 @@ export function OrderDetailsSheet({
         if (staffNote.trim() !== (order.internalStaffNote ?? '').trim()) {
           await fetch('/api/admin/workspace', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: adminMutationHeaders(),
             body: JSON.stringify({
               operation: 'order_grid_action',
               orderNos: [order.orderNo],
@@ -1033,7 +1051,7 @@ export function OrderDetailsSheet({
       if (canEditOperations && courierTrackingChanged && trimmedTracking) {
         const trackRes = await fetch('/api/admin/workspace', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: adminMutationHeaders(),
           body: JSON.stringify({
             operation: 'order_grid_action',
             orderNos: [order.orderNo],
@@ -1069,7 +1087,7 @@ export function OrderDetailsSheet({
       if (canEditOperations && callChanged && callStatus !== 'pending') {
         const callRes = await fetch('/api/admin/workspace', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: adminMutationHeaders(),
           body: JSON.stringify({
             operation: 'order_grid_action',
             orderNos: [order.orderNo],
@@ -1104,7 +1122,7 @@ export function OrderDetailsSheet({
       if (canEditOperations && statusChanged && orderStatus !== statusAfterCall) {
         const stRes = await fetch('/api/admin/workspace', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: adminMutationHeaders(),
           body: JSON.stringify({
             operation: 'order_grid_action',
             orderNos: [order.orderNo],
@@ -1685,7 +1703,25 @@ export function OrderDetailsSheet({
                         sub.status === 'submitted' ||
                         sub.status === 'under_review';
                       const isBusyRow = verifyingTrx === sub.trxId;
-                      const needsOverride = Boolean(makerCheckerBlockedTrx[sub.trxId]);
+                      // A claim this operator entered themselves cannot be approved
+                      // by the same person under maker-checker. Rather than making
+                      // them fail once to reveal the audited override, surface it
+                      // up front so a solo super admin is never deadlocked.
+                      const isOwnMakerEntry = Boolean(
+                        currentUsername &&
+                          sub.submittedByUsername &&
+                          sub.submittedByUsername === currentUsername
+                      );
+                      // A super admin may verify their own claim only by recording
+                      // an audited reason; any other role must involve a second
+                      // person, so never leave them with a button that cannot work.
+                      const showOverridePanel =
+                        isSuperAdmin &&
+                        (isOwnMakerEntry ||
+                          Boolean(makerCheckerBlockedTrx[sub.trxId]));
+                      const selfApprovalBlockedForRole =
+                        isOwnMakerEntry && !isSuperAdmin;
+                      const needsOverride = showOverridePanel;
 
                       return (
                         <div
@@ -1804,26 +1840,28 @@ export function OrderDetailsSheet({
                                   className="flex-1 min-h-[34px] px-2.5 py-1 border border-border rounded-[var(--radius-sm)] bg-bg text-ink text-xs focus:outline-none focus:border-ink"
                                 />
                                 <div className="flex items-center gap-1.5">
-                                  <button
-                                    type="button"
-                                    disabled={isBusyRow}
-                                    onClick={() =>
-                                      void handleReviewAdvance(sub, 'approved')
-                                    }
-                                    className="min-h-[34px] px-3 py-1 rounded-[var(--radius-sm)] bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs inline-flex items-center gap-1 cursor-pointer disabled:opacity-50 whitespace-nowrap"
-                                  >
-                                    {isBusyRow ? (
-                                      <RefreshCw
-                                        className="w-3 h-3 animate-spin"
-                                        aria-hidden="true"
-                                      />
-                                    ) : (
-                                      <Check className="w-3.5 h-3.5" aria-hidden="true" />
-                                    )}
-                                    <span>
-                                      {bn ? 'ভেরিফাই (ধাপ ২)' : 'Verify (Step 2)'}
-                                    </span>
-                                  </button>
+                                   {!needsOverride && !selfApprovalBlockedForRole && (
+                                     <button
+                                       type="button"
+                                       disabled={isBusyRow}
+                                       onClick={() =>
+                                         void handleReviewAdvance(sub, 'approved')
+                                       }
+                                      className="min-h-[34px] px-3 py-1 rounded-[var(--radius-sm)] bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs inline-flex items-center gap-1 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                                    >
+                                      {isBusyRow ? (
+                                        <RefreshCw
+                                          className="w-3 h-3 animate-spin"
+                                          aria-hidden="true"
+                                        />
+                                      ) : (
+                                        <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                                      )}
+                                      <span>
+                                        {bn ? 'ভেরিফাই (ধাপ ২)' : 'Verify (Step 2)'}
+                                      </span>
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     disabled={isBusyRow}
@@ -1837,12 +1875,24 @@ export function OrderDetailsSheet({
                                 </div>
                               </div>
 
+                              {selfApprovalBlockedForRole && (
+                                <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                                  {bn
+                                    ? `এই TrxID-টি আপনি নিজেই এন্ট্রি করেছেন। মেকার-চেকার নীতির কারণে নিজের এন্ট্রি নিজে যাচাই করা যায় না — অন্য অপারেটর দিয়ে যাচাই করান।`
+                                    : 'You entered this TrxID. Maker-checker policy requires another operator to verify it.'}
+                                </p>
+                              )}
+
                               {needsOverride && isSuperAdmin && (
                                 <div className="p-2.5 border border-amber-500/40 bg-amber-500/10 rounded-[var(--radius-sm)] space-y-2">
                                   <p className="text-[11px] font-medium text-amber-800 dark:text-amber-300">
-                                    {bn
-                                      ? 'আপনি নিজেই এন্ট্রিটি জমা দিয়েছেন। সুপার অ্যাডমিন হিসেবে অডিট লগসহ অনুমোদন করতে কারণ লিখুন (কমপক্ষে ৫ অক্ষর):'
-                                      : 'You submitted this entry. Enter an audited reason (min 5 chars) to override as Super Admin:'}
+                                    {isOwnMakerEntry && !makerCheckerBlockedTrx[sub.trxId]
+                                      ? bn
+                                        ? 'এই TrxID-টি আপনি নিজেই জমা দিয়েছেন। মেকার-চেকার নীতির কারণে একই ব্যক্তি approve করতে পারেন না — সুপার অ্যাডমিন হিসেবে অডিট লগে কারণ লিখে যাচাই করুন (কমপক্ষে ৫ অক্ষর):'
+                                        : 'You submitted this TrxID. Maker-checker blocks self-approval; as Super Admin record a reason (min 5 chars) to verify with an audit trail:'
+                                      : bn
+                                        ? 'আপনি নিজেই এন্ট্রিটি জমা দিয়েছেন। সুপার অ্যাডমিন হিসেবে অডিট লগসহ অনুমোদন করতে কারণ লিখুন (কমপক্ষে ৫ অক্ষর):'
+                                        : 'You submitted this entry. Enter an audited reason (min 5 chars) to override as Super Admin:'}
                                   </p>
                                   <div className="flex flex-col sm:flex-row gap-2">
                                     <input
@@ -1863,7 +1913,11 @@ export function OrderDetailsSheet({
                                     />
                                     <button
                                       type="button"
-                                      disabled={isBusyRow}
+                                      disabled={
+                                        isBusyRow ||
+                                        (overrideReasonByTrx[sub.trxId] ?? '').trim()
+                                          .length < 5
+                                      }
                                       onClick={() =>
                                         void handleReviewAdvance(sub, 'approved')
                                       }

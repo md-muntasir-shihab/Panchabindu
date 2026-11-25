@@ -96,8 +96,12 @@ async function handlePOST(req: NextRequest) {
       );
     }
 
+    // The customer's declared advance is only a claim until an operator verifies
+    // the TrxID. It must still travel through: dropping it made the recorded
+    // claim fall back to delivery charge + required deposit, so verification
+    // credited a different amount than the customer actually sent.
     const result = await runWithAtomicStockLock(() =>
-      createStorefrontOrder({ ...parsed.data, source: 'storefront', advancePaidPoisha: 0, internalStaffNote: '' }, session ? req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value : undefined)
+      createStorefrontOrder({ ...parsed.data, source: 'storefront', internalStaffNote: '' }, session ? req.cookies.get(CUSTOMER_SESSION_COOKIE_NAME)?.value : undefined)
     );
     if (!result.success || !result.order) {
       return NextResponse.json(

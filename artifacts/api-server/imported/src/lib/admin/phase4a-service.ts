@@ -1901,11 +1901,15 @@ export function executeOrderGridAction(
         selfApprovalOverrideReasonBn: selfApprovalOverride ? overrideReason : undefined,
       });
       if (!reviewRes.success) {
+        const failureBn = reviewRes.errorBn ?? 'বিকাশ পেমেন্ট ভেরিফাই করা যায়নি।';
         results.push({
           orderNo: ord.orderNo,
           ok: false,
-          messageBn:
-            reviewRes.errorBn ?? 'বিকাশ পেমেন্ট ভেরিফাই করা যায়নি।',
+          // The grid cannot collect the audited reason, so point the operator at
+          // the one place that can instead of leaving a bare policy refusal.
+          messageBn: failureBn.includes('মেকার-চেকার')
+            ? `${failureBn} অর্ডারটি খুলে পেমেন্ট অংশে "কারণসহ ভেরিফাই করুন" দিয়ে কারণ লিখে যাচাই করুন।`
+            : failureBn,
         });
         continue;
       }
