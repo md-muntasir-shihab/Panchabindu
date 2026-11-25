@@ -64,6 +64,12 @@
   box-shadow: var(--store-shadow-card-hover);
 }
 
+/* Chrome elevation — header, mobile bottom nav, and the floating contact
+   pill get the flush chrome tokens so they read as surfaces, not stickers. */
+.storefront-header { box-shadow: var(--store-shadow-chrome); }
+.storefront-bottom-nav { box-shadow: var(--store-shadow-chrome-up); }
+.storefront-floating-contact { box-shadow: var(--store-shadow-card); }
+
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 
