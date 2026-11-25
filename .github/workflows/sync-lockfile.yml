@@ -1,0 +1,80 @@
+name: Sync lockfile and wire notification center
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/analytics-customers-2026-11-24]
+
+concurrency:
+  group: sync-lockfile-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Regenerate lockfile, apply wire-up patch, verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.9
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Regenerate pnpm-lock.yaml from manifests
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Verify frozen install now passes
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply admin notification wire-up patch (skip if it fails)
+        id: patch
+        continue-on-error: true
+        run: |
+          if [ -f patches/admin-notification-center-wireup.patch ]; then
+            git apply --recount --verbose patches/admin-notification-center-wireup.patch
+          else
+            echo "patch file missing; skipping"
+          fi
+
+      - name: Typecheck all workspaces
+        if: steps.patch.outcome == 'success'
+        run: pnpm run typecheck
+
+      - name: Revert wire-up patch if typecheck failed
+        if: failure() && steps.patch.outcome == 'success'
+        run: |
+          git checkout -- artifacts/panchabindu/src/components/admin/admin-erp-client.tsx
+          echo "Patch reverted after failed typecheck; committing the lockfile only."
+
+      - name: Commit and push
+        if: always()
+        run: |
+          BRANCH="feat/analytics-customers-2026-11-24"
+          if git diff --exit-code -- pnpm-lock.yaml artifacts/panchabindu/src/components/admin/admin-erp-client.tsx; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml artifacts/panchabindu/src/components/admin/admin-erp-client.tsx
+          if [ "${{ steps.patch.outcome }}" = "success" ]; then
+            git commit -m "chore: sync pnpm-lock.yaml and wire AdminNotificationCenter into ERP header"
+          else
+            git commit -m "chore(deps): sync pnpm-lock.yaml with workspace manifests"
+          fi
+          git pull --rebase origin "$BRANCH"
+          git push origin HEAD:"$BRANCH"

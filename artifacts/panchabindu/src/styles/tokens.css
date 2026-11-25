@@ -39,6 +39,14 @@
   --store-warning: #B45309;
   --store-danger: #B91C1C;
 
+  /* 2c. Editorial Elevation Tokens — single-hue, low-opacity soft shadows
+     (respects the house rule: no gradients, no blurs, no heavy shadows) */
+  --store-shadow-card: 0 1px 2px rgba(27, 67, 50, 0.04), 0 4px 16px rgba(27, 67, 50, 0.05);
+  --store-shadow-card-hover: 0 2px 4px rgba(27, 67, 50, 0.05), 0 12px 32px rgba(27, 67, 50, 0.09);
+  /* Chrome (header / bottom nav) sits flush against the page — even lighter. */
+  --store-shadow-chrome: 0 1px 2px rgba(27, 67, 50, 0.05);
+  --store-shadow-chrome-up: 0 -1px 2px rgba(27, 67, 50, 0.05);
+
   /* 3. Spacing Scale (8px Grid System) */
   --space-1: 4px;
   --space-2: 8px;
@@ -165,8 +173,8 @@ body {
     page: thermal;
     width: 101.6mm;
     min-height: 152.4mm;
-    box-sizing: border-box;
     page-break-after: always;
+    box-sizing: border-box;
   }
 
   .print-cut-line {

@@ -9,7 +9,7 @@ import { LocalizedText } from '@/components/ui/localized-text';
 // src/components/storefront/homepage-client.tsx
 // Botanical Heritage Calm — Modern Minimalist Storefront Homepage
 // Features:
-//   - Spacious Split Editorial Hero on Soft Linen with accent CTA
+//   - Spacious Split Editorial Hero on Soft Linen with accent CTA (soft token elevation, rule-line kicker)
 //   - Hairline-Divided 4-Pillar Trust Strip (COD, 64-District Courier, 7-Day Returns, Artisan Provenance)
 //   - Unified Interactive Collection Showcase with Frameless 4:5 Portrait Product Grid (Zero Duplication)
 // Design tokens only (tokens.css): no arbitrary hex in UI (HOME-01).
@@ -179,11 +179,12 @@ export function HomepageClient({
       <div className="max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-10 py-4 sm:py-10 pb-8 sm:pb-16 flex flex-col gap-9 sm:gap-18">
         {/* 1. BOTANICAL EDITORIAL HERO (Variation 2) */}
         {browsing && visible('hero') && hero && (
-          <section style={position('hero')} className="rounded-xl bg-surface overflow-hidden border border-border">
+          <section style={position('hero')} className="rounded-xl bg-surface overflow-hidden border border-border shadow-[var(--store-shadow-card)]">
             <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch">
               <div className="lg:col-span-6 p-5 sm:p-12 lg:p-16 flex flex-col justify-center space-y-4 sm:space-y-6">
-                {/* Quiet Editorial Kicker */}
-                <p className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.14em] text-[var(--store-terracotta)]">
+                {/* Quiet Editorial Kicker with Terracotta Rule Line */}
+                <p className="flex items-center gap-2.5 font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.14em] text-[var(--store-terracotta)]">
+                  <span aria-hidden="true" className="h-px w-8 bg-[var(--store-terracotta)] shrink-0" />
                   {locale === 'bn' ? hero.badgeBn : hero.badgeEn}
                 </p>
 
@@ -197,7 +198,7 @@ export function HomepageClient({
                 {hero.ctaHref && safeStoreUrl(hero.ctaHref) && (
                   <Link
                     href={hero.ctaHref}
-                    className="inline-flex items-center justify-center gap-3 w-full sm:w-fit min-h-[46px] rounded-lg bg-[var(--store-accent)] px-6 py-3.5 sm:px-8 sm:py-4 font-mono text-xs uppercase tracking-[0.14em] text-white hover:opacity-90 transition-opacity"
+                    className="inline-flex items-center justify-center gap-3 w-full sm:w-fit min-h-[46px] rounded-lg bg-[var(--store-accent)] px-6 py-3.5 sm:px-8 sm:py-4 font-mono text-xs uppercase tracking-[0.14em] text-white hover:bg-[var(--store-accent-hover)] hover:shadow-[var(--store-shadow-card)] active:scale-[0.98] transition-all"
                   >
                     {text(hero.ctaLabelBn, hero.ctaLabelEn) || text('কালেকশন দেখুন', 'Explore Collection')}
                     <ArrowRight className="w-4 h-4 shrink-0" />
@@ -212,10 +213,10 @@ export function HomepageClient({
                         onClick={() => setHeroIndex(index)}
                         aria-label={text(slide.titleBn, slide.titleEn) || String(index + 1)}
                         aria-pressed={index === heroIndex}
-                        className={`h-11 min-w-11 rounded-lg font-mono border text-xs cursor-pointer transition-colors ${
+                        className={`h-11 min-w-11 rounded-lg font-mono border text-xs cursor-pointer transition-all ${
                           index === heroIndex
                             ? 'bg-[var(--store-accent)] text-white border-[var(--store-accent)]'
-                            : 'border-border text-ink hover:border-accent'
+                            : 'border-border text-ink hover:border-accent hover:text-ink'
                         }`}
                       >
                         {formatLocaleNumber(index + 1, locale)}
@@ -256,7 +257,7 @@ export function HomepageClient({
               const IconComp = icons[idx % icons.length] ?? ShieldCheck;
               return (
                 <div key={badge.id} className="flex items-start gap-2.5 sm:gap-3.5 min-w-0">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-full border border-border bg-surface text-ink flex items-center justify-center">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-full border border-border bg-accent-soft text-ink flex items-center justify-center">
                     <IconComp className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
@@ -275,7 +276,7 @@ export function HomepageClient({
 
         {/* 3. PROMO BANNER (If Active) */}
         {browsing && visible('promo_banner') && siteSettings.promoCampaign.enabled && (
-          <section style={position('promo_banner')} className="p-5 sm:p-6 rounded-xl border border-border bg-surface flex flex-wrap items-center justify-between gap-4">
+          <section style={position('promo_banner')} className="p-5 sm:p-6 rounded-xl border border-border bg-surface shadow-[var(--store-shadow-card)] flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full border border-border bg-bg text-[var(--store-terracotta)] flex items-center justify-center shrink-0">
                 <Tag className="w-4 h-4" aria-hidden="true" />
@@ -509,7 +510,7 @@ export function HomepageClient({
             </div>
           )}
         </section>}
-        {browsing && visible('categories') && categories.length > 0 && <section style={position('categories')} className="space-y-5 sm:space-y-6"><div className="flex items-end justify-between gap-4 border-b border-border pb-3"><h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-ink">{text(section('categories')?.titleBn ?? '', section('categories')?.titleEn ?? '')}</h2><Link href="/shop" className="min-h-[44px] inline-flex items-center font-mono text-[11px] uppercase tracking-[0.1em] text-ink/85 hover:text-ink underline underline-offset-4 shrink-0">{text('সব দেখুন', 'View all')}</Link></div><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">{categories.filter(c => !c.parentId).map(category => { const image = products.find(p => p.categoryId === category.id)?.images[0]; return <Link key={category.id} href={`/category/${category.slug}`} className="group space-y-2.5 sm:space-y-3 min-w-0"><div className="relative aspect-square bg-surface rounded-xl overflow-hidden border border-border">{image ? <img  src={productImageUrl(image)} onError={productImageFallback} alt="" className="object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} /> : <span className="flex h-full items-center justify-center font-display text-4xl text-[var(--store-accent)]">{Array.from(text(category.nameBn, category.nameEn))[0]}</span>}</div><span className="flex items-center justify-between gap-1 text-xs sm:text-sm font-medium text-ink"><span className="truncate">{text(category.nameBn, category.nameEn)}</span><ArrowRight className="w-3.5 h-3.5 shrink-0 text-ink/75 group-hover:text-ink" /></span></Link>; })}</div></section>}
+        {browsing && visible('categories') && categories.length > 0 && <section style={position('categories')} className="space-y-5 sm:space-y-6"><div className="flex items-end justify-between gap-4 border-b border-border pb-3"><h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-ink">{text(section('categories')?.titleBn ?? '', section('categories')?.titleEn ?? '')}</h2><Link href="/shop" className="min-h-[44px] inline-flex items-center font-mono text-[11px] uppercase tracking-[0.1em] text-ink/85 hover:text-ink underline underline-offset-4 shrink-0">{text('সব দেখুন', 'View all')}</Link></div><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">{categories.filter(c => !c.parentId).map(category => { const image = products.find(p => p.categoryId === category.id)?.images[0]; return <Link key={category.id} href={`/category/${category.slug}`} className="group space-y-2.5 sm:space-y-3 min-w-0"><div className="relative aspect-square bg-surface rounded-xl overflow-hidden border border-border store-product-media">{image ? <img  src={productImageUrl(image)} onError={productImageFallback} alt="" className="object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" style={{ position: 'absolute', height: '100%', width: '100%', inset: 0, color: 'transparent' }} /> : <span className="flex h-full items-center justify-center font-display text-4xl text-[var(--store-accent)]">{Array.from(text(category.nameBn, category.nameEn))[0]}</span>}</div><span className="flex items-center justify-between gap-1 text-xs sm:text-sm font-medium text-ink"><span className="truncate">{text(category.nameBn, category.nameEn)}</span><ArrowRight className="w-3.5 h-3.5 shrink-0 text-ink/75 group-hover:text-ink" /></span></Link>; })}</div></section>}
         {browsing && !visible('featured_products') && (['new_arrivals', 'best_sellers'] as const).filter(visible).map(type => { const list = type === 'best_sellers' ? [...products].filter(p => p.totalSoldCount > 0).sort((a,b) => b.totalSoldCount - a.totalSoldCount) : [...products].reverse(); return list.length > 0 && <section key={type} style={position(type)} className="space-y-5 sm:space-y-6"><div className="flex items-end justify-between gap-4 border-b border-border pb-3"><h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-ink">{text(section(type)?.titleBn ?? '', section(type)?.titleEn ?? '')}</h2><Link href="/shop" className="min-h-[44px] inline-flex items-center font-mono text-[11px] uppercase tracking-[0.1em] text-ink/85 hover:text-ink underline underline-offset-4 shrink-0">{text('সব পণ্য', 'Shop all')}</Link></div><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 sm:gap-x-6 gap-y-6 sm:gap-y-8">{list.slice(0,4).map(product => <ProductCard key={product.productId} product={product} />)}</div></section>; })}
       </div>
       {/* FILTER DRAWER / SHEET */}
@@ -566,7 +567,7 @@ export function HomepageClient({
               >
                 {locale === 'bn' ? 'সর্বোচ্চ বাজেট' : 'Max Budget'}
               </label>
-              <span className="font-mono font-bold text-[var(--store-accent)]"><LocalizedText source={"৳"} area="storefront" />{formatLocaleNumber(maxPriceBdt, locale)}</span>
+              <span className="font-mono font-bold text-[var(--store-accent)]"><LocalizedText source="৳" area="storefront" />{formatLocaleNumber(maxPriceBdt, locale)}</span>
             </div>
             <input
               id={maxBudgetInputId}

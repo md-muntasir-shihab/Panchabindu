@@ -53,6 +53,23 @@
 .storefront-bottom-nav [aria-current],
 .storefront-bottom-nav [data-active="true"] { box-shadow: inset 0 2px 0 var(--store-accent); }
 
+/* Editorial storefront polish — token-driven soft elevation for product media.
+   Uses the single-hue shadow tokens (no gradients, no blurs, no heavy shadows). */
+.store-product-media {
+  box-shadow: var(--store-shadow-card);
+  transition: box-shadow 0.25s ease;
+}
+.group:hover .store-product-media,
+.group:focus-within .store-product-media {
+  box-shadow: var(--store-shadow-card-hover);
+}
+
+/* Chrome elevation — header, mobile bottom nav, and the floating contact
+   pill get the flush chrome tokens so they read as surfaces, not stickers. */
+.storefront-header { box-shadow: var(--store-shadow-chrome); }
+.storefront-bottom-nav { box-shadow: var(--store-shadow-chrome-up); }
+.storefront-floating-contact { box-shadow: var(--store-shadow-card); }
+
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 
