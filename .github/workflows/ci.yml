@@ -47,6 +47,9 @@ jobs:
       - name: Domain logic (money, validators, persistence)
         run: npx tsx --tsconfig artifacts/api-server/tsconfig.json --test artifacts/api-server/imported/src/lib/money.test.ts artifacts/api-server/imported/src/lib/validators/validators.test.ts artifacts/api-server/imported/src/lib/db/runtime-persistence.test.ts
 
+      - name: Manual bKash verification and maker-checker
+        run: pnpm run test:payments
+
       - name: Admin dashboard render checks
         run: pnpm run test:dashboard
 

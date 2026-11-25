@@ -50,3 +50,17 @@ pnpm --filter @workspace/scripts test:payments
 pnpm --filter @workspace/scripts test:security
 # then visual: /admin → Orders Grid → open an order with a pending bKash claim → approve as a DIFFERENT admin than the claim submitter; confirm journal entry + counter decrements.
 ```
+
+## Fix log — 2026-11-25: "অর্ডার কনফার্ম / বিকাশ ভেরিফাই কাজ করছে না"
+
+Production evidence (`erp_runtime_state`, revision 133): `ORD-261106-0005` (created 07:06, customer TrxID rejected, admin entered a new TrxID at 07:08, order cancelled at 07:12) and `ORD-261106-0004` (same pattern on 11-21) both stall at `pending_verification`. The order status change itself always succeeded — what blocked the shop was the verification step:
+
+| # | Root cause | Fix |
+|---|---|---|
+| 1 | Only one operator exists, so the maker is always the checker. The audited super-admin override only appeared **after** a failed approve click, and its button stayed enabled with an empty reason. | `order-details-sheet.tsx`: the reason field is rendered up front when the viewer submitted the claim, the button is disabled until ≥5 chars, and non-super-admin makers get an explicit "ask another operator" note instead of a dead button. |
+| 2 | The grid's one-click `verify_bkash` cannot carry a reason, so it only ever produced a bare policy refusal. | `phase4a-service.ts`: the refusal now tells the operator to open the order and use "কারণসহ ভেরিফাই করুন". |
+| 3 | Re-verifying an already `approved` TrxID fell through every guard and returned **success with zero state change** (green toast, nothing moved). | `repository.ts`: explicit errors for "already approved" and for non-pending claims. |
+| 4 | `POST /api/orders` hardcoded `advancePaidPoisha: 0`, so the customer's declared advance was dropped and the claim was recorded as `delivery charge + required deposit` (৳100 instead of ৳130) — verification then credited the wrong amount. | `app/api/orders/route.ts`: the validated declared advance travels through; it is still only a claim until an operator verifies it. |
+| 5 | Workspace POSTs (grid actions, sheet actions) sent no `x-csrf-token` while `verifyOriginAndCsrf` requires it whenever a session exists. | `admin-erp-client.tsx` + `order-details-sheet.tsx`: send the token from session storage when present. |
+
+Regression coverage: `imported/src/lib/admin/manual-bkash-verification.test.ts` (`pnpm run test:payments`, wired into CI) asserts maker-checker refusal, the audited override, the exact advance/COD delta, and the no-false-success path.
