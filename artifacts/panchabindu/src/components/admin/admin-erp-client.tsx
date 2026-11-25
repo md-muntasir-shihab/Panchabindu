@@ -179,6 +179,7 @@ import type { Phase6WorkspaceOverviewDTO } from '@/lib/admin/phase6-service';
 import type { Phase7WorkspaceOverviewDTO } from '@/lib/admin/phase7-service';
 import { ProductManagementStudioPanel } from './product-studio-panel';
 import { OperationalHelpModal } from './operational-help-modal';
+import { AdminNotificationCenter } from './admin-notification-center';
 import { DASHBOARD_STATUSES, summarizeDashboardOrders } from './dashboard-summary';
 // The dashboard pulls in the chart/animation layer, which the storefront never needs, so it is
 // split into its own chunk and requested only when an admin actually lands on it.
@@ -2481,22 +2482,50 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                 <LocalizedText source={"বাং"} area="admin" />{" "}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setIsNotificationOpen(true)}
-              className="relative min-w-11 min-h-11 flex items-center justify-center rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:bg-bg transition-colors cursor-pointer"
-              title={locale === 'bn' ? 'নোটিফিকেশন সেন্টার' : 'Notification Center'}
-            >
-              <span className="sr-only">
-                {locale === 'bn' ? 'নোটিফিকেশন সেন্টার' : 'Notification Center'}{' '}
-              </span>
-              <Bell className="w-4 h-4" aria-hidden="true" />
-              {unreadNotificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-4 px-1 rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center leading-none shadow-2xs">
-                  {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
-                </span>
-              )}
-            </button>
+            <AdminNotificationCenter
+              locale={locale}
+              notifications={allNotifications}
+              onOpenNotification={(n) => {
+                if (n.targetQueue === 'VENDOR_SUPPORT_INBOX') {
+                  setMessagingSubTab('vendor');
+                  setActiveTab('messaging_hub');
+                } else if (n.targetQueue === 'VENDORS_APPROVALS') {
+                  setVendorsHubSubTab('approvals');
+                  setFocusedVendorId(null);
+                  setActiveTab('vendors_hub');
+                } else if (n.targetQueue?.startsWith('VENDORS_ONBOARDING:')) {
+                  const vid = n.targetQueue.slice('VENDORS_ONBOARDING:'.length);
+                  setVendorsStatusFilter('pending_onboarding');
+                  setVendorsHubSubTab('directory');
+                  setFocusedVendorId(vid || null);
+                  setActiveTab('vendors_hub');
+                } else if (n.targetQueue?.startsWith('PAYOUTS_REQUESTED:')) {
+                  const vid = n.targetQueue.slice('PAYOUTS_REQUESTED:'.length);
+                  setPayoutsSubTab('register');
+                  setPayoutsVendorFilter(vid || null);
+                  setPayoutsStatusFilter('requested');
+                  setActiveTab('vendor_payouts');
+                } else if (n.targetQueue?.startsWith('PAYOUTS_APPROVED:')) {
+                  const vid = n.targetQueue.slice('PAYOUTS_APPROVED:'.length);
+                  setPayoutsSubTab('register');
+                  setPayoutsVendorFilter(vid || null);
+                  setPayoutsStatusFilter('approved');
+                  setActiveTab('vendor_payouts');
+                } else if (n.targetQueue === 'PAYOUTS_LEDGER') {
+                  setPayoutsSubTab('ledger');
+                  setActiveTab('vendor_payouts');
+                } else if (n.targetQueue?.startsWith('CUSTOMER_INQUIRY:')) {
+                  setFocusedInquiryId(n.targetQueue.slice('CUSTOMER_INQUIRY:'.length));
+                  setMessagingSubTab('customer');
+                  setActiveTab('messaging_hub');
+                } else if (n.targetQueue) {
+                  openOrderQueue(n.targetQueue);
+                } else {
+                  setActiveTab(n.targetTab as AdminTabKey);
+                }
+              }}
+              onRefresh={() => void fetchWorkspace()}
+            />
             <Button
               variant="outline"
               size="sm"
