@@ -6,7 +6,7 @@
  * [ASSUMED] — not run yet. Verify: typecheck + browser checks in RUNBOOK §1.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card } from '@/components/ui/primitives';
 import { Button } from '@/components/ui/button';
 
 type Locale = 'bn' | 'en';

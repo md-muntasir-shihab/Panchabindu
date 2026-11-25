@@ -5,8 +5,12 @@
  *
  * [ASSUMED] — written without a shell. Verify: pnpm --filter @workspace/api-server run typecheck,
  * node --test against a local fixture, per docs/lean/RUNBOOK.md.
+ *
+ * The handler runs inside the Express-hosted runtime, not on Vercel's Next.js adapter, so the
+ * request type must come from the shared web-standard boundary (same as every other imported
+ * route). Importing `next/server` here broke `pnpm run typecheck` for the whole workspace.
  */
-import type { NextRequest } from 'next/server';
+import type { ApiRequest as NextRequest } from '@/src/lib/http';
 
 interface AnalyticEvent {
   type: string;

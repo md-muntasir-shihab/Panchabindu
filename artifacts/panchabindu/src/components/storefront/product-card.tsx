@@ -159,7 +159,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <Heart
               className={`w-4 h-4 transition-colors ${
                 isWishlisted ? 'fill-[var(--store-terracotta)] text-[var(--store-terracotta)]' : 'text-ink'
-              }`
+              }`}
               aria-hidden="true"
             />
           </button>

@@ -58,7 +58,7 @@ export function ConsentBanner() {
           >
             পছন্দ নির্বাচন / Choose
           </button>
-        </button>
+        </div>
       </div>
     </div>
   );
