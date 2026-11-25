@@ -7,6 +7,9 @@ import * as emergency from '../../imported/app/api/admin/emergency/route';
 import * as brandMedia from '../../imported/app/api/admin/brand-media/route';
 import * as workspace from '../../imported/app/api/admin/workspace/route';
 import * as abandoned from '../../imported/app/api/cart/abandoned/route';
+import * as adminAnalytics from '../../imported/app/api/admin/analytics/route';
+import * as adminCustomerPrivacy from '../../imported/app/api/admin/customer-privacy/route';
+import * as analyticsIngest from '../../imported/app/api/analytics/ingest/route';
 import * as catalogImport from '../../imported/app/api/catalog/import/route';
 import * as mediaAsset from '../../imported/app/api/media/[assetId]/route';
 import * as media from '../../imported/app/api/media/route';
@@ -192,7 +195,9 @@ export const importedRouter = Router();
 const routes: Array<[string, Record<string, unknown>]> = [
   ['/api/account/orders', account], ['/api/admin/auth', adminAuth],
   ['/api/admin/emergency', emergency], ['/api/admin/brand-media', brandMedia], ['/api/admin/workspace', workspace],
-  ['/api/admin/system-health', adminSystemHealth],
+  ['/api/admin/system-health', adminSystemHealth], ['/api/admin/analytics', adminAnalytics],
+  ['/api/admin/customer-privacy', adminCustomerPrivacy],
+  ['/api/analytics/ingest', analyticsIngest],
   ['/api/cart/abandoned', abandoned], ['/api/catalog/import', catalogImport],
   ['/api/media/:assetId', mediaAsset], ['/api/media', media],
   ['/api/orders/cancellation-request', cancellation], ['/api/orders/return-request', returns],
@@ -209,8 +214,7 @@ const routes: Array<[string, Record<string, unknown>]> = [
   ['/api/vendor/profile', vendorProfile], ['/api/vendor/onboarding', vendorOnboarding],
   ['/api/webhooks/courier', webhook], ['/api/cron/courier-status', courierStatusCron],
   ['/api/page-data', { GET: pageData }],
-  ['/manifest.webmanifest', { GET: manifest }], ['/sitemap.xml', { GET: sitemap }],
-  ['/robots.txt', { GET: robots }],
+  ['/manifest.webmanifest', { GET: manifest }], ['/sitemap.xml', { GET: sitemap }], ['/robots.txt', { GET: robots }],
 ];
 for (const [path, module] of routes) {
   importedRouter.all(path, (req, res, next) => {
