@@ -2243,26 +2243,28 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
         />
       )}
 
-      {/* Modern Admin ERP Side Navigation Panel */}
+      {/* Admin ERP Side Navigation Panel — editorial rail */}
       <aside
         aria-label={locale === 'bn' ? 'অ্যাডমিন নেভিগেশন' : 'Admin navigation'}
-        className={`fixed lg:sticky top-0 lg:top-[var(--preview-banner-h,0px)] left-0 z-50 h-[100dvh] lg:h-[calc(100dvh-var(--preview-banner-h,0px))] w-[min(16rem,85vw)] shrink-0 border-r border-border bg-surface transition-all duration-200 flex flex-col justify-between pb-[env(safe-area-inset-bottom)] ${
+        className={`fixed lg:sticky top-0 lg:top-[var(--preview-banner-h,0px)] left-0 z-50 flex h-[100dvh] shrink-0 flex-col border-r border-border bg-surface transition-[width,transform] duration-200 ease-out motion-reduce:transition-none lg:h-[calc(100dvh-var(--preview-banner-h,0px))] w-[min(17rem,86vw)] ${
           isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        } ${isSidebarCollapsed ? 'lg:w-18' : 'lg:w-64'}`}
+        } ${isSidebarCollapsed ? 'lg:w-[4.75rem]' : 'lg:w-[17rem]'}`}
       >
-        <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
-          {/* Sidebar Header Brand Zone */}
-          <div className="h-14 border-b border-border px-4 flex items-center justify-between gap-2 shrink-0">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-[var(--radius-md)] border border-ink bg-ink text-bg flex items-center justify-center font-bold text-sm shrink-0">
-                <LocalizedText source={"প"} area="admin" />{" "}</div>
+        {/* Brand zone — brand tile + account chip share one block and one hairline. */}
+        <div className="shrink-0 border-b border-border/70">
+          <div className="flex h-14 items-center justify-between gap-2 px-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-ink text-sm font-bold text-bg">
+                <LocalizedText source={"প"} area="admin" />{" "}
+              </div>
               {!isSidebarCollapsed && (
                 <div className="min-w-0">
-                  <p className="font-bold text-sm tracking-tight text-ink truncate leading-tight">
+                  <p className="truncate text-sm font-bold leading-tight tracking-tight text-ink">
                     {brandName}
                   </p>
-                  <p className="text-[11px] font-mono text-muted uppercase tracking-wider">
-                    <LocalizedText source={"Panchabindu ERP"} area="admin" />{" "}</p>
+                  <p className="truncate font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                    <LocalizedText source={"Panchabindu ERP"} area="admin" />{" "}
+                  </p>
                 </div>
               )}
             </div>
@@ -2272,7 +2274,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
               <button
                 type="button"
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="hidden lg:flex min-w-11 min-h-11 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-bg text-ink hover:border-ink cursor-pointer"
+                className="hidden lg:flex min-w-11 min-h-11 items-center justify-center rounded-[var(--radius-sm)] text-muted transition-colors hover:bg-bg hover:text-ink cursor-pointer"
                 title={isSidebarCollapsed ? 'সাইডবার প্রসারিত করুন' : 'সাইডবার সংকুচিত করুন'}
                 aria-label={isSidebarCollapsed ? (locale === 'bn' ? 'সাইডবার প্রসারিত করুন' : 'Expand sidebar') : (locale === 'bn' ? 'সাইডবার সংকুচিত করুন' : 'Collapse sidebar')}
               >
@@ -2285,7 +2287,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
               <button
                 type="button"
                 onClick={() => setIsMobileSidebarOpen(false)}
-                className="lg:hidden w-11 h-11 flex items-center justify-center rounded-[var(--radius-sm)] border border-border bg-bg text-ink cursor-pointer"
+                className="lg:hidden w-11 h-11 flex items-center justify-center rounded-[var(--radius-sm)] text-muted cursor-pointer hover:bg-bg hover:text-ink"
                 aria-label={locale === 'bn' ? 'মেনু বন্ধ করুন' : 'Close menu'}
               >
                 <ChevronLeft className="w-4 h-4" aria-hidden="true" />
@@ -2293,99 +2295,115 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
             </div>
           </div>
 
-          {/* User Profile Mini Badge in Sidebar */}
-          <div className="p-3 border-b border-border bg-bg/50">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-full border border-border bg-surface text-ink flex items-center justify-center text-xs font-bold shrink-0">
+          {/* Account chip — quiet, lives in the same block as the brand */}
+          <div className={isSidebarCollapsed ? 'px-2 pb-3 lg:px-2' : 'px-3 pb-3'}>
+            <div className={`flex items-center gap-2.5 rounded-[var(--radius-md)] border border-border/70 bg-bg/60 px-2.5 py-2 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-[11px] font-bold text-ink">
                 {currentUser.username.slice(0, 2).toUpperCase()}
-              </div>
+              </span>
               {!isSidebarCollapsed && (
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-ink truncate">
+                  <p className="truncate text-xs font-bold text-ink">
                     @{currentUser.username}
                   </p>
-                  <p className="text-[10px] font-mono text-muted truncate">
+                  <p className="truncate font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
                     {currentUser.roleSlug}
                   </p>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Grouped navigation; collapsed desktop mode retains direct icon links. */}
-          <nav aria-label={uiText("Admin ERP Sidebar", locale)} className="p-2 space-y-1 text-xs font-medium">
-            {ADMIN_NAV_GROUPS.map((group) => {
-              const allItems = NAV_SECTIONS.flatMap((section) => section.items);
-              const visibleItems = group.keys.map((key) => allItems.find((item) => item.key === key)).filter((item): item is (typeof allItems)[number] => Boolean(item && !item.hidden));
-              if (visibleItems.length === 0) return null;
-              const isOpen = openNavGroups.includes(group.id);
-              const hasActive = visibleItems.some((item) => item.key === activeTab);
-              const groupName = locale === 'bn' ? group.bn : group.en;
-              return (
-                <div key={group.id} data-nav-group={group.id} className="rounded-[var(--radius-md)]">
-                  {!isSidebarCollapsed && (
-                    <button
-                      type="button"
-                      aria-expanded={isOpen}
-                      aria-controls={`admin-nav-${group.id}`}
-                      onClick={() => setOpenNavGroups((open) => isOpen ? open.filter((id) => id !== group.id) : [...open, group.id])}
-                      className={`flex min-h-11 w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 text-left font-semibold transition-colors hover:bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink ${hasActive ? 'text-ink bg-bg/70' : 'text-muted'}`}
-                    >
-                      {visibleItems[0].icon}
-                      <span className="min-w-0 flex-1">{groupName}</span>
-                      {hasActive && !isOpen && <span className="h-1.5 w-1.5 rounded-full bg-ink" aria-hidden="true" />}
-                      <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-                    </button>
-                  )}
-                  <div id={`admin-nav-${group.id}`} hidden={!isSidebarCollapsed && !isOpen} className={isSidebarCollapsed ? 'space-y-0.5' : 'ml-4 my-1 space-y-0.5 border-l border-border pl-2'}>
-                    {visibleItems.map((item) => {
-                      const isActive = activeTab === item.key;
-                      return (
-                        <button
-                          key={item.key}
-                          type="button"
-                          onClick={() => { setActiveTab(item.key); setIsMobileSidebarOpen(false); }}
-                          title={locale === 'bn' ? item.labelBn : item.labelEn}
-                          aria-current={isActive ? 'page' : undefined}
-                          className={`w-full min-h-11 flex items-center gap-2.5 px-2.5 py-2 rounded-[var(--radius-md)] transition-colors cursor-pointer text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink ${
-                            isActive ? 'bg-ink text-bg font-bold' : 'text-ink hover:bg-bg border border-transparent hover:border-border'
-                          } ${isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'}`}
-                        >
-                          <span className="flex items-center gap-2.5 min-w-0">
-                            {item.icon}
-                            {!isSidebarCollapsed && <span className="min-w-0 break-words">{locale === 'bn' ? item.labelBn : item.labelEn}</span>}
-                          </span>
-                          {!isSidebarCollapsed && item.badge !== undefined && (
-                            <span className={`text-[10px] font-mono px-1.5 rounded-full border shrink-0 ${isActive ? 'border-bg/40 bg-bg text-ink' : 'border-border bg-bg text-muted'}`}>
-                              {item.badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </nav>
         </div>
 
-        {/* Sidebar Footer Zone (Storefront Link & Locale Toggle) */}
-        <div className="p-2.5 border-t border-border bg-bg/50 space-y-1.5 shrink-0">
+        {/* Grouped navigation; collapsed desktop mode retains direct icon links. */}
+        <nav aria-label={uiText("Admin ERP Sidebar", locale)} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 pb-3 text-xs font-medium">
+          {ADMIN_NAV_GROUPS.map((group, groupIndex) => {
+            const allItems = NAV_SECTIONS.flatMap((section) => section.items);
+            const visibleItems = group.keys.map((key) => allItems.find((item) => item.key === key)).filter((item): item is (typeof allItems)[number] => Boolean(item && !item.hidden));
+            if (visibleItems.length === 0) return null;
+            const isOpen = openNavGroups.includes(group.id);
+            const hasActive = visibleItems.some((item) => item.key === activeTab);
+            const groupName = locale === 'bn' ? group.bn : group.en;
+            return (
+              <div
+                key={group.id}
+                data-nav-group={group.id}
+                className={isSidebarCollapsed && groupIndex > 0 ? 'mt-1 border-t border-border/60 pt-1' : ''}
+              >
+                {!isSidebarCollapsed && (
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    aria-controls={`admin-nav-${group.id}`}
+                    onClick={() => setOpenNavGroups((open) => isOpen ? open.filter((id) => id !== group.id) : [...open, group.id])}
+                    className={`sticky top-0 z-10 -mx-2 flex w-[calc(100%+1rem)] min-h-9 items-center gap-2 bg-surface px-3 pb-1.5 pt-3 text-left font-mono text-[10px] uppercase tracking-[0.14em] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink ${hasActive ? 'text-ink' : 'text-muted'}`}
+                  >
+                    <span className="tabular-nums opacity-60">{String(groupIndex + 1).padStart(2, '0')}</span>
+                    <span className="min-w-0 flex-1 truncate">{groupName}</span>
+                    {hasActive && !isOpen && <span className="h-1.5 w-1.5 rounded-full bg-ink" aria-hidden="true" />}
+                    <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-150 motion-reduce:transition-none ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                  </button>
+                )}
+                <div id={`admin-nav-${group.id}`} hidden={!isSidebarCollapsed && !isOpen} className={isSidebarCollapsed ? 'space-y-0.5' : 'mt-0.5 space-y-0.5'}>
+                  {visibleItems.map((item) => {
+                    const isActive = activeTab === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => { setActiveTab(item.key); setIsMobileSidebarOpen(false); }}
+                        title={locale === 'bn' ? item.labelBn : item.labelEn}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={`relative w-full min-h-11 flex items-center gap-2.5 rounded-[var(--radius-md)] border px-2.5 py-2 text-left transition-colors duration-150 motion-reduce:transition-none cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink ${
+                          isActive
+                            ? 'border-border bg-bg font-bold text-ink'
+                            : 'border-transparent text-ink/90 hover:border-border/70 hover:bg-bg/60 hover:text-ink'
+                        } ${isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'}`}
+                      >
+                        {isActive && (
+                          <span aria-hidden="true" className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-ink" />
+                        )}
+                        <span className="flex min-w-0 items-center gap-2.5">
+                          <span className={isActive ? 'text-ink' : 'text-muted'}>
+                            {item.icon}
+                          </span>
+                          {!isSidebarCollapsed && <span className="min-w-0 break-words">{locale === 'bn' ? item.labelBn : item.labelEn}</span>}
+                        </span>
+                        {!isSidebarCollapsed && item.badge !== undefined && (
+                          <span className={`shrink-0 rounded-full px-1.5 py-px font-mono text-[10px] tabular-nums ${isActive ? 'bg-ink text-bg' : 'border border-border bg-bg text-muted'}`}>
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Footer — storefront + locale share one quiet row */}
+        <div className="shrink-0 border-t border-border/70 px-2 py-2">
           {!isSidebarCollapsed ? (
             <div className="flex items-center gap-1.5">
-              <Link href="/" className="flex-1 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-bg px-3 text-xs font-medium text-ink hover:border-ink">
+              <Link
+                href="/"
+                className="inline-flex flex-1 min-h-11 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-xs font-medium text-muted transition-colors hover:bg-bg hover:text-ink"
+              >
                 <Store className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>{locale === 'bn' ? 'স্টোরফ্রন্ট' : 'Store'}</span>
+                <ArrowUpRight className="ml-auto w-3 h-3 opacity-60" aria-hidden="true" />
               </Link>
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                type="button"
                 onClick={toggleLocale}
-                className="min-w-11 min-h-11 px-2.5 font-mono"
+                title={locale === 'bn' ? 'Switch to English' : 'বাংলায় পরিবর্তন করুন'}
+                className="min-w-11 min-h-11 shrink-0 rounded-[var(--radius-sm)] border border-border/70 bg-bg px-2 font-mono text-[11px] font-bold text-muted transition-colors hover:border-ink hover:text-ink cursor-pointer"
               >
-                {locale === 'bn' ? 'EN' : 'বাং'}
-              </Button>
+                <span aria-hidden="true">{locale === 'bn' ? 'EN' : 'বাং'}</span>
+                <span className="sr-only">{locale === 'bn' ? 'Switch to English (EN)' : 'বাংলায় পরিবর্তন করুন (বাং)'}</span>
+              </button>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-1.5">
@@ -2393,7 +2411,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                 href="/"
                 title={uiText("স্টোরফ্রন্ট", locale)}
                 aria-label={locale === 'bn' ? 'স্টোরফ্রন্ট' : 'Store'}
-                className="w-11 h-11 flex items-center justify-center rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:border-ink"
+                className="w-11 h-11 flex items-center justify-center rounded-[var(--radius-sm)] text-muted hover:bg-bg hover:text-ink"
               >
                 <Store className="w-4 h-4" aria-hidden="true" />
               </Link>
@@ -2401,7 +2419,7 @@ export function AdminErpClient({ siteSettings: publicSettings }: AdminErpClientP
                 type="button"
                 onClick={toggleLocale}
                 title={locale === 'bn' ? 'Switch to English' : 'বাংলায় পরিবর্তন করুন'}
-                className="w-11 h-11 flex items-center justify-center rounded-[var(--radius-sm)] border border-border bg-surface text-ink hover:border-ink text-xs font-mono font-bold cursor-pointer"
+                className="w-11 h-11 flex items-center justify-center rounded-[var(--radius-sm)] border border-border/70 bg-bg text-xs font-mono font-bold text-muted hover:border-ink hover:text-ink cursor-pointer"
               >
                 <span aria-hidden="true">{locale === 'bn' ? 'EN' : 'বাং'}</span>
                 <span className="sr-only">
